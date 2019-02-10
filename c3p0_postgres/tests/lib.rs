@@ -24,7 +24,7 @@ fn postgres_basic_crud() {
                             DATA JSONB
                         )", &[]).unwrap();
 
-    let jpo= JpoPg::new::<TestData>(conn, "TEST_TABLE");
+    let jpo= JpoPg::build::<TestData>(conn, "TEST_TABLE");
 
     let model = Model::new(TestData {
             first_name: "my_first_name".to_owned(),

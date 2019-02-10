@@ -8,6 +8,8 @@ use diesel::prelude::*;
 
 use testcontainers::*;
 
+use serde_json::Value;
+
 embed_migrations!("./migrations/");
 
 pub fn establish_connection() -> PgConnection {
@@ -50,8 +52,18 @@ pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Po
 
 #[test]
 fn should_perform_a_query() {
-    let connection = establish_connection();
-    upgrade_db(&connection);
+    let conn = establish_connection();
+    upgrade_db(&conn);
+
+    let new_data = models::NewTestData {
+        version: 0,
+        data: models::CustomValue{name: "hello".to_owned()}
+    };
+
+    let saved_data: models::TestData = diesel::insert_into(schema::test_table::table)
+        .values(&new_data)
+        .get_result(&conn)
+        .expect("Error saving new post");
 
     /*
     let new_post = create_post(&connection, "my_post_title", "my_post_body");
@@ -101,12 +113,22 @@ mod schema {
 mod models {
     use super::schema::*;
     use serde_json::Value;
+    use serde_derive::{Deserialize, Serialize};
+    use diesel::deserialize::FromSql;
+    use diesel::serialize::ToSql;
+    use diesel::sql_types;
+    use diesel::pg::Pg;
+    use diesel::deserialize;
+    use diesel::serialize;
+    use std::io::Write;
+    use diesel::serialize::Output;
+    use diesel::serialize::IsNull;
 
     #[derive(Insertable)]
     #[table_name = "test_table"]
     pub struct NewTestData {
         pub version: i32,
-        pub data: Value,
+        pub data: CustomValue,
     }
 
     #[derive(Queryable)]
@@ -116,6 +138,52 @@ mod models {
         pub data: Value,
     }
 
+    use diesel::types::{Json, Jsonb};
+
+    #[derive(FromSqlRow, AsExpression)]
+    #[diesel(foreign_derive)]
+    #[sql_type = "Json"]
+    #[sql_type = "Jsonb"]
+    struct CustomValueProxy(CustomValue);
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct CustomValue {
+        pub name: String
+    }
+
+    impl FromSql<sql_types::Json, Pg> for CustomValue {
+        fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+            let bytes = not_none!(bytes);
+            serde_json::from_slice(bytes).map_err(Into::into)
+        }
+    }
+
+    impl ToSql<sql_types::Json, Pg> for CustomValue {
+        fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+            serde_json::to_writer(out, self)
+                .map(|_| IsNull::No)
+                .map_err(Into::into)
+        }
+    }
+
+    impl FromSql<sql_types::Jsonb, Pg> for CustomValue {
+        fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
+            let bytes = not_none!(bytes);
+            if bytes[0] != 1 {
+                return Err("Unsupported JSONB encoding version".into());
+            }
+            serde_json::from_slice(&bytes[1..]).map_err(Into::into)
+        }
+    }
+
+    impl ToSql<sql_types::Jsonb, Pg> for CustomValue {
+        fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+            out.write_all(&[1])?;
+            serde_json::to_writer(out, self)
+                .map(|_| IsNull::No)
+                .map_err(Into::into)
+        }
+    }
 }
 
 fn postgres_image() -> testcontainers::images::generic::GenericImage {

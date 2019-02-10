@@ -1,5 +1,6 @@
 use c3p0::{Model, Jpo};
 use postgres::{Connection};
+use postgres::rows::Row;
 
 pub struct JpoPg {
     id_field_name: String,
@@ -10,8 +11,8 @@ pub struct JpoPg {
 }
 
 impl JpoPg {
-    pub fn new<D>(conn: Connection, table_name: &str) -> impl Jpo<D>
-    where D: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
+    pub fn build<DATA>(conn: Connection, table_name: &str) -> impl Jpo<DATA>
+    where DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
     {
         JpoPg{
             conn,
@@ -22,9 +23,9 @@ impl JpoPg {
         }
     }
 
-    pub fn new_custom<S: Into<String>, D>(conn: Connection, table_name: S, id_field_name: S,
-    version_field_name: S,  data_field_name: S) -> impl Jpo<D>
-        where D: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
+    pub fn build_custom<S: Into<String>, DATA>(conn: Connection, table_name: S, id_field_name: S,
+    version_field_name: S,  data_field_name: S) -> impl Jpo<DATA>
+        where DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
     {
         JpoPg{
             conn,
@@ -32,6 +33,19 @@ impl JpoPg {
             id_field_name: id_field_name.into(),
             version_field_name: version_field_name.into(),
             data_field_name: data_field_name.into(),
+        }
+    }
+
+    pub fn to_model<DATA>(&self, row: Row) -> Model<DATA>
+        where DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
+    {
+        Model{
+            //id: Some(row.get(self.id_field_name.as_str())),
+            //version: row.get(self.version_field_name.as_str()),
+            //data: serde_json::from_value::<DATA>(row.get(self.data_field_name.as_str())).unwrap()
+            id: Some(row.get(0)),
+            version: row.get(1),
+            data: serde_json::from_value::<DATA>(row.get(2)).unwrap()
         }
     }
 }
@@ -47,14 +61,7 @@ impl <DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned> Jpo<DAT
                             self.id_field_name,
         );
         let stmt = self.conn.prepare(&query).unwrap();
-        let result = stmt.query(&[&id]).unwrap().iter().next().map(|row| {
-            Model{
-                id: Some(row.get(0)),
-                version: row.get(1),
-                data: serde_json::from_value::<DATA>(row.get(2)).unwrap()
-            }
-        });
-        result
+        stmt.query(&[&id]).unwrap().iter().next().map(|row| self.to_model(row))
     }
 
     fn save(&self, obj: &Model<DATA>) -> Model<DATA> {
