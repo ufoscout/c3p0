@@ -3,7 +3,7 @@ name = "c3p0"
 license = "MIT"
 version = "0.1.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
-description = ""
+description = "A good friend for r2d2"
 edition = "2018"
 
 [dependencies]
