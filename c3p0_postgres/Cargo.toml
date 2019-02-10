@@ -1,0 +1,18 @@
+[package]
+name = "c3p0_postgres"
+license = "MIT"
+version = "0.1.0"
+authors = ["Francesco Cina <ufoscout@gmail.com>"]
+description = ""
+edition = "2018"
+
+[dependencies]
+log = "0.4"
+c3p0 = { path = "../c3p0", version = "0.1.0" }
+postgres = { version = "0.15", features = ["with-serde_json"] }
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+
+[dev-dependencies]
+testcontainers = "0.5"

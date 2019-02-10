@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "c3p0",
+    "c3p0_postgres",
+    "c3p0_diesel",
+] 

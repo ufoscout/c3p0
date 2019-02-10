@@ -1,0 +1,12 @@
+# To execute with:
+# > cargo make --no-workspace publish_all
+[tasks.publish_all]
+script = [
+  "cargo clean",
+  "cargo test",
+  "cargo build",
+  "cd ./c3p0           && cargo publish && cd ..",
+  "cd ./c3p0_diesel    && cargo publish && cd ..",
+  "cd ./c3p0_postgres  && cargo publish && cd ..",
+]
+
