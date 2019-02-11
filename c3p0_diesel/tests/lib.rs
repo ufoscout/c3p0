@@ -110,19 +110,11 @@ mod schema {
 
 }
 
+
 mod models {
     use super::schema::*;
     use serde_json::Value;
     use serde_derive::{Deserialize, Serialize};
-    use diesel::deserialize::FromSql;
-    use diesel::serialize::ToSql;
-    use diesel::sql_types;
-    use diesel::pg::Pg;
-    use diesel::deserialize;
-    use diesel::serialize;
-    use std::io::Write;
-    use diesel::serialize::Output;
-    use diesel::serialize::IsNull;
 
     #[derive(Insertable)]
     #[table_name = "test_table"]
@@ -138,51 +130,13 @@ mod models {
         pub data: Value,
     }
 
-    use diesel::types::{Json, Jsonb};
+    //use diesel::types::{Json, Jsonb};
 
-    #[derive(FromSqlRow, AsExpression)]
-    #[diesel(foreign_derive)]
-    #[sql_type = "Json"]
-    #[sql_type = "Jsonb"]
-    struct CustomValueProxy(CustomValue);
+    use c3p0_diesel_macro::*;
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Dieseljson)]
     pub struct CustomValue {
         pub name: String
-    }
-
-    impl FromSql<sql_types::Json, Pg> for CustomValue {
-        fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
-            let bytes = not_none!(bytes);
-            serde_json::from_slice(bytes).map_err(Into::into)
-        }
-    }
-
-    impl ToSql<sql_types::Json, Pg> for CustomValue {
-        fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
-            serde_json::to_writer(out, self)
-                .map(|_| IsNull::No)
-                .map_err(Into::into)
-        }
-    }
-
-    impl FromSql<sql_types::Jsonb, Pg> for CustomValue {
-        fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
-            let bytes = not_none!(bytes);
-            if bytes[0] != 1 {
-                return Err("Unsupported JSONB encoding version".into());
-            }
-            serde_json::from_slice(&bytes[1..]).map_err(Into::into)
-        }
-    }
-
-    impl ToSql<sql_types::Jsonb, Pg> for CustomValue {
-        fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
-            out.write_all(&[1])?;
-            serde_json::to_writer(out, self)
-                .map(|_| IsNull::No)
-                .map_err(Into::into)
-        }
     }
 }
 

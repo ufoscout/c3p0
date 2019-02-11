@@ -1,0 +1,16 @@
+[package]
+name = "c3p0_diesel_macro"
+license = "MIT"
+version = "0.2.0"
+authors = ["Francesco Cina <ufoscout@gmail.com>"]
+description = "Macros for c3p0_diesel"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "0.14"
+quote = "0.6"
+diesel = { version = "1.0", features = ["postgres", "serde_json"] }
+
