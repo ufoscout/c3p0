@@ -24,14 +24,18 @@ fn postgres_basic_crud() {
                             DATA JSONB
                         )", &[]).unwrap();
 
-    let jpo= JpoPg::build::<TestData>(conn, "TEST_TABLE");
+    let jpo = JpoPg::build(conn, "TEST_TABLE",
+    |id, version, data| {
+        let model: TestModel = Model::new(id, version, data);
+        model
+    });
 
-    let model = Model::new(TestData {
+    let model = Model::new_with_data(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-    let saved_model = jpo.save(&model);
+    let saved_model = jpo.save(model.clone());
     assert!(saved_model.id.is_some());
 
     assert!(model.id.is_none());
@@ -46,7 +50,7 @@ fn postgres_basic_crud() {
 
 }
 
-//type TestModel = Model<TestData>;
+type TestModel = Model<TestData>;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct TestData {
