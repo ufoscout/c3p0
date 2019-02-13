@@ -3,10 +3,18 @@ pub trait C3p0Model<DATA> where DATA: serde::ser::Serialize + serde::de::Deseria
     fn c3p0_get_id(&self) -> &Option<i64>;
     fn c3p0_get_version(&self) -> &i32;
     fn c3p0_get_data(&self) -> &DATA;
-    fn c3p0_set_id<ID: Into<Option<i64>>>(&mut self, id: ID);
-    fn c3p0_set_version(&mut self, version: i32);
-    fn c3p0_set_data(&mut self, data: DATA);
     fn c3p0_clone_with_id<ID: Into<Option<i64>>>(self, id: ID) -> Self;
+}
+
+pub trait C3p0ModelQueryable<DATA> where DATA: serde::ser::Serialize + serde::de::DeserializeOwned {
+    fn c3p0_get_id(&self) -> &i64;
+    fn c3p0_get_version(&self) -> &i32;
+    fn c3p0_get_data(&self) -> &DATA;
+}
+
+pub trait C3p0ModelInsertable<DATA> where DATA: serde::ser::Serialize + serde::de::DeserializeOwned {
+    fn c3p0_get_version(&self) -> &i32;
+    fn c3p0_get_data(&self) -> &DATA;
 }
 
 #[derive(Clone)]
@@ -27,18 +35,6 @@ impl <DATA> C3p0Model<DATA> for Model<DATA> where DATA: Clone + serde::ser::Seri
 
     fn c3p0_get_data(&self) -> &DATA {
         &self.data
-    }
-
-    fn c3p0_set_id<ID: Into<Option<i64>>>(&mut self, id: ID) {
-        self.id = id.into();
-    }
-
-    fn c3p0_set_version(&mut self, version: i32) {
-        self.version = version;
-    }
-
-    fn c3p0_set_data(&mut self, data: DATA) {
-        self.data = data;
     }
 
     fn c3p0_clone_with_id<ID: Into<Option<i64>>>(self, id: ID) -> Self {

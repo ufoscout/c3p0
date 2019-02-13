@@ -116,25 +116,25 @@ mod models {
     use serde_json::Value;
     use serde_derive::{Deserialize, Serialize};
 
-    #[derive(Insertable)]
+    #[derive(Insertable, C3p0Model)]
     #[table_name = "test_table"]
     pub struct NewTestData {
         pub version: i32,
         pub data: CustomValue,
     }
 
-    #[derive(Queryable)]
+    #[derive(Queryable, C3p0Model)]
     pub struct TestData {
         pub id: i64,
         pub version: i32,
-        pub data: Value,
+        pub data: CustomValue,
     }
 
     //use diesel::types::{Json, Jsonb};
 
     use c3p0_diesel_macro::*;
 
-    #[derive(Serialize, Deserialize, Debug, Dieseljson)]
+    #[derive(Serialize, Deserialize, Debug, DieselJson)]
     pub struct CustomValue {
         pub name: String
     }
