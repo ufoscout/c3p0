@@ -1,21 +1,57 @@
 use diesel::connection::Connection;
 use diesel::insertable::Insertable;
+use diesel::prelude::Queryable;
+use c3p0::{C3p0ModelQueryable, C3p0ModelInsertable};
+use diesel::backend::Backend;
 
-pub trait Model<DATA> where DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
-    fn c3p0_get_id(&self) -> Option<i64>;
-    fn c3p0_get_version(&self) -> i32;
-    fn c3p0_get_data(&self) -> DATA;
-    fn c3p0_clone_with_id_and_version(&self, id: Option<i64>, version: i32) -> Self;
+pub trait JpoDiesel<C, Q, I, T, DATA, ST, DB>
+    where C: Connection,
+          Q: Queryable<ST, DB> + C3p0ModelQueryable<DATA>,
+          I: Insertable<T> + C3p0ModelInsertable<DATA>,
+          DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
+          DB: Backend
+{
+    fn conn(&self) -> &C;
 }
 
-pub struct JpoDiesel<C: Connection> {
-    conn: C
-}
 
-impl <C: Connection> JpoDiesel<C> {
+impl <C, Q, I, T, DATA, ST, DB> JpoDiesel<C, Q, I, T, DATA, ST, DB>
+    where C: Connection,
+          Q: Queryable<ST, DB> + C3p0ModelQueryable<DATA>,
+          I: Insertable<T> + C3p0ModelInsertable<DATA>,
+          DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
+          DB: Backend
+{
 
-    fn save<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, M: Model<DATA>>(&self, obj: &M) -> M {
-        obj.c3p0_clone_with_id_and_version(None, 0)
+    fn save(&self, obj: &I) -> Q {
+        unimplemented!()
     }
 
+}
+
+trait Ab<A, B> {
+    fn a() -> A;
+    fn b() -> B;
+}
+
+trait Cd<C, D>
+{
+    fn c() -> C;
+    fn d() -> D;
+}
+
+/*
+trait other_wrong<AB, CD>
+    where AB: Ab, CD: Cd
+{
+    fn ab() -> AB;
+    fn cd() -> CD;
+}
+*/
+
+trait other_ok<AB, CD, A, B, C, D>
+    where AB: Ab<A,B>, CD: Cd<C,D>
+{
+    fn ab() -> AB;
+    fn cd() -> CD;
 }

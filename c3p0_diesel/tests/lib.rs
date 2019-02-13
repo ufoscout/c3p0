@@ -34,21 +34,6 @@ pub fn upgrade_db(conn: &PgConnection) {
     embedded_migrations::run_with_output(conn, &mut std::io::stdout())
         .expect(&format!("Should run the migrations"));
 }
-/*
-pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Post {
-    use schema::posts;
-
-    let new_post = NewPost {
-        title: title,
-        body: body,
-    };
-
-    diesel::insert_into(posts::table)
-        .values(&new_post)
-        .get_result(conn)
-        .expect("Error saving new post")
-}
-*/
 
 #[test]
 fn should_perform_a_query() {
@@ -65,37 +50,36 @@ fn should_perform_a_query() {
         .get_result(&conn)
         .expect("Error saving new post");
 
-    /*
-    let new_post = create_post(&connection, "my_post_title", "my_post_body");
-    println!("Created post with id {}", new_post.id);
+    println!("Created data with id {}", saved_data.id);
 
+    /*
     let post = diesel::update(posts::table.find(new_post.id))
         .set(posts::published.eq(true))
         .get_result::<Post>(&connection)
         .expect(&format!("Unable to find post {}", new_post.id));
     println!("Published post {}", post.title);
+*/
 
-    let results = posts::table
-        .filter(posts::published.eq(true))
+    let results = schema::test_table::table
+        //.filter(schema::test_table::published.eq(true))
         .limit(5)
-        .load::<Post>(&connection)
-        .expect("Error loading posts");
+        .load::<models::TestData>(&conn)
+        .expect("Error loading data");
 
-    println!("Displaying {} posts", results.len());
-    for post in &results {
-        println!("{}", post.title);
+    println!("Displaying {} data", results.len());
+    for data in &results {
+        println!("{}", data.id);
         println!("----------\n");
-        println!("{}", post.body);
+        println!("{}", data.version);
     }
 
     assert!(results.len() > 0);
 
-    let num_deleted = diesel::delete(posts::table.filter(posts::id.eq(post.id)))
-        .execute(&connection)
-        .expect("Error deleting posts");
+    let num_deleted = diesel::delete(schema::test_table::table.filter(schema::test_table::id.eq(saved_data.id)))
+        .execute(&conn)
+        .expect("Error deleting data");
 
     assert_eq!(1, num_deleted);
-    */
 }
 
 mod schema {
