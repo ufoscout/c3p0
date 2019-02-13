@@ -70,6 +70,7 @@ impl <DATA> Model<DATA> where DATA: Clone + serde::ser::Serialize + serde::de::D
 
 }
 
+/*
 pub trait Jpo<DATA, M: C3p0Model<DATA>> where DATA: serde::ser::Serialize + serde::de::DeserializeOwned {
 
     fn find_by_id(&self, id: i64) -> Option<M>;
@@ -77,3 +78,4 @@ pub trait Jpo<DATA, M: C3p0Model<DATA>> where DATA: serde::ser::Serialize + serd
     fn save(&self, obj: M) -> M;
 
 }
+*/

@@ -1,4 +1,3 @@
-use c3p0::{Jpo};
 use diesel::connection::Connection;
 use diesel::insertable::Insertable;
 
