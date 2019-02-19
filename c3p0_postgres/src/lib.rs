@@ -12,6 +12,9 @@ where
     pub table_name: String,
     pub conn: Connection,
     pub model_factory: fn(Option<i64>, i32, DATA) -> M,
+
+    pub find_by_id_sql_query: String,
+    pub save_sql_query: String,
 }
 
 impl<DATA, M: C3p0Model<DATA>> Conf<DATA, M>
@@ -43,13 +46,32 @@ where
         V: Into<String>,
         D: Into<String>,
     {
+        let table_name = table_name.into();
+        let id_field_name = id_field_name.into();
+        let version_field_name = version_field_name.into();
+        let data_field_name = data_field_name.into();
         Conf {
             conn,
-            table_name: table_name.into(),
-            id_field_name: id_field_name.into(),
-            version_field_name: version_field_name.into(),
-            data_field_name: data_field_name.into(),
+            table_name: table_name.clone(),
+            id_field_name: id_field_name.clone(),
+            version_field_name: version_field_name.clone(),
+            data_field_name: data_field_name.clone(),
             model_factory: factory,
+
+            find_by_id_sql_query: format!(
+                "SELECT {}, {}, {} FROM {} WHERE {} = $1",
+                id_field_name.clone(),
+                version_field_name.clone(),
+                data_field_name.clone(),
+                table_name.clone(),
+                id_field_name.clone(),
+            ),
+
+            save_sql_query: format!(
+                "INSERT INTO {} ({}, {}) VALUES ($1, $2) RETURNING {}",
+                table_name.clone(), version_field_name.clone(), data_field_name.clone(), id_field_name.clone()
+            )
+
         }
     }
 }
@@ -72,15 +94,7 @@ where
 
     fn find_by_id(&self, id: i64) -> Option<M> {
         let conf = self.conf();
-        let query = format!(
-            "SELECT {}, {}, {} FROM {} WHERE {} = $1",
-            conf.id_field_name,
-            conf.version_field_name,
-            conf.data_field_name,
-            conf.table_name,
-            conf.id_field_name,
-        );
-        let stmt = conf.conn.prepare(&query).unwrap();
+        let stmt = conf.conn.prepare(&conf.find_by_id_sql_query).unwrap();
         stmt.query(&[&id])
             .unwrap()
             .iter()
@@ -90,11 +104,7 @@ where
 
     fn save(&self, obj: M) -> M {
         let conf = self.conf();
-        let query = format!(
-            "INSERT INTO {} ({}, {}) VALUES ($1, $2) RETURNING {}",
-            conf.table_name, conf.version_field_name, conf.data_field_name, conf.id_field_name
-        );
-        let stmt = conf.conn.prepare(&query).unwrap();
+        let stmt = conf.conn.prepare(&conf.save_sql_query).unwrap();
         let json_data = serde_json::to_value(obj.c3p0_get_data()).unwrap();
         let id: i64 = stmt
             .query(&[obj.c3p0_get_version(), &json_data])
