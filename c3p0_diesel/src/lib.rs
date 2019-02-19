@@ -1,33 +1,40 @@
-use diesel::connection::Connection;
-use diesel::insertable::Insertable;
-use diesel::prelude::Queryable;
 use c3p0::{C3p0ModelQueryable, C3p0ModelInsertable};
 use diesel::backend::Backend;
+use diesel::prelude::*;
 
-pub trait JpoDiesel<C, Q, I, T, DATA, ST, DB>
-    where C: Connection,
-          Q: Queryable<ST, DB> + C3p0ModelQueryable<DATA>,
-          I: Insertable<T> + C3p0ModelInsertable<DATA>,
-          DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
-          DB: Backend
-{
-    fn conn(&self) -> &C;
-}
+pub trait JpoDiesel {
 
-
-impl <C, Q, I, T, DATA, ST, DB> JpoDiesel<C, Q, I, T, DATA, ST, DB>
-    where C: Connection,
-          Q: Queryable<ST, DB> + C3p0ModelQueryable<DATA>,
-          I: Insertable<T> + C3p0ModelInsertable<DATA>,
-          DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
-          DB: Backend
-{
-
-    fn save(&self, obj: &I) -> Q {
-        unimplemented!()
+    fn save<I, DATA, Q, T, C>(&self, obj: I, table: T, conn: &C) -> QueryResult<Q>
+        where I: Insertable<T> + C3p0ModelInsertable<DATA>,
+              T: Table,
+              C: Connection,
+              Q: diesel::deserialize::Queryable<<<T as diesel::query_source::Table>::AllColumns as diesel::expression::Expression>::SqlType, <C as diesel::connection::Connection>::Backend> + C3p0ModelQueryable<DATA>,
+              T::FromClause: diesel::query_builder::QueryFragment<C::Backend>,
+                C::Backend: diesel::backend::SupportsReturningClause +  diesel::sql_types::HasSqlType<<<T as diesel::query_source::Table>::AllColumns as diesel::expression::Expression>::SqlType>,
+                I::Values: diesel::insertable::CanInsertInSingleQuery<<C as diesel::connection::Connection>::Backend>,
+              <I as diesel::insertable::Insertable<T>>::Values: diesel::query_builder::QueryFragment<<C as diesel::connection::Connection>::Backend>,
+              <T as diesel::query_source::Table>::AllColumns: diesel::query_builder::QueryFragment<<C as diesel::connection::Connection>::Backend>,
+                //T::AllColumns: C,
+              DATA: serde::ser::Serialize + serde::de::DeserializeOwned
+    {
+        diesel::insert_into(table)
+            .values(obj)
+            .get_result(conn)
     }
 
 }
+
+pub struct SimpleRepository{}
+
+impl SimpleRepository {
+    pub fn new() -> impl JpoDiesel {
+        SimpleRepository{}
+    }
+}
+
+impl JpoDiesel for SimpleRepository {
+}
+
 
 trait Ab<A, B> {
     fn a() -> A;

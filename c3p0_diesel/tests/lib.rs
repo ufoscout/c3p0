@@ -9,6 +9,7 @@ use diesel::prelude::*;
 use testcontainers::*;
 
 use serde_json::Value;
+use c3p0_diesel::{JpoDiesel, SimpleRepository};
 
 embed_migrations!("./migrations/");
 
@@ -45,10 +46,15 @@ fn should_perform_a_query() {
         data: models::CustomValue{name: "hello".to_owned()}
     };
 
+    let jpo = SimpleRepository::new();
+
+    /*
     let saved_data: models::TestData = diesel::insert_into(schema::test_table::table)
         .values(&new_data)
         .get_result(&conn)
         .expect("Error saving new post");
+*/
+    let saved_data: models::TestData = jpo.save(new_data, schema::test_table::table, &conn).expect("Jpo error save");
 
     println!("Created data with id {}", saved_data.id);
 
