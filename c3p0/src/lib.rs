@@ -1,30 +1,44 @@
-
-pub trait C3p0Model<DATA> where DATA: serde::ser::Serialize + serde::de::DeserializeOwned {
+pub trait C3p0Model<DATA>
+where
+    DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
+{
     fn c3p0_get_id(&self) -> &Option<i64>;
     fn c3p0_get_version(&self) -> &i32;
     fn c3p0_get_data(&self) -> &DATA;
     fn c3p0_clone_with_id<ID: Into<Option<i64>>>(self, id: ID) -> Self;
 }
 
-pub trait C3p0ModelQueryable<DATA> where DATA: serde::ser::Serialize + serde::de::DeserializeOwned {
+pub trait C3p0ModelQueryable<DATA>
+where
+    DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
+{
     fn c3p0_get_id(&self) -> &i64;
     fn c3p0_get_version(&self) -> &i32;
     fn c3p0_get_data(&self) -> &DATA;
 }
 
-pub trait C3p0ModelInsertable<DATA> where DATA: serde::ser::Serialize + serde::de::DeserializeOwned {
+pub trait C3p0ModelInsertable<DATA>
+where
+    DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
+{
     fn c3p0_get_version(&self) -> &i32;
     fn c3p0_get_data(&self) -> &DATA;
 }
 
 #[derive(Clone)]
-pub struct Model<DATA> where DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
+pub struct Model<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
     pub id: Option<i64>,
     pub version: i32,
-    pub data: DATA
+    pub data: DATA,
 }
 
-impl <DATA> C3p0Model<DATA> for Model<DATA> where DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
+impl<DATA> C3p0Model<DATA> for Model<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
     fn c3p0_get_id(&self) -> &Option<i64> {
         &self.id
     }
@@ -41,29 +55,30 @@ impl <DATA> C3p0Model<DATA> for Model<DATA> where DATA: Clone + serde::ser::Seri
         Model {
             id: id.into(),
             version: self.version,
-            data: self.data
+            data: self.data,
         }
     }
 }
 
-
-impl <DATA> Model<DATA> where DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
+impl<DATA> Model<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
     pub fn new<ID: Into<Option<i64>>>(id: ID, version: i32, data: DATA) -> Model<DATA> {
-        return Model{
+        return Model {
             id: id.into(),
             version,
-            data
-        }
+            data,
+        };
     }
 
     pub fn new_with_data(data: DATA) -> Model<DATA> {
-        return Model{
+        return Model {
             id: None,
             version: 0,
-            data
-        }
+            data,
+        };
     }
-
 }
 
 /*

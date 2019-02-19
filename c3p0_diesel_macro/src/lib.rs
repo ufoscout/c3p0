@@ -92,8 +92,6 @@ fn has_id(fields: &[&syn::Field]) -> bool {
     false
 }
 
-
-
 #[proc_macro_derive(DieselJson)]
 pub fn diesel_json_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
@@ -106,7 +104,10 @@ pub fn diesel_json_macro_derive(input: TokenStream) -> TokenStream {
 
 fn impl_diesel_json_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
-    let proxy_name = syn::Ident::new(&format!("{}_DieselJsonProxyAsExpression", name), name.span());
+    let proxy_name = syn::Ident::new(
+        &format!("{}_DieselJsonProxyAsExpression", name),
+        name.span(),
+    );
 
     let gen_proxy = quote! {
         #[derive(FromSqlRow, AsExpression)]

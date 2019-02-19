@@ -8,13 +8,12 @@ use diesel::prelude::*;
 
 use testcontainers::*;
 
-use serde_json::Value;
 use c3p0_diesel::{JpoDiesel, SimpleRepository};
+use serde_json::Value;
 
 embed_migrations!("./migrations/");
 
 pub fn establish_connection() -> PgConnection {
-
     let docker = clients::Cli::default();
     let node = docker.run(postgres_image());
 
@@ -43,28 +42,30 @@ fn should_perform_a_query() {
 
     let new_data = models::NewTestData {
         version: 0,
-        data: models::CustomValue{name: "hello".to_owned()}
+        data: models::CustomValue {
+            name: "hello".to_owned(),
+        },
     };
 
-    let jpo = SimpleRepository::new();
+    let jpo = SimpleRepository::new(schema::test_table::table);
 
     /*
-    let saved_data: models::TestData = diesel::insert_into(schema::test_table::table)
-        .values(&new_data)
-        .get_result(&conn)
-        .expect("Error saving new post");
-*/
-    let saved_data: models::TestData = jpo.save(new_data, schema::test_table::table, &conn).expect("Jpo error save");
+        let saved_data: models::TestData = diesel::insert_into(schema::test_table::table)
+            .values(&new_data)
+            .get_result(&conn)
+            .expect("Error saving new post");
+    */
+    let saved_data: models::TestData = jpo.save(new_data, &conn).expect("Jpo error save");
 
     println!("Created data with id {}", saved_data.id);
 
     /*
-    let post = diesel::update(posts::table.find(new_post.id))
-        .set(posts::published.eq(true))
-        .get_result::<Post>(&connection)
-        .expect(&format!("Unable to find post {}", new_post.id));
-    println!("Published post {}", post.title);
-*/
+        let post = diesel::update(posts::table.find(new_post.id))
+            .set(posts::published.eq(true))
+            .get_result::<Post>(&connection)
+            .expect(&format!("Unable to find post {}", new_post.id));
+        println!("Published post {}", post.title);
+    */
 
     let results = schema::test_table::table
         //.filter(schema::test_table::published.eq(true))
@@ -81,9 +82,10 @@ fn should_perform_a_query() {
 
     assert!(results.len() > 0);
 
-    let num_deleted = diesel::delete(schema::test_table::table.filter(schema::test_table::id.eq(saved_data.id)))
-        .execute(&conn)
-        .expect("Error deleting data");
+    let num_deleted =
+        diesel::delete(schema::test_table::table.filter(schema::test_table::id.eq(saved_data.id)))
+            .execute(&conn)
+            .expect("Error deleting data");
 
     assert_eq!(1, num_deleted);
 }
@@ -100,11 +102,10 @@ mod schema {
 
 }
 
-
 mod models {
     use super::schema::*;
-    use serde_json::Value;
     use serde_derive::{Deserialize, Serialize};
+    use serde_json::Value;
 
     #[derive(Insertable, C3p0Model)]
     #[table_name = "test_table"]
@@ -126,13 +127,14 @@ mod models {
 
     #[derive(Serialize, Deserialize, Debug, DieselJson)]
     pub struct CustomValue {
-        pub name: String
+        pub name: String,
     }
 }
 
 fn postgres_image() -> testcontainers::images::generic::GenericImage {
-    testcontainers::images::generic::GenericImage::new("postgres:11-alpine")
-        .with_wait_for(images::generic::WaitFor::message_on_stderr(
+    testcontainers::images::generic::GenericImage::new("postgres:11-alpine").with_wait_for(
+        images::generic::WaitFor::message_on_stderr(
             "database system is ready to accept connections",
-        ))
+        ),
+    )
 }

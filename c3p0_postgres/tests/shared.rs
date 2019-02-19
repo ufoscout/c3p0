@@ -1,7 +1,7 @@
-use testcontainers::*;
-use c3p0::{Model};
+use c3p0::Model;
 use postgres::{Connection, TlsMode};
 use serde_derive::{Deserialize, Serialize};
+use testcontainers::*;
 
 pub type TestModel = Model<TestData>;
 
@@ -12,10 +12,11 @@ pub struct TestData {
 }
 
 pub fn postgres_image() -> images::generic::GenericImage {
-    images::generic::GenericImage::new("postgres:11-alpine")
-        .with_wait_for(images::generic::WaitFor::message_on_stderr(
+    images::generic::GenericImage::new("postgres:11-alpine").with_wait_for(
+        images::generic::WaitFor::message_on_stderr(
             "database system is ready to accept connections",
-        ))
+        ),
+    )
 }
 
 pub fn new_connection() -> Connection {
@@ -29,13 +30,17 @@ pub fn new_connection() -> Connection {
         ),
         TlsMode::None,
     )
-        .unwrap();
+    .unwrap();
 
-    conn.execute("create table TEST_TABLE (
+    conn.execute(
+        "create table TEST_TABLE (
                             ID bigserial primary key,
                             VERSION int not null,
                             DATA JSONB
-                        )", &[]).unwrap();
+                        )",
+        &[],
+    )
+    .unwrap();
 
     conn
 }

@@ -1,12 +1,15 @@
-use c3p0::{C3p0ModelQueryable, C3p0ModelInsertable};
+use c3p0::{C3p0ModelInsertable, C3p0ModelQueryable};
 use diesel::backend::Backend;
 use diesel::prelude::*;
+use std::marker::PhantomData;
 
-pub trait JpoDiesel {
-
-    fn save<I, DATA, Q, T, C>(&self, obj: I, table: T, conn: &C) -> QueryResult<Q>
-        where I: Insertable<T> + C3p0ModelInsertable<DATA>,
-              T: Table,
+pub trait JpoDiesel<T>
+where
+    T: Table,
+{
+    fn save<I, DATA, Q, C>(self, obj: I, conn: &C) -> QueryResult<Q>
+        where Self: Sized,
+              I: Insertable<T> + C3p0ModelInsertable<DATA>,
               C: Connection,
               Q: diesel::deserialize::Queryable<<<T as diesel::query_source::Table>::AllColumns as diesel::expression::Expression>::SqlType, <C as diesel::connection::Connection>::Backend> + C3p0ModelQueryable<DATA>,
               T::FromClause: diesel::query_builder::QueryFragment<C::Backend>,
@@ -14,51 +17,38 @@ pub trait JpoDiesel {
                 I::Values: diesel::insertable::CanInsertInSingleQuery<<C as diesel::connection::Connection>::Backend>,
               <I as diesel::insertable::Insertable<T>>::Values: diesel::query_builder::QueryFragment<<C as diesel::connection::Connection>::Backend>,
               <T as diesel::query_source::Table>::AllColumns: diesel::query_builder::QueryFragment<<C as diesel::connection::Connection>::Backend>,
-                //T::AllColumns: C,
+    //T::AllColumns: C,
               DATA: serde::ser::Serialize + serde::de::DeserializeOwned
     {
-        diesel::insert_into(table)
+        diesel::insert_into(self.table())
             .values(obj)
             .get_result(conn)
     }
 
+    fn table(self) -> T;
 }
 
-pub struct SimpleRepository{}
+pub struct SimpleRepository<T>
+where
+    T: Table,
+{
+    table: T,
+}
 
-impl SimpleRepository {
-    pub fn new() -> impl JpoDiesel {
-        SimpleRepository{}
+impl<T> SimpleRepository<T>
+where
+    T: Table,
+{
+    pub fn new(table: T) -> impl JpoDiesel<T> {
+        SimpleRepository { table }
     }
 }
 
-impl JpoDiesel for SimpleRepository {
-}
-
-
-trait Ab<A, B> {
-    fn a() -> A;
-    fn b() -> B;
-}
-
-trait Cd<C, D>
+impl<T> JpoDiesel<T> for SimpleRepository<T>
+where
+    T: Table,
 {
-    fn c() -> C;
-    fn d() -> D;
-}
-
-/*
-trait other_wrong<AB, CD>
-    where AB: Ab, CD: Cd
-{
-    fn ab() -> AB;
-    fn cd() -> CD;
-}
-*/
-
-trait other_ok<AB, CD, A, B, C, D>
-    where AB: Ab<A,B>, CD: Cd<C,D>
-{
-    fn ab() -> AB;
-    fn cd() -> CD;
+    fn table(self) -> T {
+        self.table
+    }
 }
