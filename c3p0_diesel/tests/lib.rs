@@ -10,6 +10,7 @@ use testcontainers::*;
 
 use c3p0_diesel::{JpoDiesel, SimpleRepository};
 use serde_json::Value;
+use crate::models::CustomValue;
 
 embed_migrations!("./migrations/");
 
@@ -22,23 +23,25 @@ pub fn establish_connection() -> PgConnection {
         node.get_host_port(5432).unwrap()
     );
 
-    PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
-}
-
-pub fn upgrade_db(conn: &PgConnection) {
+    let conn = PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url));
     // This will run the necessary migrations.
     //embedded_migrations::run(connection);
 
     // By default the output is thrown out. If you want to redirect it to stdout, you
     // should call embedded_migrations::run_with_output.
-    embedded_migrations::run_with_output(conn, &mut std::io::stdout())
+    embedded_migrations::run_with_output(&conn, &mut std::io::stdout())
         .expect(&format!("Should run the migrations"));
+
+    conn
 }
 
+
 #[test]
-fn should_perform_a_query() {
+fn should_perform_a_query_with_diesel_json() {
+
+    use schema::test_table::dsl as tt_dsl;
+
     let conn = establish_connection();
-    upgrade_db(&conn);
 
     let new_data = models::NewTestData {
         version: 0,
@@ -47,32 +50,26 @@ fn should_perform_a_query() {
         },
     };
 
-    let jpo = SimpleRepository::new(schema::test_table::table);
-
-    /*
-        let saved_data: models::TestData = diesel::insert_into(schema::test_table::table)
+    let saved_data: models::TestData = diesel::insert_into(tt_dsl::test_table)
             .values(&new_data)
             .get_result(&conn)
-            .expect("Error saving new post");
-    */
-    let saved_data: models::TestData = jpo.save(new_data, &conn).expect("Jpo error save");
+            .expect("Error saving new TestData");
+
 
     println!("Created data with id {}", saved_data.id);
 
-    /*
-        let post = diesel::update(posts::table.find(new_post.id))
-            .set(posts::published.eq(true))
-            .get_result::<Post>(&connection)
-            .expect(&format!("Unable to find post {}", new_post.id));
-        println!("Published post {}", post.title);
-    */
+    let updated_data = diesel::update(tt_dsl::test_table)
+            .set(tt_dsl::data.eq(CustomValue{name: "custom new value".to_owned()}))
+            .get_result::<models::TestData>(&conn)
+            .expect(&format!("Unable to find TestData id {}", saved_data.id));
+    println!("Updated data [{}]", updated_data.data.name);
 
-    let found_by_id = schema::test_table::table
-        .filter(schema::test_table::id.eq(saved_data.id))
+    let found_by_id = tt_dsl::test_table
+        .filter(tt_dsl::id.eq(saved_data.id))
         .load::<models::TestData>(&conn)
         .expect("Error loading data");
 
-    let results = schema::test_table::table
+    let results = tt_dsl::test_table
         //.filter(schema::test_table::published.eq(true))
         .limit(5)
         .load::<models::TestData>(&conn)
@@ -88,7 +85,7 @@ fn should_perform_a_query() {
     assert!(results.len() > 0);
 
     let num_deleted =
-        diesel::delete(schema::test_table::table.filter(schema::test_table::id.eq(saved_data.id)))
+        diesel::delete(tt_dsl::test_table.filter(tt_dsl::id.eq(saved_data.id)))
             .execute(&conn)
             .expect("Error deleting data");
 
@@ -112,14 +109,14 @@ mod models {
     use serde_derive::{Deserialize, Serialize};
     use serde_json::Value;
 
-    #[derive(Insertable, C3p0Model)]
+    #[derive(Insertable)]
     #[table_name = "test_table"]
     pub struct NewTestData {
         pub version: i32,
         pub data: CustomValue,
     }
 
-    #[derive(Queryable, C3p0Model)]
+    #[derive(Queryable)]
     pub struct TestData {
         pub id: i64,
         pub version: i32,
