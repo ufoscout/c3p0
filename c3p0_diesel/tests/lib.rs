@@ -67,6 +67,11 @@ fn should_perform_a_query() {
         println!("Published post {}", post.title);
     */
 
+    let found_by_id = schema::test_table::table
+        .filter(schema::test_table::id.eq(saved_data.id))
+        .load::<models::TestData>(&conn)
+        .expect("Error loading data");
+
     let results = schema::test_table::table
         //.filter(schema::test_table::published.eq(true))
         .limit(5)

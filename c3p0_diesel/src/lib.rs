@@ -1,7 +1,5 @@
 use c3p0::{C3p0ModelInsertable, C3p0ModelQueryable};
-use diesel::backend::Backend;
 use diesel::prelude::*;
-use std::marker::PhantomData;
 
 pub trait JpoDiesel<T>
 where
@@ -24,6 +22,23 @@ where
             .values(obj)
             .get_result(conn)
     }
+
+    /*
+    fn find_by_id<Q, C>(self, id: i64, conn: &C) -> QueryResult<Vec<Q>>
+        where Self: Sized,
+              C: Connection,
+              T::Query: diesel::query_builder::QueryFragment<C::Backend>,
+                <C as diesel::connection::Connection>::Backend: diesel::sql_types::HasSqlType<<T as diesel::query_builder::AsQuery>::SqlType>,
+              <T as diesel::query_builder::AsQuery>::Query: diesel::query_builder::QueryId,
+              Q: diesel::deserialize::Queryable<<<T as diesel::query_source::Table>::AllColumns as diesel::expression::Expression>::SqlType, <C as diesel::connection::Connection>::Backend> + diesel::deserialize::Queryable<<T as diesel::query_builder::AsQuery>::SqlType, C::Backend>
+
+    {
+        self.table()
+            //.filter(schema::test_table::published.eq(true))
+            .limit(5)
+            .load::<Q>(conn)
+    }
+    */
 
     fn table(self) -> T;
 }
