@@ -106,7 +106,7 @@ mod schema {
 
 mod models {
     use super::schema::*;
-    use serde_derive::{Deserialize, Serialize};
+    use serde_derive::*;
     use serde_json::Value;
 
     #[derive(Insertable)]
