@@ -18,7 +18,7 @@ pub fn c3p0_model_macro_derive(input: TokenStream) -> TokenStream {
     impl_c3p0model_macro(&ast)
 }
 
-const C3P0_TABLE_ATTR_NAME: &'static str = "c3p0_table";
+const C3P0_TABLE_ATTR_NAME: &str = "c3p0_table";
 
 fn impl_c3p0model_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
@@ -28,7 +28,10 @@ fn impl_c3p0model_macro(ast: &syn::DeriveInput) -> TokenStream {
         _ => panic!("expected a struct"),
     };
 
-    println!("Attr value: [{:?}]", get_attr_value(ast, C3P0_TABLE_ATTR_NAME));
+    println!(
+        "Attr value: [{:?}]",
+        get_attr_value(ast, C3P0_TABLE_ATTR_NAME)
+    );
 
     let has_id = has_id(&struct_body.fields.iter().collect::<Vec<_>>());
     let ty = get_data_type(&struct_body.fields.iter().collect::<Vec<_>>());
@@ -72,13 +75,13 @@ fn get_data_type<'a>(fields: &[&'a syn::Field]) -> &'a Type {
         let ident = &field.ident;
         let ty = &field.ty;
         if let Some(some_field) = ident {
-            if some_field.to_string() == "data" {
-                println!("HAS DATA!");
+            if *some_field == "data" {
+                //println!("HAS DATA!");
                 return ty;
             }
         }
     }
-    println!("DOES NOT HAVE DATA!");
+    //println!("DOES NOT HAVE DATA!");
     panic!("Expected to have field \"data\"")
 }
 
@@ -86,13 +89,13 @@ fn has_id(fields: &[&syn::Field]) -> bool {
     for field in fields {
         let ident = &field.ident;
         if let Some(some_field) = ident {
-            if some_field.to_string() == "id" {
-                println!("HAS ID!");
+            if *some_field == "id" {
+                //println!("HAS ID!");
                 return true;
             }
         }
     }
-    println!("DOES NOT HAVE ID!");
+    //println!("DOES NOT HAVE ID!");
     false
 }
 
@@ -174,25 +177,18 @@ fn impl_diesel_json_macro(ast: &syn::DeriveInput) -> TokenStream {
     gen.into()
 }
 
-
 fn get_attr_value(ast: &syn::DeriveInput, attr_name: &str) -> Option<String> {
     for a in &ast.attrs {
         if let Some(meta) = a.interpret_meta() {
             // println!("Found attribute: {:?}", meta.name());
             if meta.name().eq(attr_name) {
-                match meta {
-                    syn::Meta::NameValue(named_value) => {
-                        //println!("Is NameValue");
-                        match named_value.lit {
-                            syn::Lit::Str(litstr) => {
-                                //println!("litstr Is {}", litstr.value());
-                                return Some(litstr.value())
-                            },
-                            _ => {}
-                        }
-                        //println!("value: {:?}", named_value.eq_token);
+                if let syn::Meta::NameValue(named_value) = meta {
+                    //println!("Is NameValue");
+                    if let syn::Lit::Str(litstr) = named_value.lit {
+                        //println!("litstr Is {}", litstr.value());
+                        return Some(litstr.value());
                     }
-                    _ => {}
+                    //println!("value: {:?}", named_value.eq_token);
                 }
             }
         }

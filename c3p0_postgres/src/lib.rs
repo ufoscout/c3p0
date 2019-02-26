@@ -69,9 +69,11 @@ where
 
             save_sql_query: format!(
                 "INSERT INTO {} ({}, {}) VALUES ($1, $2) RETURNING {}",
-                table_name.clone(), version_field_name.clone(), data_field_name.clone(), id_field_name.clone()
-            )
-
+                table_name.clone(),
+                version_field_name.clone(),
+                data_field_name.clone(),
+                id_field_name.clone()
+            ),
         }
     }
 }

@@ -38,10 +38,10 @@ pub struct CustomDataModel {
 use test_table::dsl as tt_dsl;
 
 pub trait CustomDataRepository {
-
-    fn save(obj: NewCustomDataModel, conn: &diesel::pg::PgConnection) -> diesel::result::QueryResult<CustomDataModel>
-    {
-
+    fn save(
+        obj: NewCustomDataModel,
+        conn: &diesel::pg::PgConnection,
+    ) -> diesel::result::QueryResult<CustomDataModel> {
         use diesel::prelude::*;
 
         diesel::insert_into(tt_dsl::test_table)
@@ -49,18 +49,14 @@ pub trait CustomDataRepository {
             .get_result(conn)
     }
 
-
-    fn find_by_id(id: i64, conn: &diesel::pg::PgConnection) -> diesel::result::QueryResult<Vec<CustomDataModel>>
-    {
-
+    fn find_by_id(
+        id: i64,
+        conn: &diesel::pg::PgConnection,
+    ) -> diesel::result::QueryResult<Vec<CustomDataModel>> {
         use diesel::prelude::*;
 
-        tt_dsl::test_table
-            .filter(tt_dsl::id.eq(id))
-            .load(conn)
+        tt_dsl::test_table.filter(tt_dsl::id.eq(id)).load(conn)
     }
-
 }
-
 
 //-GENERATED-MODEL-END
