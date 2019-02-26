@@ -8,7 +8,7 @@ use syn;
 use syn::Data;
 use syn::Type;
 
-#[proc_macro_derive(C3p0Model)]
+#[proc_macro_derive(C3p0Model, attributes(c3p0_table))]
 pub fn c3p0_model_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
@@ -18,6 +18,8 @@ pub fn c3p0_model_macro_derive(input: TokenStream) -> TokenStream {
     impl_c3p0model_macro(&ast)
 }
 
+const C3P0_TABLE_ATTR_NAME: &'static str = "c3p0_table";
+
 fn impl_c3p0model_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
 
@@ -25,6 +27,8 @@ fn impl_c3p0model_macro(ast: &syn::DeriveInput) -> TokenStream {
         Data::Struct(body) => body,
         _ => panic!("expected a struct"),
     };
+
+    println!("Attr value: [{:?}]", get_attr_value(ast, C3P0_TABLE_ATTR_NAME));
 
     let has_id = has_id(&struct_body.fields.iter().collect::<Vec<_>>());
     let ty = get_data_type(&struct_body.fields.iter().collect::<Vec<_>>());
@@ -168,4 +172,30 @@ fn impl_diesel_json_macro(ast: &syn::DeriveInput) -> TokenStream {
     };
 
     gen.into()
+}
+
+
+fn get_attr_value(ast: &syn::DeriveInput, attr_name: &str) -> Option<String> {
+    for a in &ast.attrs {
+        if let Some(meta) = a.interpret_meta() {
+            // println!("Found attribute: {:?}", meta.name());
+            if meta.name().eq(attr_name) {
+                match meta {
+                    syn::Meta::NameValue(named_value) => {
+                        //println!("Is NameValue");
+                        match named_value.lit {
+                            syn::Lit::Str(litstr) => {
+                                //println!("litstr Is {}", litstr.value());
+                                return Some(litstr.value())
+                            },
+                            _ => {}
+                        }
+                        //println!("value: {:?}", named_value.eq_token);
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    None
 }
