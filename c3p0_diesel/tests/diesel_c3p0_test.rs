@@ -76,25 +76,10 @@ mod models {
     use super::schema::*;
     use serde_derive::*;
 
-    #[derive(Insertable)]
-    #[table_name = "test_table"]
-    pub struct NewCustomValueModel {
-        pub version: i32,
-        pub data: CustomValue,
-    }
-
-    #[derive(Queryable)]
-    pub struct CustomValueModel {
-        pub id: i64,
-        pub version: i32,
-        pub data: CustomValue,
-    }
-
-    //use diesel::types::{Json, Jsonb};
-
     use c3p0_diesel_macro::*;
 
-    #[derive(Serialize, Deserialize, Debug, DieselJson)]
+    #[derive(Serialize, Deserialize, Debug, C3p0Model)]
+    #[table_name = "test_table"]
     pub struct CustomValue {
         pub name: String,
     }

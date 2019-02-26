@@ -1,5 +1,4 @@
-use c3p0::Model;
-use c3p0_postgres::{JpoPg, SimpleRepository};
+use c3p0_postgres::{JpoPg, Model, SimpleRepository};
 
 mod shared;
 

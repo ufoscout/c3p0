@@ -5,10 +5,11 @@ extern crate proc_macro;
 use crate::proc_macro::TokenStream;
 use quote::quote;
 use syn;
-use syn::Data;
-use syn::Type;
+use syn::Ident;
+use proc_macro2::Span;
+use proc_macro2::Literal;
 
-#[proc_macro_derive(C3p0Model, attributes(c3p0_table))]
+#[proc_macro_derive(C3p0Model, attributes(table_name))]
 pub fn c3p0_model_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
@@ -18,85 +19,36 @@ pub fn c3p0_model_macro_derive(input: TokenStream) -> TokenStream {
     impl_c3p0model_macro(&ast)
 }
 
-const C3P0_TABLE_ATTR_NAME: &str = "c3p0_table";
+const C3P0_TABLE_ATTR_NAME: &str = "table_name";
 
 fn impl_c3p0model_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
 
+    /*
     let struct_body = match &ast.data {
         Data::Struct(body) => body,
         _ => panic!("expected a struct"),
     };
+    */
 
-    println!(
-        "Attr value: [{:?}]",
-        get_attr_value(ast, C3P0_TABLE_ATTR_NAME)
-    );
+    let table_name = get_attr_value(ast, C3P0_TABLE_ATTR_NAME).expect(&format!(
+        "C3p0Model macro requires the {} attribute to be specified.",
+        C3P0_TABLE_ATTR_NAME
+    ));
 
-    let has_id = has_id(&struct_body.fields.iter().collect::<Vec<_>>());
-    let ty = get_data_type(&struct_body.fields.iter().collect::<Vec<_>>());
+    let table_name = Ident::new(&table_name, Span::call_site());
 
-    let gen_queryable = quote! {
-        impl c3p0::C3p0ModelQueryable<#ty> for #name {
-            fn c3p0_get_id(&self) -> &i64 {
-                &self.id
-            }
+    let gen_diesel_json_proxy = build_diesel_json_proxy(name);
+    let gen_c3p0_model = build_c3p0_model(name);
+    let gen_c3p0_new_model = build_c3p0_new_model(name, &table_name);
 
-            fn c3p0_get_version(&self) -> &i32 {
-                &self.version
-            }
-
-            fn c3p0_get_data(&self) -> &#ty {
-                &self.data
-            }
-        }
+    let gen = quote! {
+        #gen_diesel_json_proxy
+        #gen_c3p0_new_model
+        #gen_c3p0_model
     };
 
-    let gen_insertable = quote! {
-        impl c3p0::C3p0ModelInsertable<#ty> for #name {
-            fn c3p0_get_version(&self) -> &i32 {
-                &self.version
-            }
-
-            fn c3p0_get_data(&self) -> &#ty {
-                &self.data
-            }
-        }
-    };
-
-    if has_id {
-        return gen_queryable.into();
-    }
-    gen_insertable.into()
-}
-
-fn get_data_type<'a>(fields: &[&'a syn::Field]) -> &'a Type {
-    for field in fields {
-        let ident = &field.ident;
-        let ty = &field.ty;
-        if let Some(some_field) = ident {
-            if *some_field == "data" {
-                //println!("HAS DATA!");
-                return ty;
-            }
-        }
-    }
-    //println!("DOES NOT HAVE DATA!");
-    panic!("Expected to have field \"data\"")
-}
-
-fn has_id(fields: &[&syn::Field]) -> bool {
-    for field in fields {
-        let ident = &field.ident;
-        if let Some(some_field) = ident {
-            if *some_field == "id" {
-                //println!("HAS ID!");
-                return true;
-            }
-        }
-    }
-    //println!("DOES NOT HAVE ID!");
-    false
+    gen.into()
 }
 
 #[proc_macro_derive(DieselJson)]
@@ -111,6 +63,11 @@ pub fn diesel_json_macro_derive(input: TokenStream) -> TokenStream {
 
 fn impl_diesel_json_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
+    let gen_diesel_json_proxy = build_diesel_json_proxy(name);
+    gen_diesel_json_proxy.into()
+}
+
+fn build_diesel_json_proxy(name: &Ident) -> proc_macro2::TokenStream {
     let proxy_name = syn::Ident::new(
         &format!("{}_DieselJsonProxyAsExpression", name),
         name.span(),
@@ -174,7 +131,39 @@ fn impl_diesel_json_macro(ast: &syn::DeriveInput) -> TokenStream {
         #gen_jsonb_to
     };
 
-    gen.into()
+    gen
+}
+
+fn build_c3p0_new_model(name: &Ident, table_name:&Ident) -> proc_macro2::TokenStream {
+    let model_name = syn::Ident::new(&format!("New{}Model", name), name.span());
+
+    let table_literal = Literal::string(&format!("{}", table_name));
+
+    let gen = quote! {
+        #[derive(Insertable)]
+        #[table_name = #table_literal]
+        pub struct #model_name {
+            pub version: i32,
+            pub data: #name,
+        }
+    };
+
+    gen
+}
+
+fn build_c3p0_model(name: &Ident) -> proc_macro2::TokenStream {
+    let model_name = syn::Ident::new(&format!("{}Model", name), name.span());
+
+    let gen = quote! {
+        #[derive(Queryable)]
+        pub struct #model_name {
+            pub id: i64,
+            pub version: i32,
+            pub data: #name,
+        }
+    };
+
+    gen
 }
 
 fn get_attr_value(ast: &syn::DeriveInput, attr_name: &str) -> Option<String> {

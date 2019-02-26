@@ -12,6 +12,7 @@ proc-macro = true
 [dependencies]
 c3p0 = { path = "../c3p0", version = "0.2.0" }
 diesel = { version = "1.0", features = ["postgres", "serde_json"] }
+proc-macro2 = "0.4"
 quote = "0.6"
 serde = "1.0"
 serde_derive = "1.0"

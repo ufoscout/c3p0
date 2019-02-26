@@ -1,6 +1,71 @@
-use c3p0::C3p0Model;
 use postgres::rows::Row;
 use postgres::Connection;
+
+pub trait C3p0Model<DATA>
+where
+    DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    fn c3p0_get_id(&self) -> &Option<i64>;
+    fn c3p0_get_version(&self) -> &i32;
+    fn c3p0_get_data(&self) -> &DATA;
+    fn c3p0_clone_with_id<ID: Into<Option<i64>>>(self, id: ID) -> Self;
+}
+
+#[derive(Clone)]
+pub struct Model<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    pub id: Option<i64>,
+    pub version: i32,
+    pub data: DATA,
+}
+
+impl<DATA> C3p0Model<DATA> for Model<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    fn c3p0_get_id(&self) -> &Option<i64> {
+        &self.id
+    }
+
+    fn c3p0_get_version(&self) -> &i32 {
+        &self.version
+    }
+
+    fn c3p0_get_data(&self) -> &DATA {
+        &self.data
+    }
+
+    fn c3p0_clone_with_id<ID: Into<Option<i64>>>(self, id: ID) -> Self {
+        Model {
+            id: id.into(),
+            version: self.version,
+            data: self.data,
+        }
+    }
+}
+
+impl<DATA> Model<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    pub fn new<ID: Into<Option<i64>>>(id: ID, version: i32, data: DATA) -> Model<DATA> {
+        return Model {
+            id: id.into(),
+            version,
+            data,
+        };
+    }
+
+    pub fn new_with_data(data: DATA) -> Model<DATA> {
+        return Model {
+            id: None,
+            version: 0,
+            data,
+        };
+    }
+}
 
 pub struct Conf<DATA, M: C3p0Model<DATA>>
 where

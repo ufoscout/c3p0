@@ -1,4 +1,4 @@
-use c3p0::Model;
+use c3p0_postgres::Model;
 use postgres::{Connection, TlsMode};
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;

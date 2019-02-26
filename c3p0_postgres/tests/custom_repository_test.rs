@@ -1,6 +1,5 @@
 use crate::shared::*;
-use c3p0::Model;
-use c3p0_postgres::{Conf, JpoPg};
+use c3p0_postgres::{Conf, JpoPg, Model};
 
 mod shared;
 
