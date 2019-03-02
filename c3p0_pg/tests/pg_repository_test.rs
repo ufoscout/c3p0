@@ -1,30 +1,16 @@
-use crate::shared::*;
-use c3p0_postgres::{Conf, JpoPg, Model};
+use c3p0_pg::{JpoPg, Model, SimpleRepository};
 
 mod shared;
-
-struct TestTableRepository {
-    conf: Conf<TestData, TestModel>,
-}
-
-impl JpoPg<TestData, TestModel> for TestTableRepository {
-    fn conf(&self) -> &Conf<TestData, Model<TestData>> {
-        &self.conf
-    }
-}
 
 #[test]
 fn postgres_basic_crud() {
     let conn = shared::new_connection();
+    let jpo = SimpleRepository::build(conn, "TEST_TABLE", |id, version, data| {
+        let model: shared::TestModel = Model::new(id, version, data);
+        model
+    });
 
-    let jpo = TestTableRepository {
-        conf: Conf::build(conn, "TEST_TABLE", |id, version, data| {
-            let model: TestModel = Model::new(id, version, data);
-            model
-        }),
-    };
-
-    let model = Model::new_with_data(TestData {
+    let model = Model::new_with_data(shared::TestData {
         first_name: "my_first_name".to_owned(),
         last_name: "my_last_name".to_owned(),
     });

@@ -1,0 +1,15 @@
+[package]
+name = "c3p0_pg_migrate"
+license = "MIT"
+version = "0.2.0"
+authors = ["Francesco Cina <ufoscout@gmail.com>"]
+description = "A good friend for r2d2. Based on rust-postgres."
+edition = "2018"
+
+[dependencies]
+log = "0.4"
+c3p0 = { path = "../c3p0", version = "0.2.0" }
+postgres = "0.15"
+
+[dev-dependencies]
+testcontainers = "0.5"

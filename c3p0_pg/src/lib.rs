@@ -51,19 +51,19 @@ where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn new<ID: Into<Option<i64>>>(id: ID, version: i32, data: DATA) -> Model<DATA> {
-        return Model {
+        Model {
             id: id.into(),
             version,
             data,
-        };
+        }
     }
 
     pub fn new_with_data(data: DATA) -> Model<DATA> {
-        return Model {
+        Model {
             id: None,
             version: 0,
             data,
-        };
+        }
     }
 }
 

@@ -3,11 +3,11 @@
 extern crate proc_macro;
 
 use crate::proc_macro::TokenStream;
+use proc_macro2::Literal;
+use proc_macro2::Span;
 use quote::quote;
 use syn;
 use syn::Ident;
-use proc_macro2::Span;
-use proc_macro2::Literal;
 
 #[proc_macro_derive(C3p0Model, attributes(table_name))]
 pub fn c3p0_model_macro_derive(input: TokenStream) -> TokenStream {
@@ -31,10 +31,8 @@ fn impl_c3p0model_macro(ast: &syn::DeriveInput) -> TokenStream {
     };
     */
 
-    let table_name = get_attr_value(ast, C3P0_TABLE_ATTR_NAME).expect(&format!(
-        "C3p0Model macro requires the {} attribute to be specified.",
-        C3P0_TABLE_ATTR_NAME
-    ));
+    let table_name = get_attr_value(ast, C3P0_TABLE_ATTR_NAME)
+        .unwrap_or_else(|| panic!("C3p0Model macro requires the {} attribute to be specified.", C3P0_TABLE_ATTR_NAME));
 
     let table_name = Ident::new(&table_name, Span::call_site());
 
@@ -134,7 +132,7 @@ fn build_diesel_json_proxy(name: &Ident) -> proc_macro2::TokenStream {
     gen
 }
 
-fn build_c3p0_new_model(name: &Ident, table_name:&Ident) -> proc_macro2::TokenStream {
+fn build_c3p0_new_model(name: &Ident, table_name: &Ident) -> proc_macro2::TokenStream {
     let model_name = syn::Ident::new(&format!("New{}Model", name), name.span());
 
     let table_literal = Literal::string(&format!("{}", table_name));
