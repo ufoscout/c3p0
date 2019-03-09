@@ -1,18 +1,10 @@
-#[derive(Clone, Debug, PartialEq)]
-pub struct Migrations {
-    pub migrations: Vec<SqlMigration>
+
+pub fn to_sql_migrations(migrations: Vec<Migration>) -> Vec<SqlMigration> {
+    migrations.into_iter().map(|migration| {
+        SqlMigration::new(migration)
+    }).collect()
 }
 
-impl Migrations {
-    pub fn new(migrations: Vec<Migration>) -> Migrations {
-        let migrations = migrations.into_iter().map(|migration| {
-            SqlMigration::new(migration)
-        }).collect();
-        Migrations{
-            migrations
-        }
-    }
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Migration {
@@ -70,9 +62,9 @@ mod test {
             }
         );
 
-        let migrations = Migrations::new(source_sqls.clone());
+        let migrations = to_sql_migrations(source_sqls.clone());
 
-        assert_eq!(2, migrations.migrations.len());
+        assert_eq!(2, migrations.len());
 
         assert_eq!(&SqlMigration{
             up: SqlScript{
@@ -83,7 +75,7 @@ mod test {
                 sql: "delete from table1".to_owned(),
                 md5: "7e8ab3d9327f4f1a80e2b9de1acc35c0".to_owned(),
             }
-        }, migrations.migrations.get(0).unwrap());
+        }, migrations.get(0).unwrap());
 
         assert_eq!(&SqlMigration{
             up: SqlScript{
@@ -94,7 +86,7 @@ mod test {
                 sql: "delete from table2".to_owned(),
                 md5: "116ee10121cdb2cc04c3c523c51af1d3".to_owned(),
             }
-        }, migrations.migrations.get(1).unwrap());
+        }, migrations.get(1).unwrap());
 
     }
 
