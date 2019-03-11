@@ -1,5 +1,6 @@
 use crate::shared::*;
 use c3p0_pg::{Config, ConfigBuilder, JpoPg, Model};
+use testcontainers::clients;
 
 mod shared;
 
@@ -15,7 +16,9 @@ impl JpoPg<TestData> for TestTableRepository {
 
 #[test]
 fn postgres_basic_crud() {
-    let conn = shared::new_connection();
+    let docker = clients::Cli::default();
+    let postgres_node = shared::new_connection(&docker);
+    let conn = postgres_node.0;
 
     conn.batch_execute(
         "create table TEST_TABLE (

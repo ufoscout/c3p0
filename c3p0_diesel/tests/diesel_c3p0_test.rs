@@ -9,12 +9,15 @@ use diesel::prelude::*;
 use testcontainers::*;
 
 use crate::models::CustomValue;
+use testcontainers::images::postgres::Postgres;
 
 #[test]
 fn should_perform_a_query_with_diesel_json() {
     use schema::test_table::dsl as tt_dsl;
 
-    let conn = establish_connection();
+    let docker = clients::Cli::default();
+    let postgres_node = establish_connection(&docker);
+    let conn = postgres_node.0;
 
     let new_data = models::NewCustomValueModel {
         version: 0,
@@ -87,8 +90,7 @@ mod models {
 
 embed_migrations!("./migrations/");
 
-pub fn establish_connection() -> PgConnection {
-    let docker = clients::Cli::default();
+pub fn establish_connection(docker: &clients::Cli) -> (PgConnection, Container<clients::Cli, Postgres>) {
     let node = docker.run(images::postgres::Postgres::default());
 
     let database_url = format!(
@@ -106,5 +108,5 @@ pub fn establish_connection() -> PgConnection {
     embedded_migrations::run_with_output(&conn, &mut std::io::stdout())
         .expect(&format!("Should run the migrations"));
 
-    conn
+    (conn, node)
 }

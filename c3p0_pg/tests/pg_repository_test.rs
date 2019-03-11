@@ -1,11 +1,14 @@
 use c3p0_pg::{ConfigBuilder, JpoPg, Model, SimpleRepository};
 use crate::shared::{TestModel, TestData};
+use testcontainers::clients;
 
 mod shared;
 
 #[test]
 fn should_create_and_drop_table() {
-    let conn = shared::new_connection();
+    let docker = clients::Cli::default();
+    let postgres_node = shared::new_connection(&docker);
+    let conn = postgres_node.0;
 
     let conf = ConfigBuilder::new("TEST_TABLE").build();
 
@@ -37,7 +40,9 @@ fn should_create_and_drop_table() {
 
 #[test]
 fn postgres_basic_crud() {
-    let conn = shared::new_connection();
+    let docker = clients::Cli::default();
+    let postgres_node = shared::new_connection(&docker);
+    let conn = postgres_node.0;
 
     let conf = ConfigBuilder::new("TEST_TABLE").build();
 
