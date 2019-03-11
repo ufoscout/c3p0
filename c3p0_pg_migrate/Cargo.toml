@@ -7,6 +7,7 @@ description = "A good friend for r2d2. Based on rust-postgres."
 edition = "2018"
 
 [dependencies]
+c3p0_pg = { path = "../c3p0_pg", version = "0.2.0" }
 log = "0.4"
 md-5 = "0.8"
 postgres = "0.15"
