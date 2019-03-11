@@ -31,8 +31,12 @@ fn impl_c3p0model_macro(ast: &syn::DeriveInput) -> TokenStream {
     };
     */
 
-    let table_name = get_attr_value(ast, C3P0_TABLE_ATTR_NAME)
-        .unwrap_or_else(|| panic!("C3p0Model macro requires the {} attribute to be specified.", C3P0_TABLE_ATTR_NAME));
+    let table_name = get_attr_value(ast, C3P0_TABLE_ATTR_NAME).unwrap_or_else(|| {
+        panic!(
+            "C3p0Model macro requires the {} attribute to be specified.",
+            C3P0_TABLE_ATTR_NAME
+        )
+    });
 
     let table_name = Ident::new(&table_name, Span::call_site());
 

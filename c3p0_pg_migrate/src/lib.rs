@@ -1,6 +1,6 @@
+use crate::migration::Migration;
 use postgres::rows::Row;
 use postgres::Connection;
-use crate::migration::Migration;
 
 mod md5;
 pub mod migration;
@@ -12,39 +12,37 @@ const C3P0_MIGRATE_SCHEMA_DEFAULT: &str = "public";
 pub struct PgMigrate {
     table: String,
     schema: String,
-    migrations: Vec<Migration>
+    migrations: Vec<Migration>,
 }
 
 impl PgMigrate {
-
     pub fn new() -> PgMigrate {
         PgMigrate {
             table: C3P0_MIGRATE_TABLE_DEFAULT.to_owned(),
             schema: C3P0_MIGRATE_SCHEMA_DEFAULT.to_owned(),
-            migrations: vec![]
+            migrations: vec![],
         }
     }
-
 }
 
 /*
 Create Table from Flyway:
 
 CREATE TABLE public."MARKET_FLYWAY_SCHEMA_HISTORY" (
-	installed_rank int4 NOT NULL,
-	"version" varchar(50) NULL,
-	description varchar(200) NOT NULL,
-	"type" varchar(20) NOT NULL,
-	script varchar(1000) NOT NULL,
-	checksum int4 NULL,
-	installed_by varchar(100) NOT NULL,
-	installed_on timestamp NOT NULL DEFAULT now(),
-	execution_time int4 NOT NULL,
-	success bool NOT NULL,
-	CONSTRAINT "MARKET_FLYWAY_SCHEMA_HISTORY_pk" PRIMARY KEY (installed_rank)
+    installed_rank int4 NOT NULL,
+    "version" varchar(50) NULL,
+    description varchar(200) NOT NULL,
+    "type" varchar(20) NOT NULL,
+    script varchar(1000) NOT NULL,
+    checksum int4 NULL,
+    installed_by varchar(100) NOT NULL,
+    installed_on timestamp NOT NULL DEFAULT now(),
+    execution_time int4 NOT NULL,
+    success bool NOT NULL,
+    CONSTRAINT "MARKET_FLYWAY_SCHEMA_HISTORY_pk" PRIMARY KEY (installed_rank)
 )
 WITH (
-	OIDS=FALSE
+    OIDS=FALSE
 ) ;
 CREATE INDEX "MARKET_FLYWAY_SCHEMA_HISTORY_s_idx" ON public."MARKET_FLYWAY_SCHEMA_HISTORY" USING btree (success) ;
 
@@ -61,11 +59,13 @@ struct MigrationModel {
 }
 
 enum MigrationType {
-    UP, DOWN
+    UP,
+    DOWN,
 }
 
 fn create_migration_table_sql(schema_name: &str, table_name: &str) -> String {
-    format!(r#"
+    format!(
+        r#"
     CREATE TABLE IF NOT EXISTS {}."{}" (
         installed_order int4 NOT NULL,
         migration_id varchar(1024) NOT NULL,
@@ -76,5 +76,7 @@ fn create_migration_table_sql(schema_name: &str, table_name: &str) -> String {
         success bool NOT NULL,
         CONSTRAINT "{}_pk" PRIMARY KEY (installed_order)
     )
-    "#, schema_name, table_name, table_name)
+    "#,
+        schema_name, table_name, table_name
+    )
 }
