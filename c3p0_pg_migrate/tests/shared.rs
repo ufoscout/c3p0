@@ -1,17 +1,10 @@
 use postgres::{Connection, TlsMode};
 use testcontainers::*;
 
-pub fn postgres_image() -> images::generic::GenericImage {
-    images::generic::GenericImage::new("postgres:11-alpine").with_wait_for(
-        images::generic::WaitFor::message_on_stderr(
-            "database system is ready to accept connections",
-        ),
-    )
-}
 
 pub fn new_connection() -> Connection {
     let docker = clients::Cli::default();
-    let node = docker.run(postgres_image());
+    let node = docker.run(images::postgres::Postgres::default());
 
     let conn = Connection::connect(
         format!(

@@ -104,7 +104,7 @@ embed_migrations!("./migrations/");
 
 pub fn establish_connection() -> PgConnection {
     let docker = clients::Cli::default();
-    let node = docker.run(postgres_image());
+    let node = docker.run(images::postgres::Postgres::default());
 
     let database_url = format!(
         "postgres://postgres:postgres@127.0.0.1:{}/postgres",
@@ -122,12 +122,4 @@ pub fn establish_connection() -> PgConnection {
         .expect(&format!("Should run the migrations"));
 
     conn
-}
-
-fn postgres_image() -> testcontainers::images::generic::GenericImage {
-    testcontainers::images::generic::GenericImage::new("postgres:11-alpine").with_wait_for(
-        images::generic::WaitFor::message_on_stderr(
-            "database system is ready to accept connections",
-        ),
-    )
 }

@@ -12,4 +12,4 @@ md-5 = "0.8"
 postgres = "0.15"
 
 [dev-dependencies]
-testcontainers = "0.5"
+testcontainers = "0.6"

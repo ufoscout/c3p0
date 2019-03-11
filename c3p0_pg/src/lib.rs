@@ -36,6 +36,7 @@ pub struct Config {
     pub find_by_id_sql_query: String,
     pub save_sql_query: String,
     pub create_table_sql_query: String,
+    pub drop_table_sql_query: String,
 }
 
 pub struct ConfigBuilder {
@@ -119,6 +120,10 @@ impl ConfigBuilder {
                 self.data_field_name
             ),
 
+            drop_table_sql_query: format!("DROP TABLE IF EXISTS {}",
+                qualified_table_name
+            ),
+
             qualified_table_name,
             table_name: self.table_name,
             id_field_name: self.id_field_name,
@@ -149,33 +154,36 @@ where
         conn.execute(&self.conf().create_table_sql_query, &[])
     }
 
-    fn find_by_id(&self, conn: &Connection, id: i64) -> Option<Model<DATA>> {
-        let conf = self.conf();
-        let stmt = conn.prepare(&conf.find_by_id_sql_query).unwrap();
-        stmt.query(&[&id])
-            .unwrap()
-            .iter()
-            .next()
-            .map(|row| self.to_model(row))
+    fn drop_table_if_exists(&self, conn: &Connection) -> Result<u64, Error> {
+        conn.execute(&self.conf().drop_table_sql_query, &[])
     }
 
-    fn save(&self, conn: &Connection, obj: Model<DATA>) -> Model<DATA> {
+    fn find_by_id(&self, conn: &Connection, id: i64) -> Result<Option<Model<DATA>>, Error> {
         let conf = self.conf();
-        let stmt = conn.prepare(&conf.save_sql_query).unwrap();
-        let json_data = serde_json::to_value(&obj.data).unwrap();
-        let id: i64 = stmt
-            .query(&[&obj.version, &json_data])
-            .unwrap()
+        let stmt = conn.prepare(&conf.find_by_id_sql_query)?;
+        let result = stmt.query(&[&id])?
             .iter()
             .next()
-            .unwrap()
+            .map(|row| self.to_model(row));
+        Ok(result)
+    }
+
+    fn save(&self, conn: &Connection, obj: Model<DATA>) -> Result<Model<DATA>, Error> {
+        let conf = self.conf();
+        let stmt = conn.prepare(&conf.save_sql_query)?;
+        let json_data = serde_json::to_value(&obj.data).expect("Cannot serialize obj to Value");
+        let id: i64 = stmt
+            .query(&[&obj.version, &json_data])?
+            .iter()
+            .next()
+            .expect("Cannot iterate next element")
             .get(0);
 
-        Model {
+        Ok(Model {
             id: Some(id),
             version: obj.version,
             data: obj.data,
-        }
+        })
     }
 }
 
