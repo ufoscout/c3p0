@@ -14,22 +14,5 @@ pub fn new_connection(docker: &clients::Cli) -> (Connection, Container<clients::
     )
     .unwrap();
 
-    conn.batch_execute(
-        "create table TEST_TABLE (
-                            ID bigserial primary key,
-                            VERSION int not null,
-                            DATA JSONB
-                        );
-
-                create table TEST_TABLE_2 (
-                            ID bigserial primary key,
-                            VERSION int not null,
-                            DATA JSONB
-                        );
-
-                        ",
-    )
-    .unwrap();
-
     (conn, node)
 }

@@ -25,6 +25,7 @@ where
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Config {
     pub id_field_name: String,
     pub version_field_name: String,
@@ -33,12 +34,14 @@ pub struct Config {
     pub schema_name: Option<String>,
     pub qualified_table_name: String,
 
+    pub find_all_sql_query: String,
     pub find_by_id_sql_query: String,
     pub save_sql_query: String,
     pub create_table_sql_query: String,
     pub drop_table_sql_query: String,
 }
 
+#[derive(Clone, Debug)]
 pub struct ConfigBuilder {
     id_field_name: String,
     version_field_name: String,
@@ -89,6 +92,15 @@ impl ConfigBuilder {
         };
 
         Config {
+            find_all_sql_query: format!(
+                "SELECT {}, {}, {} FROM {} ORDER BY {} ASC",
+                self.id_field_name,
+                self.version_field_name,
+                self.data_field_name,
+                qualified_table_name,
+                self.id_field_name,
+            ),
+
             find_by_id_sql_query: format!(
                 "SELECT {}, {}, {} FROM {} WHERE {} = $1",
                 self.id_field_name,
@@ -158,6 +170,16 @@ where
         conn.execute(&self.conf().drop_table_sql_query, &[])
     }
 
+    fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, Error> {
+        let conf = self.conf();
+        let stmt = conn.prepare(&conf.find_all_sql_query)?;
+        let result = stmt.query(&[])?
+            .iter()
+            .map(|row| self.to_model(row))
+            .collect();
+        Ok(result)
+    }
+
     fn find_by_id(&self, conn: &Connection, id: i64) -> Result<Option<Model<DATA>>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_by_id_sql_query)?;
@@ -187,6 +209,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct SimpleRepository<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,

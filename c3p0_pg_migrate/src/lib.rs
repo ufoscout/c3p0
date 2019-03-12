@@ -1,55 +1,72 @@
 use crate::migration::Migration;
-use postgres::rows::Row;
+use c3p0_pg::{SimpleRepository, ConfigBuilder};
 use postgres::Connection;
+use serde_derive::{Deserialize, Serialize};
 
 mod md5;
 pub mod migration;
 
 const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
-const C3P0_MIGRATE_SCHEMA_DEFAULT: &str = "public";
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct PgMigrate {
+#[derive(Clone, Debug)]
+pub struct PgMigrateBuilder {
     table: String,
-    schema: String,
-    migrations: Vec<Migration>,
+    schema: Option<String>,
+    migrations: Vec<Migration>
 }
 
-impl PgMigrate {
-    pub fn new() -> PgMigrate {
-        PgMigrate {
+impl PgMigrateBuilder {
+
+    pub fn new() -> Self {
+        PgMigrateBuilder {
             table: C3P0_MIGRATE_TABLE_DEFAULT.to_owned(),
-            schema: C3P0_MIGRATE_SCHEMA_DEFAULT.to_owned(),
+            schema: None,
             migrations: vec![],
+        }
+    }
+
+    pub fn with_schema_name<T: Into<Option<String>>>(mut self, schema_name: T) -> PgMigrateBuilder {
+        self.schema = schema_name.into();
+        self
+    }
+
+    pub fn with_table_name<T: Into<String>>(mut self, table_name: T) -> PgMigrateBuilder {
+        self.table = table_name.into();
+        self
+    }
+
+    pub fn with_migrations(mut self, migrations: Vec<Migration>) -> PgMigrateBuilder {
+        self.migrations = migrations;
+        self
+    }
+
+    pub fn build(self) -> PgMigrate {
+
+        let conf = ConfigBuilder::new(self.table.clone())
+            .with_schema_name(self.schema.clone())
+            .build();
+
+        let repo = SimpleRepository::build(conf);
+
+        PgMigrate {
+            table: self.table,
+            schema: self.schema,
+            migrations: self.migrations,
+            repo
         }
     }
 }
 
-/*
-Create Table from Flyway:
+#[derive(Clone)]
+pub struct PgMigrate {
+    table: String,
+    schema: Option<String>,
+    migrations: Vec<Migration>,
+    repo: SimpleRepository<MigrationData>
+}
 
-CREATE TABLE public."MARKET_FLYWAY_SCHEMA_HISTORY" (
-    installed_rank int4 NOT NULL,
-    "version" varchar(50) NULL,
-    description varchar(200) NOT NULL,
-    "type" varchar(20) NOT NULL,
-    script varchar(1000) NOT NULL,
-    checksum int4 NULL,
-    installed_by varchar(100) NOT NULL,
-    installed_on timestamp NOT NULL DEFAULT now(),
-    execution_time int4 NOT NULL,
-    success bool NOT NULL,
-    CONSTRAINT "MARKET_FLYWAY_SCHEMA_HISTORY_pk" PRIMARY KEY (installed_rank)
-)
-WITH (
-    OIDS=FALSE
-) ;
-CREATE INDEX "MARKET_FLYWAY_SCHEMA_HISTORY_s_idx" ON public."MARKET_FLYWAY_SCHEMA_HISTORY" USING btree (success) ;
-
-*/
-
-struct MigrationModel {
-    installed_order: u32,
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
+struct MigrationData {
     migration_id: String,
     migration_type: MigrationType,
     md5_checksum: String,
@@ -58,25 +75,8 @@ struct MigrationModel {
     success: bool,
 }
 
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 enum MigrationType {
     UP,
     DOWN,
-}
-
-fn create_migration_table_sql(schema_name: &str, table_name: &str) -> String {
-    format!(
-        r#"
-    CREATE TABLE IF NOT EXISTS {}."{}" (
-        installed_order int4 NOT NULL,
-        migration_id varchar(1024) NOT NULL,
-        migration_type varchar(100) NOT NULL,
-        md5_checksum varchar(1024) NOT NULL,
-        installed_on_epoch_ms int8 NOT NULL,
-        execution_time_ms int8 NOT NULL,
-        success bool NOT NULL,
-        CONSTRAINT "{}_pk" PRIMARY KEY (installed_order)
-    )
-    "#,
-        schema_name, table_name, table_name
-    )
 }

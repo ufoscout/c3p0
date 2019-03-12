@@ -66,3 +66,31 @@ fn postgres_basic_crud() {
     assert_eq!(saved_model.data.first_name, found_model.data.first_name);
     assert_eq!(saved_model.data.last_name, found_model.data.last_name);
 }
+
+#[test]
+fn should_find_all() {
+    let docker = clients::Cli::default();
+    let postgres_node = shared::new_connection(&docker);
+    let conn = postgres_node.0;
+
+    let conf = ConfigBuilder::new("TEST_TABLE").build();
+    let jpo = SimpleRepository::build(conf);
+    assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+
+    let model = Model::new(shared::TestData {
+        first_name: "my_first_name".to_owned(),
+        last_name: "my_last_name".to_owned(),
+    });
+
+    let saved_model_0 = jpo.save(&conn, model.clone()).unwrap();
+    let saved_model_1 = jpo.save(&conn, model.clone()).unwrap();
+    let saved_model_2 = jpo.save(&conn, model.clone()).unwrap();
+
+    let models = jpo.find_all(&conn).unwrap();
+
+    assert_eq!(3, models.len());
+    assert_eq!(saved_model_0.id, models[0].id);
+    assert_eq!(saved_model_1.id, models[1].id);
+    assert_eq!(saved_model_2.id, models[2].id);
+
+}

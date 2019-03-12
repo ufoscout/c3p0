@@ -11,6 +11,8 @@ c3p0_pg = { path = "../c3p0_pg", version = "0.2.0" }
 log = "0.4"
 md-5 = "0.8"
 postgres = "0.15"
+serde = "1.0"
+serde_derive = "1.0"
 
 [dev-dependencies]
 testcontainers = "0.6"
