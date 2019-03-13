@@ -2,13 +2,16 @@ use postgres::error::Error;
 use postgres::rows::Row;
 use postgres::Connection;
 
+type IdType = i64;
+type VersionType = i32;
+
 #[derive(Clone)]
 pub struct Model<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub id: i64,
-    pub version: i32,
+    pub id: IdType,
+    pub version: VersionType,
     pub data: DATA,
 }
 
@@ -24,12 +27,21 @@ impl<DATA> Model<DATA>
     }
 }
 
+
+impl <'a, DATA> Into<&'a IdType> for &'a Model<DATA> where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    fn into(self) -> &'a IdType {
+        &self.id
+    }
+}
+
 #[derive(Clone)]
 pub struct NewModel<DATA>
     where
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub version: i32,
+    pub version: VersionType,
     pub data: DATA,
 }
 
@@ -215,7 +227,7 @@ where
         conn.execute(&self.conf().drop_table_sql_query, &[])
     }
 
-    fn count_all(&self, conn: &Connection) -> Result<i64, Error> {
+    fn count_all(&self, conn: &Connection) -> Result<IdType, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.count_all_sql_query)?;
         let result = stmt
@@ -227,11 +239,12 @@ where
         Ok(result)
     }
 
-    fn exists_by_id(&self, conn: &Connection, id: i64) -> Result<bool, Error> {
+    fn exists_by_id<'a, ID: Into<&'a IdType>>(&'a self, conn: &Connection, id: ID) -> Result<bool, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.exists_by_id_sql_query)?;
+        let id_into = id.into();
         let result = stmt
-            .query(&[&id])?
+            .query(&[id_into])?
             .iter()
             .next()
             .expect("Cannot iterate next element")
@@ -239,12 +252,7 @@ where
         Ok(result)
     }
 
-    fn exists(&self, conn: &Connection, model: &Model<DATA>) -> Result<bool, Error> {
-        self.exists_by_id(conn, model.id)
-    }
-
-
-        fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, Error> {
+    fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_all_sql_query)?;
         let result = stmt
@@ -255,11 +263,11 @@ where
         Ok(result)
     }
 
-    fn find_by_id(&self, conn: &Connection, id: i64) -> Result<Option<Model<DATA>>, Error> {
+    fn find_by_id<'a, ID: Into<&'a IdType>>(&'a self, conn: &Connection, id: ID) -> Result<Option<Model<DATA>>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_by_id_sql_query)?;
         let result = stmt
-            .query(&[&id])?
+            .query(&[id.into()])?
             .iter()
             .next()
             .map(|row| self.to_model(row));
@@ -272,21 +280,17 @@ where
         stmt.execute(&[])
     }
 
-    fn delete_by_id(&self, conn: &Connection, id: i64) -> Result<u64, Error> {
+    fn delete_by_id<'a, ID: Into<&'a IdType>>(&'a self, conn: &Connection, id: ID) -> Result<u64, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.delete_by_id_sql_query)?;
-        stmt.execute(&[&id])
-    }
-
-    fn delete(&self, conn: &Connection, obj: &Model<DATA>) -> Result<u64, Error> {
-        self.delete_by_id(conn, obj.id)
+        stmt.execute(&[id.into()])
     }
 
     fn save(&self, conn: &Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.save_sql_query)?;
         let json_data = serde_json::to_value(&obj.data).expect("Cannot serialize obj to Value");
-        let id: i64 = stmt
+        let id: IdType = stmt
             .query(&[&obj.version, &json_data])?
             .iter()
             .next()

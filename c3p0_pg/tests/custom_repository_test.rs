@@ -42,7 +42,7 @@ fn postgres_basic_crud() {
     assert!(saved_model.id >= 0);
 
     let found_model = jpo
-        .find_by_id(&conn, saved_model.id)
+        .find_by_id(&conn, &saved_model.id)
         .unwrap()
         .unwrap();
     assert_eq!(saved_model.id, found_model.id);

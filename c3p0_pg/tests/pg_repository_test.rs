@@ -57,7 +57,7 @@ fn postgres_basic_crud() {
     assert!(saved_model.id >= 0);
 
     let found_model = jpo
-        .find_by_id(&conn, saved_model.id)
+        .find_by_id(&conn, &saved_model)
         .unwrap()
         .unwrap();
     assert_eq!(saved_model.id, found_model.id);
@@ -65,7 +65,7 @@ fn postgres_basic_crud() {
     assert_eq!(saved_model.data.first_name, found_model.data.first_name);
     assert_eq!(saved_model.data.last_name, found_model.data.last_name);
 
-    let deleted = jpo.delete_by_id(&conn, saved_model.id).unwrap();
+    let deleted = jpo.delete_by_id(&conn, &saved_model).unwrap();
     assert_eq!(1, deleted);
 }
 
@@ -118,9 +118,9 @@ fn should_delete_all() {
     jpo.save(&conn, model.clone()).unwrap();
     jpo.save(&conn, model.clone()).unwrap();
 
-    assert!(jpo.find_by_id(&conn, model1.id).unwrap().is_some());
-    assert_eq!(1, jpo.delete_by_id(&conn, model1.id).unwrap());
-    assert!(jpo.find_by_id(&conn, model1.id).unwrap().is_none());
+    assert!(jpo.find_by_id(&conn, &model1.id).unwrap().is_some());
+    assert_eq!(1, jpo.delete_by_id(&conn, &model1.id).unwrap());
+    assert!(jpo.find_by_id(&conn, &model1).unwrap().is_none());
     assert_eq!(2, jpo.count_all(&conn).unwrap());
 
     assert_eq!(2, jpo.delete_all_rows(&conn).unwrap());
@@ -172,10 +172,10 @@ fn should_return_whether_exists_by_id() {
     });
 
     let model = jpo.save(&conn, model.clone()).unwrap();
-    assert!(jpo.exists(&conn, &model).unwrap());
-    assert!(jpo.exists_by_id(&conn, model.id).unwrap());
+    assert!(jpo.exists_by_id(&conn, &model).unwrap());
+    assert!(jpo.exists_by_id(&conn, &model.id).unwrap());
 
-    assert_eq!(1, jpo.delete_by_id(&conn, model.id).unwrap());
-    assert!(!jpo.exists(&conn, &model).unwrap());
-    assert!(!jpo.exists_by_id(&conn, model.id).unwrap());
+    assert_eq!(1, jpo.delete_by_id(&conn, &model).unwrap());
+    assert!(!jpo.exists_by_id(&conn, &model).unwrap());
+    assert!(!jpo.exists_by_id(&conn, &model.id).unwrap());
 }
