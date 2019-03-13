@@ -5,11 +5,10 @@ pub fn calculate_md5(source: &str) -> String {
     let mut md5 = Md5::default();
     md5.input(source);
     let md5_result_hex = md5.result();
-    let md5_result_str = md5_result_hex
+    md5_result_hex
         .iter()
         .map(|&c| format!("{:02x}", c))
-        .collect::<String>();
-    md5_result_str
+        .collect::<String>()
 }
 
 #[cfg(test)]

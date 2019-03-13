@@ -1,8 +1,5 @@
 pub fn to_sql_migrations(migrations: Vec<Migration>) -> Vec<SqlMigration> {
-    migrations
-        .into_iter()
-        .map(|migration| SqlMigration::new(migration))
-        .collect()
+    migrations.into_iter().map(SqlMigration::new).collect()
 }
 
 #[derive(Clone, Debug, PartialEq)]
