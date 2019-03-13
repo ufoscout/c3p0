@@ -1,5 +1,5 @@
 use crate::migration::Migration;
-use c3p0_pg::{SimpleRepository, ConfigBuilder};
+use c3p0_pg::{ConfigBuilder, SimpleRepository};
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
 
@@ -12,11 +12,10 @@ const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub struct PgMigrateBuilder {
     table: String,
     schema: Option<String>,
-    migrations: Vec<Migration>
+    migrations: Vec<Migration>,
 }
 
 impl PgMigrateBuilder {
-
     pub fn new() -> Self {
         PgMigrateBuilder {
             table: C3P0_MIGRATE_TABLE_DEFAULT.to_owned(),
@@ -41,7 +40,6 @@ impl PgMigrateBuilder {
     }
 
     pub fn build(self) -> PgMigrate {
-
         let conf = ConfigBuilder::new(self.table.clone())
             .with_schema_name(self.schema.clone())
             .build();
@@ -52,7 +50,7 @@ impl PgMigrateBuilder {
             table: self.table,
             schema: self.schema,
             migrations: self.migrations,
-            repo
+            repo,
         }
     }
 }
@@ -62,7 +60,7 @@ pub struct PgMigrate {
     table: String,
     schema: Option<String>,
     migrations: Vec<Migration>,
-    repo: SimpleRepository<MigrationData>
+    repo: SimpleRepository<MigrationData>,
 }
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]

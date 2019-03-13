@@ -1,6 +1,5 @@
-use c3p0_pg::{ConfigBuilder, JpoPg, Model, SimpleRepository};
-use testcontainers::clients;
 use c3p0_pg_migrate::PgMigrateBuilder;
+use testcontainers::clients;
 
 mod shared;
 
@@ -11,6 +10,4 @@ fn should_create_and_drop_table() {
     let conn = postgres_node.0;
 
     let pg_migrate = PgMigrateBuilder::new().build();
-
-
 }

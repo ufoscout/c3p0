@@ -90,7 +90,9 @@ mod models {
 
 embed_migrations!("./migrations/");
 
-pub fn establish_connection(docker: &clients::Cli) -> (PgConnection, Container<clients::Cli, Postgres>) {
+pub fn establish_connection(
+    docker: &clients::Cli,
+) -> (PgConnection, Container<clients::Cli, Postgres>) {
     let node = docker.run(images::postgres::Postgres::default());
 
     let database_url = format!(

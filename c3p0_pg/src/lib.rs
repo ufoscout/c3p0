@@ -36,7 +36,12 @@ pub struct Config {
 
     pub find_all_sql_query: String,
     pub find_by_id_sql_query: String,
+
+    pub delete_all_sql_query: String,
+    pub delete_by_id_sql_query: String,
+
     pub save_sql_query: String,
+
     pub create_table_sql_query: String,
     pub drop_table_sql_query: String,
 }
@@ -80,7 +85,7 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn with_schema_name<T: Into<Option<String>>>(mut self, schema_name: T) -> ConfigBuilder {
+    pub fn with_schema_name<O: Into<Option<String>>>(mut self, schema_name: O) -> ConfigBuilder {
         self.schema_name = schema_name.into();
         self
     }
@@ -110,6 +115,13 @@ impl ConfigBuilder {
                 self.id_field_name,
             ),
 
+            delete_all_sql_query: format!("DELETE FROM {}", qualified_table_name,),
+
+            delete_by_id_sql_query: format!(
+                "DELETE FROM {} WHERE {} = $1",
+                qualified_table_name, self.id_field_name,
+            ),
+
             save_sql_query: format!(
                 "INSERT INTO {} ({}, {}) VALUES ($1, $2) RETURNING {}",
                 qualified_table_name,
@@ -132,9 +144,7 @@ impl ConfigBuilder {
                 self.data_field_name
             ),
 
-            drop_table_sql_query: format!("DROP TABLE IF EXISTS {}",
-                qualified_table_name
-            ),
+            drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
 
             qualified_table_name,
             table_name: self.table_name,
@@ -173,7 +183,8 @@ where
     fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_all_sql_query)?;
-        let result = stmt.query(&[])?
+        let result = stmt
+            .query(&[])?
             .iter()
             .map(|row| self.to_model(row))
             .collect();
@@ -183,11 +194,24 @@ where
     fn find_by_id(&self, conn: &Connection, id: i64) -> Result<Option<Model<DATA>>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_by_id_sql_query)?;
-        let result = stmt.query(&[&id])?
+        let result = stmt
+            .query(&[&id])?
             .iter()
             .next()
             .map(|row| self.to_model(row));
         Ok(result)
+    }
+
+    fn delete_all(&self, conn: &Connection) -> Result<u64, Error> {
+        let conf = self.conf();
+        let stmt = conn.prepare(&conf.delete_all_sql_query)?;
+        stmt.execute(&[])
+    }
+
+    fn delete_by_id(&self, conn: &Connection, id: i64) -> Result<u64, Error> {
+        let conf = self.conf();
+        let stmt = conn.prepare(&conf.delete_by_id_sql_query)?;
+        stmt.execute(&[&id])
     }
 
     fn save(&self, conn: &Connection, obj: Model<DATA>) -> Result<Model<DATA>, Error> {

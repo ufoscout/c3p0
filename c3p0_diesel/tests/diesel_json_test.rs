@@ -19,7 +19,6 @@ fn should_perform_a_query_with_diesel_json() {
     let postgres_node = establish_connection(&docker);
     let conn = postgres_node.0;
 
-
     let new_data = models::NewCustomValueModel {
         version: 0,
         data: models::CustomValue {
@@ -106,7 +105,9 @@ mod models {
 
 embed_migrations!("./migrations/");
 
-pub fn establish_connection(docker: &clients::Cli) -> (PgConnection, Container<clients::Cli, Postgres>) {
+pub fn establish_connection(
+    docker: &clients::Cli,
+) -> (PgConnection, Container<clients::Cli, Postgres>) {
     let node = docker.run(images::postgres::Postgres::default());
 
     let database_url = format!(
