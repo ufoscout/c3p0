@@ -1,8 +1,10 @@
-use postgres::error::Error;
 use postgres::rows::Row;
 use postgres::Connection;
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
+use crate::error::C3p0Error;
+
+pub mod error;
 
 type IdType = i64;
 type VersionType = i32;
@@ -205,32 +207,32 @@ where
 {
     fn conf(&self) -> &Config;
 
-    fn to_model(&self, row: Row) -> Model<DATA> {
+    fn to_model(&self, row: Row) -> Result<Model<DATA>, C3p0Error> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
-        //data: serde_json::from_value::<DATA>(row.get(self.data_field_name.as_str())).unwrap()
+        //data: serde_json::from_value::<DATA>(row.get(self.data_field_name.as_str()))?
         let id = row.get(0);
         let version = row.get(1);
-        let data = serde_json::from_value::<DATA>(row.get(2)).unwrap();
-        Model { id, version, data }
+        let data = serde_json::from_value::<DATA>(row.get(2))?;
+        Ok(Model { id, version, data })
     }
 
-    fn create_table_if_not_exists(&self, conn: &Connection) -> Result<u64, Error> {
-        conn.execute(&self.conf().create_table_sql_query, &[])
+    fn create_table_if_not_exists(&self, conn: &Connection) -> Result<u64, C3p0Error> {
+        conn.execute(&self.conf().create_table_sql_query, &[]).map_err(C3p0Error::from)
     }
 
-    fn drop_table_if_exists(&self, conn: &Connection) -> Result<u64, Error> {
-        conn.execute(&self.conf().drop_table_sql_query, &[])
+    fn drop_table_if_exists(&self, conn: &Connection) -> Result<u64, C3p0Error> {
+        conn.execute(&self.conf().drop_table_sql_query, &[]).map_err(C3p0Error::from)
     }
 
-    fn count_all(&self, conn: &Connection) -> Result<IdType, Error> {
+    fn count_all(&self, conn: &Connection) -> Result<IdType, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.count_all_sql_query)?;
         let result = stmt
             .query(&[])?
             .iter()
             .next()
-            .expect("Cannot iterate next element")
+            .ok_or_else(||C3p0Error::IteratorError {message: format!("Cannot iterate next element")})?
             .get(0);
         Ok(result)
     }
@@ -239,7 +241,7 @@ where
         &'a self,
         conn: &Connection,
         id: ID,
-    ) -> Result<bool, Error> {
+    ) -> Result<bool, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.exists_by_id_sql_query)?;
         let id_into = id.into();
@@ -247,62 +249,61 @@ where
             .query(&[id_into])?
             .iter()
             .next()
-            .expect("Cannot iterate next element")
+            .ok_or_else(|| C3p0Error::IteratorError {message: format!("Cannot iterate next element")})?
             .get(0);
         Ok(result)
     }
 
-    fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, Error> {
+    fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_all_sql_query)?;
-        let result = stmt
+        stmt
             .query(&[])?
             .iter()
             .map(|row| self.to_model(row))
-            .collect();
-        Ok(result)
+            .collect()
     }
 
     fn find_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
         conn: &Connection,
         id: ID,
-    ) -> Result<Option<Model<DATA>>, Error> {
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_by_id_sql_query)?;
-        let result = stmt
+        stmt
             .query(&[id.into()])?
             .iter()
             .next()
-            .map(|row| self.to_model(row));
-        Ok(result)
+            .map(|row| self.to_model(row))
+            .transpose()
     }
 
-    fn delete_all(&self, conn: &Connection) -> Result<u64, Error> {
+    fn delete_all(&self, conn: &Connection) -> Result<u64, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.delete_all_sql_query)?;
-        stmt.execute(&[])
+        stmt.execute(&[]).map_err(C3p0Error::from)
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
         conn: &Connection,
         id: ID,
-    ) -> Result<u64, Error> {
+    ) -> Result<u64, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.delete_by_id_sql_query)?;
-        stmt.execute(&[id.into()])
+        stmt.execute(&[id.into()]).map_err(C3p0Error::from)
     }
 
-    fn save(&self, conn: &Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, Error> {
+    fn save(&self, conn: &Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.save_sql_query)?;
-        let json_data = serde_json::to_value(&obj.data).expect("Cannot serialize obj to Value");
-        let id: IdType = stmt
+        let json_data = serde_json::to_value(&obj.data)?;
+        let id = stmt
             .query(&[&obj.version, &json_data])?
             .iter()
             .next()
-            .expect("Cannot iterate next element")
+            .ok_or_else(|| C3p0Error::IteratorError {message: format!("Cannot iterate next element")})?
             .get(0);
 
         Ok(Model {
@@ -350,7 +351,7 @@ mod test {
     use serde_json;
 
     #[test]
-    fn model_should_be_serializable() {
+    fn model_should_be_serializable() -> Result<(), Box<std::error::Error>> {
         let model = Model {
             id: 1,
             version: 1,
@@ -359,25 +360,28 @@ mod test {
             },
         };
 
-        let serialize = serde_json::to_string(&model).unwrap();
-        let deserialize: Model<SimpleData> = serde_json::from_str(&serialize).unwrap();
+        let serialize = serde_json::to_string(&model)?;
+        let deserialize: Model<SimpleData> = serde_json::from_str(&serialize)?;
 
         assert_eq!(model.id, deserialize.id);
         assert_eq!(model.version, deserialize.version);
         assert_eq!(model.data, deserialize.data);
+
+        Ok(())
     }
 
     #[test]
-    fn new_model_should_be_serializable() {
+    fn new_model_should_be_serializable() -> Result<(), Box<std::error::Error>> {
         let model = NewModel::new(SimpleData {
             name: "test".to_owned(),
         });
 
-        let serialize = serde_json::to_string(&model).unwrap();
-        let deserialize: NewModel<SimpleData> = serde_json::from_str(&serialize).unwrap();
+        let serialize = serde_json::to_string(&model)?;
+        let deserialize: NewModel<SimpleData> = serde_json::from_str(&serialize)?;
 
         assert_eq!(model.version, deserialize.version);
         assert_eq!(model.data, deserialize.data);
+        Ok(())
     }
 
     #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]

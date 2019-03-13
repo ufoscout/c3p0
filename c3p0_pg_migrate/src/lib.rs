@@ -2,7 +2,9 @@ use crate::migration::{to_sql_migrations, Migration, SqlMigration};
 use c3p0_pg::{C3p0, C3p0Repository, ConfigBuilder, Model, NewModel};
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
+use crate::error::C3p0MigrateError;
 
+pub mod error;
 mod md5;
 pub mod migration;
 
@@ -88,15 +90,14 @@ pub struct PgMigrate {
 }
 
 impl PgMigrate {
-    pub fn migrate(&self, conn: &Connection) {
-        let tx = conn.transaction().unwrap();
+    pub fn migrate(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
+        let tx = conn.transaction()?;
 
         self.repo
-            .create_table_if_not_exists(tx.connection())
-            .unwrap();
+            .create_table_if_not_exists(tx.connection())?;
 
-        let migration_history = self.fetch_migrations_history(conn);
-        let migration_history = PgMigrate::clean_history(migration_history);
+        let migration_history = self.fetch_migrations_history(conn)?;
+        let migration_history = PgMigrate::clean_history(migration_history)?;
 
         for i in 0..self.migrations.len() {
             let migration = &self.migrations[i];
@@ -108,20 +109,20 @@ impl PgMigrate {
                     if applied_migration.data.md5_checksum.eq(&migration.up.md5) {
                         continue;
                     }
-                    panic!(
-                        "Wrong checksum for migration [{}]. Expected [{}], found [{}].",
-                        applied_migration.data.migration_id,
-                        applied_migration.data.md5_checksum,
-                        migration.up.md5
-                    );
+                    return Err(C3p0MigrateError::AlteredMigrationSql {
+                        message: format!("Wrong checksum for migration [{}]. Expected [{}], found [{}].",
+                                         applied_migration.data.migration_id,
+                                         applied_migration.data.md5_checksum,
+                                         migration.up.md5)
+                    });
                 }
-                panic!(
-                    "Wrong migration set! Expected migration [{}], found [{}].",
-                    applied_migration.data.migration_id, migration.id
-                );
+                return Err(C3p0MigrateError::WrongMigrationSet {
+                    message: format!("Wrong migration set! Expected migration [{}], found [{}].",
+                                     applied_migration.data.migration_id, migration.id)
+                });
             }
 
-            tx.batch_execute(&migration.up.sql).unwrap();
+            tx.batch_execute(&migration.up.sql)?;
 
             self.repo
                 .save(
@@ -134,18 +135,17 @@ impl PgMigrate {
                         execution_time_ms: 0,
                         installed_on_epoch_ms: 0,
                     }),
-                )
-                .unwrap();
+                )?;
         }
 
-        tx.commit().unwrap();
+        tx.commit().map_err(C3p0MigrateError::from)
     }
 
-    pub fn fetch_migrations_history(&self, conn: &Connection) -> Vec<MigrationModel> {
-        self.repo.find_all(conn).unwrap()
+    pub fn fetch_migrations_history(&self, conn: &Connection) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
+        self.repo.find_all(conn).map_err(C3p0MigrateError::from)
     }
 
-    fn clean_history(migrations: Vec<MigrationModel>) -> Vec<MigrationModel> {
+    fn clean_history(migrations: Vec<MigrationModel>) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
         let mut result = vec![];
 
         for migration in migrations {
@@ -158,12 +158,12 @@ impl PgMigrate {
                     if !migration.data.migration_id.eq(&last.data.migration_id)
                         || !last.data.migration_type.eq(&MigrationType::UP)
                     {
-                        panic!("migration history is not valid!!");
+                        return Err(C3p0MigrateError::CorruptedDbMigrationState {message: format!("migration history is not valid!!")});
                     }
                 }
             }
         }
 
-        result
+        Ok(result)
     }
 }

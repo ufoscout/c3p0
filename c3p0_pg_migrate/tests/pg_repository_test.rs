@@ -5,7 +5,7 @@ use testcontainers::clients;
 mod shared;
 
 #[test]
-fn should_create_the_c3p0_migrate_table_with_default_name() {
+fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
     let conn = postgres_node.0;
@@ -20,10 +20,12 @@ fn should_create_the_c3p0_migrate_table_with_default_name() {
             &[]
         )
         .is_ok());
+
+    Ok(())
 }
 
 #[test]
-fn should_create_the_c3p0_migrate_table_with_custom_name() {
+fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
     let conn = postgres_node.0;
@@ -40,10 +42,12 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() {
     assert!(conn
         .execute(&format!("select * from {}", custom_name), &[])
         .is_ok());
+
+    Ok(())
 }
 
 #[test]
-fn should_execute_migrations() {
+fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
     let conn = postgres_node.0;
@@ -78,13 +82,15 @@ fn should_execute_migrations() {
         .execute(&format!("select * from SECOND_TABLE"), &[])
         .is_ok());
 
-    let status = pg_migrate.fetch_migrations_history(&conn);
+    let status = pg_migrate.fetch_migrations_history(&conn).unwrap();
     assert_eq!(2, status.len());
     assert_eq!("first", status.get(0).unwrap().data.migration_id);
+
+    Ok(())
 }
 
 #[test]
-fn should_not_execute_same_migrations_twice() {
+fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
     let conn = postgres_node.0;
@@ -100,8 +106,8 @@ fn should_not_execute_same_migrations_twice() {
         }])
         .build();
 
-    pg_migrate.migrate(&conn);
-    pg_migrate.migrate(&conn);
+    pg_migrate.migrate(&conn).unwrap();
+    pg_migrate.migrate(&conn).unwrap();
 
     assert!(conn
         .execute(&format!("select * from {}", custom_name), &[])
@@ -110,7 +116,9 @@ fn should_not_execute_same_migrations_twice() {
         .execute(&format!("select * from FIRST_TABLE"), &[])
         .is_ok());
 
-    let status = pg_migrate.fetch_migrations_history(&conn);
+    let status = pg_migrate.fetch_migrations_history(&conn).unwrap();
     assert_eq!(1, status.len());
     assert_eq!("first", status.get(0).unwrap().data.migration_id);
+
+    Ok(())
 }

@@ -8,6 +8,8 @@ edition = "2018"
 
 [dependencies]
 c3p0_pg = { path = "../c3p0_pg", version = "0.2.0" }
+failure = "0.1"
+failure_derive = "0.1"
 log = "0.4"
 md-5 = "0.8"
 postgres = "0.15"
