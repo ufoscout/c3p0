@@ -1,5 +1,5 @@
 use crate::shared::TestData;
-use c3p0_pg::{ConfigBuilder, C3p0, NewModel, C3p0Repository};
+use c3p0_pg::{C3p0, C3p0Repository, ConfigBuilder, NewModel};
 
 mod shared;
 
@@ -56,10 +56,7 @@ fn postgres_basic_crud() {
     let saved_model = jpo.save(&conn, model.clone()).unwrap();
     assert!(saved_model.id >= 0);
 
-    let found_model = jpo
-        .find_by_id(&conn, &saved_model)
-        .unwrap()
-        .unwrap();
+    let found_model = jpo.find_by_id(&conn, &saved_model).unwrap().unwrap();
     assert_eq!(saved_model.id, found_model.id);
     assert_eq!(saved_model.version, found_model.version);
     assert_eq!(saved_model.data.first_name, found_model.data.first_name);

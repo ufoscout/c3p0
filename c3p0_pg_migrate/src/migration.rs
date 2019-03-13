@@ -7,12 +7,14 @@ pub fn to_sql_migrations(migrations: Vec<Migration>) -> Vec<SqlMigration> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Migration {
+    pub id: String,
     pub up: String,
     pub down: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SqlMigration {
+    pub id: String,
     pub up: SqlScript,
     pub down: SqlScript,
 }
@@ -20,6 +22,7 @@ pub struct SqlMigration {
 impl SqlMigration {
     pub fn new(migration: Migration) -> SqlMigration {
         SqlMigration {
+            id: migration.id,
             up: SqlScript::new(migration.up),
             down: SqlScript::new(migration.down),
         }
@@ -49,10 +52,12 @@ mod test {
     fn should_create_migrations_with_md5() {
         let source_sqls = vec![
             Migration {
+                id: "first".to_owned(),
                 up: "insert into table1".to_owned(),
                 down: "delete from table1".to_owned(),
             },
             Migration {
+                id: "second".to_owned(),
                 up: "insert into table2".to_owned(),
                 down: "delete from table2".to_owned(),
             },
@@ -64,6 +69,7 @@ mod test {
 
         assert_eq!(
             &SqlMigration {
+                id: "first".to_owned(),
                 up: SqlScript {
                     sql: "insert into table1".to_owned(),
                     md5: "7f1145b3d3b6654e3388610423abb12f".to_owned(),
@@ -78,6 +84,7 @@ mod test {
 
         assert_eq!(
             &SqlMigration {
+                id: "second".to_owned(),
                 up: SqlScript {
                     sql: "insert into table2".to_owned(),
                     md5: "7233bb544a3a701c33590a8c72d74e22".to_owned(),

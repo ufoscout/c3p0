@@ -19,10 +19,10 @@ where
 }
 
 impl<DATA> Model<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub fn to_new(self) -> NewModel<DATA> {
+    pub fn into_new(self) -> NewModel<DATA> {
         NewModel {
             version: 0,
             data: self.data,
@@ -30,8 +30,8 @@ impl<DATA> Model<DATA>
     }
 }
 
-
-impl <'a, DATA> Into<&'a IdType> for &'a Model<DATA> where
+impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
+where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     fn into(self) -> &'a IdType {
@@ -41,8 +41,8 @@ impl <'a, DATA> Into<&'a IdType> for &'a Model<DATA> where
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct NewModel<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize,
+where
+    DATA: Clone + serde::ser::Serialize,
 {
     pub version: VersionType,
     #[serde(bound(deserialize = "DATA: Deserialize<'de>"))]
@@ -54,12 +54,8 @@ where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn new(data: DATA) -> Self {
-        NewModel {
-            version: 0,
-            data,
-        }
+        NewModel { version: 0, data }
     }
-
 }
 
 #[derive(Clone, Debug)]
@@ -137,15 +133,11 @@ impl ConfigBuilder {
         };
 
         Config {
-            count_all_sql_query: format!(
-                "SELECT COUNT(*) FROM {}",
-                qualified_table_name,
-            ),
+            count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
             exists_by_id_sql_query: format!(
                 "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = $1)",
-                qualified_table_name,
-                self.id_field_name,
+                qualified_table_name, self.id_field_name,
             ),
 
             find_all_sql_query: format!(
@@ -243,7 +235,11 @@ where
         Ok(result)
     }
 
-    fn exists_by_id<'a, ID: Into<&'a IdType>>(&'a self, conn: &Connection, id: ID) -> Result<bool, Error> {
+    fn exists_by_id<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &Connection,
+        id: ID,
+    ) -> Result<bool, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.exists_by_id_sql_query)?;
         let id_into = id.into();
@@ -267,7 +263,11 @@ where
         Ok(result)
     }
 
-    fn find_by_id<'a, ID: Into<&'a IdType>>(&'a self, conn: &Connection, id: ID) -> Result<Option<Model<DATA>>, Error> {
+    fn find_by_id<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &Connection,
+        id: ID,
+    ) -> Result<Option<Model<DATA>>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_by_id_sql_query)?;
         let result = stmt
@@ -284,7 +284,11 @@ where
         stmt.execute(&[])
     }
 
-    fn delete_by_id<'a, ID: Into<&'a IdType>>(&'a self, conn: &Connection, id: ID) -> Result<u64, Error> {
+    fn delete_by_id<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &Connection,
+        id: ID,
+    ) -> Result<u64, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.delete_by_id_sql_query)?;
         stmt.execute(&[id.into()])
@@ -347,13 +351,12 @@ mod test {
 
     #[test]
     fn model_should_be_serializable() {
-
-        let model = Model{
+        let model = Model {
             id: 1,
             version: 1,
-            data: SimpleData{
-                name: "test".to_owned()
-            }
+            data: SimpleData {
+                name: "test".to_owned(),
+            },
         };
 
         let serialize = serde_json::to_string(&model).unwrap();
@@ -362,29 +365,23 @@ mod test {
         assert_eq!(model.id, deserialize.id);
         assert_eq!(model.version, deserialize.version);
         assert_eq!(model.data, deserialize.data);
-
     }
 
     #[test]
     fn new_model_should_be_serializable() {
-
-        let model = NewModel{
-            version: 1,
-            data: SimpleData{
-                name: "test".to_owned()
-            }
-        };
+        let model = NewModel::new(SimpleData {
+            name: "test".to_owned(),
+        });
 
         let serialize = serde_json::to_string(&model).unwrap();
         let deserialize: NewModel<SimpleData> = serde_json::from_str(&serialize).unwrap();
 
         assert_eq!(model.version, deserialize.version);
         assert_eq!(model.data, deserialize.data);
-
     }
 
     #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
     struct SimpleData {
-        name: String
+        name: String,
     }
 }

@@ -1,12 +1,12 @@
-use crate::migration::Migration;
-use c3p0_pg::{ConfigBuilder, C3p0Repository};
+use crate::migration::{Migration, SqlMigration};
+use c3p0_pg::{C3p0Repository, ConfigBuilder, C3p0, Model, NewModel};
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
 
 mod md5;
 pub mod migration;
 
-const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
+pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 
 #[derive(Clone, Debug)]
 pub struct PgMigrateBuilder {
@@ -49,32 +49,64 @@ impl PgMigrateBuilder {
         PgMigrate {
             table: self.table,
             schema: self.schema,
-            migrations: self.migrations,
+            migrations: self.migrations.into_iter().map(|migration| SqlMigration::new(migration)).collect(),
             repo,
         }
     }
+}
+
+pub type MigrationModel = Model<MigrationData>;
+
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
+pub struct MigrationData {
+    pub migration_id: String,
+    pub migration_type: MigrationType,
+    pub md5_checksum: String,
+    pub installed_on_epoch_ms: u64,
+    pub execution_time_ms: u64,
+    pub success: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
+pub enum MigrationType {
+    UP,
+    DOWN,
 }
 
 #[derive(Clone)]
 pub struct PgMigrate {
     table: String,
     schema: Option<String>,
-    migrations: Vec<Migration>,
+    migrations: Vec<SqlMigration>,
     repo: C3p0Repository<MigrationData>,
 }
 
-#[derive(Clone, Serialize, Deserialize, PartialEq)]
-struct MigrationData {
-    migration_id: String,
-    migration_type: MigrationType,
-    md5_checksum: String,
-    installed_on_epoch_ms: u64,
-    execution_time_ms: u64,
-    success: bool,
-}
+impl PgMigrate {
 
-#[derive(Clone, Serialize, Deserialize, PartialEq)]
-enum MigrationType {
-    UP,
-    DOWN,
+    pub fn migrate(&self, conn: &Connection) {
+        let tx = conn.transaction().unwrap();
+
+        self.repo.create_table_if_not_exists(tx.connection()).unwrap();
+
+        for migration in &self.migrations {
+            tx.batch_execute(&migration.up.sql).unwrap();
+
+            self.repo.save(tx.connection(), NewModel::new(MigrationData{
+                success: true,
+                md5_checksum: migration.up.md5.clone(),
+                migration_id: migration.id.clone(),
+                migration_type: MigrationType::UP,
+                execution_time_ms: 0,
+                installed_on_epoch_ms: 0,
+            })).unwrap();
+
+        }
+
+        tx.commit().unwrap();
+    }
+
+    pub fn migrations_status(&self, conn: &Connection) -> Vec<MigrationModel> {
+        self.repo.find_all(conn).unwrap()
+    }
+
 }
