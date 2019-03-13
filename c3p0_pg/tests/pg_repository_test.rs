@@ -46,7 +46,7 @@ fn postgres_basic_crud() {
     let jpo = C3p0Repository::build(conf);
 
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
-    jpo.delete_all_rows(&conn).unwrap();
+    jpo.delete_all(&conn).unwrap();
 
     let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
@@ -81,7 +81,7 @@ fn should_find_all() {
     let jpo = C3p0Repository::build(conf);
 
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
-    jpo.delete_all_rows(&conn).unwrap();
+    jpo.delete_all(&conn).unwrap();
 
     let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
@@ -123,7 +123,7 @@ fn should_delete_all() {
     assert!(jpo.find_by_id(&conn, &model1).unwrap().is_none());
     assert_eq!(2, jpo.count_all(&conn).unwrap());
 
-    assert_eq!(2, jpo.delete_all_rows(&conn).unwrap());
+    assert_eq!(2, jpo.delete_all(&conn).unwrap());
     assert_eq!(0, jpo.count_all(&conn).unwrap());
 }
 
@@ -135,7 +135,7 @@ fn should_count() {
     let jpo = C3p0Repository::build(conf);
 
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
-    assert!(jpo.delete_all_rows(&conn).is_ok());
+    assert!(jpo.delete_all(&conn).is_ok());
 
     assert_eq!(0, jpo.count_all(&conn).unwrap());
 
@@ -153,7 +153,7 @@ fn should_count() {
     jpo.save(&conn, model.clone()).unwrap();
     assert_eq!(3, jpo.count_all(&conn).unwrap());
 
-    assert_eq!(3, jpo.delete_all_rows(&conn).unwrap());
+    assert_eq!(3, jpo.delete_all(&conn).unwrap());
     assert_eq!(0, jpo.count_all(&conn).unwrap());
 }
 
