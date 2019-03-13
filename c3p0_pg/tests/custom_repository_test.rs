@@ -1,5 +1,5 @@
 use crate::shared::*;
-use c3p0_pg::{Config, ConfigBuilder, JpoPg, NewModel};
+use c3p0_pg::{Config, ConfigBuilder, C3p0, NewModel};
 
 mod shared;
 
@@ -7,7 +7,7 @@ struct TestTableRepository {
     conf: Config,
 }
 
-impl JpoPg<TestData> for TestTableRepository {
+impl C3p0<TestData> for TestTableRepository {
     fn conf(&self) -> &Config {
         &self.conf
     }

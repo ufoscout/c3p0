@@ -1,5 +1,5 @@
 use crate::migration::Migration;
-use c3p0_pg::{ConfigBuilder, SimpleRepository};
+use c3p0_pg::{ConfigBuilder, C3p0Repository};
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
 
@@ -44,7 +44,7 @@ impl PgMigrateBuilder {
             .with_schema_name(self.schema.clone())
             .build();
 
-        let repo = SimpleRepository::build(conf);
+        let repo = C3p0Repository::build(conf);
 
         PgMigrate {
             table: self.table,
@@ -60,7 +60,7 @@ pub struct PgMigrate {
     table: String,
     schema: Option<String>,
     migrations: Vec<Migration>,
-    repo: SimpleRepository<MigrationData>,
+    repo: C3p0Repository<MigrationData>,
 }
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]

@@ -1,5 +1,5 @@
 use crate::shared::TestData;
-use c3p0_pg::{ConfigBuilder, JpoPg, NewModel, SimpleRepository};
+use c3p0_pg::{ConfigBuilder, C3p0, NewModel, C3p0Repository};
 
 mod shared;
 
@@ -10,7 +10,7 @@ fn should_create_and_drop_table() {
 
     let conf = ConfigBuilder::new("TEST_TABLE").build();
 
-    let jpo = SimpleRepository::build(conf);
+    let jpo = C3p0Repository::build(conf);
 
     let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
@@ -43,10 +43,10 @@ fn postgres_basic_crud() {
 
     let conf = ConfigBuilder::new("TEST_TABLE").build();
 
-    let jpo = SimpleRepository::build(conf);
+    let jpo = C3p0Repository::build(conf);
 
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
-    jpo.delete_all(&conn).unwrap();
+    jpo.delete_all_rows(&conn).unwrap();
 
     let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
@@ -78,10 +78,10 @@ fn should_find_all() {
     let conf = ConfigBuilder::new("TEST_TABLE")
         .with_schema_name("public".to_owned())
         .build();
-    let jpo = SimpleRepository::build(conf);
+    let jpo = C3p0Repository::build(conf);
 
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
-    jpo.delete_all(&conn).unwrap();
+    jpo.delete_all_rows(&conn).unwrap();
 
     let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
@@ -105,7 +105,7 @@ fn should_delete_all() {
     let _lock = shared::LOCK.lock().unwrap();
     let conn = shared::new_connection();
     let conf = ConfigBuilder::new("TEST_TABLE").build();
-    let jpo = SimpleRepository::build(conf);
+    let jpo = C3p0Repository::build(conf);
     assert!(jpo.drop_table_if_exists(&conn).is_ok());
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
 
@@ -121,8 +121,61 @@ fn should_delete_all() {
     assert!(jpo.find_by_id(&conn, model1.id).unwrap().is_some());
     assert_eq!(1, jpo.delete_by_id(&conn, model1.id).unwrap());
     assert!(jpo.find_by_id(&conn, model1.id).unwrap().is_none());
-    assert_eq!(2, jpo.find_all(&conn).unwrap().len());
+    assert_eq!(2, jpo.count_all(&conn).unwrap());
 
-    assert_eq!(2, jpo.delete_all(&conn).unwrap());
-    assert_eq!(0, jpo.find_all(&conn).unwrap().len());
+    assert_eq!(2, jpo.delete_all_rows(&conn).unwrap());
+    assert_eq!(0, jpo.count_all(&conn).unwrap());
+}
+
+#[test]
+fn should_count() {
+    let _lock = shared::LOCK.lock().unwrap();
+    let conn = shared::new_connection();
+    let conf = ConfigBuilder::new("TEST_TABLE").build();
+    let jpo = C3p0Repository::build(conf);
+
+    assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+    assert!(jpo.delete_all_rows(&conn).is_ok());
+
+    assert_eq!(0, jpo.count_all(&conn).unwrap());
+
+    let model = NewModel::new(TestData {
+        first_name: "my_first_name".to_owned(),
+        last_name: "my_last_name".to_owned(),
+    });
+
+    jpo.save(&conn, model.clone()).unwrap();
+    assert_eq!(1, jpo.count_all(&conn).unwrap());
+
+    jpo.save(&conn, model.clone()).unwrap();
+    assert_eq!(2, jpo.count_all(&conn).unwrap());
+
+    jpo.save(&conn, model.clone()).unwrap();
+    assert_eq!(3, jpo.count_all(&conn).unwrap());
+
+    assert_eq!(3, jpo.delete_all_rows(&conn).unwrap());
+    assert_eq!(0, jpo.count_all(&conn).unwrap());
+}
+
+#[test]
+fn should_return_whether_exists_by_id() {
+    let _lock = shared::LOCK.lock().unwrap();
+    let conn = shared::new_connection();
+    let conf = ConfigBuilder::new("TEST_TABLE").build();
+    let jpo = C3p0Repository::build(conf);
+
+    assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+
+    let model = NewModel::new(TestData {
+        first_name: "my_first_name".to_owned(),
+        last_name: "my_last_name".to_owned(),
+    });
+
+    let model = jpo.save(&conn, model.clone()).unwrap();
+    assert!(jpo.exists(&conn, &model).unwrap());
+    assert!(jpo.exists_by_id(&conn, model.id).unwrap());
+
+    assert_eq!(1, jpo.delete_by_id(&conn, model.id).unwrap());
+    assert!(!jpo.exists(&conn, &model).unwrap());
+    assert!(!jpo.exists_by_id(&conn, model.id).unwrap());
 }

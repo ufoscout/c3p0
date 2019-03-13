@@ -55,6 +55,9 @@ pub struct Config {
     pub schema_name: Option<String>,
     pub qualified_table_name: String,
 
+    pub count_all_sql_query: String,
+    pub exists_by_id_sql_query: String,
+
     pub find_all_sql_query: String,
     pub find_by_id_sql_query: String,
 
@@ -118,6 +121,17 @@ impl ConfigBuilder {
         };
 
         Config {
+            count_all_sql_query: format!(
+                "SELECT COUNT(*) FROM {}",
+                qualified_table_name,
+            ),
+
+            exists_by_id_sql_query: format!(
+                "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = $1)",
+                qualified_table_name,
+                self.id_field_name,
+            ),
+
             find_all_sql_query: format!(
                 "SELECT {}, {}, {} FROM {} ORDER BY {} ASC",
                 self.id_field_name,
@@ -128,7 +142,7 @@ impl ConfigBuilder {
             ),
 
             find_by_id_sql_query: format!(
-                "SELECT {}, {}, {} FROM {} WHERE {} = $1",
+                "SELECT {}, {}, {} FROM {} WHERE {} = $1 LIMIT 1",
                 self.id_field_name,
                 self.version_field_name,
                 self.data_field_name,
@@ -177,7 +191,7 @@ impl ConfigBuilder {
     }
 }
 
-pub trait JpoPg<DATA>
+pub trait C3p0<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -201,7 +215,36 @@ where
         conn.execute(&self.conf().drop_table_sql_query, &[])
     }
 
-    fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, Error> {
+    fn count_all(&self, conn: &Connection) -> Result<i64, Error> {
+        let conf = self.conf();
+        let stmt = conn.prepare(&conf.count_all_sql_query)?;
+        let result = stmt
+            .query(&[])?
+            .iter()
+            .next()
+            .expect("Cannot iterate next element")
+            .get(0);
+        Ok(result)
+    }
+
+    fn exists_by_id(&self, conn: &Connection, id: i64) -> Result<bool, Error> {
+        let conf = self.conf();
+        let stmt = conn.prepare(&conf.exists_by_id_sql_query)?;
+        let result = stmt
+            .query(&[&id])?
+            .iter()
+            .next()
+            .expect("Cannot iterate next element")
+            .get(0);
+        Ok(result)
+    }
+
+    fn exists(&self, conn: &Connection, model: &Model<DATA>) -> Result<bool, Error> {
+        self.exists_by_id(conn, model.id)
+    }
+
+
+        fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_all_sql_query)?;
         let result = stmt
@@ -223,7 +266,7 @@ where
         Ok(result)
     }
 
-    fn delete_all(&self, conn: &Connection) -> Result<u64, Error> {
+    fn delete_all_rows(&self, conn: &Connection) -> Result<u64, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.delete_all_sql_query)?;
         stmt.execute(&[])
@@ -233,6 +276,10 @@ where
         let conf = self.conf();
         let stmt = conn.prepare(&conf.delete_by_id_sql_query)?;
         stmt.execute(&[&id])
+    }
+
+    fn delete(&self, conn: &Connection, obj: &Model<DATA>) -> Result<u64, Error> {
+        self.delete_by_id(conn, obj.id)
     }
 
     fn save(&self, conn: &Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, Error> {
@@ -255,7 +302,7 @@ where
 }
 
 #[derive(Clone)]
-pub struct SimpleRepository<DATA>
+pub struct C3p0Repository<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -263,19 +310,19 @@ where
     phantom_data: std::marker::PhantomData<DATA>,
 }
 
-impl<DATA> SimpleRepository<DATA>
+impl<DATA> C3p0Repository<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn build(conf: Config) -> Self {
-        SimpleRepository {
+        C3p0Repository {
             conf,
             phantom_data: std::marker::PhantomData,
         }
     }
 }
 
-impl<DATA> JpoPg<DATA> for SimpleRepository<DATA>
+impl<DATA> C3p0<DATA> for C3p0Repository<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
