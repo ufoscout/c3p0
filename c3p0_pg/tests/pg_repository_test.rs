@@ -1,5 +1,5 @@
 use crate::shared::TestData;
-use c3p0_pg::{ConfigBuilder, JpoPg, Model, SimpleRepository};
+use c3p0_pg::{ConfigBuilder, JpoPg, NewModel, SimpleRepository};
 
 mod shared;
 
@@ -12,7 +12,7 @@ fn should_create_and_drop_table() {
 
     let jpo = SimpleRepository::build(conf);
 
-    let model = Model::new(TestData {
+    let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
         last_name: "my_last_name".to_owned(),
     });
@@ -48,18 +48,16 @@ fn postgres_basic_crud() {
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
     jpo.delete_all(&conn).unwrap();
 
-    let model = Model::new(TestData {
+    let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
         last_name: "my_last_name".to_owned(),
     });
 
     let saved_model = jpo.save(&conn, model.clone()).unwrap();
-    assert!(saved_model.id.is_some());
-
-    assert!(model.id.is_none());
+    assert!(saved_model.id >= 0);
 
     let found_model = jpo
-        .find_by_id(&conn, saved_model.id.unwrap())
+        .find_by_id(&conn, saved_model.id)
         .unwrap()
         .unwrap();
     assert_eq!(saved_model.id, found_model.id);
@@ -67,7 +65,7 @@ fn postgres_basic_crud() {
     assert_eq!(saved_model.data.first_name, found_model.data.first_name);
     assert_eq!(saved_model.data.last_name, found_model.data.last_name);
 
-    let deleted = jpo.delete_by_id(&conn, saved_model.id.unwrap()).unwrap();
+    let deleted = jpo.delete_by_id(&conn, saved_model.id).unwrap();
     assert_eq!(1, deleted);
 }
 
@@ -85,7 +83,7 @@ fn should_find_all() {
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
     jpo.delete_all(&conn).unwrap();
 
-    let model = Model::new(TestData {
+    let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
         last_name: "my_last_name".to_owned(),
     });
@@ -111,7 +109,7 @@ fn should_delete_all() {
     assert!(jpo.drop_table_if_exists(&conn).is_ok());
     assert!(jpo.create_table_if_not_exists(&conn).is_ok());
 
-    let model = Model::new(TestData {
+    let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
         last_name: "my_last_name".to_owned(),
     });
@@ -120,9 +118,9 @@ fn should_delete_all() {
     jpo.save(&conn, model.clone()).unwrap();
     jpo.save(&conn, model.clone()).unwrap();
 
-    assert!(jpo.find_by_id(&conn, model1.id.unwrap()).unwrap().is_some());
-    assert_eq!(1, jpo.delete_by_id(&conn, model1.id.unwrap()).unwrap());
-    assert!(jpo.find_by_id(&conn, model1.id.unwrap()).unwrap().is_none());
+    assert!(jpo.find_by_id(&conn, model1.id).unwrap().is_some());
+    assert_eq!(1, jpo.delete_by_id(&conn, model1.id).unwrap());
+    assert!(jpo.find_by_id(&conn, model1.id).unwrap().is_none());
     assert_eq!(2, jpo.find_all(&conn).unwrap().len());
 
     assert_eq!(2, jpo.delete_all(&conn).unwrap());

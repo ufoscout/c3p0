@@ -7,22 +7,43 @@ pub struct Model<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub id: Option<i64>,
+    pub id: i64,
     pub version: i32,
     pub data: DATA,
 }
 
 impl<DATA> Model<DATA>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    pub fn to_new(self) -> NewModel<DATA> {
+        NewModel {
+            version: 0,
+            data: self.data,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct NewModel<DATA>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    pub version: i32,
+    pub data: DATA,
+}
+
+impl<DATA> NewModel<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn new(data: DATA) -> Self {
-        Model {
-            id: None,
+        NewModel {
             version: 0,
             data,
         }
     }
+
 }
 
 #[derive(Clone, Debug)]
@@ -166,7 +187,7 @@ where
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: serde_json::from_value::<DATA>(row.get(self.data_field_name.as_str())).unwrap()
-        let id = Some(row.get(0));
+        let id = row.get(0);
         let version = row.get(1);
         let data = serde_json::from_value::<DATA>(row.get(2)).unwrap();
         Model { id, version, data }
@@ -214,7 +235,7 @@ where
         stmt.execute(&[&id])
     }
 
-    fn save(&self, conn: &Connection, obj: Model<DATA>) -> Result<Model<DATA>, Error> {
+    fn save(&self, conn: &Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.save_sql_query)?;
         let json_data = serde_json::to_value(&obj.data).expect("Cannot serialize obj to Value");
@@ -226,7 +247,7 @@ where
             .get(0);
 
         Ok(Model {
-            id: Some(id),
+            id,
             version: obj.version,
             data: obj.data,
         })

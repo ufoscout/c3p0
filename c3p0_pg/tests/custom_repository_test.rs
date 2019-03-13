@@ -1,5 +1,5 @@
 use crate::shared::*;
-use c3p0_pg::{Config, ConfigBuilder, JpoPg, Model};
+use c3p0_pg::{Config, ConfigBuilder, JpoPg, NewModel};
 
 mod shared;
 
@@ -33,18 +33,16 @@ fn postgres_basic_crud() {
 
     let jpo = TestTableRepository { conf };
 
-    let model = Model::new(TestData {
+    let model = NewModel::new(TestData {
         first_name: "my_first_name".to_owned(),
         last_name: "my_last_name".to_owned(),
     });
 
     let saved_model = jpo.save(&conn, model.clone()).unwrap();
-    assert!(saved_model.id.is_some());
-
-    assert!(model.id.is_none());
+    assert!(saved_model.id >= 0);
 
     let found_model = jpo
-        .find_by_id(&conn, saved_model.id.unwrap())
+        .find_by_id(&conn, saved_model.id)
         .unwrap()
         .unwrap();
     assert_eq!(saved_model.id, found_model.id);
