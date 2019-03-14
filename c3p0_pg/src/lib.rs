@@ -1,9 +1,11 @@
+use crate::codec::Codec;
+use crate::error::C3p0Error;
 use postgres::rows::Row;
 use postgres::Connection;
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
-use crate::error::C3p0Error;
 
+pub mod codec;
 pub mod error;
 
 type IdType = i64;
@@ -60,8 +62,13 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Config {
+#[derive(Clone)]
+pub struct Config<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    pub codec: Codec<DATA>,
+
     pub id_field_name: String,
     pub version_field_name: String,
     pub data_field_name: String,
@@ -84,8 +91,12 @@ pub struct Config {
     pub drop_table_sql_query: String,
 }
 
-#[derive(Clone, Debug)]
-pub struct ConfigBuilder {
+#[derive(Clone)]
+pub struct ConfigBuilder<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    codec: Codec<DATA>,
     id_field_name: String,
     version_field_name: String,
     data_field_name: String,
@@ -93,10 +104,14 @@ pub struct ConfigBuilder {
     schema_name: Option<String>,
 }
 
-impl ConfigBuilder {
+impl<DATA> ConfigBuilder<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
         ConfigBuilder {
+            codec: Default::default(),
             table_name: table_name.clone(),
             id_field_name: "id".to_owned(),
             version_field_name: "version".to_owned(),
@@ -105,7 +120,12 @@ impl ConfigBuilder {
         }
     }
 
-    pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> ConfigBuilder {
+    pub fn with_codec(mut self, codec: Codec<DATA>) -> ConfigBuilder<DATA> {
+        self.codec = codec;
+        self
+    }
+
+    pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> ConfigBuilder<DATA> {
         self.id_field_name = id_field_name.into();
         self
     }
@@ -113,22 +133,28 @@ impl ConfigBuilder {
     pub fn with_version_field_name<T: Into<String>>(
         mut self,
         version_field_name: T,
-    ) -> ConfigBuilder {
+    ) -> ConfigBuilder<DATA> {
         self.version_field_name = version_field_name.into();
         self
     }
 
-    pub fn with_data_field_name<T: Into<String>>(mut self, data_field_name: T) -> ConfigBuilder {
+    pub fn with_data_field_name<T: Into<String>>(
+        mut self,
+        data_field_name: T,
+    ) -> ConfigBuilder<DATA> {
         self.data_field_name = data_field_name.into();
         self
     }
 
-    pub fn with_schema_name<O: Into<Option<String>>>(mut self, schema_name: O) -> ConfigBuilder {
+    pub fn with_schema_name<O: Into<Option<String>>>(
+        mut self,
+        schema_name: O,
+    ) -> ConfigBuilder<DATA> {
         self.schema_name = schema_name.into();
         self
     }
 
-    pub fn build(self) -> Config {
+    pub fn build(self) -> Config<DATA> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
@@ -191,6 +217,7 @@ impl ConfigBuilder {
 
             drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
 
+            codec: self.codec,
             qualified_table_name,
             table_name: self.table_name,
             id_field_name: self.id_field_name,
@@ -205,24 +232,27 @@ pub trait C3p0<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    fn conf(&self) -> &Config;
+    fn conf(&self) -> &Config<DATA>;
 
     fn to_model(&self, row: Row) -> Result<Model<DATA>, C3p0Error> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
-        //data: serde_json::from_value::<DATA>(row.get(self.data_field_name.as_str()))?
+        //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
+        let conf = self.conf();
         let id = row.get(0);
         let version = row.get(1);
-        let data = serde_json::from_value::<DATA>(row.get(2))?;
+        let data = (conf.codec.from_value)(row.get(2))?;
         Ok(Model { id, version, data })
     }
 
     fn create_table_if_not_exists(&self, conn: &Connection) -> Result<u64, C3p0Error> {
-        conn.execute(&self.conf().create_table_sql_query, &[]).map_err(C3p0Error::from)
+        conn.execute(&self.conf().create_table_sql_query, &[])
+            .map_err(C3p0Error::from)
     }
 
     fn drop_table_if_exists(&self, conn: &Connection) -> Result<u64, C3p0Error> {
-        conn.execute(&self.conf().drop_table_sql_query, &[]).map_err(C3p0Error::from)
+        conn.execute(&self.conf().drop_table_sql_query, &[])
+            .map_err(C3p0Error::from)
     }
 
     fn count_all(&self, conn: &Connection) -> Result<IdType, C3p0Error> {
@@ -232,7 +262,9 @@ where
             .query(&[])?
             .iter()
             .next()
-            .ok_or_else(||C3p0Error::IteratorError {message: format!("Cannot iterate next element")})?
+            .ok_or_else(|| C3p0Error::IteratorError {
+                message: "Cannot iterate next element".to_owned(),
+            })?
             .get(0);
         Ok(result)
     }
@@ -249,7 +281,9 @@ where
             .query(&[id_into])?
             .iter()
             .next()
-            .ok_or_else(|| C3p0Error::IteratorError {message: format!("Cannot iterate next element")})?
+            .ok_or_else(|| C3p0Error::IteratorError {
+                message: "Cannot iterate next element".to_owned(),
+            })?
             .get(0);
         Ok(result)
     }
@@ -257,8 +291,7 @@ where
     fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_all_sql_query)?;
-        stmt
-            .query(&[])?
+        stmt.query(&[])?
             .iter()
             .map(|row| self.to_model(row))
             .collect()
@@ -271,8 +304,7 @@ where
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.find_by_id_sql_query)?;
-        stmt
-            .query(&[id.into()])?
+        stmt.query(&[id.into()])?
             .iter()
             .next()
             .map(|row| self.to_model(row))
@@ -298,12 +330,14 @@ where
     fn save(&self, conn: &Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let conf = self.conf();
         let stmt = conn.prepare(&conf.save_sql_query)?;
-        let json_data = serde_json::to_value(&obj.data)?;
+        let json_data = (conf.codec.to_value)(&obj.data)?;
         let id = stmt
             .query(&[&obj.version, &json_data])?
             .iter()
             .next()
-            .ok_or_else(|| C3p0Error::IteratorError {message: format!("Cannot iterate next element")})?
+            .ok_or_else(|| C3p0Error::IteratorError {
+                message: "Cannot iterate next element".to_owned(),
+            })?
             .get(0);
 
         Ok(Model {
@@ -319,7 +353,7 @@ pub struct C3p0Repository<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    conf: Config,
+    conf: Config<DATA>,
     phantom_data: std::marker::PhantomData<DATA>,
 }
 
@@ -327,7 +361,7 @@ impl<DATA> C3p0Repository<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub fn build(conf: Config) -> Self {
+    pub fn build(conf: Config<DATA>) -> Self {
         C3p0Repository {
             conf,
             phantom_data: std::marker::PhantomData,
@@ -339,7 +373,7 @@ impl<DATA> C3p0<DATA> for C3p0Repository<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    fn conf(&self) -> &Config {
+    fn conf(&self) -> &Config<DATA> {
         &self.conf
     }
 }

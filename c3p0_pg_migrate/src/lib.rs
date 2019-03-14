@@ -158,7 +158,7 @@ impl PgMigrate {
                     if !migration.data.migration_id.eq(&last.data.migration_id)
                         || !last.data.migration_type.eq(&MigrationType::UP)
                     {
-                        return Err(C3p0MigrateError::CorruptedDbMigrationState {message: format!("migration history is not valid!!")});
+                        return Err(C3p0MigrateError::CorruptedDbMigrationState {message: "Migration history is not valid!!".to_owned()});
                     }
                 }
             }

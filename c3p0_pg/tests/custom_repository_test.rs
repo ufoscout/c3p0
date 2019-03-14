@@ -4,11 +4,11 @@ use c3p0_pg::{C3p0, Config, ConfigBuilder, NewModel};
 mod shared;
 
 struct TestTableRepository {
-    conf: Config,
+    conf: Config<TestData>,
 }
 
 impl C3p0<TestData> for TestTableRepository {
-    fn conf(&self) -> &Config {
+    fn conf(&self) -> &Config<TestData> {
         &self.conf
     }
 }

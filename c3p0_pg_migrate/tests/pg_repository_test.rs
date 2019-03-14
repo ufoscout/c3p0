@@ -12,7 +12,7 @@ fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<st
 
     let pg_migrate = PgMigrateBuilder::new().with_migrations(vec![]).build();
 
-    pg_migrate.migrate(&conn);
+    pg_migrate.migrate(&conn).unwrap();
 
     assert!(conn
         .execute(
@@ -37,7 +37,7 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std
         .with_migrations(vec![])
         .build();
 
-    pg_migrate.migrate(&conn);
+    pg_migrate.migrate(&conn).unwrap();
 
     assert!(conn
         .execute(&format!("select * from {}", custom_name), &[])
@@ -70,7 +70,7 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
         ])
         .build();
 
-    pg_migrate.migrate(&conn);
+    pg_migrate.migrate(&conn).unwrap();
 
     assert!(conn
         .execute(&format!("select * from {}", custom_name), &[])
