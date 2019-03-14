@@ -95,7 +95,7 @@ mod models {
 
     //use diesel::types::{Json, Jsonb};
 
-    use c3p0_diesel_macro::*;
+    use c3p0_diesel_macro::DieselJson;
 
     #[derive(Serialize, Deserialize, Debug, DieselJson)]
     pub struct CustomValue {
@@ -103,7 +103,7 @@ mod models {
     }
 }
 
-embed_migrations!("./migrations/");
+embed_migrations!("./tests/migrations/");
 
 pub fn establish_connection(
     docker: &clients::Cli,

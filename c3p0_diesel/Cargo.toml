@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 diesel = { version = "1.0" }
 log = "0.4"
-c3p0 = { path = "../c3p0", version = "0.2.0" }
 c3p0_diesel_macro = { path = "../c3p0_diesel_macro", version = "0.2.0" }
 serde = "1.0"
 serde_derive = "1.0"
