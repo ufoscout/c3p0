@@ -1,8 +1,8 @@
+use crate::error::C3p0MigrateError;
 use crate::migration::{to_sql_migrations, Migration, SqlMigration};
 use c3p0_pg::{C3p0, C3p0Repository, ConfigBuilder, Model, NewModel};
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
-use crate::error::C3p0MigrateError;
 
 pub mod error;
 mod md5;
@@ -93,8 +93,7 @@ impl PgMigrate {
     pub fn migrate(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
         let tx = conn.transaction()?;
 
-        self.repo
-            .create_table_if_not_exists(tx.connection())?;
+        self.repo.create_table_if_not_exists(tx.connection())?;
 
         let migration_history = self.fetch_migrations_history(conn)?;
         let migration_history = PgMigrate::clean_history(migration_history)?;
@@ -110,42 +109,50 @@ impl PgMigrate {
                         continue;
                     }
                     return Err(C3p0MigrateError::AlteredMigrationSql {
-                        message: format!("Wrong checksum for migration [{}]. Expected [{}], found [{}].",
-                                         applied_migration.data.migration_id,
-                                         applied_migration.data.md5_checksum,
-                                         migration.up.md5)
+                        message: format!(
+                            "Wrong checksum for migration [{}]. Expected [{}], found [{}].",
+                            applied_migration.data.migration_id,
+                            applied_migration.data.md5_checksum,
+                            migration.up.md5
+                        ),
                     });
                 }
                 return Err(C3p0MigrateError::WrongMigrationSet {
-                    message: format!("Wrong migration set! Expected migration [{}], found [{}].",
-                                     applied_migration.data.migration_id, migration.id)
+                    message: format!(
+                        "Wrong migration set! Expected migration [{}], found [{}].",
+                        applied_migration.data.migration_id, migration.id
+                    ),
                 });
             }
 
             tx.batch_execute(&migration.up.sql)?;
 
-            self.repo
-                .save(
-                    tx.connection(),
-                    NewModel::new(MigrationData {
-                        success: true,
-                        md5_checksum: migration.up.md5.clone(),
-                        migration_id: migration.id.clone(),
-                        migration_type: MigrationType::UP,
-                        execution_time_ms: 0,
-                        installed_on_epoch_ms: 0,
-                    }),
-                )?;
+            self.repo.save(
+                tx.connection(),
+                NewModel::new(MigrationData {
+                    success: true,
+                    md5_checksum: migration.up.md5.clone(),
+                    migration_id: migration.id.clone(),
+                    migration_type: MigrationType::UP,
+                    execution_time_ms: 0,
+                    installed_on_epoch_ms: 0,
+                }),
+            )?;
         }
 
         tx.commit().map_err(C3p0MigrateError::from)
     }
 
-    pub fn fetch_migrations_history(&self, conn: &Connection) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
+    pub fn fetch_migrations_history(
+        &self,
+        conn: &Connection,
+    ) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
         self.repo.find_all(conn).map_err(C3p0MigrateError::from)
     }
 
-    fn clean_history(migrations: Vec<MigrationModel>) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
+    fn clean_history(
+        migrations: Vec<MigrationModel>,
+    ) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
         let mut result = vec![];
 
         for migration in migrations {
@@ -158,7 +165,9 @@ impl PgMigrate {
                     if !migration.data.migration_id.eq(&last.data.migration_id)
                         || !last.data.migration_type.eq(&MigrationType::UP)
                     {
-                        return Err(C3p0MigrateError::CorruptedDbMigrationState {message: "Migration history is not valid!!".to_owned()});
+                        return Err(C3p0MigrateError::CorruptedDbMigrationState {
+                            message: "Migration history is not valid!!".to_owned(),
+                        });
                     }
                 }
             }

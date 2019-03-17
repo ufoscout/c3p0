@@ -82,27 +82,24 @@ mod test {
 
     #[test]
     fn check_json_type_format_with_cow() {
-
-        let v2 = UserVersion2{
+        let v2 = UserVersion2 {
             username: "user_v1_name".to_owned(),
             email: "user_v1_email@test.com".to_owned(),
-            age: 123
+            age: 123,
         };
         let version2 = Versioning2::V2(Cow::Borrowed(&v2));
 
         let json = serde_json::to_string(&version2).unwrap();
 
         println!("json format: \n{}", json)
-
     }
 
     #[test]
     fn codec_should_code_and_decode() {
-
-        let v2 = UserVersion2{
+        let v2 = UserVersion2 {
             username: "user_v1_name".to_owned(),
             email: "user_v1_email@test.com".to_owned(),
-            age: 123
+            age: 123,
         };
 
         let codec = Codec {
@@ -119,8 +116,7 @@ mod test {
 
     #[test]
     fn codec_should_upgrade_between_versions() {
-
-        let v1 = UserVersion1{
+        let v1 = UserVersion1 {
             username: "user_v1_name".to_owned(),
             email: "user_v1_email@test.com".to_owned(),
         };

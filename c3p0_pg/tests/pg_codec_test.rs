@@ -68,44 +68,43 @@ impl<'a> Versioning2<'a> {
 
 #[test]
 fn should_create_and_drop_table() {
-    let _lock = shared::LOCK.lock().unwrap();
-    let conn = shared::new_connection();
+    shared::SINGLETON.get(|(conn, _)| {
+        let table_name = "USER_TABLE";
 
-    let table_name = "USER_TABLE";
+        let conf_v1: Config<UserVersion1> = ConfigBuilder::new(table_name)
+            .with_codec(Codec {
+                to_value: |data| Versioning1::to_value(data),
+                from_value: |value| Versioning1::from_value(value),
+            })
+            .build();
+        let jpo_v1 = C3p0Repository::build(conf_v1);
 
-    let conf_v1: Config<UserVersion1> = ConfigBuilder::new(table_name)
-        .with_codec(Codec {
-            to_value: |data| Versioning1::to_value(data),
-            from_value: |value| Versioning1::from_value(value),
-        })
-        .build();
-    let jpo_v1 = C3p0Repository::build(conf_v1);
+        let conf_v2: Config<UserVersion2> = ConfigBuilder::new(table_name)
+            .with_codec(Codec {
+                to_value: |data| Versioning2::to_value(data),
+                from_value: |value| Versioning2::from_value(value),
+            })
+            .build();
+        let jpo_v2 = C3p0Repository::build(conf_v2);
 
-    let conf_v2: Config<UserVersion2> = ConfigBuilder::new(table_name)
-        .with_codec(Codec {
-            to_value: |data| Versioning2::to_value(data),
-            from_value: |value| Versioning2::from_value(value),
-        })
-        .build();
-    let jpo_v2 = C3p0Repository::build(conf_v2);
+        let new_user_v1 = NewModel::new(UserVersion1 {
+            username: "user_v1_name".to_owned(),
+            email: "user_v1_email@test.com".to_owned(),
+        });
 
-    let new_user_v1 = NewModel::new(UserVersion1 {
-        username: "user_v1_name".to_owned(),
-        email: "user_v1_email@test.com".to_owned(),
+        assert!(jpo_v1.create_table_if_not_exists(&conn).is_ok());
+        assert!(jpo_v1.delete_all(&conn).is_ok());
+
+        let user_v1 = jpo_v1.save(&conn, new_user_v1.clone()).unwrap();
+
+        let user_v2_found = jpo_v2.find_by_id(&conn, &user_v1.id).unwrap();
+        assert!(user_v2_found.is_some());
+
+        let user_v2_found = user_v2_found.unwrap();
+        assert_eq!(user_v1.id, user_v2_found.id);
+        assert_eq!(user_v1.version, user_v2_found.version);
+        assert_eq!(user_v1.data.username, user_v2_found.data.username);
+        assert_eq!(user_v1.data.email, user_v2_found.data.email);
+        assert_eq!(18, user_v2_found.data.age);
     });
-
-    assert!(jpo_v1.create_table_if_not_exists(&conn).is_ok());
-    assert!(jpo_v1.delete_all(&conn).is_ok());
-
-    let user_v1 = jpo_v1.save(&conn, new_user_v1.clone()).unwrap();
-
-    let user_v2_found = jpo_v2.find_by_id(&conn, &user_v1.id).unwrap();
-    assert!(user_v2_found.is_some());
-
-    let user_v2_found = user_v2_found.unwrap();
-    assert_eq!(user_v1.id, user_v2_found.id);
-    assert_eq!(user_v1.version, user_v2_found.version);
-    assert_eq!(user_v1.data.username, user_v2_found.data.username);
-    assert_eq!(user_v1.data.email, user_v2_found.data.email);
-    assert_eq!(18, user_v2_found.data.age);
 }
