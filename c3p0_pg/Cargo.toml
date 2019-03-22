@@ -7,8 +7,7 @@ description = "A good friend for r2d2. Based on rust-postgres."
 edition = "2018"
 
 [dependencies]
-failure = "0.1"
-failure_derive = "0.1"
+err-derive = "0.1"
 log = "0.4"
 postgres = { version = "0.15", features = ["with-serde_json"] }
 serde = "1.0"

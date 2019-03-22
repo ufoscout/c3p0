@@ -1,12 +1,12 @@
-use failure_derive::Fail;
+use err_derive::Error;
 
-#[derive(Fail, Debug)]
+#[derive(Error, Debug)]
 pub enum C3p0Error {
-    #[fail(display = "PostgresError: [{}]", cause)]
+    #[error(display = "PostgresError: [{}]", cause)]
     PostgresError { cause: postgres::error::Error },
-    #[fail(display = "JsonProcessingError: [{}]", cause)]
+    #[error(display = "JsonProcessingError: [{}]", cause)]
     JsonProcessingError { cause: serde_json::error::Error },
-    #[fail(display = "IteratorError: [{}]", message)]
+    #[error(display = "IteratorError: [{}]", message)]
     IteratorError { message: String },
 }
 
