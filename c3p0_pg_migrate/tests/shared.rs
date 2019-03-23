@@ -1,22 +1,23 @@
-use postgres::{Connection, TlsMode};
 use testcontainers::*;
+use r2d2_postgres::{PostgresConnectionManager, TlsMode};
+use r2d2::Pool;
 
 pub fn new_connection(
     docker: &clients::Cli,
 ) -> (
-    Connection,
+    Pool<PostgresConnectionManager>,
     Container<clients::Cli, images::postgres::Postgres>,
 ) {
     let node = docker.run(images::postgres::Postgres::default());
 
-    let conn = Connection::connect(
-        format!(
-            "postgres://postgres:postgres@127.0.0.1:{}/postgres",
-            node.get_host_port(5432).unwrap()
-        ),
-        TlsMode::None,
-    )
-    .unwrap();
+    let manager = PostgresConnectionManager::new(format!(
+        "postgres://postgres:postgres@127.0.0.1:{}/postgres",
+        node.get_host_port(5432).unwrap()
+    ),
+                                                 TlsMode::None).unwrap();
+    let pool = r2d2::Pool::builder()
+        .min_idle(Some(10))
+        .build(manager).unwrap();
 
-    (conn, node)
+    (pool, node)
 }

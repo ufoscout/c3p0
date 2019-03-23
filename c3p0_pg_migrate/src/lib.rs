@@ -95,6 +95,8 @@ impl PgMigrate {
 
         self.repo.create_table_if_not_exists(tx.connection())?;
 
+        tx.execute(&format!("LOCK TABLE {} IN ACCESS EXCLUSIVE MODE;", self.repo.conf().qualified_table_name), &[])?;
+
         let migration_history = self.fetch_migrations_history(conn)?;
         let migration_history = PgMigrate::clean_history(migration_history)?;
 
