@@ -70,10 +70,7 @@ fn impl_diesel_json_macro(ast: &syn::DeriveInput) -> TokenStream {
 }
 
 fn build_diesel_json_proxy(name: &Ident) -> proc_macro2::TokenStream {
-    let proxy_name = syn::Ident::new(
-        &format!("{}DieselJsonProxyAsExpression", name),
-        name.span(),
-    );
+    let proxy_name = syn::Ident::new(&format!("{}DieselJsonProxyAsExpression", name), name.span());
 
     let gen_proxy = quote! {
         #[derive(FromSqlRow, AsExpression)]

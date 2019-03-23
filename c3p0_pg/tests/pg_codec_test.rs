@@ -68,7 +68,8 @@ impl<'a> Versioning2<'a> {
 
 #[test]
 fn should_create_and_drop_table() {
-    shared::SINGLETON.get(|(conn, _)| {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
         let table_name = "USER_TABLE";
 
         let conf_v1: Config<UserVersion1> = ConfigBuilder::new(table_name)

@@ -15,7 +15,8 @@ impl C3p0<TestData> for TestTableRepository {
 
 #[test]
 fn postgres_basic_crud() {
-    shared::SINGLETON.get(|(conn, _)| {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
         conn.batch_execute(
             "create table TEST_TABLE (
                             ID bigserial primary key,

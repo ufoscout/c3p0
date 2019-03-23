@@ -1,6 +1,7 @@
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
-use postgres::Connection;
+use r2d2::Pool;
+use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
@@ -13,25 +14,29 @@ pub struct TestData {
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
     pub static ref SINGLETON: MaybeSingle<(
-        postgres::Connection,
+        Pool<PostgresConnectionManager>,
         Container<'static, clients::Cli, images::postgres::Postgres>
     )> = MaybeSingle::new(|| init());
 }
 
 fn init() -> (
-    postgres::Connection,
+    Pool<PostgresConnectionManager>,
     Container<'static, clients::Cli, images::postgres::Postgres>,
 ) {
     let node = DOCKER.run(images::postgres::Postgres::default());
 
-    let conn = Connection::connect(
+    let manager = PostgresConnectionManager::new(
         format!(
             "postgres://postgres:postgres@127.0.0.1:{}/postgres",
             node.get_host_port(5432).unwrap()
         ),
-        postgres::TlsMode::None,
+        TlsMode::None,
     )
     .unwrap();
+    let pool = r2d2::Pool::builder()
+        .min_idle(Some(10))
+        .build(manager)
+        .unwrap();
 
-    (conn, node)
+    (pool, node)
 }

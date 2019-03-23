@@ -5,7 +5,8 @@ mod shared;
 
 #[test]
 fn should_create_and_drop_table() {
-    shared::SINGLETON.get(|(conn, _)| {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
         let conf = ConfigBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0Repository::build(conf);
@@ -37,7 +38,8 @@ fn should_create_and_drop_table() {
 
 #[test]
 fn postgres_basic_crud() {
-    shared::SINGLETON.get(|(conn, _)| {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
         let conf = ConfigBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0Repository::build(conf);
@@ -66,7 +68,8 @@ fn postgres_basic_crud() {
 
 #[test]
 fn should_find_all() {
-    shared::SINGLETON.get(|(conn, _)| {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
         let conf = ConfigBuilder::new("TEST_TABLE")
             .with_schema_name("public".to_owned())
             .build();
@@ -95,7 +98,8 @@ fn should_find_all() {
 
 #[test]
 fn should_delete_all() {
-    shared::SINGLETON.get(|(conn, _)| {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
         let conf = ConfigBuilder::new("TEST_TABLE").build();
         let jpo = C3p0Repository::build(conf);
         assert!(jpo.drop_table_if_exists(&conn).is_ok());
@@ -122,7 +126,8 @@ fn should_delete_all() {
 
 #[test]
 fn should_count() {
-    shared::SINGLETON.get(|(conn, _)| {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
         let conf = ConfigBuilder::new("TEST_TABLE").build();
         let jpo = C3p0Repository::build(conf);
 
@@ -152,7 +157,8 @@ fn should_count() {
 
 #[test]
 fn should_return_whether_exists_by_id() {
-    shared::SINGLETON.get(|(conn, _)| {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
         let conf = ConfigBuilder::new("TEST_TABLE").build();
         let jpo = C3p0Repository::build(conf);
 

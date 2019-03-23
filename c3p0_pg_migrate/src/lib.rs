@@ -1,6 +1,7 @@
 use crate::error::C3p0MigrateError;
 use crate::migration::{to_sql_migrations, Migration, SqlMigration};
 use c3p0_pg::{C3p0, C3p0Repository, ConfigBuilder, Model, NewModel};
+use log::*;
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
 
@@ -91,11 +92,19 @@ pub struct PgMigrate {
 
 impl PgMigrate {
     pub fn migrate(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
+        if let Err(err) = self.repo.create_table_if_not_exists(conn) {
+            warn!("Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
+        };
+
         let tx = conn.transaction()?;
 
-        self.repo.create_table_if_not_exists(tx.connection())?;
-
-        tx.execute(&format!("LOCK TABLE {} IN ACCESS EXCLUSIVE MODE;", self.repo.conf().qualified_table_name), &[])?;
+        tx.execute(
+            &format!(
+                "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE;",
+                self.repo.conf().qualified_table_name
+            ),
+            &[],
+        )?;
 
         let migration_history = self.fetch_migrations_history(conn)?;
         let migration_history = PgMigrate::clean_history(migration_history)?;
