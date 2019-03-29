@@ -1,5 +1,8 @@
 # c3p0
 
+C3: "Hello, I don't believe we have been introduced.
+     A pleasure to meet you. I am C-3p0, Human-DB Relations."
+
 Are you working with Postgres DBs and JSON objects? Well, c3p0
 
 "I see, Sir Luke".
