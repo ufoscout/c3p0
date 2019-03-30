@@ -1,10 +1,14 @@
 [package]
 name = "c3p0_diesel_macro"
 license = "MIT"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "Macros for c3p0_diesel"
 edition = "2018"
+readme = "README.md"
+homepage = "https://github.com/ufoscout/c3p0"
+repository = "https://github.com/ufoscout/c3p0"
+keywords = ["postgres", "pg", "json", "diesel"]
 
 [lib]
 proc-macro = true

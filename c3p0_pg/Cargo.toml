@@ -1,10 +1,14 @@
 [package]
 name = "c3p0_pg"
 license = "MIT"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2. Based on rust-postgres."
 edition = "2018"
+readme = "README.md"
+homepage = "https://github.com/ufoscout/c3p0"
+repository = "https://github.com/ufoscout/c3p0"
+keywords = ["postgres", "pg", "json"]
 
 [dependencies]
 err-derive = "0.1"

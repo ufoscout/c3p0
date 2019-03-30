@@ -1,15 +1,19 @@
 [package]
 name = "c3p0_diesel"
 license = "MIT"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2. Based on diesel."
 edition = "2018"
+readme = "README.md"
+homepage = "https://github.com/ufoscout/c3p0"
+repository = "https://github.com/ufoscout/c3p0"
+keywords = ["postgres", "pg", "json", "diesel"]
 
 [dependencies]
 diesel = { version = "1.0" }
 log = "0.4"
-c3p0_diesel_macro = { path = "../c3p0_diesel_macro", version = "0.2.2" }
+c3p0_diesel_macro = { path = "../c3p0_diesel_macro", version = "0.2.3" }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
