@@ -146,11 +146,8 @@ where
         self
     }
 
-    pub fn with_schema_name<O: Into<Option<String>>>(
-        mut self,
-        schema_name: O,
-    ) -> ConfigBuilder<DATA> {
-        self.schema_name = schema_name.into();
+    pub fn with_schema_name<O: Into<OptString>>(mut self, schema_name: O) -> ConfigBuilder<DATA> {
+        self.schema_name = schema_name.into().value;
         self
     }
 
@@ -224,6 +221,38 @@ where
             version_field_name: self.version_field_name,
             data_field_name: self.data_field_name,
             schema_name: self.schema_name,
+        }
+    }
+}
+
+pub struct OptString {
+    value: Option<String>,
+}
+
+impl Into<OptString> for String {
+    fn into(self) -> OptString {
+        OptString { value: Some(self) }
+    }
+}
+
+impl Into<OptString> for &str {
+    fn into(self) -> OptString {
+        OptString {
+            value: Some(self.to_owned()),
+        }
+    }
+}
+
+impl Into<OptString> for Option<String> {
+    fn into(self) -> OptString {
+        OptString { value: self }
+    }
+}
+
+impl Into<OptString> for Option<&str> {
+    fn into(self) -> OptString {
+        OptString {
+            value: self.map(|val| val.to_owned()),
         }
     }
 }

@@ -71,7 +71,7 @@ fn should_find_all() {
     shared::SINGLETON.get(|(pool, _)| {
         let conn = pool.get().unwrap();
         let conf = ConfigBuilder::new("TEST_TABLE")
-            .with_schema_name("public".to_owned())
+            .with_schema_name("public")
             .build();
         let jpo = C3p0Repository::build(conf);
 
