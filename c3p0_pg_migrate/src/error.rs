@@ -3,7 +3,7 @@ use err_derive::Error;
 #[derive(Error, Debug)]
 pub enum C3p0MigrateError {
     #[error(display = "C3p0Error: [{}]", cause)]
-    C3p0Error { cause: c3p0_pg::error::C3p0Error },
+    C3p0Error { cause: c3p0::error::C3p0Error },
     #[error(display = "PostgresError: [{}]", cause)]
     PostgresError { cause: postgres::error::Error },
     #[error(display = "IteratorError: [{}]", message)]
@@ -22,8 +22,8 @@ impl From<postgres::error::Error> for C3p0MigrateError {
     }
 }
 
-impl From<c3p0_pg::error::C3p0Error> for C3p0MigrateError {
-    fn from(cause: c3p0_pg::error::C3p0Error) -> Self {
+impl From<c3p0::error::C3p0Error> for C3p0MigrateError {
+    fn from(cause: c3p0::error::C3p0Error) -> Self {
         C3p0MigrateError::C3p0Error { cause }
     }
 }

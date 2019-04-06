@@ -1,5 +1,5 @@
-use c3p0_pg::codec::Codec;
-use c3p0_pg::error::C3p0Error;
+use c3p0::codec::Codec;
+use c3p0::error::C3p0Error;
 use c3p0_pg::{C3p0, C3p0Repository, Config, ConfigBuilder, NewModel};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;

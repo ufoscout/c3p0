@@ -1,11 +1,11 @@
-use crate::codec::Codec;
-use crate::error::C3p0Error;
+use crate::error::into_c3p0_error;
+use c3p0::codec::Codec;
+use c3p0::error::C3p0Error;
 use postgres::rows::Row;
 use postgres::Connection;
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
 
-pub mod codec;
 pub mod error;
 
 type IdType = i64;
@@ -276,19 +276,22 @@ where
 
     fn create_table_if_not_exists(&self, conn: &Connection) -> Result<u64, C3p0Error> {
         conn.execute(&self.conf().create_table_sql_query, &[])
-            .map_err(C3p0Error::from)
+            .map_err(into_c3p0_error)
     }
 
     fn drop_table_if_exists(&self, conn: &Connection) -> Result<u64, C3p0Error> {
         conn.execute(&self.conf().drop_table_sql_query, &[])
-            .map_err(C3p0Error::from)
+            .map_err(into_c3p0_error)
     }
 
     fn count_all(&self, conn: &Connection) -> Result<IdType, C3p0Error> {
         let conf = self.conf();
-        let stmt = conn.prepare(&conf.count_all_sql_query)?;
+        let stmt = conn
+            .prepare(&conf.count_all_sql_query)
+            .map_err(into_c3p0_error)?;
         let result = stmt
-            .query(&[])?
+            .query(&[])
+            .map_err(into_c3p0_error)?
             .iter()
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {
@@ -304,10 +307,13 @@ where
         id: ID,
     ) -> Result<bool, C3p0Error> {
         let conf = self.conf();
-        let stmt = conn.prepare(&conf.exists_by_id_sql_query)?;
+        let stmt = conn
+            .prepare(&conf.exists_by_id_sql_query)
+            .map_err(into_c3p0_error)?;
         let id_into = id.into();
         let result = stmt
-            .query(&[id_into])?
+            .query(&[id_into])
+            .map_err(into_c3p0_error)?
             .iter()
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {
@@ -319,8 +325,11 @@ where
 
     fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let conf = self.conf();
-        let stmt = conn.prepare(&conf.find_all_sql_query)?;
-        stmt.query(&[])?
+        let stmt = conn
+            .prepare(&conf.find_all_sql_query)
+            .map_err(into_c3p0_error)?;
+        stmt.query(&[])
+            .map_err(into_c3p0_error)?
             .iter()
             .map(|row| self.to_model(row))
             .collect()
@@ -332,8 +341,11 @@ where
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         let conf = self.conf();
-        let stmt = conn.prepare(&conf.find_by_id_sql_query)?;
-        stmt.query(&[id.into()])?
+        let stmt = conn
+            .prepare(&conf.find_by_id_sql_query)
+            .map_err(into_c3p0_error)?;
+        stmt.query(&[id.into()])
+            .map_err(into_c3p0_error)?
             .iter()
             .next()
             .map(|row| self.to_model(row))
@@ -342,8 +354,10 @@ where
 
     fn delete_all(&self, conn: &Connection) -> Result<u64, C3p0Error> {
         let conf = self.conf();
-        let stmt = conn.prepare(&conf.delete_all_sql_query)?;
-        stmt.execute(&[]).map_err(C3p0Error::from)
+        let stmt = conn
+            .prepare(&conf.delete_all_sql_query)
+            .map_err(into_c3p0_error)?;
+        stmt.execute(&[]).map_err(into_c3p0_error)
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
@@ -352,16 +366,21 @@ where
         id: ID,
     ) -> Result<u64, C3p0Error> {
         let conf = self.conf();
-        let stmt = conn.prepare(&conf.delete_by_id_sql_query)?;
-        stmt.execute(&[id.into()]).map_err(C3p0Error::from)
+        let stmt = conn
+            .prepare(&conf.delete_by_id_sql_query)
+            .map_err(into_c3p0_error)?;
+        stmt.execute(&[id.into()]).map_err(into_c3p0_error)
     }
 
     fn save(&self, conn: &Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let conf = self.conf();
-        let stmt = conn.prepare(&conf.save_sql_query)?;
+        let stmt = conn
+            .prepare(&conf.save_sql_query)
+            .map_err(into_c3p0_error)?;
         let json_data = (conf.codec.to_value)(&obj.data)?;
         let id = stmt
-            .query(&[&obj.version, &json_data])?
+            .query(&[&obj.version, &json_data])
+            .map_err(into_c3p0_error)?
             .iter()
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {

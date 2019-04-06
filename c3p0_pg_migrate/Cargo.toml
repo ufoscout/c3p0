@@ -11,6 +11,7 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["postgres", "pg", "json"]
 
 [dependencies]
+c3p0 = { path = "../c3p0", version = "0.2.3" }
 c3p0_pg = { path = "../c3p0_pg", version = "0.2.3" }
 err-derive = "0.1"
 log = "0.4"

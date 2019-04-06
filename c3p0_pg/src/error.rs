@@ -1,23 +1,7 @@
-use err_derive::Error;
+use c3p0::error::C3p0Error;
 
-#[derive(Error, Debug)]
-pub enum C3p0Error {
-    #[error(display = "PostgresError: [{}]", cause)]
-    PostgresError { cause: postgres::error::Error },
-    #[error(display = "JsonProcessingError: [{}]", cause)]
-    JsonProcessingError { cause: serde_json::error::Error },
-    #[error(display = "IteratorError: [{}]", message)]
-    IteratorError { message: String },
-}
-
-impl From<postgres::error::Error> for C3p0Error {
-    fn from(cause: postgres::error::Error) -> Self {
-        C3p0Error::PostgresError { cause }
-    }
-}
-
-impl From<serde_json::error::Error> for C3p0Error {
-    fn from(cause: serde_json::error::Error) -> Self {
-        C3p0Error::JsonProcessingError { cause }
+pub fn into_c3p0_error(error: postgres::error::Error) -> C3p0Error {
+    C3p0Error::SqlError {
+        cause: format!("{}", error),
     }
 }
