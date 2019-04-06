@@ -1,10 +1,10 @@
-use crate::codec::Codec;
-use crate::error::C3p0Error;
+use c3p0::codec::Codec;
+use c3p0::error::C3p0Error;
 use mysql::{params, Conn, Row};
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
+use crate::error::into_c3p0_error;
 
-pub mod codec;
 pub mod error;
 
 type IdType = i64;
@@ -273,20 +273,20 @@ where
     fn create_table_if_not_exists(&self, conn: &mut Conn) -> Result<u64, C3p0Error> {
         conn.prep_exec(&self.conf().create_table_sql_query, ())
             .map(|row| row.affected_rows())
-            .map_err(C3p0Error::from)
+            .map_err(into_c3p0_error)
     }
 
     fn drop_table_if_exists(&self, conn: &mut Conn) -> Result<u64, C3p0Error> {
         conn.prep_exec(&self.conf().drop_table_sql_query, ())
             .map(|row| row.affected_rows())
-            .map_err(C3p0Error::from)
+            .map_err(into_c3p0_error)
     }
 
     fn count_all(&self, conn: &mut Conn) -> Result<IdType, C3p0Error> {
         let conf = self.conf();
-        let mut stmt = conn.prepare(&conf.count_all_sql_query)?;
+        let mut stmt = conn.prepare(&conf.count_all_sql_query).map_err(into_c3p0_error)?;
         let result = stmt
-            .execute(())?
+            .execute(()).map_err(into_c3p0_error)?
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
@@ -302,12 +302,12 @@ where
         id: ID,
     ) -> Result<bool, C3p0Error> {
         let conf = self.conf();
-        let mut stmt = conn.prepare(&conf.exists_by_id_sql_query)?;
+        let mut stmt = conn.prepare(&conf.exists_by_id_sql_query).map_err(into_c3p0_error)?;
         let id_into = id.into();
         let result = stmt
             .execute(params! {
                 "id" => id_into
-            })?
+            }).map_err(into_c3p0_error)?
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
@@ -319,7 +319,7 @@ where
 
     fn find_all(&self, conn: &mut Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let conf = self.conf();
-        conn.prep_exec(&conf.find_all_sql_query, ())?
+        conn.prep_exec(&conf.find_all_sql_query, ()).map_err(into_c3p0_error)?
             .map(|row| self.to_model(row.unwrap()))
             .collect()
     }
@@ -336,7 +336,7 @@ where
             params! {
                 "id" => id_into
             },
-        )?
+        ).map_err(into_c3p0_error)?
         .next()
         .map(|row| self.to_model(row.unwrap()))
         .transpose()
@@ -344,10 +344,10 @@ where
 
     fn delete_all(&self, conn: &mut Conn) -> Result<u64, C3p0Error> {
         let conf = self.conf();
-        let mut stmt = conn.prepare(&conf.delete_all_sql_query)?;
+        let mut stmt = conn.prepare(&conf.delete_all_sql_query).map_err(into_c3p0_error)?;
         stmt.execute(())
             .map(|result| result.affected_rows())
-            .map_err(C3p0Error::from)
+            .map_err(into_c3p0_error)
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
@@ -356,28 +356,29 @@ where
         id: ID,
     ) -> Result<u64, C3p0Error> {
         let conf = self.conf();
-        let mut stmt = conn.prepare(&conf.delete_by_id_sql_query)?;
+        let mut stmt = conn.prepare(&conf.delete_by_id_sql_query).map_err(into_c3p0_error)?;
         stmt.execute(params! {
             "id" => id.into()
         })
         .map(|result| result.affected_rows())
-        .map_err(C3p0Error::from)
+            .map_err(into_c3p0_error)
     }
 
     fn save(&self, conn: &mut Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let conf = self.conf();
         {
             let json_data = (conf.codec.to_value)(&obj.data)?;
-            let mut stmt = conn.prepare(&conf.save_sql_query)?;
+            let mut stmt = conn.prepare(&conf.save_sql_query).map_err(into_c3p0_error)?;
             stmt.execute(params! {
                 "version" => &obj.version,
                 "data" => &json_data
-            })?;
+            }).map_err(into_c3p0_error)?;
         }
 
-        let mut stmt = conn.prepare("SELECT LAST_INSERT_ID()")?;
+        let mut stmt = conn.prepare("SELECT LAST_INSERT_ID()").map_err(into_c3p0_error)?;
         let id = stmt
-            .execute(())?
+            .execute(())
+            .map_err(into_c3p0_error)?
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),

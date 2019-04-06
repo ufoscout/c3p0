@@ -1,24 +1,6 @@
-use err_derive::Error;
-use mysql::error::Error as MyError;
+use c3p0::error::C3p0Error;
+use mysql::error::Error;
 
-#[derive(Error, Debug)]
-pub enum C3p0Error {
-    #[error(display = "DbError: [{}]", cause)]
-    DbError { cause: String },
-    #[error(display = "JsonProcessingError: [{}]", cause)]
-    JsonProcessingError { cause: serde_json::error::Error },
-    #[error(display = "IteratorError: [{}]", message)]
-    IteratorError { message: String },
-}
-
-impl From<MyError> for C3p0Error {
-    fn from(cause: MyError) -> Self {
-        C3p0Error::DbError { cause: format!("{}", cause) }
-    }
-}
-
-impl From<serde_json::error::Error> for C3p0Error {
-    fn from(cause: serde_json::error::Error) -> Self {
-        C3p0Error::JsonProcessingError { cause }
-    }
+pub fn into_c3p0_error(error: Error) -> C3p0Error {
+    C3p0Error::SqlError { cause: format!("{}", error) }
 }
