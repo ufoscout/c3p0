@@ -1,8 +1,11 @@
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
+use crate::error::C3p0Error;
+use crate::manager::DbManager;
 
 pub mod codec;
 pub mod error;
+pub mod manager;
 pub mod types;
 
 pub type IdType = i64;
@@ -31,6 +34,25 @@ where
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct NewModel<DATA>
+    where
+        DATA: Clone + serde::ser::Serialize,
+{
+    pub version: VersionType,
+    #[serde(bound(deserialize = "DATA: Deserialize<'de>"))]
+    pub data: DATA,
+}
+
+impl<DATA> NewModel<DATA>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    pub fn new(data: DATA) -> Self {
+        NewModel { version: 0, data }
+    }
+}
+
 impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
@@ -40,24 +62,97 @@ where
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct NewModel<DATA>
-where
-    DATA: Clone + serde::ser::Serialize,
+pub trait C3p0<DATA, DB>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        DB: DbManager<DATA>
 {
-    pub version: VersionType,
-    #[serde(bound(deserialize = "DATA: Deserialize<'de>"))]
-    pub data: DATA,
-}
+    fn db_manager(&self) -> &DB;
 
-impl<DATA> NewModel<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    pub fn new(data: DATA) -> Self {
-        NewModel { version: 0, data }
+    fn create_table_if_not_exists(&self, conn: &DB::Conn) -> Result<u64, C3p0Error> {
+        self.db_manager().create_table_if_not_exists(conn)
+    }
+
+    fn drop_table_if_exists(&self, conn: &DB::Conn) -> Result<u64, C3p0Error> {
+        self.db_manager().drop_table_if_exists(conn)
+    }
+
+    fn count_all(&self, conn: &DB::Conn) -> Result<IdType, C3p0Error> {
+        self.db_manager().count_all(conn)
+    }
+
+    fn exists_by_id<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &DB::Conn,
+        id: ID,
+    ) -> Result<bool, C3p0Error> {
+        self.db_manager().exists_by_id(conn, id.into())
+    }
+
+    fn find_all(&self, conn: &DB::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        self.db_manager().find_all(conn)
+    }
+
+    fn find_by_id<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &DB::Conn,
+        id: ID,
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
+        self.db_manager().find_by_id(conn, id.into())
+    }
+
+    fn delete_all(&self, conn: &DB::Conn) -> Result<u64, C3p0Error> {
+        self.db_manager().delete_all(conn)
+    }
+
+    fn delete_by_id<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &DB::Conn,
+        id: ID,
+    ) -> Result<u64, C3p0Error> {
+        self.db_manager().delete_by_id(conn, id.into())
+    }
+
+    fn save(&self, conn: &DB::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        self.db_manager().save(conn, obj)
     }
 }
+
+
+#[derive(Clone)]
+pub struct C3p0Repository<DATA, DB>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        DB: DbManager<DATA>
+{
+    db: DB,
+    phantom_data: std::marker::PhantomData<DATA>,
+}
+
+impl<DATA, DB> C3p0Repository<DATA, DB>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        DB: DbManager<DATA>
+{
+    pub fn build(db: DB) -> Self {
+        C3p0Repository {
+            db,
+            phantom_data: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<DATA, DB> C3p0<DATA, DB> for C3p0Repository<DATA, DB>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        DB: DbManager<DATA>
+{
+    fn db_manager(&self) -> &DB {
+        &self.db
+    }
+}
+
+
 
 #[cfg(test)]
 mod test {
