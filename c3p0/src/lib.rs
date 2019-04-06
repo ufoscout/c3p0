@@ -69,51 +69,51 @@ pub trait C3p0<DATA, DB>
 {
     fn db_manager(&self) -> &DB;
 
-    fn create_table_if_not_exists(&self, conn: &DB::Conn) -> Result<u64, C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &mut DB::Conn) -> Result<u64, C3p0Error> {
         self.db_manager().create_table_if_not_exists(conn)
     }
 
-    fn drop_table_if_exists(&self, conn: &DB::Conn) -> Result<u64, C3p0Error> {
+    fn drop_table_if_exists(&self, conn: &mut DB::Conn) -> Result<u64, C3p0Error> {
         self.db_manager().drop_table_if_exists(conn)
     }
 
-    fn count_all(&self, conn: &DB::Conn) -> Result<IdType, C3p0Error> {
+    fn count_all(&self, conn: &mut DB::Conn) -> Result<IdType, C3p0Error> {
         self.db_manager().count_all(conn)
     }
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &DB::Conn,
+        conn: &mut DB::Conn,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         self.db_manager().exists_by_id(conn, id.into())
     }
 
-    fn find_all(&self, conn: &DB::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn find_all(&self, conn: &mut DB::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
         self.db_manager().find_all(conn)
     }
 
     fn find_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &DB::Conn,
+        conn: &mut DB::Conn,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         self.db_manager().find_by_id(conn, id.into())
     }
 
-    fn delete_all(&self, conn: &DB::Conn) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &mut DB::Conn) -> Result<u64, C3p0Error> {
         self.db_manager().delete_all(conn)
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &DB::Conn,
+        conn: &mut DB::Conn,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         self.db_manager().delete_by_id(conn, id.into())
     }
 
-    fn save(&self, conn: &DB::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &mut DB::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         self.db_manager().save(conn, obj)
     }
 }

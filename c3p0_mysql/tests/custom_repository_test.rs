@@ -1,15 +1,15 @@
 use crate::shared::*;
 use c3p0::NewModel;
-use c3p0_mysql::{C3p0, Config, ConfigBuilder};
+use c3p0_mysql::{C3p0, MySqlManager, MySqlManagerBuilder};
 
 mod shared;
 
 struct TestTableRepository {
-    conf: Config<TestData>,
+    conf: MySqlManager<TestData>,
 }
 
 impl C3p0<TestData> for TestTableRepository {
-    fn conf(&self) -> &Config<TestData> {
+    fn conf(&self) -> &MySqlManager<TestData> {
         &self.conf
     }
 }
@@ -29,7 +29,7 @@ fn mysql_basic_crud() {
         )
         .unwrap();
 
-        let conf = ConfigBuilder::new("TEST_TABLE").build();
+        let conf = MySqlManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = TestTableRepository { conf };
 

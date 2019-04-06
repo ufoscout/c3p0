@@ -1,7 +1,7 @@
 use c3p0::codec::Codec;
 use c3p0::error::C3p0Error;
 use c3p0::NewModel;
-use c3p0_mysql::{C3p0, C3p0Repository, Config, ConfigBuilder};
+use c3p0_mysql::{C3p0, C3p0Repository, MySqlManager, MySqlManagerBuilder};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -73,7 +73,7 @@ fn should_create_and_drop_table() {
         let mut conn = pool.get().unwrap();
         let table_name = "USER_TABLE";
 
-        let conf_v1: Config<UserVersion1> = ConfigBuilder::new(table_name)
+        let conf_v1: MySqlManager<UserVersion1> = MySqlManagerBuilder::new(table_name)
             .with_codec(Codec {
                 to_value: |data| Versioning1::to_value(data),
                 from_value: |value| Versioning1::from_value(value),
@@ -81,7 +81,7 @@ fn should_create_and_drop_table() {
             .build();
         let jpo_v1 = C3p0Repository::build(conf_v1);
 
-        let conf_v2: Config<UserVersion2> = ConfigBuilder::new(table_name)
+        let conf_v2: MySqlManager<UserVersion2> = MySqlManagerBuilder::new(table_name)
             .with_codec(Codec {
                 to_value: |data| Versioning2::to_value(data),
                 from_value: |value| Versioning2::from_value(value),
