@@ -1,10 +1,10 @@
 use crate::error::into_c3p0_error;
 use c3p0::codec::Codec;
 use c3p0::error::C3p0Error;
-use c3p0::types::OptString;
-use c3p0::{IdType, Model, NewModel};
-use mysql::{params, Conn, Row};
 use c3p0::manager::DbManager;
+use c3p0::types::OptString;
+use c3p0::{Model, NewModel};
+use mysql::{params, Row};
 use std::borrow::BorrowMut;
 
 pub mod error;
@@ -72,7 +72,10 @@ where
         self
     }
 
-    pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> MySqlManagerBuilder<DATA> {
+    pub fn with_id_field_name<T: Into<String>>(
+        mut self,
+        id_field_name: T,
+    ) -> MySqlManagerBuilder<DATA> {
         self.id_field_name = id_field_name.into();
         self
     }
@@ -93,7 +96,10 @@ where
         self
     }
 
-    pub fn with_schema_name<O: Into<OptString>>(mut self, schema_name: O) -> MySqlManagerBuilder<DATA> {
+    pub fn with_schema_name<O: Into<OptString>>(
+        mut self,
+        schema_name: O,
+    ) -> MySqlManagerBuilder<DATA> {
         self.schema_name = schema_name.into().value;
         self
     }
@@ -169,9 +175,10 @@ where
     }
 }
 
-impl <DATA> MySqlManager<DATA> where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
-
+impl<DATA> MySqlManager<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
     fn to_model(&self, row: Row) -> Result<Model<DATA>, C3p0Error> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
@@ -183,14 +190,15 @@ impl <DATA> MySqlManager<DATA> where
     }
 }
 
-impl <DATA> DbManager<DATA> for MySqlManager<DATA> where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
+impl<DATA> DbManager<DATA> for MySqlManager<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-
     type Conn = mysql::Conn;
 
     fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
-        conn.borrow_mut().prep_exec(&self.create_table_sql_query, ())
+        conn.borrow_mut()
+            .prep_exec(&self.create_table_sql_query, ())
             .map(|row| row.affected_rows())
             .map_err(into_c3p0_error)
     }
@@ -217,7 +225,7 @@ impl <DATA> DbManager<DATA> for MySqlManager<DATA> where
         Ok(result)
     }
 
-    fn exists_by_id<'a>(&'a self, conn: &mut Self::Conn, id: &i64) -> Result<bool, C3p0Error> {
+    fn exists_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<bool, C3p0Error> {
         let mut stmt = conn
             .prepare(&self.exists_by_id_sql_query)
             .map_err(into_c3p0_error)?;
@@ -242,17 +250,17 @@ impl <DATA> DbManager<DATA> for MySqlManager<DATA> where
             .collect()
     }
 
-    fn find_by_id<'a>(&'a self, conn: &mut Self::Conn, id: &i64) -> Result<Option<Model<DATA>>, C3p0Error> {
+    fn find_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.prep_exec(
             &self.find_by_id_sql_query,
             params! {
                 "id" => id
             },
         )
-            .map_err(into_c3p0_error)?
-            .next()
-            .map(|row| self.to_model(row.unwrap()))
-            .transpose()
+        .map_err(into_c3p0_error)?
+        .next()
+        .map(|row| self.to_model(row.unwrap()))
+        .transpose()
     }
 
     fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
@@ -264,15 +272,15 @@ impl <DATA> DbManager<DATA> for MySqlManager<DATA> where
             .map_err(into_c3p0_error)
     }
 
-    fn delete_by_id<'a>(&'a self, conn: &mut Self::Conn, id: &i64) -> Result<u64, C3p0Error> {
+    fn delete_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<u64, C3p0Error> {
         let mut stmt = conn
             .prepare(&self.delete_by_id_sql_query)
             .map_err(into_c3p0_error)?;
         stmt.execute(params! {
             "id" => id
         })
-            .map(|result| result.affected_rows())
-            .map_err(into_c3p0_error)
+        .map(|result| result.affected_rows())
+        .map_err(into_c3p0_error)
     }
 
     fn save(&self, conn: &mut Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
@@ -285,164 +293,6 @@ impl <DATA> DbManager<DATA> for MySqlManager<DATA> where
                 "version" => &obj.version,
                 "data" => &json_data
             })
-                .map_err(into_c3p0_error)?;
-        }
-
-        let mut stmt = conn
-            .prepare("SELECT LAST_INSERT_ID()")
-            .map_err(into_c3p0_error)?;
-        let id = stmt
-            .execute(())
-            .map_err(into_c3p0_error)?
-            .next()
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?
-            .map(|row| row.get(0).unwrap())
-            .unwrap();
-
-        Ok(Model {
-            id,
-            version: obj.version,
-            data: obj.data,
-        })
-    }
-}
-
-pub trait C3p0<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn conf(&self) -> &MySqlManager<DATA>;
-
-    fn to_model(&self, row: Row) -> Result<Model<DATA>, C3p0Error> {
-        //id: Some(row.get(self.id_field_name.as_str())),
-        //version: row.get(self.version_field_name.as_str()),
-        //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
-        let conf = self.conf();
-        let id = row.get(0).unwrap();
-        let version = row.get(1).unwrap();
-        let data = (conf.codec.from_value)(row.get(2).unwrap())?;
-        Ok(Model { id, version, data })
-    }
-
-    fn create_table_if_not_exists(&self, conn: &mut Conn) -> Result<u64, C3p0Error> {
-        conn.prep_exec(&self.conf().create_table_sql_query, ())
-            .map(|row| row.affected_rows())
-            .map_err(into_c3p0_error)
-    }
-
-    fn drop_table_if_exists(&self, conn: &mut Conn) -> Result<u64, C3p0Error> {
-        conn.prep_exec(&self.conf().drop_table_sql_query, ())
-            .map(|row| row.affected_rows())
-            .map_err(into_c3p0_error)
-    }
-
-    fn count_all(&self, conn: &mut Conn) -> Result<IdType, C3p0Error> {
-        let conf = self.conf();
-        let mut stmt = conn
-            .prepare(&conf.count_all_sql_query)
-            .map_err(into_c3p0_error)?;
-        let result = stmt
-            .execute(())
-            .map_err(into_c3p0_error)?
-            .next()
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?
-            .map(|row| row.get(0).unwrap())
-            .unwrap();
-        Ok(result)
-    }
-
-    fn exists_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &mut Conn,
-        id: ID,
-    ) -> Result<bool, C3p0Error> {
-        let conf = self.conf();
-        let mut stmt = conn
-            .prepare(&conf.exists_by_id_sql_query)
-            .map_err(into_c3p0_error)?;
-        let id_into = id.into();
-        let result = stmt
-            .execute(params! {
-                "id" => id_into
-            })
-            .map_err(into_c3p0_error)?
-            .next()
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?
-            .map(|row| row.get(0).unwrap())
-            .unwrap();
-        Ok(result)
-    }
-
-    fn find_all(&self, conn: &mut Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let conf = self.conf();
-        conn.prep_exec(&conf.find_all_sql_query, ())
-            .map_err(into_c3p0_error)?
-            .map(|row| self.to_model(row.unwrap()))
-            .collect()
-    }
-
-    fn find_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &mut Conn,
-        id: ID,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let conf = self.conf();
-        let id_into = id.into();
-        conn.prep_exec(
-            &conf.find_by_id_sql_query,
-            params! {
-                "id" => id_into
-            },
-        )
-        .map_err(into_c3p0_error)?
-        .next()
-        .map(|row| self.to_model(row.unwrap()))
-        .transpose()
-    }
-
-    fn delete_all(&self, conn: &mut Conn) -> Result<u64, C3p0Error> {
-        let conf = self.conf();
-        let mut stmt = conn
-            .prepare(&conf.delete_all_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.execute(())
-            .map(|result| result.affected_rows())
-            .map_err(into_c3p0_error)
-    }
-
-    fn delete_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &mut Conn,
-        id: ID,
-    ) -> Result<u64, C3p0Error> {
-        let conf = self.conf();
-        let mut stmt = conn
-            .prepare(&conf.delete_by_id_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.execute(params! {
-            "id" => id.into()
-        })
-        .map(|result| result.affected_rows())
-        .map_err(into_c3p0_error)
-    }
-
-    fn save(&self, conn: &mut Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
-        let conf = self.conf();
-        {
-            let json_data = (conf.codec.to_value)(&obj.data)?;
-            let mut stmt = conn
-                .prepare(&conf.save_sql_query)
-                .map_err(into_c3p0_error)?;
-            stmt.execute(params! {
-                "version" => &obj.version,
-                "data" => &json_data
-            })
             .map_err(into_c3p0_error)?;
         }
 
@@ -464,35 +314,5 @@ where
             version: obj.version,
             data: obj.data,
         })
-    }
-}
-
-#[derive(Clone)]
-pub struct C3p0Repository<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    conf: MySqlManager<DATA>,
-    phantom_data: std::marker::PhantomData<DATA>,
-}
-
-impl<DATA> C3p0Repository<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    pub fn build(conf: MySqlManager<DATA>) -> Self {
-        C3p0Repository {
-            conf,
-            phantom_data: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<DATA> C3p0<DATA> for C3p0Repository<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn conf(&self) -> &MySqlManager<DATA> {
-        &self.conf
     }
 }

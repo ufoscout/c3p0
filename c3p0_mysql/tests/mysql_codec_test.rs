@@ -1,7 +1,7 @@
 use c3p0::codec::Codec;
 use c3p0::error::C3p0Error;
-use c3p0::NewModel;
-use c3p0_mysql::{C3p0, C3p0Repository, MySqlManager, MySqlManagerBuilder};
+use c3p0::{C3p0, C3p0Repository, NewModel};
+use c3p0_mysql::{MySqlManager, MySqlManagerBuilder};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;

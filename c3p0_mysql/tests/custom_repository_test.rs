@@ -1,6 +1,6 @@
 use crate::shared::*;
-use c3p0::NewModel;
-use c3p0_mysql::{C3p0, MySqlManager, MySqlManagerBuilder};
+use c3p0::{C3p0, NewModel};
+use c3p0_mysql::{MySqlManager, MySqlManagerBuilder};
 
 mod shared;
 
@@ -8,8 +8,8 @@ struct TestTableRepository {
     conf: MySqlManager<TestData>,
 }
 
-impl C3p0<TestData> for TestTableRepository {
-    fn conf(&self) -> &MySqlManager<TestData> {
+impl C3p0<TestData, MySqlManager<TestData>> for TestTableRepository {
+    fn db_manager(&self) -> &MySqlManager<TestData> {
         &self.conf
     }
 }
