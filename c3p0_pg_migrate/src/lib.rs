@@ -1,6 +1,7 @@
 use crate::error::C3p0MigrateError;
 use crate::migration::{to_sql_migrations, Migration, SqlMigration};
-use c3p0_pg::{C3p0, C3p0Repository, ConfigBuilder, Model, NewModel};
+use c3p0::{Model, NewModel};
+use c3p0_pg::{C3p0, C3p0Repository, ConfigBuilder};
 use log::*;
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};

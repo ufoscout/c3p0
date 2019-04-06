@@ -1,5 +1,6 @@
 use crate::shared::*;
-use c3p0_mysql::{C3p0, Config, ConfigBuilder, NewModel};
+use c3p0::NewModel;
+use c3p0_mysql::{C3p0, Config, ConfigBuilder};
 
 mod shared;
 

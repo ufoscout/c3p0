@@ -1,5 +1,6 @@
 use crate::shared::TestData;
-use c3p0_mysql::{C3p0, C3p0Repository, ConfigBuilder, NewModel};
+use c3p0::NewModel;
+use c3p0_mysql::{C3p0, C3p0Repository, ConfigBuilder};
 
 mod shared;
 
