@@ -287,7 +287,6 @@ where
         let mut stmt = conn.prepare(&conf.count_all_sql_query)?;
         let result = stmt
             .execute(())?
-            .into_iter()
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
@@ -309,7 +308,6 @@ where
             .execute(params! {
                 "id" => id_into
             })?
-            .into_iter()
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
@@ -322,7 +320,6 @@ where
     fn find_all(&self, conn: &mut Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let conf = self.conf();
         conn.prep_exec(&conf.find_all_sql_query, ())?
-            .into_iter()
             .map(|row| self.to_model(row.unwrap()))
             .collect()
     }
@@ -340,7 +337,6 @@ where
                 "id" => id_into
             },
         )?
-        .into_iter()
         .next()
         .map(|row| self.to_model(row.unwrap()))
         .transpose()
@@ -382,7 +378,6 @@ where
         let mut stmt = conn.prepare("SELECT LAST_INSERT_ID()")?;
         let id = stmt
             .execute(())?
-            .into_iter()
             .next()
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),

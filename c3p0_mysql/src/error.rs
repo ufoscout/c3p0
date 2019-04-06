@@ -4,7 +4,7 @@ use mysql::error::Error as MyError;
 #[derive(Error, Debug)]
 pub enum C3p0Error {
     #[error(display = "DbError: [{}]", cause)]
-    DbError { cause: MyError },
+    DbError { cause: String },
     #[error(display = "JsonProcessingError: [{}]", cause)]
     JsonProcessingError { cause: serde_json::error::Error },
     #[error(display = "IteratorError: [{}]", message)]
@@ -13,7 +13,7 @@ pub enum C3p0Error {
 
 impl From<MyError> for C3p0Error {
     fn from(cause: MyError) -> Self {
-        C3p0Error::DbError { cause }
+        C3p0Error::DbError { cause: format!("{}", cause) }
     }
 }
 
