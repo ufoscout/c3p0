@@ -2,6 +2,7 @@
 
 members = [
     "c3p0",
+    "c3p0_mysql",
     "c3p0_pg",
     "c3p0_pg_migrate",
     "c3p0_diesel_macro",

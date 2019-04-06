@@ -8,7 +8,7 @@ edition = "2018"
 readme = "../README.md"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
-keywords = ["postgres", "pg", "json", "diesel"]
+keywords = ["mysql", "postgres", "pg", "json", "diesel"]
 
 [dependencies]
 
