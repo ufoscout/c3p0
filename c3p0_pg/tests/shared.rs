@@ -5,7 +5,7 @@ use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct TestData {
     pub first_name: String,
     pub last_name: String,

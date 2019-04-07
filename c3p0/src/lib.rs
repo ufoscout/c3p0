@@ -116,6 +116,10 @@ where
     fn save(&self, conn: DB::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         self.db_manager().save(conn, obj)
     }
+
+    fn update(&self, conn: DB::Ref, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        self.db_manager().update(conn, obj)
+    }
 }
 
 #[derive(Clone)]

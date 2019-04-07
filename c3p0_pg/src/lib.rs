@@ -35,6 +35,8 @@ where
 
     pub save_sql_query: String,
 
+    pub update_sql_query: String,
+
     pub create_table_sql_query: String,
     pub drop_table_sql_query: String,
 }
@@ -152,6 +154,15 @@ where
                 self.version_field_name,
                 self.data_field_name,
                 self.id_field_name
+            ),
+
+            update_sql_query: format!(
+                "UPDATE {} SET {} = $1, {} = $2 WHERE {} = $3 AND {} = $4",
+                qualified_table_name,
+                self.version_field_name,
+                self.data_field_name,
+                self.id_field_name,
+                self.version_field_name,
             ),
 
             create_table_sql_query: format!(
@@ -302,5 +313,35 @@ where
             version: obj.version,
             data: obj.data,
         })
+    }
+
+    fn update(&self, conn: Self::Ref, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        let json_data = (self.codec.to_value)(&obj.data)?;
+
+        let updated_model = Model {
+            id: obj.id,
+            version: obj.version + 1,
+            data: obj.data,
+        };
+
+        let stmt = conn
+            .prepare(&self.update_sql_query)
+            .map_err(into_c3p0_error)?;
+        let result = stmt
+            .execute(&[
+                &updated_model.version,
+                &json_data,
+                &updated_model.id,
+                &obj.version,
+            ])
+            .map_err(into_c3p0_error)?;
+
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                &self.qualified_table_name, &updated_model.id, &obj.version
+            )});
+        }
+
+        Ok(updated_model)
     }
 }

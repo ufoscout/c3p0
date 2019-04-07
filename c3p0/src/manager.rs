@@ -26,4 +26,6 @@ where
     fn delete_by_id(&self, conn: Self::Ref, id: IdType) -> Result<u64, C3p0Error>;
 
     fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
+
+    fn update(&self, conn: Self::Ref, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 }

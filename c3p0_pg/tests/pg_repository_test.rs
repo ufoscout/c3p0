@@ -1,4 +1,5 @@
 use crate::shared::TestData;
+use c3p0::error::C3p0Error;
 use c3p0::{C3p0, C3p0Repository, NewModel};
 use c3p0_pg::PostgresManagerBuilder;
 
@@ -177,5 +178,84 @@ fn should_return_whether_exists_by_id() {
         assert_eq!(1, jpo.delete_by_id(&conn, &model).unwrap());
         assert!(!jpo.exists_by_id(&conn, &model).unwrap());
         assert!(!jpo.exists_by_id(&conn, &model.id).unwrap());
+    });
+}
+
+#[test]
+fn should_update_and_increase_version() {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
+
+        let jpo = C3p0Repository::build(conf);
+
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
+
+        let model = NewModel::new(TestData {
+            first_name: "my_first_name".to_owned(),
+            last_name: "my_last_name".to_owned(),
+        });
+
+        let mut saved_model = jpo.save(&conn, model.clone()).unwrap();
+
+        saved_model.data.first_name = "second_first_name".to_owned();
+        let mut updated_model = jpo.update(&conn, saved_model.clone()).unwrap();
+        assert_eq!(saved_model.id, updated_model.id);
+        assert_eq!(saved_model.version + 1, updated_model.version);
+        assert_eq!("second_first_name", updated_model.data.first_name);
+        assert_eq!("my_last_name", updated_model.data.last_name);
+
+        updated_model.data.last_name = "second_last_name".to_owned();
+        updated_model = jpo.update(&conn, updated_model.clone()).unwrap();
+        assert_eq!(saved_model.id, updated_model.id);
+        assert_eq!(saved_model.version + 2, updated_model.version);
+        assert_eq!("second_first_name", updated_model.data.first_name);
+        assert_eq!("second_last_name", updated_model.data.last_name);
+
+        let found_model = jpo.find_by_id(&conn, &saved_model).unwrap().unwrap();
+        assert_eq!(found_model.id, updated_model.id);
+        assert_eq!(found_model.version, updated_model.version);
+        assert_eq!(found_model.data, updated_model.data);
+    });
+}
+
+#[test]
+fn update_should_return_optimistic_lock_exception() {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
+
+        let jpo = C3p0Repository::build(conf);
+
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
+
+        let model = NewModel::new(TestData {
+            first_name: "my_first_name".to_owned(),
+            last_name: "my_last_name".to_owned(),
+        });
+
+        let mut saved_model = jpo.save(&conn, model.clone()).unwrap();
+
+        saved_model.data.first_name = "second_first_name".to_owned();
+        assert!(jpo.update(&conn, saved_model.clone()).is_ok());
+
+        let expected_error = jpo.update(&conn, saved_model.clone());
+        assert!(expected_error.is_err());
+
+        match expected_error {
+            Ok(_) => assert!(false),
+            Err(e) => match e {
+                C3p0Error::OptimisticLockError { message } => {
+                    assert!(message.contains("TEST_TABLE"));
+                    assert!(message.contains(&format!(
+                        "id [{}], version [{}]",
+                        saved_model.id, saved_model.version
+                    )));
+                }
+                _ => assert!(false),
+            },
+        };
     });
 }
