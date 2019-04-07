@@ -6,7 +6,7 @@ use r2d2_mysql::MysqlConnectionManager;
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct TestData {
     pub first_name: String,
     pub last_name: String,

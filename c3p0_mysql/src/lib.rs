@@ -35,6 +35,8 @@ where
 
     pub save_sql_query: String,
 
+    pub update_sql_query: String,
+
     pub create_table_sql_query: String,
     pub drop_table_sql_query: String,
 }
@@ -148,6 +150,15 @@ where
             save_sql_query: format!(
                 "INSERT INTO {} ({}, {}) VALUES (:version, :data)",
                 qualified_table_name, self.version_field_name, self.data_field_name
+            ),
+
+            update_sql_query: format!(
+                "UPDATE {} SET {} = :updated_version, {} = :data WHERE {} = :id AND {} = :version",
+                qualified_table_name,
+                self.version_field_name,
+                self.data_field_name,
+                self.id_field_name,
+                self.version_field_name,
             ),
 
             create_table_sql_query: format!(
@@ -317,5 +328,37 @@ where
             version: obj.version,
             data: obj.data,
         })
+    }
+
+    fn update(&self, conn: Self::Ref, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        let json_data = (self.codec.to_value)(&obj.data)?;
+
+        let updated_model = Model {
+            id: obj.id,
+            version: obj.version + 1,
+            data: obj.data,
+        };
+
+        let mut stmt = conn
+            .prepare(&self.update_sql_query)
+            .map_err(into_c3p0_error)?;
+
+        let result = stmt
+            .execute(params! {
+                "updated_version" => updated_model.version,
+                "data" => json_data,
+                "id" => updated_model.id,
+                "version" => obj.version,
+            })
+            .map(|result| result.affected_rows())
+            .map_err(into_c3p0_error)?;
+
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                                                                        &self.qualified_table_name, &updated_model.id, &obj.version
+            )});
+        }
+
+        Ok(updated_model)
     }
 }
