@@ -30,6 +30,7 @@ where
     pub find_all_sql_query: String,
     pub find_by_id_sql_query: String,
 
+    pub delete_sql_query: String,
     pub delete_all_sql_query: String,
     pub delete_by_id_sql_query: String,
 
@@ -138,6 +139,11 @@ where
                 self.data_field_name,
                 qualified_table_name,
                 self.id_field_name,
+            ),
+
+            delete_sql_query: format!(
+                "DELETE FROM {} WHERE {} = :id AND {} = :version",
+                qualified_table_name, self.id_field_name, self.version_field_name,
             ),
 
             delete_all_sql_query: format!("DELETE FROM {}", qualified_table_name,),
@@ -275,6 +281,27 @@ where
         .next()
         .map(|row| self.to_model(row.unwrap()))
         .transpose()
+    }
+
+    fn delete(&self, conn: Self::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+        let mut stmt = conn
+            .prepare(&self.delete_sql_query)
+            .map_err(into_c3p0_error)?;
+        let result = stmt
+            .execute(params! {
+                "id" => obj.id,
+                "version" => obj.version,
+            })
+            .map(|result| result.affected_rows())
+            .map_err(into_c3p0_error)?;
+
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                                                                        &self.qualified_table_name, &obj.id, &obj.version
+            )});
+        }
+
+        Ok(result)
     }
 
     fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {

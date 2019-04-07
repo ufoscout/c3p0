@@ -101,12 +101,12 @@ where
         self.db_manager().find_by_id(conn, *id.into())
     }
 
-    fn delete_all(&self, conn: DB::Ref) -> Result<u64, C3p0Error> {
-        self.db_manager().delete_all(conn)
-    }
-
     fn delete(&self, conn: DB::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         self.db_manager().delete(conn, obj)
+    }
+
+    fn delete_all(&self, conn: DB::Ref) -> Result<u64, C3p0Error> {
+        self.db_manager().delete_all(conn)
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(

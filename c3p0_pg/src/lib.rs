@@ -285,13 +285,6 @@ where
             .transpose()
     }
 
-    fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
-        let stmt = conn
-            .prepare(&self.delete_all_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.execute(&[]).map_err(into_c3p0_error)
-    }
-
     fn delete(&self, conn: Self::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         let stmt = conn
             .prepare(&self.delete_sql_query)
@@ -307,6 +300,13 @@ where
         }
 
         Ok(result)
+    }
+
+    fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
+        let stmt = conn
+            .prepare(&self.delete_all_sql_query)
+            .map_err(into_c3p0_error)?;
+        stmt.execute(&[]).map_err(into_c3p0_error)
     }
 
     fn delete_by_id(&self, conn: Self::Ref, id: i64) -> Result<u64, C3p0Error> {

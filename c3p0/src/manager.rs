@@ -21,11 +21,11 @@ where
 
     fn find_by_id(&self, conn: Self::Ref, id: IdType) -> Result<Option<Model<DATA>>, C3p0Error>;
 
+    fn delete(&self, conn: Self::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error>;
+
     fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error>;
 
     fn delete_by_id(&self, conn: Self::Ref, id: IdType) -> Result<u64, C3p0Error>;
-
-    fn delete(&self, conn: Self::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error>;
 
     fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
