@@ -259,3 +259,67 @@ fn update_should_return_optimistic_lock_exception() {
         };
     });
 }
+
+#[test]
+fn should_delete_based_on_id_and_version() {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
+
+        let jpo = C3p0Repository::build(conf);
+
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
+
+        let model = NewModel::new(TestData {
+            first_name: "my_first_name".to_owned(),
+            last_name: "my_last_name".to_owned(),
+        });
+
+        let saved_model = jpo.save(&conn, model.clone()).unwrap();
+
+        let deleted = jpo.delete(&conn, &saved_model).unwrap();
+        assert_eq!(1, deleted);
+        assert!(!jpo.exists_by_id(&conn, &saved_model).unwrap());
+    });
+}
+
+#[test]
+fn delete_should_return_optimistic_lock_exception() {
+    shared::SINGLETON.get(|(pool, _)| {
+        let conn = pool.get().unwrap();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
+
+        let jpo = C3p0Repository::build(conf);
+
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
+
+        let model = NewModel::new(TestData {
+            first_name: "my_first_name".to_owned(),
+            last_name: "my_last_name".to_owned(),
+        });
+
+        let saved_model = jpo.save(&conn, model.clone()).unwrap();
+        assert!(jpo.update(&conn, saved_model.clone()).is_ok());
+
+        let expected_error = jpo.delete(&conn, &saved_model);
+        assert!(expected_error.is_err());
+
+        match expected_error {
+            Ok(_) => assert!(false),
+            Err(e) => match e {
+                C3p0Error::OptimisticLockError { message } => {
+                    assert!(message.contains("TEST_TABLE"));
+                    assert!(message.contains(&format!(
+                        "id [{}], version [{}]",
+                        saved_model.id, saved_model.version
+                    )));
+                }
+                _ => assert!(false),
+            },
+        };
+
+        assert!(jpo.exists_by_id(&conn, &saved_model).unwrap());
+    });
+}
