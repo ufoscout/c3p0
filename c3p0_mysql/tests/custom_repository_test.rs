@@ -8,8 +8,8 @@ struct TestTableRepository<'a> {
     conf: MySqlManager<'a, TestData>,
 }
 
-impl <'a> C3p0<TestData, MySqlManager<'a, TestData>> for TestTableRepository<'a> {
-    fn db_manager(&self) -> &MySqlManager<'a, TestData>{
+impl<'a> C3p0<TestData, MySqlManager<'a, TestData>> for TestTableRepository<'a> {
+    fn db_manager(&self) -> &MySqlManager<'a, TestData> {
         &self.conf
     }
 }

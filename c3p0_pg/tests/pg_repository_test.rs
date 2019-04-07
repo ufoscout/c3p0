@@ -1,6 +1,6 @@
 use crate::shared::TestData;
-use c3p0::NewModel;
-use c3p0_pg::{C3p0, C3p0Repository, ConfigBuilder};
+use c3p0::{C3p0, C3p0Repository, NewModel};
+use c3p0_pg::PostgresManagerBuilder;
 
 mod shared;
 
@@ -8,7 +8,7 @@ mod shared;
 fn should_create_and_drop_table() {
     shared::SINGLETON.get(|(pool, _)| {
         let conn = pool.get().unwrap();
-        let conf = ConfigBuilder::new("TEST_TABLE").build();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0Repository::build(conf);
 
@@ -41,7 +41,7 @@ fn should_create_and_drop_table() {
 fn postgres_basic_crud() {
     shared::SINGLETON.get(|(pool, _)| {
         let conn = pool.get().unwrap();
-        let conf = ConfigBuilder::new("TEST_TABLE").build();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0Repository::build(conf);
 
@@ -71,7 +71,7 @@ fn postgres_basic_crud() {
 fn should_find_all() {
     shared::SINGLETON.get(|(pool, _)| {
         let conn = pool.get().unwrap();
-        let conf = ConfigBuilder::new("TEST_TABLE")
+        let conf = PostgresManagerBuilder::new("TEST_TABLE")
             .with_schema_name("public")
             .build();
         let jpo = C3p0Repository::build(conf);
@@ -101,7 +101,7 @@ fn should_find_all() {
 fn should_delete_all() {
     shared::SINGLETON.get(|(pool, _)| {
         let conn = pool.get().unwrap();
-        let conf = ConfigBuilder::new("TEST_TABLE").build();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
         let jpo = C3p0Repository::build(conf);
         assert!(jpo.drop_table_if_exists(&conn).is_ok());
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
@@ -129,7 +129,7 @@ fn should_delete_all() {
 fn should_count() {
     shared::SINGLETON.get(|(pool, _)| {
         let conn = pool.get().unwrap();
-        let conf = ConfigBuilder::new("TEST_TABLE").build();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
         let jpo = C3p0Repository::build(conf);
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
@@ -160,7 +160,7 @@ fn should_count() {
 fn should_return_whether_exists_by_id() {
     shared::SINGLETON.get(|(pool, _)| {
         let conn = pool.get().unwrap();
-        let conf = ConfigBuilder::new("TEST_TABLE").build();
+        let conf = PostgresManagerBuilder::new("TEST_TABLE").build();
         let jpo = C3p0Repository::build(conf);
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());

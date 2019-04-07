@@ -1,7 +1,7 @@
 use crate::error::C3p0MigrateError;
 use crate::migration::{to_sql_migrations, Migration, SqlMigration};
-use c3p0::{Model, NewModel};
-use c3p0_pg::{C3p0, C3p0Repository, ConfigBuilder};
+use c3p0::{C3p0, C3p0Repository, Model, NewModel};
+use c3p0_pg::{PostgresManager, PostgresManagerBuilder};
 use log::*;
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
@@ -50,7 +50,7 @@ impl PgMigrateBuilder {
     }
 
     pub fn build(self) -> PgMigrate {
-        let conf = ConfigBuilder::new(self.table.clone())
+        let conf = PostgresManagerBuilder::new(self.table.clone())
             .with_schema_name(self.schema.clone())
             .build();
 
@@ -88,7 +88,7 @@ pub struct PgMigrate {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
-    repo: C3p0Repository<MigrationData>,
+    repo: C3p0Repository<MigrationData, PostgresManager<'static, MigrationData>>,
 }
 
 impl PgMigrate {
@@ -102,7 +102,7 @@ impl PgMigrate {
         tx.execute(
             &format!(
                 "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE;",
-                self.repo.conf().qualified_table_name
+                self.repo.db_manager().qualified_table_name
             ),
             &[],
         )?;

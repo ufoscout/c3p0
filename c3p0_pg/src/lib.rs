@@ -1,18 +1,20 @@
 use crate::error::into_c3p0_error;
 use c3p0::codec::Codec;
 use c3p0::error::C3p0Error;
+use c3p0::manager::DbManager;
 use c3p0::types::OptString;
-use c3p0::{IdType, Model, NewModel};
+use c3p0::{Model, NewModel};
 use postgres::rows::Row;
-use postgres::Connection;
 
 pub mod error;
 
 #[derive(Clone)]
-pub struct Config<DATA>
+pub struct PostgresManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
+    phantom_data: std::marker::PhantomData<&'a ()>,
+
     pub codec: Codec<DATA>,
 
     pub id_field_name: String,
@@ -38,7 +40,7 @@ where
 }
 
 #[derive(Clone)]
-pub struct ConfigBuilder<DATA>
+pub struct PostgresManagerBuilder<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -50,13 +52,13 @@ where
     schema_name: Option<String>,
 }
 
-impl<DATA> ConfigBuilder<DATA>
+impl<DATA> PostgresManagerBuilder<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
-        ConfigBuilder {
+        PostgresManagerBuilder {
             codec: Default::default(),
             table_name: table_name.clone(),
             id_field_name: "id".to_owned(),
@@ -66,12 +68,15 @@ where
         }
     }
 
-    pub fn with_codec(mut self, codec: Codec<DATA>) -> ConfigBuilder<DATA> {
+    pub fn with_codec(mut self, codec: Codec<DATA>) -> PostgresManagerBuilder<DATA> {
         self.codec = codec;
         self
     }
 
-    pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> ConfigBuilder<DATA> {
+    pub fn with_id_field_name<T: Into<String>>(
+        mut self,
+        id_field_name: T,
+    ) -> PostgresManagerBuilder<DATA> {
         self.id_field_name = id_field_name.into();
         self
     }
@@ -79,7 +84,7 @@ where
     pub fn with_version_field_name<T: Into<String>>(
         mut self,
         version_field_name: T,
-    ) -> ConfigBuilder<DATA> {
+    ) -> PostgresManagerBuilder<DATA> {
         self.version_field_name = version_field_name.into();
         self
     }
@@ -87,23 +92,28 @@ where
     pub fn with_data_field_name<T: Into<String>>(
         mut self,
         data_field_name: T,
-    ) -> ConfigBuilder<DATA> {
+    ) -> PostgresManagerBuilder<DATA> {
         self.data_field_name = data_field_name.into();
         self
     }
 
-    pub fn with_schema_name<O: Into<OptString>>(mut self, schema_name: O) -> ConfigBuilder<DATA> {
+    pub fn with_schema_name<O: Into<OptString>>(
+        mut self,
+        schema_name: O,
+    ) -> PostgresManagerBuilder<DATA> {
         self.schema_name = schema_name.into().value;
         self
     }
 
-    pub fn build(self) -> Config<DATA> {
+    pub fn build<'a>(self) -> PostgresManager<'a, DATA> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        Config {
+        PostgresManager {
+            phantom_data: std::marker::PhantomData,
+
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
             exists_by_id_sql_query: format!(
@@ -171,37 +181,41 @@ where
     }
 }
 
-pub trait C3p0<DATA>
+impl<'a, DATA> PostgresManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    fn conf(&self) -> &Config<DATA>;
-
     fn to_model(&self, row: Row) -> Result<Model<DATA>, C3p0Error> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
-        let conf = self.conf();
         let id = row.get(0);
         let version = row.get(1);
-        let data = (conf.codec.from_value)(row.get(2))?;
+        let data = (self.codec.from_value)(row.get(2))?;
         Ok(Model { id, version, data })
     }
+}
 
-    fn create_table_if_not_exists(&self, conn: &Connection) -> Result<u64, C3p0Error> {
-        conn.execute(&self.conf().create_table_sql_query, &[])
+impl<'a, DATA> DbManager<DATA> for PostgresManager<'a, DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    type Conn = postgres::Connection;
+    type Ref = &'a Self::Conn;
+
+    fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
+        conn.execute(&self.create_table_sql_query, &[])
             .map_err(into_c3p0_error)
     }
 
-    fn drop_table_if_exists(&self, conn: &Connection) -> Result<u64, C3p0Error> {
-        conn.execute(&self.conf().drop_table_sql_query, &[])
+    fn drop_table_if_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
+        conn.execute(&self.drop_table_sql_query, &[])
             .map_err(into_c3p0_error)
     }
 
-    fn count_all(&self, conn: &Connection) -> Result<IdType, C3p0Error> {
-        let conf = self.conf();
+    fn count_all(&self, conn: Self::Ref) -> Result<i64, C3p0Error> {
         let stmt = conn
-            .prepare(&conf.count_all_sql_query)
+            .prepare(&self.count_all_sql_query)
             .map_err(into_c3p0_error)?;
         let result = stmt
             .query(&[])
@@ -215,18 +229,12 @@ where
         Ok(result)
     }
 
-    fn exists_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &Connection,
-        id: ID,
-    ) -> Result<bool, C3p0Error> {
-        let conf = self.conf();
+    fn exists_by_id(&self, conn: Self::Ref, id: i64) -> Result<bool, C3p0Error> {
         let stmt = conn
-            .prepare(&conf.exists_by_id_sql_query)
+            .prepare(&self.exists_by_id_sql_query)
             .map_err(into_c3p0_error)?;
-        let id_into = id.into();
         let result = stmt
-            .query(&[id_into])
+            .query(&[&id])
             .map_err(into_c3p0_error)?
             .iter()
             .next()
@@ -237,10 +245,9 @@ where
         Ok(result)
     }
 
-    fn find_all(&self, conn: &Connection) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let conf = self.conf();
+    fn find_all(&self, conn: Self::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let stmt = conn
-            .prepare(&conf.find_all_sql_query)
+            .prepare(&self.find_all_sql_query)
             .map_err(into_c3p0_error)?;
         stmt.query(&[])
             .map_err(into_c3p0_error)?
@@ -249,16 +256,11 @@ where
             .collect()
     }
 
-    fn find_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &Connection,
-        id: ID,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let conf = self.conf();
+    fn find_by_id(&self, conn: Self::Ref, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
         let stmt = conn
-            .prepare(&conf.find_by_id_sql_query)
+            .prepare(&self.find_by_id_sql_query)
             .map_err(into_c3p0_error)?;
-        stmt.query(&[id.into()])
+        stmt.query(&[&id])
             .map_err(into_c3p0_error)?
             .iter()
             .next()
@@ -266,32 +268,25 @@ where
             .transpose()
     }
 
-    fn delete_all(&self, conn: &Connection) -> Result<u64, C3p0Error> {
-        let conf = self.conf();
+    fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         let stmt = conn
-            .prepare(&conf.delete_all_sql_query)
+            .prepare(&self.delete_all_sql_query)
             .map_err(into_c3p0_error)?;
         stmt.execute(&[]).map_err(into_c3p0_error)
     }
 
-    fn delete_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &Connection,
-        id: ID,
-    ) -> Result<u64, C3p0Error> {
-        let conf = self.conf();
+    fn delete_by_id(&self, conn: Self::Ref, id: i64) -> Result<u64, C3p0Error> {
         let stmt = conn
-            .prepare(&conf.delete_by_id_sql_query)
+            .prepare(&self.delete_by_id_sql_query)
             .map_err(into_c3p0_error)?;
-        stmt.execute(&[id.into()]).map_err(into_c3p0_error)
+        stmt.execute(&[&id]).map_err(into_c3p0_error)
     }
 
-    fn save(&self, conn: &Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
-        let conf = self.conf();
+    fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        let json_data = (self.codec.to_value)(&obj.data)?;
         let stmt = conn
-            .prepare(&conf.save_sql_query)
+            .prepare(&self.save_sql_query)
             .map_err(into_c3p0_error)?;
-        let json_data = (conf.codec.to_value)(&obj.data)?;
         let id = stmt
             .query(&[&obj.version, &json_data])
             .map_err(into_c3p0_error)?
@@ -307,35 +302,5 @@ where
             version: obj.version,
             data: obj.data,
         })
-    }
-}
-
-#[derive(Clone)]
-pub struct C3p0Repository<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    conf: Config<DATA>,
-    phantom_data: std::marker::PhantomData<DATA>,
-}
-
-impl<DATA> C3p0Repository<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    pub fn build(conf: Config<DATA>) -> Self {
-        C3p0Repository {
-            conf,
-            phantom_data: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<DATA> C3p0<DATA> for C3p0Repository<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn conf(&self) -> &Config<DATA> {
-        &self.conf
     }
 }
