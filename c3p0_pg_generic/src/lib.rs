@@ -9,10 +9,12 @@ use postgres::rows::Row;
 pub mod error;
 
 #[derive(Clone)]
-pub struct PostgresManager<DATA>
+pub struct PostgresManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
+    phantom_data: std::marker::PhantomData<&'a ()>,
+    
     pub codec: Codec<DATA>,
 
     pub id_field_name: String,
@@ -103,13 +105,15 @@ where
         self
     }
 
-    pub fn build(self) -> PostgresManager<DATA> {
+    pub fn build<'a>(self) -> PostgresManager<'a, DATA> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
         PostgresManager {
+            phantom_data: std::marker::PhantomData,
+            
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
             exists_by_id_sql_query: format!(
@@ -177,7 +181,7 @@ where
     }
 }
 
-impl<DATA> PostgresManager<DATA>
+impl<'a, DATA> PostgresManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -192,23 +196,24 @@ where
     }
 }
 
-impl<DATA> DbManager<DATA> for PostgresManager<DATA>
+impl<'a, DATA> DbManager<DATA> for PostgresManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     type Conn = postgres::Connection;
+    type Ref = &'a Self::Conn;
 
-    fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         conn.execute(&self.create_table_sql_query, &[])
             .map_err(into_c3p0_error)
     }
 
-    fn drop_table_if_exists(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    fn drop_table_if_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         conn.execute(&self.drop_table_sql_query, &[])
             .map_err(into_c3p0_error)
     }
 
-    fn count_all(&self, conn: &mut Self::Conn) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: Self::Ref) -> Result<i64, C3p0Error> {
         let stmt = conn
             .prepare(&self.count_all_sql_query)
             .map_err(into_c3p0_error)?;
@@ -224,7 +229,7 @@ where
         Ok(result)
     }
 
-    fn exists_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<bool, C3p0Error> {
+    fn exists_by_id(&self, conn: Self::Ref, id: i64) -> Result<bool, C3p0Error> {
         let stmt = conn
             .prepare(&self.exists_by_id_sql_query)
             .map_err(into_c3p0_error)?;
@@ -240,7 +245,7 @@ where
         Ok(result)
     }
 
-    fn find_all(&self, conn: &mut Self::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn find_all(&self, conn: Self::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let stmt = conn
             .prepare(&self.find_all_sql_query)
             .map_err(into_c3p0_error)?;
@@ -251,7 +256,7 @@ where
             .collect()
     }
 
-    fn find_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
+    fn find_by_id(&self, conn: Self::Ref, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
         let stmt = conn
             .prepare(&self.find_by_id_sql_query)
             .map_err(into_c3p0_error)?;
@@ -263,21 +268,21 @@ where
             .transpose()
     }
 
-    fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         let stmt = conn
             .prepare(&self.delete_all_sql_query)
             .map_err(into_c3p0_error)?;
         stmt.execute(&[]).map_err(into_c3p0_error)
     }
 
-    fn delete_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<u64, C3p0Error> {
+    fn delete_by_id(&self, conn: Self::Ref, id: i64) -> Result<u64, C3p0Error> {
         let stmt = conn
             .prepare(&self.delete_by_id_sql_query)
             .map_err(into_c3p0_error)?;
         stmt.execute(&[&id]).map_err(into_c3p0_error)
     }
 
-    fn save(&self, conn: &mut Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = (self.codec.to_value)(&obj.data)?;
         let stmt = conn
             .prepare(&self.save_sql_query)

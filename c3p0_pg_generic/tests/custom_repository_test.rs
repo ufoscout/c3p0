@@ -4,12 +4,12 @@ use c3p0_pg_generic::{PostgresManager, PostgresManagerBuilder};
 
 mod shared;
 
-struct TestTableRepository {
-    db: PostgresManager<TestData>,
+struct TestTableRepository<'a> {
+    db: PostgresManager<'a, TestData>,
 }
 
-impl C3p0<TestData, PostgresManager<TestData>> for TestTableRepository {
-    fn db_manager(&self) -> &PostgresManager<TestData> {
+impl <'a> C3p0<TestData, PostgresManager<'a, TestData>> for TestTableRepository<'a> {
+    fn db_manager(&self) -> &PostgresManager<'a, TestData> {
         &self.db
     }
 }
@@ -17,7 +17,7 @@ impl C3p0<TestData, PostgresManager<TestData>> for TestTableRepository {
 #[test]
 fn postgres_basic_crud() {
     shared::SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.get().unwrap();
+        let conn = pool.get().unwrap();
         conn.batch_execute(
             "create table TEST_TABLE (
                             ID bigserial primary key,
@@ -37,10 +37,10 @@ fn postgres_basic_crud() {
             last_name: "my_last_name".to_owned(),
         });
 
-        let saved_model = jpo.save(&mut conn, model.clone()).unwrap();
+        let saved_model = jpo.save(&conn, model.clone()).unwrap();
         assert!(saved_model.id >= 0);
 
-        let found_model = jpo.find_by_id(&mut conn, &saved_model.id).unwrap().unwrap();
+        let found_model = jpo.find_by_id(&conn, &saved_model.id).unwrap().unwrap();
         assert_eq!(saved_model.id, found_model.id);
         assert_eq!(saved_model.version, found_model.version);
         assert_eq!(saved_model.data.first_name, found_model.data.first_name);

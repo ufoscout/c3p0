@@ -10,10 +10,11 @@ use std::borrow::BorrowMut;
 pub mod error;
 
 #[derive(Clone)]
-pub struct MySqlManager<DATA>
+pub struct MySqlManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
+    phantom_data: std::marker::PhantomData<&'a ()>,
     pub codec: Codec<DATA>,
 
     pub id_field_name: String,
@@ -104,13 +105,14 @@ where
         self
     }
 
-    pub fn build(self) -> MySqlManager<DATA> {
+    pub fn build<'a>(self) -> MySqlManager<'a, DATA> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
         MySqlManager {
+            phantom_data: std::marker::PhantomData,
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
             exists_by_id_sql_query: format!(
@@ -175,7 +177,7 @@ where
     }
 }
 
-impl<DATA> MySqlManager<DATA>
+impl<'a, DATA> MySqlManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -190,26 +192,27 @@ where
     }
 }
 
-impl<DATA> DbManager<DATA> for MySqlManager<DATA>
+impl<'a, DATA> DbManager<DATA> for MySqlManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     type Conn = mysql::Conn;
+    type Ref = &'a mut Self::Conn;
 
-    fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         conn.borrow_mut()
             .prep_exec(&self.create_table_sql_query, ())
             .map(|row| row.affected_rows())
             .map_err(into_c3p0_error)
     }
 
-    fn drop_table_if_exists(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    fn drop_table_if_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         conn.prep_exec(&self.drop_table_sql_query, ())
             .map(|row| row.affected_rows())
             .map_err(into_c3p0_error)
     }
 
-    fn count_all(&self, conn: &mut Self::Conn) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: Self::Ref) -> Result<i64, C3p0Error> {
         let mut stmt = conn
             .prepare(&self.count_all_sql_query)
             .map_err(into_c3p0_error)?;
@@ -225,7 +228,7 @@ where
         Ok(result)
     }
 
-    fn exists_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<bool, C3p0Error> {
+    fn exists_by_id(&self, conn: Self::Ref, id: i64) -> Result<bool, C3p0Error> {
         let mut stmt = conn
             .prepare(&self.exists_by_id_sql_query)
             .map_err(into_c3p0_error)?;
@@ -243,14 +246,14 @@ where
         Ok(result)
     }
 
-    fn find_all(&self, conn: &mut Self::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn find_all(&self, conn: Self::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.prep_exec(&self.find_all_sql_query, ())
             .map_err(into_c3p0_error)?
             .map(|row| self.to_model(row.unwrap()))
             .collect()
     }
 
-    fn find_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
+    fn find_by_id(&self, conn: Self::Ref, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.prep_exec(
             &self.find_by_id_sql_query,
             params! {
@@ -263,7 +266,7 @@ where
         .transpose()
     }
 
-    fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         let mut stmt = conn
             .prepare(&self.delete_all_sql_query)
             .map_err(into_c3p0_error)?;
@@ -272,7 +275,7 @@ where
             .map_err(into_c3p0_error)
     }
 
-    fn delete_by_id(&self, conn: &mut Self::Conn, id: i64) -> Result<u64, C3p0Error> {
+    fn delete_by_id(&self, conn: Self::Ref, id: i64) -> Result<u64, C3p0Error> {
         let mut stmt = conn
             .prepare(&self.delete_by_id_sql_query)
             .map_err(into_c3p0_error)?;
@@ -283,7 +286,7 @@ where
         .map_err(into_c3p0_error)
     }
 
-    fn save(&self, conn: &mut Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         {
             let json_data = (self.codec.to_value)(&obj.data)?;
             let mut stmt = conn

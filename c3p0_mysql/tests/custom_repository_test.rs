@@ -4,12 +4,12 @@ use c3p0_mysql::{MySqlManager, MySqlManagerBuilder};
 
 mod shared;
 
-struct TestTableRepository {
-    conf: MySqlManager<TestData>,
+struct TestTableRepository<'a> {
+    conf: MySqlManager<'a, TestData>,
 }
 
-impl C3p0<TestData, MySqlManager<TestData>> for TestTableRepository {
-    fn db_manager(&self) -> &MySqlManager<TestData> {
+impl <'a> C3p0<TestData, MySqlManager<'a, TestData>> for TestTableRepository<'a> {
+    fn db_manager(&self) -> &MySqlManager<'a, TestData>{
         &self.conf
     }
 }

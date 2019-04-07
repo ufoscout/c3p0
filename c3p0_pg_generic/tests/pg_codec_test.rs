@@ -70,7 +70,7 @@ impl<'a> Versioning2<'a> {
 #[test]
 fn should_create_and_drop_table() {
     shared::SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.get().unwrap();
+        let conn = pool.get().unwrap();
         let table_name = "USER_TABLE";
 
         let conf_v1: PostgresManager<UserVersion1> = PostgresManagerBuilder::new(table_name)
@@ -94,12 +94,12 @@ fn should_create_and_drop_table() {
             email: "user_v1_email@test.com".to_owned(),
         });
 
-        assert!(jpo_v1.create_table_if_not_exists(&mut conn).is_ok());
-        assert!(jpo_v1.delete_all(&mut conn).is_ok());
+        assert!(jpo_v1.create_table_if_not_exists(&conn).is_ok());
+        assert!(jpo_v1.delete_all(&conn).is_ok());
 
-        let user_v1 = jpo_v1.save(&mut conn, new_user_v1.clone()).unwrap();
+        let user_v1 = jpo_v1.save(&conn, new_user_v1.clone()).unwrap();
 
-        let user_v2_found = jpo_v2.find_by_id(&mut conn, &user_v1.id).unwrap();
+        let user_v2_found = jpo_v2.find_by_id(&conn, &user_v1.id).unwrap();
         assert!(user_v2_found.is_some());
 
         let user_v2_found = user_v2_found.unwrap();
