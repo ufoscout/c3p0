@@ -107,7 +107,7 @@ impl PgMigrate {
             &[],
         )?;
 
-        let migration_history = self.fetch_migrations_history(conn)?;
+        let migration_history = self.fetch_migrations_history(tx.connection())?;
         let migration_history = PgMigrate::clean_history(migration_history)?;
 
         for i in 0..self.migrations.len() {
