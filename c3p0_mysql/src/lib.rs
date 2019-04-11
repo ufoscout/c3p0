@@ -4,6 +4,7 @@ use c3p0::error::C3p0Error;
 use c3p0::manager::DbManager;
 use c3p0::types::OptString;
 use c3p0::{Model, NewModel};
+use mysql::prelude::FromValue;
 use mysql::{params, Row};
 use std::borrow::BorrowMut;
 
@@ -202,9 +203,9 @@ where
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
-        let id = row.get(0).unwrap();
-        let version = row.get(1).unwrap();
-        let data = (self.codec.from_value)(row.get(2).unwrap())?;
+        let id = get_or_error(&row, 0)?;
+        let version = get_or_error(&row, 1)?;
+        let data = (self.codec.from_value)(get_or_error(&row, 2)?)?;
         Ok(Model { id, version, data })
     }
 }
@@ -240,8 +241,8 @@ where
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
             })?
-            .map(|row| row.get(0).unwrap())
-            .unwrap();
+            .map_err(into_c3p0_error)
+            .and_then(|row| get_or_error(&row, 0))?;
         Ok(result)
     }
 
@@ -258,15 +259,15 @@ where
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
             })?
-            .map(|row| row.get(0).unwrap())
-            .unwrap();
+            .map_err(into_c3p0_error)
+            .and_then(|row| get_or_error(&row, 0))?;
         Ok(result)
     }
 
     fn find_all(&self, conn: Self::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.prep_exec(&self.find_all_sql_query, ())
             .map_err(into_c3p0_error)?
-            .map(|row| self.to_model(row.unwrap()))
+            .map(|row| self.to_model(row.map_err(into_c3p0_error)?))
             .collect()
     }
 
@@ -279,7 +280,7 @@ where
         )
         .map_err(into_c3p0_error)?
         .next()
-        .map(|row| self.to_model(row.unwrap()))
+        .map(|row| self.to_model(row.map_err(into_c3p0_error)?))
         .transpose()
     }
 
@@ -347,8 +348,8 @@ where
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
             })?
-            .map(|row| row.get(0).unwrap())
-            .unwrap();
+            .map_err(into_c3p0_error)
+            .and_then(|row| get_or_error(&row, 0))?;
 
         Ok(Model {
             id,
@@ -388,4 +389,10 @@ where
 
         Ok(updated_model)
     }
+}
+
+fn get_or_error<T: FromValue>(row: &Row, index: usize) -> Result<T, C3p0Error> {
+    row.get(index).ok_or_else(|| C3p0Error::SqlError {
+        cause: format!("Row contains no values for index {}", index),
+    })
 }
