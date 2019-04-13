@@ -6,6 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 pub mod codec;
 pub mod error;
 pub mod manager;
+pub mod pool;
 pub mod types;
 
 pub type IdType = i64;

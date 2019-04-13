@@ -6,9 +6,9 @@ use c3p0::types::OptString;
 use c3p0::{Model, NewModel};
 use mysql::prelude::FromValue;
 use mysql::{params, Row};
-use std::borrow::BorrowMut;
 
 pub mod error;
+pub mod pool;
 
 #[derive(Clone)]
 pub struct MySqlManager<'a, DATA>
@@ -218,8 +218,7 @@ where
     type Ref = &'a mut Self::Conn;
 
     fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
-        conn.borrow_mut()
-            .prep_exec(&self.create_table_sql_query, ())
+        conn.prep_exec(&self.create_table_sql_query, ())
             .map(|row| row.affected_rows())
             .map_err(into_c3p0_error)
     }

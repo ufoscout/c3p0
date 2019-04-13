@@ -7,6 +7,7 @@ use c3p0::{Model, NewModel};
 use postgres::rows::Row;
 
 pub mod error;
+pub mod pool;
 
 #[derive(Clone)]
 pub struct PostgresManager<'a, DATA>

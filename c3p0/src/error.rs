@@ -10,6 +10,8 @@ pub enum C3p0Error {
     JsonProcessingError { cause: serde_json::error::Error },
     #[error(display = "IteratorError: [{}]", message)]
     IteratorError { message: String },
+    #[error(display = "PoolError: [{}]", cause)]
+    PoolError { cause: String },
 }
 
 impl From<serde_json::error::Error> for C3p0Error {
