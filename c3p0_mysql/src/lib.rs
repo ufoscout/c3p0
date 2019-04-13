@@ -234,15 +234,13 @@ where
         let mut stmt = conn
             .prepare(&self.count_all_sql_query)
             .map_err(into_c3p0_error)?;
+
         let result = stmt
-            .execute(())
+            .first_exec(())
             .map_err(into_c3p0_error)?
-            .next()
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
-            })?
-            .map_err(into_c3p0_error)
-            .and_then(|row| get_or_error(&row, 0))?;
+            })?;
         Ok(result)
     }
 
@@ -251,16 +249,13 @@ where
             .prepare(&self.exists_by_id_sql_query)
             .map_err(into_c3p0_error)?;
         let result = stmt
-            .execute(params! {
+            .first_exec(params! {
                 "id" => id
             })
             .map_err(into_c3p0_error)?
-            .next()
             .ok_or_else(|| C3p0Error::IteratorError {
                 message: "Cannot iterate next element".to_owned(),
-            })?
-            .map_err(into_c3p0_error)
-            .and_then(|row| get_or_error(&row, 0))?;
+            })?;
         Ok(result)
     }
 

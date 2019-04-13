@@ -206,9 +206,9 @@ where
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
-        let id = row.get(0);
-        let version = row.get(1);
-        let data = (self.codec.from_value)(row.get(2))?;
+        let id = get_or_error(&row, 0)?;
+        let version = get_or_error(&row, 1)?;
+        let data = (self.codec.from_value)(get_or_error(&row, 2)?)?;
         Ok(Model { id, version, data })
     }
 }
@@ -367,4 +367,11 @@ where
 
         Ok(updated_model)
     }
+}
+
+fn get_or_error<T: postgres_shared::types::FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
+    row.get_opt(index).ok_or_else(|| C3p0Error::SqlError {
+        cause: format!("Row contains no values for index {}", index),
+    })?
+        .map_err(into_c3p0_error)
 }
