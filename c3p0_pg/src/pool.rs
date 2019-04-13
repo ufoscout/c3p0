@@ -27,7 +27,7 @@ pub struct PgConnection {
 
 impl Connection for PgConnection {
 
-    fn transaction<T, F: Fn(&mut SqlExecutor) -> Result<T, C3p0Error>>(&mut self, tx: F) -> Result<T, C3p0Error> {
+    fn transaction<T, F: Fn(&SqlExecutor) -> Result<T, C3p0Error>>(&self, tx: F) -> Result<T, C3p0Error> {
         let transaction = self.conn.transaction().map_err(into_c3p0_error)?;
         let mut sql_executor = PgSqlExecutor{ conn: &self.conn };
         (tx)(&mut sql_executor).and_then(move |result| transaction.commit().map_err(into_c3p0_error).map(|()| result))
@@ -36,7 +36,7 @@ impl Connection for PgConnection {
 }
 
 impl SqlExecutor for PgConnection {
-    fn execute(&mut self, sql: &str) -> Result<u64, C3p0Error> {
+    fn execute(&self, sql: &str) -> Result<u64, C3p0Error> {
         execute(&self.conn, sql)
     }
 }
@@ -45,7 +45,7 @@ pub struct PgSqlExecutor<'a> {
     conn: &'a PooledConnection<PostgresConnectionManager>
 }
 impl <'a> SqlExecutor for PgSqlExecutor<'a> {
-    fn execute(&mut self, sql: &str) -> Result<u64, C3p0Error> {
+    fn execute(&self, sql: &str) -> Result<u64, C3p0Error> {
         execute(self.conn, sql)
     }
 }
