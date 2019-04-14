@@ -1,6 +1,6 @@
-use crate::error::into_c3p0_error;
-use c3p0::error::C3p0Error;
-use c3p0::pool::{C3p0, Connection};
+use super::error::into_c3p0_error;
+use crate::error::C3p0Error;
+use crate::pool::{C3p0, Connection};
 use r2d2::{Pool, PooledConnection};
 use r2d2_postgres::PostgresConnectionManager;
 use postgres_shared::types::ToSql;
@@ -52,7 +52,7 @@ impl Connection for PgConnection {
 pub struct PgTransaction<'a> {
     conn: &'a PooledConnection<PostgresConnectionManager>,
 }
-impl<'a> Connection<ToSql> for PgTransaction<'a> {
+impl<'a> Connection for PgTransaction<'a> {
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         execute(self.conn, sql, params)
     }

@@ -3,6 +3,7 @@ use crate::manager::DbManager;
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
 
+pub mod client;
 pub mod codec;
 pub mod error;
 pub mod manager;

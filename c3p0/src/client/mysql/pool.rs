@@ -1,12 +1,12 @@
-use crate::error::into_c3p0_error;
-use c3p0::error::C3p0Error;
-use c3p0::pool::{C3p0, Connection};
-use mysql::prelude::GenericConnection;
+use super::error::into_c3p0_error;
+use crate::error::C3p0Error;
+use crate::pool::{C3p0, Connection};
+use mysql_client::prelude::GenericConnection;
 use r2d2::{Pool, PooledConnection};
 use r2d2_mysql::MysqlConnectionManager;
 use std::cell::RefCell;
 use std::ops::DerefMut;
-use mysql::Value;
+use mysql_client::Value;
 
 pub struct MySqlC3p0 {
     pool: Pool<MysqlConnectionManager>,
@@ -54,7 +54,7 @@ pub struct MySqlConnection {
 impl Connection for MySqlConnection {
     fn execute(&self, sql: &str, params: &[&Value]) -> Result<u64, C3p0Error> {
         let mut conn_borrow = self.conn.borrow_mut();
-        let conn: &mut mysql::Conn = conn_borrow.deref_mut();
+        let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
         execute(conn, sql, params)
     }
 }
