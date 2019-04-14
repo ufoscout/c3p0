@@ -3,12 +3,14 @@ use c3p0::error::C3p0Error;
 use c3p0::pool::{C3p0, Connection};
 use r2d2::{Pool, PooledConnection};
 use r2d2_postgres::PostgresConnectionManager;
+use postgres_shared::types::ToSql;
 
 pub struct C3p0Pg {
     pool: Pool<PostgresConnectionManager>,
 }
 
 impl C3p0 for C3p0Pg {
+    type ToSql = ToSql;
     type Connection = PgConnection;
 
     fn connection(&self) -> Result<Self::Connection, C3p0Error> {
@@ -20,7 +22,7 @@ impl C3p0 for C3p0Pg {
             .map(|conn| PgConnection { conn })
     }
 
-    fn transaction<T, F: Fn(&Connection) -> Result<T, C3p0Error>>(
+    fn transaction<T, F: Fn(&Connection<Self::ToSql>) -> Result<T, C3p0Error>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {
@@ -42,24 +44,25 @@ pub struct PgConnection {
     conn: PooledConnection<PostgresConnectionManager>,
 }
 
-impl Connection for PgConnection {
-    fn execute(&self, sql: &str) -> Result<u64, C3p0Error> {
-        execute(&self.conn, sql)
+impl <TO: ToSql> Connection<TO> for PgConnection {
+    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
+        execute(&self.conn, sql, params)
     }
 }
 
 pub struct PgTransaction<'a> {
     conn: &'a PooledConnection<PostgresConnectionManager>,
 }
-impl<'a> Connection for PgTransaction<'a> {
-    fn execute(&self, sql: &str) -> Result<u64, C3p0Error> {
-        execute(self.conn, sql)
+impl<'a> Connection<ToSql> for PgTransaction<'a> {
+    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
+        execute(self.conn, sql, params)
     }
 }
 
 fn execute(
     conn: &PooledConnection<PostgresConnectionManager>,
     sql: &str,
+    params: &[&ToSql]
 ) -> Result<u64, C3p0Error> {
-    conn.execute(sql, &[]).map_err(into_c3p0_error)
+    conn.execute(sql, params).map_err(into_c3p0_error)
 }
