@@ -11,8 +11,6 @@ script = [
   "cd .. && sleep 4",
   "cd ./c3p0_diesel        && cargo publish",
   "cd .. && sleep 4",
-  "cd ./c3p0_pg            && cargo publish",
-  "cd .. && sleep 4",
   "cd ./c3p0_pg_migrate    && cargo publish",
   "cd ..",
 ]
