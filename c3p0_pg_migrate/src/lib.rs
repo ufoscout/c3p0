@@ -1,7 +1,6 @@
 use crate::error::C3p0MigrateError;
 use crate::migration::{to_sql_migrations, Migration, SqlMigration};
-use c3p0::{C3p0, C3p0Repository, Model, NewModel};
-use c3p0::client::{DbManager, DbManagerBuilder};
+use c3p0::prelude::*;
 use log::*;
 use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
@@ -50,11 +49,11 @@ impl PgMigrateBuilder {
     }
 
     pub fn build(self) -> PgMigrate {
-        let conf = DbManagerBuilder::new(self.table.clone())
+        let conf = JsonManagerBuilder::new(self.table.clone())
             .with_schema_name(self.schema.clone())
             .build();
 
-        let repo = C3p0Repository::build(conf);
+        let repo = C3p0JsonRepository::build(conf);
 
         PgMigrate {
             table: self.table,
@@ -88,7 +87,7 @@ pub struct PgMigrate {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
-    repo: C3p0Repository<MigrationData, DbManager<'static, MigrationData>>,
+    repo: C3p0JsonRepository<MigrationData, JsonManager<'static, MigrationData>>,
 }
 
 impl PgMigrate {
@@ -102,7 +101,7 @@ impl PgMigrate {
         tx.execute(
             &format!(
                 "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE;",
-                self.repo.db_manager().qualified_table_name
+                self.repo.json_manager().qualified_table_name
             ),
             &[],
         )?;

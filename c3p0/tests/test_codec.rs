@@ -1,11 +1,7 @@
-use c3p0::codec::Codec;
-use c3p0::error::C3p0Error;
-use c3p0::{C3p0, C3p0Repository, NewModel};
+use c3p0::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
-
-use c3p0::client::{DbManager, DbManagerBuilder};
 
 #[cfg(feature = "pg")]
 mod shared_pg;
@@ -82,21 +78,21 @@ fn should_upgrade_structs_on_load() {
         let mut conn = pool.get().unwrap();
         let table_name = "USER_TABLE";
 
-        let conf_v1: DbManager<UserVersion1> = DbManagerBuilder::new(table_name)
-            .with_codec(Codec {
+        let conf_v1: JsonManager<UserVersion1> = JsonManagerBuilder::new(table_name)
+            .with_codec(JsonCodec {
                 to_value: |data| Versioning1::to_value(data),
                 from_value: |value| Versioning1::from_value(value),
             })
             .build();
-        let jpo_v1 = C3p0Repository::build(conf_v1);
+        let jpo_v1 = C3p0JsonRepository::build(conf_v1);
 
-        let conf_v2: DbManager<UserVersion2> = DbManagerBuilder::new(table_name)
-            .with_codec(Codec {
+        let conf_v2: JsonManager<UserVersion2> = JsonManagerBuilder::new(table_name)
+            .with_codec(JsonCodec {
                 to_value: |data| Versioning2::to_value(data),
                 from_value: |value| Versioning2::from_value(value),
             })
             .build();
-        let jpo_v2 = C3p0Repository::build(conf_v2);
+        let jpo_v2 = C3p0JsonRepository::build(conf_v2);
 
         let new_user_v1 = NewModel::new(UserVersion1 {
             username: "user_v1_name".to_owned(),

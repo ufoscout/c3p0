@@ -1,5 +1,4 @@
-use c3p0::{C3p0, NewModel};
-use c3p0::client::{DbManager, DbManagerBuilder};
+use c3p0::prelude::*;
 
 #[cfg(feature = "pg")]
 mod shared_pg;
@@ -12,11 +11,11 @@ mod shared_mysql;
 use crate::shared_mysql::*;
 
 struct TestTableRepository<'a> {
-    conf: DbManager<'a, TestData>,
+    conf: JsonManager<'a, TestData>,
 }
 
-impl<'a> C3p0<TestData, DbManager<'a, TestData>> for TestTableRepository<'a> {
-    fn db_manager(&self) -> &DbManager<'a, TestData> {
+impl<'a> C3p0Json<TestData, JsonManager<'a, TestData>> for TestTableRepository<'a> {
+    fn json_manager(&self) -> &JsonManager<'a, TestData> {
         &self.conf
     }
 }
@@ -26,7 +25,7 @@ fn mysql_basic_crud() {
     SINGLETON.get(|(pool, _)| {
         let mut conn = pool.get().unwrap();
 
-        let conf = DbManagerBuilder::new("TEST_TABLE").build();
+        let conf = JsonManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = TestTableRepository { conf };
 

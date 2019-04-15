@@ -25,7 +25,7 @@ impl Into<OptString> for Option<String> {
 impl Into<OptString> for Option<&str> {
     fn into(self) -> OptString {
         OptString {
-            value: self.map(|val| val.to_owned()),
+            value: self.map(std::borrow::ToOwned::to_owned),
         }
     }
 }

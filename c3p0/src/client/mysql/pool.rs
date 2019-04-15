@@ -2,11 +2,11 @@ use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::pool::{C3p0, Connection};
 use mysql_client::prelude::GenericConnection;
+use mysql_client::Value;
 use r2d2::{Pool, PooledConnection};
 use r2d2_mysql::MysqlConnectionManager;
 use std::cell::RefCell;
 use std::ops::DerefMut;
-use mysql_client::Value;
 
 pub struct MySqlC3p0 {
     pool: Pool<MysqlConnectionManager>,
@@ -76,7 +76,11 @@ where
     }
 }
 
-fn execute<C: GenericConnection>(conn: &mut C, sql: &str, params: &[&Value]) -> Result<u64, C3p0Error> {
+fn execute<C: GenericConnection>(
+    conn: &mut C,
+    sql: &str,
+    params: &[&Value],
+) -> Result<u64, C3p0Error> {
     conn.prep_exec(sql, params.to_vec())
         .map(|row| row.affected_rows())
         .map_err(into_c3p0_error)

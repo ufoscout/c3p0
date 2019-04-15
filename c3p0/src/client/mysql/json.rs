@@ -1,19 +1,17 @@
 use super::error::into_c3p0_error;
-use crate::codec::Codec;
 use crate::error::C3p0Error;
-use crate::manager::DbManager;
+use crate::json::{JsonCodec, JsonManager, Model, NewModel};
 use crate::types::OptString;
-use crate::{Model, NewModel};
 use mysql_client::prelude::FromValue;
 use mysql_client::{params, Row};
 
 #[derive(Clone)]
-pub struct MySqlManager<'a, DATA>
+pub struct MySqlJsonManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     phantom_data: std::marker::PhantomData<&'a ()>,
-    pub codec: Codec<DATA>,
+    pub codec: JsonCodec<DATA>,
 
     pub id_field_name: String,
     pub version_field_name: String,
@@ -41,11 +39,11 @@ where
 }
 
 #[derive(Clone)]
-pub struct MySqlManagerBuilder<DATA>
+pub struct MySqlJsonManagerBuilder<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    codec: Codec<DATA>,
+    codec: JsonCodec<DATA>,
     id_field_name: String,
     version_field_name: String,
     data_field_name: String,
@@ -53,13 +51,13 @@ where
     schema_name: Option<String>,
 }
 
-impl<DATA> MySqlManagerBuilder<DATA>
+impl<DATA> MySqlJsonManagerBuilder<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
-        MySqlManagerBuilder {
+        MySqlJsonManagerBuilder {
             codec: Default::default(),
             table_name: table_name.clone(),
             id_field_name: "id".to_owned(),
@@ -69,7 +67,7 @@ where
         }
     }
 
-    pub fn with_codec(mut self, codec: Codec<DATA>) -> MySqlManagerBuilder<DATA> {
+    pub fn with_codec(mut self, codec: JsonCodec<DATA>) -> MySqlJsonManagerBuilder<DATA> {
         self.codec = codec;
         self
     }
@@ -77,7 +75,7 @@ where
     pub fn with_id_field_name<T: Into<String>>(
         mut self,
         id_field_name: T,
-    ) -> MySqlManagerBuilder<DATA> {
+    ) -> MySqlJsonManagerBuilder<DATA> {
         self.id_field_name = id_field_name.into();
         self
     }
@@ -85,7 +83,7 @@ where
     pub fn with_version_field_name<T: Into<String>>(
         mut self,
         version_field_name: T,
-    ) -> MySqlManagerBuilder<DATA> {
+    ) -> MySqlJsonManagerBuilder<DATA> {
         self.version_field_name = version_field_name.into();
         self
     }
@@ -93,7 +91,7 @@ where
     pub fn with_data_field_name<T: Into<String>>(
         mut self,
         data_field_name: T,
-    ) -> MySqlManagerBuilder<DATA> {
+    ) -> MySqlJsonManagerBuilder<DATA> {
         self.data_field_name = data_field_name.into();
         self
     }
@@ -101,18 +99,18 @@ where
     pub fn with_schema_name<O: Into<OptString>>(
         mut self,
         schema_name: O,
-    ) -> MySqlManagerBuilder<DATA> {
+    ) -> MySqlJsonManagerBuilder<DATA> {
         self.schema_name = schema_name.into().value;
         self
     }
 
-    pub fn build<'a>(self) -> MySqlManager<'a, DATA> {
+    pub fn build<'a>(self) -> MySqlJsonManager<'a, DATA> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        MySqlManager {
+        MySqlJsonManager {
             phantom_data: std::marker::PhantomData,
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
@@ -192,7 +190,7 @@ where
     }
 }
 
-impl<'a, DATA> MySqlManager<'a, DATA>
+impl<'a, DATA> MySqlJsonManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -207,7 +205,7 @@ where
     }
 }
 
-impl<'a, DATA> DbManager<DATA> for MySqlManager<'a, DATA>
+impl<'a, DATA> JsonManager<DATA> for MySqlJsonManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

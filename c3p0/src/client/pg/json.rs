@@ -1,19 +1,17 @@
 use super::error::into_c3p0_error;
-use crate::codec::Codec;
 use crate::error::C3p0Error;
-use crate::manager::DbManager;
+use crate::json::{JsonCodec, JsonManager, Model, NewModel};
 use crate::types::OptString;
-use crate::{Model, NewModel};
 use postgres::rows::Row;
 
 #[derive(Clone)]
-pub struct PostgresManager<'a, DATA>
+pub struct PostgresJsonManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     phantom_data: std::marker::PhantomData<&'a ()>,
 
-    pub codec: Codec<DATA>,
+    pub codec: JsonCodec<DATA>,
 
     pub id_field_name: String,
     pub version_field_name: String,
@@ -41,11 +39,11 @@ where
 }
 
 #[derive(Clone)]
-pub struct PostgresManagerBuilder<DATA>
+pub struct PostgresJsonManagerBuilder<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    codec: Codec<DATA>,
+    codec: JsonCodec<DATA>,
     id_field_name: String,
     version_field_name: String,
     data_field_name: String,
@@ -53,13 +51,13 @@ where
     schema_name: Option<String>,
 }
 
-impl<DATA> PostgresManagerBuilder<DATA>
+impl<DATA> PostgresJsonManagerBuilder<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
-        PostgresManagerBuilder {
+        PostgresJsonManagerBuilder {
             codec: Default::default(),
             table_name: table_name.clone(),
             id_field_name: "id".to_owned(),
@@ -69,7 +67,7 @@ where
         }
     }
 
-    pub fn with_codec(mut self, codec: Codec<DATA>) -> PostgresManagerBuilder<DATA> {
+    pub fn with_codec(mut self, codec: JsonCodec<DATA>) -> PostgresJsonManagerBuilder<DATA> {
         self.codec = codec;
         self
     }
@@ -77,7 +75,7 @@ where
     pub fn with_id_field_name<T: Into<String>>(
         mut self,
         id_field_name: T,
-    ) -> PostgresManagerBuilder<DATA> {
+    ) -> PostgresJsonManagerBuilder<DATA> {
         self.id_field_name = id_field_name.into();
         self
     }
@@ -85,7 +83,7 @@ where
     pub fn with_version_field_name<T: Into<String>>(
         mut self,
         version_field_name: T,
-    ) -> PostgresManagerBuilder<DATA> {
+    ) -> PostgresJsonManagerBuilder<DATA> {
         self.version_field_name = version_field_name.into();
         self
     }
@@ -93,7 +91,7 @@ where
     pub fn with_data_field_name<T: Into<String>>(
         mut self,
         data_field_name: T,
-    ) -> PostgresManagerBuilder<DATA> {
+    ) -> PostgresJsonManagerBuilder<DATA> {
         self.data_field_name = data_field_name.into();
         self
     }
@@ -101,18 +99,18 @@ where
     pub fn with_schema_name<O: Into<OptString>>(
         mut self,
         schema_name: O,
-    ) -> PostgresManagerBuilder<DATA> {
+    ) -> PostgresJsonManagerBuilder<DATA> {
         self.schema_name = schema_name.into().value;
         self
     }
 
-    pub fn build<'a>(self) -> PostgresManager<'a, DATA> {
+    pub fn build<'a>(self) -> PostgresJsonManager<'a, DATA> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        PostgresManager {
+        PostgresJsonManager {
             phantom_data: std::marker::PhantomData,
 
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
@@ -196,7 +194,7 @@ where
     }
 }
 
-impl<'a, DATA> PostgresManager<'a, DATA>
+impl<'a, DATA> PostgresJsonManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -211,7 +209,7 @@ where
     }
 }
 
-impl<'a, DATA> DbManager<DATA> for PostgresManager<'a, DATA>
+impl<'a, DATA> JsonManager<DATA> for PostgresJsonManager<'a, DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

@@ -1,5 +1,5 @@
-use crate::error::C3p0Error;
 use crate::client::ToSql;
+use crate::error::C3p0Error;
 
 pub trait C3p0 {
     type Connection: Connection;
@@ -13,7 +13,6 @@ pub trait C3p0 {
 }
 
 pub trait Connection {
-
     // Add params
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error>;
 
@@ -23,6 +22,7 @@ pub trait Connection {
     //fetch_one_option
     //fetch_all
 
+    //count_all_from_table
 
+    //lock_table
 }
-
