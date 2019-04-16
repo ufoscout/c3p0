@@ -1,9 +1,20 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::pool::{C3p0, Connection};
-use postgres_shared::types::ToSql;
 use r2d2::{Pool, PooledConnection};
 use r2d2_postgres::PostgresConnectionManager;
+
+pub type ToSql = postgres_shared::types::ToSql;
+
+pub struct C3p0PgBuilder {}
+
+impl C3p0PgBuilder {
+    pub fn build(pool: Pool<PostgresConnectionManager>) -> C3p0Pg {
+        C3p0Pg {
+            pool
+        }
+    }
+}
 
 pub struct C3p0Pg {
     pool: Pool<PostgresConnectionManager>,

@@ -2,17 +2,28 @@ use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::pool::{C3p0, Connection};
 use mysql_client::prelude::GenericConnection;
-use mysql_client::Value;
 use r2d2::{Pool, PooledConnection};
 use r2d2_mysql::MysqlConnectionManager;
 use std::cell::RefCell;
 use std::ops::DerefMut;
 
-pub struct MySqlC3p0 {
+pub type ToSql = mysql_client::Value;
+
+pub struct C3p0MySqlBuilder {}
+
+impl C3p0MySqlBuilder {
+    pub fn build(pool: Pool<MysqlConnectionManager>) -> C3p0MySql {
+        C3p0MySql {
+            pool
+        }
+    }
+}
+
+pub struct C3p0MySql {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl C3p0 for MySqlC3p0 {
+impl C3p0 for C3p0MySql {
     type Connection = MySqlConnection;
 
     fn connection(&self) -> Result<Self::Connection, C3p0Error> {
@@ -52,7 +63,7 @@ pub struct MySqlConnection {
 }
 
 impl Connection for MySqlConnection {
-    fn execute(&self, sql: &str, params: &[&Value]) -> Result<u64, C3p0Error> {
+    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         let mut conn_borrow = self.conn.borrow_mut();
         let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
         execute(conn, sql, params)
@@ -70,7 +81,7 @@ impl<'a, T> Connection for MySqlTransaction<'a, T>
 where
     T: GenericConnection,
 {
-    fn execute(&self, sql: &str, params: &[&Value]) -> Result<u64, C3p0Error> {
+    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         let mut transaction = self.tx.borrow_mut();
         execute(transaction.deref_mut(), sql, params)
     }
@@ -79,7 +90,7 @@ where
 fn execute<C: GenericConnection>(
     conn: &mut C,
     sql: &str,
-    params: &[&Value],
+    params: &[&ToSql],
 ) -> Result<u64, C3p0Error> {
     conn.prep_exec(sql, params.to_vec())
         .map(|row| row.affected_rows())
