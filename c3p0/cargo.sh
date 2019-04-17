@@ -11,6 +11,7 @@ do
 
     echo $LINE_SEPARATOR
     echo 'Run Cargo with args [' $@ '] and features [' $i ']'
+    echo $LINE_SEPARATOR
 
     cargo $@ --features $i
     rc=$?

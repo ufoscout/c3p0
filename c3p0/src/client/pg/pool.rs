@@ -39,9 +39,11 @@ impl C3p0 for C3p0Pg {
         let conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
             cause: format!("{}", err),
         })?;
-        let transaction = conn.transaction().map_err(into_c3p0_error)?;
-        let mut sql_executor = PgTransaction { conn: &conn };
-        (tx)(&mut sql_executor).and_then(move |result| {
+        let sql_executor = PgConnection { conn };
+
+        let transaction = sql_executor.conn.transaction().map_err(into_c3p0_error)?;
+
+        (tx)(&sql_executor).and_then(move |result| {
             transaction
                 .commit()
                 .map_err(into_c3p0_error)
@@ -57,15 +59,6 @@ pub struct PgConnection {
 impl Connection for PgConnection {
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         execute(&self.conn, sql, params)
-    }
-}
-
-pub struct PgTransaction<'a> {
-    conn: &'a PooledConnection<PostgresConnectionManager>,
-}
-impl<'a> Connection for PgTransaction<'a> {
-    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
-        execute(self.conn, sql, params)
     }
 }
 
