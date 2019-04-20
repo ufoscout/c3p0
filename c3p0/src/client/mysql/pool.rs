@@ -13,9 +13,7 @@ pub struct C3p0MySqlBuilder {}
 
 impl C3p0MySqlBuilder {
     pub fn build(pool: Pool<MysqlConnectionManager>) -> C3p0MySql {
-        C3p0MySql {
-            pool
-        }
+        C3p0MySql { pool }
     }
 }
 

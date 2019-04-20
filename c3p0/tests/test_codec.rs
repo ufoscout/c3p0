@@ -27,13 +27,15 @@ struct UserVersion2 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "json_version")]
+#[serde(tag = "@json_tag")]
 enum Versioning1<'a> {
     V1(Cow<'a, UserVersion1>),
 }
 
-impl<'a> Versioning1<'a> {
-    fn from_value(value: Value) -> Result<UserVersion1, C3p0Error> {
+struct UserVersionCoded1 {}
+
+impl JsonCodec<UserVersion1> for UserVersionCoded1 {
+    fn from_value(&self, value: Value) -> Result<UserVersion1, C3p0Error> {
         let versioning = serde_json::from_value(value)?;
         let user = match versioning {
             Versioning1::V1(user_v1) => user_v1.into_owned(),
@@ -41,20 +43,22 @@ impl<'a> Versioning1<'a> {
         Ok(user)
     }
 
-    fn to_value(data: &'a UserVersion1) -> Result<Value, C3p0Error> {
+    fn to_value(&self, data: &UserVersion1) -> Result<Value, C3p0Error> {
         serde_json::to_value(Versioning1::V1(Cow::Borrowed(data))).map_err(C3p0Error::from)
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "json_version")]
+#[serde(tag = "@json_tag")]
 enum Versioning2<'a> {
     V1(UserVersion1),
     V2(Cow<'a, UserVersion2>),
 }
 
-impl<'a> Versioning2<'a> {
-    fn from_value(value: Value) -> Result<UserVersion2, C3p0Error> {
+struct UserVersionCoded2 {}
+
+impl JsonCodec<UserVersion2> for UserVersionCoded2 {
+    fn from_value(&self, value: Value) -> Result<UserVersion2, C3p0Error> {
         let versioning = serde_json::from_value(value)?;
         let user = match versioning {
             Versioning2::V1(user_v1) => UserVersion2 {
@@ -67,7 +71,7 @@ impl<'a> Versioning2<'a> {
         Ok(user)
     }
 
-    fn to_value(data: &'a UserVersion2) -> Result<Value, C3p0Error> {
+    fn to_value(&self, data: &UserVersion2) -> Result<Value, C3p0Error> {
         serde_json::to_value(Versioning2::V2(Cow::Borrowed(data))).map_err(C3p0Error::from)
     }
 }
@@ -78,19 +82,13 @@ fn should_upgrade_structs_on_load() {
         let mut conn = pool.get().unwrap();
         let table_name = "USER_TABLE";
 
-        let conf_v1: JsonManager<UserVersion1> = JsonManagerBuilder::new(table_name)
-            .with_codec(JsonCodec {
-                to_value: |data| Versioning1::to_value(data),
-                from_value: |value| Versioning1::from_value(value),
-            })
+        let conf_v1 = JsonManagerBuilder::new(table_name)
+            .with_codec(UserVersionCoded1 {})
             .build();
         let jpo_v1 = C3p0JsonRepository::build(conf_v1);
 
-        let conf_v2: JsonManager<UserVersion2> = JsonManagerBuilder::new(table_name)
-            .with_codec(JsonCodec {
-                to_value: |data| Versioning2::to_value(data),
-                from_value: |value| Versioning2::from_value(value),
-            })
+        let conf_v2 = JsonManagerBuilder::new(table_name)
+            .with_codec(UserVersionCoded2 {})
             .build();
         let jpo_v2 = C3p0JsonRepository::build(conf_v2);
 

@@ -1,17 +1,20 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
-use crate::json::{JsonCodec, JsonManager, Model, NewModel};
+use crate::json::codec::DefaultJsonCodec;
+use crate::json::{codec::JsonCodec, JsonManager, Model, NewModel};
 use crate::types::OptString;
 use mysql_client::prelude::FromValue;
 use mysql_client::{params, Row};
 
 #[derive(Clone)]
-pub struct MySqlJsonManager<'a, DATA>
+pub struct MySqlJsonManager<'a, DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    phantom_data: std::marker::PhantomData<&'a ()>,
-    pub codec: JsonCodec<DATA>,
+    phantom_a: std::marker::PhantomData<&'a ()>,
+    phantom_data: std::marker::PhantomData<DATA>,
+
+    pub codec: CODEC,
 
     pub id_field_name: String,
     pub version_field_name: String,
@@ -39,11 +42,12 @@ where
 }
 
 #[derive(Clone)]
-pub struct MySqlJsonManagerBuilder<DATA>
+pub struct MySqlJsonManagerBuilder<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    codec: JsonCodec<DATA>,
+    phantom_data: std::marker::PhantomData<DATA>,
+    codec: CODEC,
     id_field_name: String,
     version_field_name: String,
     data_field_name: String,
@@ -51,14 +55,15 @@ where
     schema_name: Option<String>,
 }
 
-impl<DATA> MySqlJsonManagerBuilder<DATA>
+impl<DATA> MySqlJsonManagerBuilder<DATA, DefaultJsonCodec>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
         MySqlJsonManagerBuilder {
-            codec: Default::default(),
+            phantom_data: std::marker::PhantomData,
+            codec: DefaultJsonCodec {},
             table_name: table_name.clone(),
             id_field_name: "id".to_owned(),
             version_field_name: "version".to_owned(),
@@ -66,16 +71,31 @@ where
             schema_name: None,
         }
     }
+}
 
-    pub fn with_codec(mut self, codec: JsonCodec<DATA>) -> MySqlJsonManagerBuilder<DATA> {
-        self.codec = codec;
-        self
+impl<DATA, CODEC: JsonCodec<DATA>> MySqlJsonManagerBuilder<DATA, CODEC>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    pub fn with_codec<NEWCODEC: JsonCodec<DATA>>(
+        self,
+        codec: NEWCODEC,
+    ) -> MySqlJsonManagerBuilder<DATA, NEWCODEC> {
+        MySqlJsonManagerBuilder {
+            phantom_data: self.phantom_data,
+            codec,
+            table_name: self.table_name,
+            id_field_name: self.id_field_name,
+            version_field_name: self.version_field_name,
+            data_field_name: self.data_field_name,
+            schema_name: self.schema_name,
+        }
     }
 
     pub fn with_id_field_name<T: Into<String>>(
         mut self,
         id_field_name: T,
-    ) -> MySqlJsonManagerBuilder<DATA> {
+    ) -> MySqlJsonManagerBuilder<DATA, CODEC> {
         self.id_field_name = id_field_name.into();
         self
     }
@@ -83,7 +103,7 @@ where
     pub fn with_version_field_name<T: Into<String>>(
         mut self,
         version_field_name: T,
-    ) -> MySqlJsonManagerBuilder<DATA> {
+    ) -> MySqlJsonManagerBuilder<DATA, CODEC> {
         self.version_field_name = version_field_name.into();
         self
     }
@@ -91,7 +111,7 @@ where
     pub fn with_data_field_name<T: Into<String>>(
         mut self,
         data_field_name: T,
-    ) -> MySqlJsonManagerBuilder<DATA> {
+    ) -> MySqlJsonManagerBuilder<DATA, CODEC> {
         self.data_field_name = data_field_name.into();
         self
     }
@@ -99,19 +119,21 @@ where
     pub fn with_schema_name<O: Into<OptString>>(
         mut self,
         schema_name: O,
-    ) -> MySqlJsonManagerBuilder<DATA> {
+    ) -> MySqlJsonManagerBuilder<DATA, CODEC> {
         self.schema_name = schema_name.into().value;
         self
     }
 
-    pub fn build<'a>(self) -> MySqlJsonManager<'a, DATA> {
+    pub fn build<'a>(self) -> MySqlJsonManager<'a, DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
         MySqlJsonManager {
+            phantom_a: std::marker::PhantomData,
             phantom_data: std::marker::PhantomData,
+
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
             exists_by_id_sql_query: format!(
@@ -190,7 +212,7 @@ where
     }
 }
 
-impl<'a, DATA> MySqlJsonManager<'a, DATA>
+impl<'a, DATA, CODEC: JsonCodec<DATA>> MySqlJsonManager<'a, DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -200,12 +222,12 @@ where
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
         let id = get_or_error(&row, 0)?;
         let version = get_or_error(&row, 1)?;
-        let data = (self.codec.from_value)(get_or_error(&row, 2)?)?;
+        let data = self.codec.from_value(get_or_error(&row, 2)?)?;
         Ok(Model { id, version, data })
     }
 }
 
-impl<'a, DATA> JsonManager<DATA> for MySqlJsonManager<'a, DATA>
+impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManager<DATA> for MySqlJsonManager<'a, DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -316,7 +338,7 @@ where
 
     fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         {
-            let json_data = (self.codec.to_value)(&obj.data)?;
+            let json_data = self.codec.to_value(&obj.data)?;
             let mut stmt = conn
                 .prepare(&self.save_sql_query)
                 .map_err(into_c3p0_error)?;
@@ -348,7 +370,7 @@ where
     }
 
     fn update(&self, conn: Self::Ref, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
-        let json_data = (self.codec.to_value)(&obj.data)?;
+        let json_data = self.codec.to_value(&obj.data)?;
 
         let updated_model = Model {
             id: obj.id,

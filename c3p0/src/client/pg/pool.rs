@@ -10,9 +10,7 @@ pub struct C3p0PgBuilder {}
 
 impl C3p0PgBuilder {
     pub fn build(pool: Pool<PostgresConnectionManager>) -> C3p0Pg {
-        C3p0Pg {
-            pool
-        }
+        C3p0Pg { pool }
     }
 }
 

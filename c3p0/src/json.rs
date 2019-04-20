@@ -1,33 +1,13 @@
 use crate::error::C3p0Error;
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
-use serde_json::Value;
 use std::ops::Deref;
 
-#[derive(Clone)]
-pub struct JsonCodec<DATA>
-    where
-        DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    pub from_value: fn(value: Value) -> Result<DATA, C3p0Error>,
-    pub to_value: fn(data: &DATA) -> Result<Value, C3p0Error>,
-}
-
-impl<DATA> Default for JsonCodec<DATA>
-    where
-        DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn default() -> Self {
-        JsonCodec {
-            from_value: |value| serde_json::from_value::<DATA>(value).map_err(C3p0Error::from),
-            to_value: |data| serde_json::to_value(data).map_err(C3p0Error::from),
-        }
-    }
-}
+pub mod codec;
 
 pub trait JsonManager<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     type Conn;
     type Ref: Deref<Target = Self::Conn>;
@@ -60,8 +40,8 @@ pub type VersionType = i32;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Model<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize,
+where
+    DATA: Clone + serde::ser::Serialize,
 {
     pub id: IdType,
     pub version: VersionType,
@@ -70,8 +50,8 @@ pub struct Model<DATA>
 }
 
 impl<DATA> Model<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn into_new(self) -> NewModel<DATA> {
         NewModel {
@@ -83,8 +63,8 @@ impl<DATA> Model<DATA>
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct NewModel<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize,
+where
+    DATA: Clone + serde::ser::Serialize,
 {
     pub version: VersionType,
     #[serde(bound(deserialize = "DATA: Deserialize<'de>"))]
@@ -92,8 +72,8 @@ pub struct NewModel<DATA>
 }
 
 impl<DATA> NewModel<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn new(data: DATA) -> Self {
         NewModel { version: 0, data }
@@ -101,8 +81,8 @@ impl<DATA> NewModel<DATA>
 }
 
 impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     fn into(self) -> &'a IdType {
         &self.id
@@ -110,9 +90,9 @@ impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
 }
 
 pub trait C3p0Json<DATA, DB>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        DB: JsonManager<DATA>,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DB: JsonManager<DATA>,
 {
     fn json_manager(&self) -> &DB;
 
@@ -175,18 +155,18 @@ pub trait C3p0Json<DATA, DB>
 
 #[derive(Clone)]
 pub struct C3p0JsonRepository<DATA, DB>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        DB: JsonManager<DATA>,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DB: JsonManager<DATA>,
 {
     db: DB,
     phantom_data: std::marker::PhantomData<DATA>,
 }
 
 impl<DATA, DB> C3p0JsonRepository<DATA, DB>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        DB: JsonManager<DATA>,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DB: JsonManager<DATA>,
 {
     pub fn build(db: DB) -> Self {
         C3p0JsonRepository {
@@ -197,9 +177,9 @@ impl<DATA, DB> C3p0JsonRepository<DATA, DB>
 }
 
 impl<DATA, DB> C3p0Json<DATA, DB> for C3p0JsonRepository<DATA, DB>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        DB: JsonManager<DATA>,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DB: JsonManager<DATA>,
 {
     fn json_manager(&self) -> &DB {
         &self.db

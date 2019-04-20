@@ -9,13 +9,16 @@ use crate::shared_pg::*;
 mod shared_mysql;
 #[cfg(feature = "mysql")]
 use crate::shared_mysql::*;
+use c3p0::json::codec::DefaultJsonCodec;
 
 struct TestTableRepository<'a> {
-    conf: JsonManager<'a, TestData>,
+    conf: JsonManager<'a, TestData, DefaultJsonCodec>,
 }
 
-impl<'a> C3p0Json<TestData, JsonManager<'a, TestData>> for TestTableRepository<'a> {
-    fn json_manager(&self) -> &JsonManager<'a, TestData> {
+impl<'a> C3p0Json<TestData, JsonManager<'a, TestData, DefaultJsonCodec>>
+    for TestTableRepository<'a>
+{
+    fn json_manager(&self) -> &JsonManager<'a, TestData, DefaultJsonCodec> {
         &self.conf
     }
 }
