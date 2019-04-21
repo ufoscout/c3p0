@@ -1,13 +1,30 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::pool::{C3p0, Connection};
-use mysql_client::prelude::GenericConnection;
+use mysql_client::{prelude::GenericConnection, prelude::ToValue};
 use r2d2::{Pool, PooledConnection};
 use r2d2_mysql::MysqlConnectionManager;
 use std::cell::RefCell;
 use std::ops::DerefMut;
 
-pub type ToSql = mysql_client::Value;
+pub type ToSql = ToValue;
+/*
+pub trait ToSql {
+    fn into_params(self) -> Params;
+}
+
+impl <T: Into<Params>> ToSql for T {
+    fn into_params(self) -> Params {
+        self.into()
+    }
+}
+
+impl <T: Into<Value>> ToSql for T {
+    fn into_params(self) -> Params {
+        Params::from()
+    }
+}
+*/
 
 pub struct C3p0MySqlBuilder {}
 
@@ -90,7 +107,7 @@ fn execute<C: GenericConnection>(
     sql: &str,
     params: &[&ToSql],
 ) -> Result<u64, C3p0Error> {
-    conn.prep_exec(sql, params.to_vec())
+    conn.prep_exec(sql, params)
         .map(|row| row.affected_rows())
         .map_err(into_c3p0_error)
 }
