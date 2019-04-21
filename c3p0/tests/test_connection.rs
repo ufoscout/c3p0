@@ -28,9 +28,14 @@ fn should_execute_sql() {
             )
             .is_ok());
 
+        #[cfg(feature = "pg")]
+        let insert = r"INSERT INTO TEST_TABLE (name) VALUES ($1)";
+        #[cfg(feature = "mysql")]
+        let insert = r"INSERT INTO TEST_TABLE (name) VALUES (?)";
+
         assert_eq!(
             1,
-            conn.execute(r"INSERT INTO TEST_TABLE (name) VALUES ($1)", &[&"one"])
+            conn.execute(insert, &[&"one"])
                 .unwrap()
         );
 
