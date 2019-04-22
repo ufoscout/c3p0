@@ -1,10 +1,13 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
-use crate::pool::{C3p0, Connection};
+use crate::pool::{C3p0};
 use r2d2::{Pool, PooledConnection};
 use r2d2_postgres::PostgresConnectionManager;
 
 pub type ToSql = postgres_shared::types::ToSql;
+pub type Row<'a> = postgres::rows::Row<'a>;
+pub type Connection = PgConnection;
+pub type Transaction = PgConnection;
 
 pub struct C3p0PgBuilder {}
 
@@ -19,9 +22,8 @@ pub struct C3p0Pg {
 }
 
 impl C3p0 for C3p0Pg {
-    type Connection = PgConnection;
 
-    fn connection(&self) -> Result<Self::Connection, C3p0Error> {
+    fn connection(&self) -> Result<Connection, C3p0Error> {
         self.pool
             .get()
             .map_err(|err| C3p0Error::PoolError {
@@ -30,7 +32,7 @@ impl C3p0 for C3p0Pg {
             .map(|conn| PgConnection { conn })
     }
 
-    fn transaction<T, F: Fn(&Connection) -> Result<T, C3p0Error>>(
+    fn transaction<T, F: Fn(&Transaction) -> Result<T, C3p0Error>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {
@@ -54,12 +56,29 @@ pub struct PgConnection {
     conn: PooledConnection<PostgresConnectionManager>,
 }
 
-impl Connection for PgConnection {
+impl crate::pool::Connection for PgConnection {
+
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         self.conn.execute(sql, params).map_err(into_c3p0_error)
     }
 
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
         self.conn.batch_execute(sql).map_err(into_c3p0_error)
+    }
+
+    fn fetch_one<T, F: Fn(&Row)->Result<T, C3p0Error>>(&self, sql: &str, params: &[&ToSql], mapper: F) -> Result<T, C3p0Error> {
+        self.fetch_one_option(sql, params, mapper)
+            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+    }
+
+    fn fetch_one_option<T, F: Fn(&Row)->Result<T, C3p0Error>>(&self, sql: &str, params: &[&ToSql], mapper: F) -> Result<Option<T>, C3p0Error> {
+        let stmt = self.conn
+            .prepare(sql)
+            .map_err(into_c3p0_error)?;
+        stmt.query(params)
+            .map_err(into_c3p0_error)?
+            .iter().next()
+            .map(|row| mapper(&row))
+            .transpose()
     }
 }

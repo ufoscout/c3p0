@@ -12,6 +12,8 @@ pub enum C3p0Error {
     IteratorError { message: String },
     #[error(display = "PoolError: [{}]", cause)]
     PoolError { cause: String },
+    #[error(display = "ResultNotFoundError: Expected one result but found zero.")]
+    ResultNotFoundError,
 }
 
 impl From<serde_json::error::Error> for C3p0Error {
