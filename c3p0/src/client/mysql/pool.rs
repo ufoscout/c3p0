@@ -83,6 +83,12 @@ impl Connection for MySqlConnection {
         let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
         execute(conn, sql, params)
     }
+
+    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
+        let mut conn_borrow = self.conn.borrow_mut();
+        let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
+        batch_execute(conn, sql)
+    }
 }
 
 pub struct MySqlTransaction<'a, T>
@@ -100,6 +106,13 @@ where
         let mut transaction = self.tx.borrow_mut();
         execute(transaction.deref_mut(), sql, params)
     }
+
+
+    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
+        let mut transaction = self.tx.borrow_mut();
+        batch_execute(transaction.deref_mut(), sql)
+    }
+
 }
 
 fn execute<C: GenericConnection>(
@@ -109,5 +122,14 @@ fn execute<C: GenericConnection>(
 ) -> Result<u64, C3p0Error> {
     conn.prep_exec(sql, params)
         .map(|row| row.affected_rows())
+        .map_err(into_c3p0_error)
+}
+
+
+fn batch_execute<C: GenericConnection>(
+    conn: &mut C, sql: &str
+) -> Result<(), C3p0Error> {
+    conn.query(sql)
+        .map(|_result| ())
         .map_err(into_c3p0_error)
 }

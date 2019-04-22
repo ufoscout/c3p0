@@ -13,10 +13,10 @@ pub trait C3p0 {
 }
 
 pub trait Connection {
-    // Add params
+
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error>;
 
-    //fn batch_execute
+    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error>;
 
     //fetch_one
     //fetch_one_option

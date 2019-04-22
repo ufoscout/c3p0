@@ -56,14 +56,10 @@ pub struct PgConnection {
 
 impl Connection for PgConnection {
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
-        execute(&self.conn, sql, params)
+        self.conn.execute(sql, params).map_err(into_c3p0_error)
     }
-}
 
-fn execute(
-    conn: &PooledConnection<PostgresConnectionManager>,
-    sql: &str,
-    params: &[&ToSql],
-) -> Result<u64, C3p0Error> {
-    conn.execute(sql, params).map_err(into_c3p0_error)
+    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
+        self.conn.batch_execute(sql).map_err(into_c3p0_error)
+    }
 }

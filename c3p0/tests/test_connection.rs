@@ -42,3 +42,23 @@ fn should_execute_sql() {
         assert!(conn.execute(r"DROP TABLE TEST_TABLE", &[]).is_ok());
     });
 }
+
+#[test]
+fn should_batch_execute() {
+    SINGLETON.get(|(pool, _)| {
+        let pool = pool.clone();
+
+        let c3p0 = C3p0Builder::build(pool);
+        let conn = c3p0.connection().unwrap();
+
+        let insert = r"
+                CREATE TABLE TEST_TABLE ( name varchar(255) );
+                INSERT INTO TEST_TABLE (name) VALUES ('new-name-1');
+                INSERT INTO TEST_TABLE (name) VALUES ('new-name-2');
+                DROP TABLE TEST_TABLE;
+        ";
+
+        assert!(conn.batch_execute(insert).is_ok());
+
+    });
+}
