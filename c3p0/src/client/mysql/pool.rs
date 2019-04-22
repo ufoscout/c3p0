@@ -10,7 +10,7 @@ use std::ops::DerefMut;
 pub type ToSql = ToValue;
 pub type Row = mysql_client::Row;
 pub type Connection = MySqlConnection;
-pub type Transaction<'a> = MySqlTransaction<'a, mysql_client::Transaction<'a>>;
+pub type Transaction<'a, 'b> = MySqlTransaction<'a, mysql_client::Transaction<'b>>;
 
 /*
 pub trait ToSql {
@@ -168,7 +168,7 @@ fn fetch_one<C: GenericConnection, T, F: Fn(&Row)->Result<T, C3p0Error>>(conn: &
 fn fetch_one_option<C: GenericConnection, T, F: Fn(&Row)->Result<T, C3p0Error>>(conn: &mut C, sql: &str, params: &[&ToSql], mapper: F) -> Result<Option<T>, C3p0Error> {
     conn.prep_exec(
         sql,
-        (),
+        params,
     )
         .map_err(into_c3p0_error)?
         .next()

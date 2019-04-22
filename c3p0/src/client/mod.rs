@@ -14,7 +14,7 @@ pub type Row = mysql::pool::Row;
 #[cfg(feature = "mysql")]
 pub type Connection = mysql::pool::Connection;
 #[cfg(feature = "mysql")]
-pub type Transaction<'a> = mysql::pool::Transaction<'a>;
+pub type Transaction<'a, 'b> = mysql::pool::Transaction<'a, 'b>;
 
 #[cfg(feature = "pg")]
 mod pg;
