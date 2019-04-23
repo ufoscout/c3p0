@@ -3,10 +3,10 @@
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use mysql_client::{Opts, OptsBuilder};
-use r2d2::Pool;
 use r2d2_mysql::MysqlConnectionManager;
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
+use c3p0::prelude::*;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct TestData {
@@ -17,13 +17,13 @@ pub struct TestData {
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
     pub static ref SINGLETON: MaybeSingle<(
-        Pool<MysqlConnectionManager>,
+        C3p0,
         Container<'static, clients::Cli, images::generic::GenericImage>
     )> = MaybeSingle::new(|| init());
 }
 
 fn init() -> (
-    Pool<MysqlConnectionManager>,
+    C3p0,
     Container<'static, clients::Cli, images::generic::GenericImage>,
 ) {
     let mysql_version = "5.7.25";
@@ -51,6 +51,8 @@ fn init() -> (
         .min_idle(Some(10))
         .build(manager)
         .unwrap();
+
+    let pool = C3p0Builder::build(pool);
 
     (pool, node)
 }

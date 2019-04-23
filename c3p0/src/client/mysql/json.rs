@@ -1,10 +1,11 @@
-use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::json::codec::DefaultJsonCodec;
 use crate::json::{codec::JsonCodec, JsonManager, Model, NewModel};
 use crate::types::OptString;
 use mysql_client::prelude::FromValue;
-use mysql_client::{params, Row};
+use mysql_client::{Row};
+use crate::client::mysql::pool::MySqlConnection;
+use crate::pool::ConnectionBase;
 
 #[derive(Clone)]
 pub struct MySqlJsonManager<'a, DATA, CODEC: JsonCodec<DATA>>
@@ -137,7 +138,7 @@ where
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
             exists_by_id_sql_query: format!(
-                "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = :id)",
+                "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = ?)",
                 qualified_table_name, self.id_field_name,
             ),
 
@@ -151,7 +152,7 @@ where
             ),
 
             find_by_id_sql_query: format!(
-                "SELECT {}, {}, {} FROM {} WHERE {} = :id LIMIT 1",
+                "SELECT {}, {}, {} FROM {} WHERE {} = ? LIMIT 1",
                 self.id_field_name,
                 self.version_field_name,
                 self.data_field_name,
@@ -160,24 +161,24 @@ where
             ),
 
             delete_sql_query: format!(
-                "DELETE FROM {} WHERE {} = :id AND {} = :version",
+                "DELETE FROM {} WHERE {} = ? AND {} = ?",
                 qualified_table_name, self.id_field_name, self.version_field_name,
             ),
 
             delete_all_sql_query: format!("DELETE FROM {}", qualified_table_name,),
 
             delete_by_id_sql_query: format!(
-                "DELETE FROM {} WHERE {} = :id",
+                "DELETE FROM {} WHERE {} = ?",
                 qualified_table_name, self.id_field_name,
             ),
 
             save_sql_query: format!(
-                "INSERT INTO {} ({}, {}) VALUES (:version, :data)",
+                "INSERT INTO {} ({}, {}) VALUES (?, ?)",
                 qualified_table_name, self.version_field_name, self.data_field_name
             ),
 
             update_sql_query: format!(
-                "UPDATE {} SET {} = :updated_version, {} = :data WHERE {} = :id AND {} = :version",
+                "UPDATE {} SET {} = ?, {} = ? WHERE {} = ? AND {} = ?",
                 qualified_table_name,
                 self.version_field_name,
                 self.data_field_name,
@@ -216,7 +217,7 @@ impl<'a, DATA, CODEC: JsonCodec<DATA>> MySqlJsonManager<'a, DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    fn to_model(&self, row: Row) -> Result<Model<DATA>, C3p0Error> {
+    fn to_model(&self, row: &Row) -> Result<Model<DATA>, C3p0Error> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
@@ -231,81 +232,35 @@ impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManager<DATA> for MySqlJsonManager<'a
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type Conn = mysql_client::Conn;
+    type Conn = MySqlConnection;
     type Ref = &'a mut Self::Conn;
 
     fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
-        conn.prep_exec(&self.create_table_sql_query, ())
-            .map(|row| row.affected_rows())
-            .map_err(into_c3p0_error)
+        conn.execute(&self.create_table_sql_query, &[])
     }
 
     fn drop_table_if_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
-        conn.prep_exec(&self.drop_table_sql_query, ())
-            .map(|row| row.affected_rows())
-            .map_err(into_c3p0_error)
+        conn.execute(&self.drop_table_sql_query, &[])
     }
 
     fn count_all(&self, conn: Self::Ref) -> Result<i64, C3p0Error> {
-        let mut stmt = conn
-            .prepare(&self.count_all_sql_query)
-            .map_err(into_c3p0_error)?;
-
-        let result = stmt
-            .first_exec(())
-            .map_err(into_c3p0_error)?
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?;
-        Ok(result)
+        conn.fetch_one_value(&self.count_all_sql_query, &[])
     }
 
     fn exists_by_id(&self, conn: Self::Ref, id: i64) -> Result<bool, C3p0Error> {
-        let mut stmt = conn
-            .prepare(&self.exists_by_id_sql_query)
-            .map_err(into_c3p0_error)?;
-        let result = stmt
-            .first_exec(params! {
-                "id" => id
-            })
-            .map_err(into_c3p0_error)?
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?;
-        Ok(result)
+        conn.fetch_one_value(&self.exists_by_id_sql_query, &[&id])
     }
 
     fn find_all(&self, conn: Self::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        conn.prep_exec(&self.find_all_sql_query, ())
-            .map_err(into_c3p0_error)?
-            .map(|row| self.to_model(row.map_err(into_c3p0_error)?))
-            .collect()
+        conn.fetch_all(&self.find_all_sql_query, &[], |row| Ok(self.to_model(row)?))
     }
 
     fn find_by_id(&self, conn: Self::Ref, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
-        conn.prep_exec(
-            &self.find_by_id_sql_query,
-            params! {
-                "id" => id
-            },
-        )
-        .map_err(into_c3p0_error)?
-        .next()
-        .map(|row| self.to_model(row.map_err(into_c3p0_error)?))
-        .transpose()
+        conn.fetch_one_option(&self.find_by_id_sql_query, &[&id], |row| Ok(self.to_model(row)?))
     }
 
     fn delete(&self, conn: Self::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
-        let mut stmt = conn
-            .prepare(&self.delete_sql_query)
-            .map_err(into_c3p0_error)?;
-        let result = stmt
-            .execute(params! {
-                "id" => obj.id,
-                "version" => obj.version,
-            })
-            .map(|result| result.affected_rows())
-            .map_err(into_c3p0_error)?;
+        let result = conn.execute(&self.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
@@ -317,50 +272,23 @@ where
     }
 
     fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
-        let mut stmt = conn
-            .prepare(&self.delete_all_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.execute(())
-            .map(|result| result.affected_rows())
-            .map_err(into_c3p0_error)
+        conn.execute(&self.delete_all_sql_query, &[])
     }
 
     fn delete_by_id(&self, conn: Self::Ref, id: i64) -> Result<u64, C3p0Error> {
-        let mut stmt = conn
-            .prepare(&self.delete_by_id_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.execute(params! {
-            "id" => id
-        })
-        .map(|result| result.affected_rows())
-        .map_err(into_c3p0_error)
+        conn.execute(&self.delete_by_id_sql_query, &[&id])
     }
 
     fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+
+        let json_data = self.codec.to_value(&obj.data)?;
         {
-            let json_data = self.codec.to_value(&obj.data)?;
-            let mut stmt = conn
-                .prepare(&self.save_sql_query)
-                .map_err(into_c3p0_error)?;
-            stmt.execute(params! {
-                "version" => &obj.version,
-                "data" => &json_data
-            })
-            .map_err(into_c3p0_error)?;
+            conn.execute(&self.save_sql_query, &[&obj.version, &json_data])?;
         }
 
-        let mut stmt = conn
-            .prepare("SELECT LAST_INSERT_ID()")
-            .map_err(into_c3p0_error)?;
-        let id = stmt
-            .execute(())
-            .map_err(into_c3p0_error)?
-            .next()
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?
-            .map_err(into_c3p0_error)
-            .and_then(|row| get_or_error(&row, 0))?;
+        let id = {
+            conn.fetch_one_value("SELECT LAST_INSERT_ID()", &[])?
+        };
 
         Ok(Model {
             id,
@@ -378,19 +306,12 @@ where
             data: obj.data,
         };
 
-        let mut stmt = conn
-            .prepare(&self.update_sql_query)
-            .map_err(into_c3p0_error)?;
-
-        let result = stmt
-            .execute(params! {
-                "updated_version" => updated_model.version,
-                "data" => json_data,
-                "id" => updated_model.id,
-                "version" => obj.version,
-            })
-            .map(|result| result.affected_rows())
-            .map_err(into_c3p0_error)?;
+        let result = conn.execute(&self.update_sql_query, &[
+            &updated_model.version,
+            &json_data,
+            &updated_model.id,
+            &obj.version,
+        ])?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",

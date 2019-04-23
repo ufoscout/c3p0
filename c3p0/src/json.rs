@@ -2,6 +2,7 @@ use crate::error::C3p0Error;
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
 use std::ops::Deref;
+use crate::pool::ConnectionBase;
 
 pub mod codec;
 
@@ -9,7 +10,7 @@ pub trait JsonManager<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type Conn;
+    type Conn: ConnectionBase;
     type Ref: Deref<Target = Self::Conn>;
 
     fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error>;
