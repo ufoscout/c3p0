@@ -11,7 +11,7 @@ use std::ops::DerefMut;
 pub type ToSql = ToValue;
 pub type Row = mysql_client::Row;
 pub type Connection = MySqlConnection;
-pub type Transaction<'a, 'b> = MySqlTransaction<'a, mysql_client::Transaction<'b>>;
+pub type Transaction<'a> = MySqlTransaction<mysql_client::Transaction<'a>>;
 
 pub struct C3p0MySqlBuilder {}
 
@@ -51,11 +51,12 @@ impl C3p0 for C3p0MySql {
             .map_err(into_c3p0_error)?;
         let transaction = RefCell::new(transaction);
         let result = {
-            let mut sql_executor = MySqlTransaction { tx: &transaction };
-            (tx)(&mut sql_executor)?
+            let mut sql_executor = MySqlTransaction { tx: transaction };
+            let result = (tx)(&mut sql_executor)?;
+            (result, sql_executor.tx)
         };
-        transaction.into_inner().commit().map_err(into_c3p0_error)?;
-        Ok(result)
+        result.1.into_inner().commit().map_err(into_c3p0_error)?;
+        Ok(result.0)
     }
 }
 
@@ -126,14 +127,14 @@ impl crate::pool::Connection for MySqlConnection {
     }
 }
 
-pub struct MySqlTransaction<'a, C>
+pub struct MySqlTransaction<C>
 where
     C: GenericConnection,
 {
-    tx: &'a RefCell<C>,
+    tx: RefCell<C>,
 }
 
-impl<'t, C> crate::pool::Connection for MySqlTransaction<'t, C>
+impl<C> crate::pool::Connection for MySqlTransaction<C>
 where
     C: GenericConnection,
 {
