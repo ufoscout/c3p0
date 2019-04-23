@@ -1,6 +1,6 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
-use crate::pool::{C3p0};
+use crate::pool::C3p0;
 use r2d2::{Pool, PooledConnection};
 use r2d2_postgres::PostgresConnectionManager;
 
@@ -22,7 +22,6 @@ pub struct C3p0Pg {
 }
 
 impl C3p0 for C3p0Pg {
-
     fn connection(&self) -> Result<Connection, C3p0Error> {
         self.pool
             .get()
@@ -57,7 +56,6 @@ pub struct PgConnection {
 }
 
 impl crate::pool::Connection for PgConnection {
-
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         self.conn.execute(sql, params).map_err(into_c3p0_error)
     }
@@ -66,18 +64,27 @@ impl crate::pool::Connection for PgConnection {
         self.conn.batch_execute(sql).map_err(into_c3p0_error)
     }
 
-    fn fetch_one<T, F: Fn(&Row)->Result<T, C3p0Error>>(&self, sql: &str, params: &[&ToSql], mapper: F) -> Result<T, C3p0Error> {
+    fn fetch_one<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+        &self,
+        sql: &str,
+        params: &[&ToSql],
+        mapper: F,
+    ) -> Result<T, C3p0Error> {
         self.fetch_one_option(sql, params, mapper)
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
-    fn fetch_one_option<T, F: Fn(&Row)->Result<T, C3p0Error>>(&self, sql: &str, params: &[&ToSql], mapper: F) -> Result<Option<T>, C3p0Error> {
-        let stmt = self.conn
-            .prepare(sql)
-            .map_err(into_c3p0_error)?;
+    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+        &self,
+        sql: &str,
+        params: &[&ToSql],
+        mapper: F,
+    ) -> Result<Option<T>, C3p0Error> {
+        let stmt = self.conn.prepare(sql).map_err(into_c3p0_error)?;
         stmt.query(params)
             .map_err(into_c3p0_error)?
-            .iter().next()
+            .iter()
+            .next()
             .map(|row| mapper(&row))
             .transpose()
     }

@@ -34,5 +34,4 @@ pub type Connection = pg::pool::Connection;
 #[cfg(feature = "pg")]
 pub type Transaction = pg::pool::Connection;
 
-
 pub const NO_PARAMS: &[&ToSql] = &[];
