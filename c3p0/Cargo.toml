@@ -20,12 +20,10 @@ serde_json = "1.0"
 
 # mysql feature
 mysql_client = { package = "mysql",  version = "15.1", optional = true }
-mysql_common = { version = "0.17", optional = true }
 r2d2_mysql = { version = "15.0", optional = true }
 
 # pg feature
 postgres = { version = "0.15", features = ["with-serde_json"], optional = true  }
-postgres-shared = { version = "0.4", optional = true }
 r2d2_postgres = { version = "0.14", optional = true }
 
 [dev-dependencies]
@@ -36,5 +34,5 @@ testcontainers = "0.6"
 [features]
 default = []
 
-mysql = ["mysql_client", "mysql_common", "r2d2_mysql"]
-pg = ["postgres-shared", "postgres", "r2d2_postgres"]
+mysql = ["mysql_client", "r2d2_mysql"]
+pg = ["postgres", "r2d2_postgres"]

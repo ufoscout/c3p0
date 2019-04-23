@@ -386,7 +386,7 @@ where
     }
 }
 
-fn get_or_error<T: postgres_shared::types::FromSql>(
+fn get_or_error<T: postgres::types::FromSql>(
     row: &Row,
     index: usize,
 ) -> Result<T, C3p0Error> {

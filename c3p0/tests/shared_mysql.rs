@@ -26,9 +26,10 @@ fn init() -> (
     Pool<MysqlConnectionManager>,
     Container<'static, clients::Cli, images::generic::GenericImage>,
 ) {
-    let mysql_image = images::generic::GenericImage::new("mysql:5.7")
+    let mysql_version = "5.7.25";
+    let mysql_image = images::generic::GenericImage::new(format!("mysql:{}", mysql_version))
         .with_wait_for(images::generic::WaitFor::message_on_stderr(
-            "Version: '5.7.25'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server (GPL)",
+            format!("Version: '{}'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server (GPL)", mysql_version),
         ))
         .with_env_var("MYSQL_DATABASE", "mysql")
         .with_env_var("MYSQL_USER", "mysql")
