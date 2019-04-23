@@ -136,7 +136,7 @@ fn should_batch_execute() {
 }
 
 #[test]
-fn should_fetch_all() {
+fn should_fetch_values() {
     SINGLETON.get(|(pool, _)| {
         let pool = pool.clone();
 
@@ -151,6 +151,12 @@ fn should_fetch_all() {
             assert!(all_string.is_ok());
             assert!(all_string.unwrap().is_empty());
 
+            let one_string = conn.fetch_one_value::<String>("SELECT * FROM TEST_TABLE", &[]);
+            assert!(one_string.is_err());
+
+            let one_i64 = conn.fetch_one_value::<i64>("SELECT * FROM TEST_TABLE", &[]);
+            assert!(one_i64.is_err());
+
             assert!(conn
                 .execute(r"INSERT INTO TEST_TABLE (name) VALUES ('one')", &[])
                 .is_ok());
@@ -161,12 +167,23 @@ fn should_fetch_all() {
                 .execute(r"INSERT INTO TEST_TABLE (name) VALUES ('three')", &[])
                 .is_ok());
 
-            let all_string = conn.fetch_all_values::<String>("SELECT * FROM TEST_TABLE", &[]);
-            assert_eq!(3, all_string.unwrap().len());
-            //assert!(all_string.is_ok());
+            let all_string = conn.fetch_all_values::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
+            assert!(all_string.is_ok());
+            assert_eq!(vec![
+                "one".to_owned(),
+                "three".to_owned(),
+                "two".to_owned(),
+            ], all_string.unwrap());
 
             let all_i64 = conn.fetch_all_values::<i64>("SELECT * FROM TEST_TABLE", &[]);
             assert!(all_i64.is_err());
+
+            let one_string = conn.fetch_one_value::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
+            assert!(one_string.is_ok());
+            assert_eq!("one".to_owned(), one_string.unwrap());
+
+            let one_i64 = conn.fetch_one_value::<i64>("SELECT * FROM TEST_TABLE", &[]);
+            assert!(one_i64.is_err());
 
             assert!(conn.batch_execute("DROP TABLE TEST_TABLE").is_ok());
 
