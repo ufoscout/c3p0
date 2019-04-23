@@ -14,9 +14,7 @@ use c3p0::client::Row;
 #[test]
 fn should_execute_and_fetch() {
     SINGLETON.get(|(pool, _)| {
-        let pool = pool.clone();
-
-        let c3p0 = C3p0Builder::build(pool);
+        let c3p0: C3p0 = pool.clone();
 
         let conn = c3p0.connection().unwrap();
 
@@ -75,9 +73,7 @@ fn should_execute_and_fetch() {
 #[test]
 fn should_execute_and_fetch_option() {
     SINGLETON.get(|(pool, _)| {
-        let pool = pool.clone();
-
-        let c3p0 = C3p0Builder::build(pool);
+        let c3p0: C3p0 = pool.clone();
 
         let conn = c3p0.connection().unwrap();
 
@@ -119,9 +115,7 @@ fn should_execute_and_fetch_option() {
 #[test]
 fn should_batch_execute() {
     SINGLETON.get(|(pool, _)| {
-        let pool = pool.clone();
-
-        let c3p0 = C3p0Builder::build(pool);
+        let c3p0: C3p0 = pool.clone();
         let conn = c3p0.connection().unwrap();
 
         let insert = r"
@@ -138,9 +132,7 @@ fn should_batch_execute() {
 #[test]
 fn should_fetch_values() {
     SINGLETON.get(|(pool, _)| {
-        let pool = pool.clone();
-
-        let c3p0 = C3p0Builder::build(pool);
+        let c3p0: C3p0 = pool.clone();
 
         c3p0.transaction(|conn| {
             assert!(conn

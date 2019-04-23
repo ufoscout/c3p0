@@ -4,6 +4,7 @@ use crate::json::codec::DefaultJsonCodec;
 use crate::json::{codec::JsonCodec, JsonManager, Model, NewModel};
 use crate::types::OptString;
 use postgres::rows::Row;
+use crate::pool::ConnectionBase;
 
 #[derive(Clone)]
 pub struct PostgresJsonManager<'a, DATA, CODEC: JsonCodec<DATA>>
@@ -219,7 +220,7 @@ impl<'a, DATA, CODEC: JsonCodec<DATA>> PostgresJsonManager<'a, DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    fn to_model(&self, row: Row) -> Result<Model<DATA>, C3p0Error> {
+    fn to_model(&self, row: &Row) -> Result<Model<DATA>, C3p0Error> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
@@ -234,81 +235,35 @@ impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManager<DATA> for PostgresJsonManager
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type Conn = postgres::Connection;
+    type Conn = crate::client::pg::pool::PgConnection;
     type Ref = &'a Self::Conn;
 
     fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         conn.execute(&self.create_table_sql_query, &[])
-            .map_err(into_c3p0_error)
     }
 
     fn drop_table_if_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
         conn.execute(&self.drop_table_sql_query, &[])
-            .map_err(into_c3p0_error)
     }
 
     fn count_all(&self, conn: Self::Ref) -> Result<i64, C3p0Error> {
-        let stmt = conn
-            .prepare(&self.count_all_sql_query)
-            .map_err(into_c3p0_error)?;
-        let result = stmt
-            .query(&[])
-            .map_err(into_c3p0_error)?
-            .iter()
-            .next()
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?
-            .get(0);
-        Ok(result)
+        conn.fetch_one_value(&self.count_all_sql_query, &[])
     }
 
     fn exists_by_id(&self, conn: Self::Ref, id: i64) -> Result<bool, C3p0Error> {
-        let stmt = conn
-            .prepare(&self.exists_by_id_sql_query)
-            .map_err(into_c3p0_error)?;
-        let result = stmt
-            .query(&[&id])
-            .map_err(into_c3p0_error)?
-            .iter()
-            .next()
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?
-            .get(0);
-        Ok(result)
+        conn.fetch_one_value(&self.exists_by_id_sql_query, &[&id])
     }
 
     fn find_all(&self, conn: Self::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let stmt = conn
-            .prepare(&self.find_all_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.query(&[])
-            .map_err(into_c3p0_error)?
-            .iter()
-            .map(|row| self.to_model(row))
-            .collect()
+        conn.fetch_all(&self.find_all_sql_query, &[], |row| Ok(self.to_model(row)?))
     }
 
     fn find_by_id(&self, conn: Self::Ref, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let stmt = conn
-            .prepare(&self.find_by_id_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.query(&[&id])
-            .map_err(into_c3p0_error)?
-            .iter()
-            .next()
-            .map(|row| self.to_model(row))
-            .transpose()
+        conn.fetch_one_option(&self.find_by_id_sql_query, &[&id], |row| Ok(self.to_model(row)?))
     }
 
     fn delete(&self, conn: Self::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
-        let stmt = conn
-            .prepare(&self.delete_sql_query)
-            .map_err(into_c3p0_error)?;
-        let result = stmt
-            .execute(&[&obj.id, &obj.version])
-            .map_err(into_c3p0_error)?;
+        let result = conn.execute(&self.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
@@ -320,34 +275,16 @@ where
     }
 
     fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
-        let stmt = conn
-            .prepare(&self.delete_all_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.execute(&[]).map_err(into_c3p0_error)
+        conn.execute(&self.delete_all_sql_query, &[])
     }
 
     fn delete_by_id(&self, conn: Self::Ref, id: i64) -> Result<u64, C3p0Error> {
-        let stmt = conn
-            .prepare(&self.delete_by_id_sql_query)
-            .map_err(into_c3p0_error)?;
-        stmt.execute(&[&id]).map_err(into_c3p0_error)
+        conn.execute(&self.delete_by_id_sql_query, &[&id])
     }
 
     fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
-        let stmt = conn
-            .prepare(&self.save_sql_query)
-            .map_err(into_c3p0_error)?;
-        let id = stmt
-            .query(&[&obj.version, &json_data])
-            .map_err(into_c3p0_error)?
-            .iter()
-            .next()
-            .ok_or_else(|| C3p0Error::IteratorError {
-                message: "Cannot iterate next element".to_owned(),
-            })?
-            .get(0);
-
+        let id = conn.fetch_one_value(&self.save_sql_query, &[&obj.version, &json_data])?;
         Ok(Model {
             id,
             version: obj.version,
@@ -364,17 +301,12 @@ where
             data: obj.data,
         };
 
-        let stmt = conn
-            .prepare(&self.update_sql_query)
-            .map_err(into_c3p0_error)?;
-        let result = stmt
-            .execute(&[
-                &updated_model.version,
-                &json_data,
-                &updated_model.id,
-                &obj.version,
-            ])
-            .map_err(into_c3p0_error)?;
+        let result = conn.execute(&self.update_sql_query, &[
+            &updated_model.version,
+            &json_data,
+            &updated_model.id,
+            &obj.version,
+        ])?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",

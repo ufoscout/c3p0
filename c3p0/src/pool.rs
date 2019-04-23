@@ -6,7 +6,7 @@ use mysql_client::prelude::FromValue as FromSql;
 #[cfg(feature = "pg")]
 use postgres::types::FromSql;
 
-pub trait C3p0: Clone {
+pub trait C3p0Base: Clone {
     fn connection(&self) -> Result<crate::client::Connection, C3p0Error>;
 
     fn transaction<T, F: Fn(&crate::client::Transaction) -> Result<T, C3p0Error>>(
@@ -15,7 +15,7 @@ pub trait C3p0: Clone {
     ) -> Result<T, C3p0Error>;
 }
 
-pub trait Connection {
+pub trait ConnectionBase {
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error>;
 
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error>;

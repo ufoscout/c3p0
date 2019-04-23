@@ -24,9 +24,9 @@ impl<'a> C3p0Json<TestData, JsonManager<'a, TestData, DefaultJsonCodec>>
 }
 
 #[test]
-fn mysql_basic_crud() {
+fn custom_repository_basic_crud() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.get().unwrap();
+        let mut conn = pool.connection().unwrap();
 
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
 

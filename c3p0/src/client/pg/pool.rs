@@ -1,6 +1,6 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
-use crate::pool::C3p0;
+use crate::pool::C3p0Base;
 use postgres::types::FromSql;
 use r2d2::{Pool, PooledConnection};
 use r2d2_postgres::PostgresConnectionManager;
@@ -23,7 +23,7 @@ pub struct C3p0Pg {
     pool: Pool<PostgresConnectionManager>,
 }
 
-impl C3p0 for C3p0Pg {
+impl C3p0Base for C3p0Pg {
     fn connection(&self) -> Result<Connection, C3p0Error> {
         self.pool
             .get()
@@ -57,7 +57,7 @@ pub struct PgConnection {
     conn: PooledConnection<PostgresConnectionManager>,
 }
 
-impl crate::pool::Connection for PgConnection {
+impl crate::pool::ConnectionBase for PgConnection {
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         self.conn.execute(sql, params).map_err(into_c3p0_error)
     }

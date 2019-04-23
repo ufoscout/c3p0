@@ -1,6 +1,6 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
-use crate::pool::C3p0;
+use crate::pool::C3p0Base;
 use mysql_client::prelude::FromValue as FromSql;
 use mysql_client::{prelude::GenericConnection, prelude::ToValue};
 use r2d2::{Pool, PooledConnection};
@@ -26,7 +26,7 @@ pub struct C3p0MySql {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl C3p0 for C3p0MySql {
+impl C3p0Base for C3p0MySql {
     fn connection(&self) -> Result<Connection, C3p0Error> {
         self.pool
             .get()
@@ -64,7 +64,7 @@ pub struct MySqlConnection {
     conn: RefCell<PooledConnection<MysqlConnectionManager>>,
 }
 
-impl crate::pool::Connection for MySqlConnection {
+impl crate::pool::ConnectionBase for MySqlConnection {
     fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         let mut conn_borrow = self.conn.borrow_mut();
         let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
@@ -134,7 +134,7 @@ where
     tx: RefCell<C>,
 }
 
-impl<C> crate::pool::Connection for MySqlTransaction<C>
+impl<C> crate::pool::ConnectionBase for MySqlTransaction<C>
 where
     C: GenericConnection,
 {

@@ -79,7 +79,7 @@ impl JsonCodec<UserVersion2> for UserVersionCoded2 {
 #[test]
 fn should_upgrade_structs_on_load() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.get().unwrap();
+        let mut conn = pool.connection().unwrap();
         let table_name = "USER_TABLE";
 
         let conf_v1 = JsonManagerBuilder::new(table_name)

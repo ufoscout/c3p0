@@ -2,10 +2,10 @@
 
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
-use r2d2::Pool;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
+use c3p0::prelude::*;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct TestData {
@@ -16,13 +16,13 @@ pub struct TestData {
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
     pub static ref SINGLETON: MaybeSingle<(
-        Pool<PostgresConnectionManager>,
+        C3p0,
         Container<'static, clients::Cli, images::postgres::Postgres>
     )> = MaybeSingle::new(|| init());
 }
 
 fn init() -> (
-    Pool<PostgresConnectionManager>,
+    C3p0,
     Container<'static, clients::Cli, images::postgres::Postgres>,
 ) {
     let node = DOCKER.run(images::postgres::Postgres::default());
@@ -39,6 +39,8 @@ fn init() -> (
         .min_idle(Some(10))
         .build(manager)
         .unwrap();
+
+    let pool = C3p0Builder::build(pool);
 
     (pool, node)
 }

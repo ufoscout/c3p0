@@ -32,7 +32,7 @@ maybe-single = "0.1"
 testcontainers = "0.6"
 
 [features]
-default = []
+default = ["pg"]
 
 mysql = ["mysql_client", "r2d2_mysql"]
 pg = ["postgres", "r2d2_postgres"]
