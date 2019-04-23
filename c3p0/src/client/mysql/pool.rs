@@ -21,6 +21,7 @@ impl C3p0MySqlBuilder {
     }
 }
 
+#[derive(Clone)]
 pub struct C3p0MySql {
     pool: Pool<MysqlConnectionManager>,
 }

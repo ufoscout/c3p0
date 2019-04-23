@@ -18,6 +18,7 @@ impl C3p0PgBuilder {
     }
 }
 
+#[derive(Clone)]
 pub struct C3p0Pg {
     pool: Pool<PostgresConnectionManager>,
 }
