@@ -69,7 +69,7 @@ impl crate::pool::Connection for PgConnection {
         self.fetch_one(sql, params, to_value_mapper)
     }
 
-    fn fetch_one<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -79,7 +79,7 @@ impl crate::pool::Connection for PgConnection {
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
-    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -92,9 +92,12 @@ impl crate::pool::Connection for PgConnection {
             .next()
             .map(|row| mapper(&row))
             .transpose()
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!("{}", err),
+            })
     }
 
-    fn fetch_all<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -105,7 +108,10 @@ impl crate::pool::Connection for PgConnection {
             .map_err(into_c3p0_error)?
             .iter()
             .map(|row| mapper(&row))
-            .collect()
+            .collect::<Result<Vec<T>, Box<std::error::Error>>>()
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!("{}", err),
+            })
     }
 
     fn fetch_all_values<T: FromSql>(
@@ -117,7 +123,7 @@ impl crate::pool::Connection for PgConnection {
     }
 }
 
-fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, C3p0Error> {
+fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, Box<std::error::Error>> {
     let result = row
         .get_opt(0)
         .ok_or_else(|| C3p0Error::ResultNotFoundError)?;

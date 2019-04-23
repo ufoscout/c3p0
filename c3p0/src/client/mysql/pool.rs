@@ -81,7 +81,7 @@ impl crate::pool::Connection for MySqlConnection {
         fetch_one_value(conn, sql, params)
     }
 
-    fn fetch_one<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -92,7 +92,7 @@ impl crate::pool::Connection for MySqlConnection {
         fetch_one(conn, sql, params, mapper)
     }
 
-    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -103,7 +103,7 @@ impl crate::pool::Connection for MySqlConnection {
         fetch_one_option(conn, sql, params, mapper)
     }
 
-    fn fetch_all<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -151,7 +151,7 @@ where
         fetch_one_value(transaction.deref_mut(), sql, params)
     }
 
-    fn fetch_one<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -161,7 +161,7 @@ where
         fetch_one(transaction.deref_mut(), sql, params, mapper)
     }
 
-    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -171,7 +171,7 @@ where
         fetch_one_option(transaction.deref_mut(), sql, params, mapper)
     }
 
-    fn fetch_all<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
@@ -213,7 +213,7 @@ fn fetch_one_value<C: GenericConnection, T: FromSql>(
     fetch_one(conn, sql, params, to_value_mapper)
 }
 
-fn fetch_one<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+fn fetch_one<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
     conn: &mut C,
     sql: &str,
     params: &[&ToSql],
@@ -223,7 +223,7 @@ fn fetch_one<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>>(
         .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
 }
 
-fn fetch_one_option<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+fn fetch_one_option<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
     conn: &mut C,
     sql: &str,
     params: &[&ToSql],
@@ -237,9 +237,12 @@ fn fetch_one_option<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>
             mapper(&row)
         })
         .transpose()
+        .map_err(|err| C3p0Error::RowMapperError {
+            cause: format!("{}", err),
+        })
 }
 
-fn fetch_all<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+fn fetch_all<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
     conn: &mut C,
     sql: &str,
     params: &[&ToSql],
@@ -248,7 +251,10 @@ fn fetch_all<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>>(
     conn.prep_exec(sql, params)
         .map_err(into_c3p0_error)?
         .map(|row| mapper(&row.map_err(into_c3p0_error)?))
-        .collect()
+        .collect::<Result<Vec<T>, Box<std::error::Error>>>()
+        .map_err(|err| C3p0Error::RowMapperError {
+            cause: format!("{}", err),
+        })
 }
 
 fn fetch_all_values<C: GenericConnection, T: FromSql>(
@@ -259,7 +265,7 @@ fn fetch_all_values<C: GenericConnection, T: FromSql>(
     fetch_all(conn, sql, params, to_value_mapper)
 }
 
-fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, C3p0Error> {
+fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, Box<std::error::Error>> {
     let result = row
         .get_opt(0)
         .ok_or_else(|| C3p0Error::ResultNotFoundError)?;

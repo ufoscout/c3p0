@@ -4,6 +4,8 @@ use err_derive::Error;
 pub enum C3p0Error {
     #[error(display = "SqlError: [{}]", cause)]
     SqlError { cause: String },
+    #[error(display = "RowMapperError: [{}]", cause)]
+    RowMapperError { cause: String },
     #[error(display = "OptimisticLockError: [{}]", message)]
     OptimisticLockError { message: String },
     #[error(display = "JsonProcessingError: [{}]", cause)]

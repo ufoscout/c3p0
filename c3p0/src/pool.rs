@@ -22,21 +22,21 @@ pub trait Connection {
 
     fn fetch_one_value<T: FromSql>(&self, sql: &str, params: &[&ToSql]) -> Result<T, C3p0Error>;
 
-    fn fetch_one<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
         mapper: F,
     ) -> Result<T, C3p0Error>;
 
-    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
         mapper: F,
     ) -> Result<Option<T>, C3p0Error>;
 
-    fn fetch_all<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&ToSql],
