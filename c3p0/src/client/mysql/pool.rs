@@ -1,6 +1,7 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::pool::C3p0;
+use mysql_client::prelude::FromValue as FromSql;
 use mysql_client::{prelude::GenericConnection, prelude::ToValue};
 use r2d2::{Pool, PooledConnection};
 use r2d2_mysql::MysqlConnectionManager;
@@ -11,24 +12,6 @@ pub type ToSql = ToValue;
 pub type Row = mysql_client::Row;
 pub type Connection = MySqlConnection;
 pub type Transaction<'a, 'b> = MySqlTransaction<'a, mysql_client::Transaction<'b>>;
-
-/*
-pub trait ToSql {
-    fn into_params(self) -> Params;
-}
-
-impl <T: Into<Params>> ToSql for T {
-    fn into_params(self) -> Params {
-        self.into()
-    }
-}
-
-impl <T: Into<Value>> ToSql for T {
-    fn into_params(self) -> Params {
-        Params::from()
-    }
-}
-*/
 
 pub struct C3p0MySqlBuilder {}
 
@@ -92,6 +75,12 @@ impl crate::pool::Connection for MySqlConnection {
         batch_execute(conn, sql)
     }
 
+    fn fetch_one_value<T: FromSql>(&self, sql: &str, params: &[&ToSql]) -> Result<T, C3p0Error> {
+        let mut conn_borrow = self.conn.borrow_mut();
+        let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
+        fetch_one_value(conn, sql, params)
+    }
+
     fn fetch_one<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
         &self,
         sql: &str,
@@ -112,6 +101,27 @@ impl crate::pool::Connection for MySqlConnection {
         let mut conn_borrow = self.conn.borrow_mut();
         let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
         fetch_one_option(conn, sql, params, mapper)
+    }
+
+    fn fetch_all<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+        &self,
+        sql: &str,
+        params: &[&ToSql],
+        mapper: F,
+    ) -> Result<Vec<T>, C3p0Error> {
+        let mut conn_borrow = self.conn.borrow_mut();
+        let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
+        fetch_all(conn, sql, params, mapper)
+    }
+
+    fn fetch_all_values<T: FromSql>(
+        &self,
+        sql: &str,
+        params: &[&ToSql],
+    ) -> Result<Vec<T>, C3p0Error> {
+        let mut conn_borrow = self.conn.borrow_mut();
+        let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
+        fetch_all_values(conn, sql, params)
     }
 }
 
@@ -136,6 +146,11 @@ where
         batch_execute(transaction.deref_mut(), sql)
     }
 
+    fn fetch_one_value<T: FromSql>(&self, sql: &str, params: &[&ToSql]) -> Result<T, C3p0Error> {
+        let mut transaction = self.tx.borrow_mut();
+        fetch_one_value(transaction.deref_mut(), sql, params)
+    }
+
     fn fetch_one<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
         &self,
         sql: &str,
@@ -155,6 +170,25 @@ where
         let mut transaction = self.tx.borrow_mut();
         fetch_one_option(transaction.deref_mut(), sql, params, mapper)
     }
+
+    fn fetch_all<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+        &self,
+        sql: &str,
+        params: &[&ToSql],
+        mapper: F,
+    ) -> Result<Vec<T>, C3p0Error> {
+        let mut transaction = self.tx.borrow_mut();
+        fetch_all(transaction.deref_mut(), sql, params, mapper)
+    }
+
+    fn fetch_all_values<T: FromSql>(
+        &self,
+        sql: &str,
+        params: &[&ToSql],
+    ) -> Result<Vec<T>, C3p0Error> {
+        let mut transaction = self.tx.borrow_mut();
+        fetch_all_values(transaction.deref_mut(), sql, params)
+    }
 }
 
 fn execute<C: GenericConnection>(
@@ -169,6 +203,14 @@ fn execute<C: GenericConnection>(
 
 fn batch_execute<C: GenericConnection>(conn: &mut C, sql: &str) -> Result<(), C3p0Error> {
     conn.query(sql).map(|_result| ()).map_err(into_c3p0_error)
+}
+
+fn fetch_one_value<C: GenericConnection, T: FromSql>(
+    conn: &mut C,
+    sql: &str,
+    params: &[&ToSql],
+) -> Result<T, C3p0Error> {
+    fetch_one(conn, sql, params, to_value_mapper)
 }
 
 fn fetch_one<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>>(
@@ -195,4 +237,33 @@ fn fetch_one_option<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>
             mapper(&row)
         })
         .transpose()
+}
+
+fn fetch_all<C: GenericConnection, T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+    conn: &mut C,
+    sql: &str,
+    params: &[&ToSql],
+    mapper: F,
+) -> Result<Vec<T>, C3p0Error> {
+    conn.prep_exec(sql, params)
+        .map_err(into_c3p0_error)?
+        .map(|row| mapper(&row.map_err(into_c3p0_error)?))
+        .collect()
+}
+
+fn fetch_all_values<C: GenericConnection, T: FromSql>(
+    conn: &mut C,
+    sql: &str,
+    params: &[&ToSql],
+) -> Result<Vec<T>, C3p0Error> {
+    fetch_all(conn, sql, params, to_value_mapper)
+}
+
+fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, C3p0Error> {
+    let result = row
+        .get_opt(0)
+        .ok_or_else(|| C3p0Error::ResultNotFoundError)?;
+    Ok(result.map_err(|err| C3p0Error::SqlError {
+        cause: format!("{}", err),
+    })?)
 }

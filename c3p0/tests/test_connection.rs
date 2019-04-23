@@ -29,12 +29,24 @@ fn should_execute_and_fetch() {
             )
             .is_ok());
 
+        assert_eq!(
+            0,
+            conn.fetch_one_value::<i64>("SELECT COUNT(*) FROM TEST_TABLE", &[])
+                .unwrap()
+        );
+
         #[cfg(feature = "pg")]
         let insert = r"INSERT INTO TEST_TABLE (name) VALUES ($1)";
         #[cfg(feature = "mysql")]
         let insert = r"INSERT INTO TEST_TABLE (name) VALUES (?)";
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
+
+        assert_eq!(
+            1,
+            conn.fetch_one_value::<i64>("SELECT COUNT(*) FROM TEST_TABLE", &[])
+                .unwrap()
+        );
 
         #[cfg(feature = "pg")]
         let mapper = |row: &Row| {
@@ -120,5 +132,48 @@ fn should_batch_execute() {
         ";
 
         assert!(conn.batch_execute(insert).is_ok());
+    });
+}
+
+#[test]
+fn should_fetch_all() {
+    SINGLETON.get(|(pool, _)| {
+        let pool = pool.clone();
+
+        let c3p0 = C3p0Builder::build(pool);
+
+        let conn = c3p0.connection().unwrap();
+        assert!(conn
+            .batch_execute("CREATE TABLE TEST_TABLE ( name varchar(255) )")
+            .is_ok());
+
+        c3p0.transaction(|conn| {
+            let all_string = conn.fetch_all_values::<String>("SELECT * FROM TEST_TABLE", &[]);
+            assert!(all_string.is_ok());
+            assert!(all_string.unwrap().is_empty());
+
+            assert!(conn
+                .batch_execute(
+                    r"
+                INSERT INTO TEST_TABLE (name) VALUES ('one');
+                INSERT INTO TEST_TABLE (name) VALUES ('two');
+                INSERT INTO TEST_TABLE (name) VALUES ('three');
+                COMMIT;
+            "
+                )
+                .is_ok());
+
+            Ok(())
+        })
+        .unwrap();
+
+        let all_string = conn.fetch_all_values::<String>("SELECT * FROM TEST_TABLE", &[]);
+        assert_eq!(3, all_string.unwrap().len());
+        //assert!(all_string.is_ok());
+
+        let all_i64 = conn.fetch_all_values::<i64>("SELECT * FROM TEST_TABLE", &[]);
+        assert!(all_i64.is_err());
+
+        assert!(conn.batch_execute("DROP TABLE TEST_TABLE").is_ok());
     });
 }

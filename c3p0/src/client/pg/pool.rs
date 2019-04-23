@@ -1,10 +1,11 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::pool::C3p0;
+use postgres::types::FromSql;
 use r2d2::{Pool, PooledConnection};
 use r2d2_postgres::PostgresConnectionManager;
 
-pub type ToSql = postgres_shared::types::ToSql;
+pub type ToSql = postgres::types::ToSql;
 pub type Row<'a> = postgres::rows::Row<'a>;
 pub type Connection = PgConnection;
 pub type Transaction = PgConnection;
@@ -64,6 +65,10 @@ impl crate::pool::Connection for PgConnection {
         self.conn.batch_execute(sql).map_err(into_c3p0_error)
     }
 
+    fn fetch_one_value<T: FromSql>(&self, sql: &str, params: &[&ToSql]) -> Result<T, C3p0Error> {
+        self.fetch_one(sql, params, to_value_mapper)
+    }
+
     fn fetch_one<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
         &self,
         sql: &str,
@@ -88,4 +93,33 @@ impl crate::pool::Connection for PgConnection {
             .map(|row| mapper(&row))
             .transpose()
     }
+
+    fn fetch_all<T, F: Fn(&Row) -> Result<T, C3p0Error>>(
+        &self,
+        sql: &str,
+        params: &[&ToSql],
+        mapper: F,
+    ) -> Result<Vec<T>, C3p0Error> {
+        let stmt = self.conn.prepare(sql).map_err(into_c3p0_error)?;
+        stmt.query(params)
+            .map_err(into_c3p0_error)?
+            .iter()
+            .map(|row| mapper(&row))
+            .collect()
+    }
+
+    fn fetch_all_values<T: FromSql>(
+        &self,
+        sql: &str,
+        params: &[&ToSql],
+    ) -> Result<Vec<T>, C3p0Error> {
+        self.fetch_all(sql, params, to_value_mapper)
+    }
+}
+
+fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, C3p0Error> {
+    let result = row
+        .get_opt(0)
+        .ok_or_else(|| C3p0Error::ResultNotFoundError)?;
+    Ok(result?)
 }
