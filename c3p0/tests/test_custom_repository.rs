@@ -15,7 +15,7 @@ struct TestTableRepository<'a> {
     conf: JsonManager<'a, TestData, DefaultJsonCodec>,
 }
 
-impl<'a> C3p0Json<TestData, JsonManager<'a, TestData, DefaultJsonCodec>>
+impl<'a> C3p0Json<TestData, DefaultJsonCodec, JsonManager<'a, TestData, DefaultJsonCodec>>
     for TestTableRepository<'a>
 {
     fn json_manager(&self) -> &JsonManager<'a, TestData, DefaultJsonCodec> {
