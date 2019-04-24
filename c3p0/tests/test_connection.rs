@@ -149,9 +149,9 @@ fn should_fetch_values() {
             let one_i64 = conn.fetch_one_value::<i64>("SELECT * FROM TEST_TABLE", &[]);
             assert!(one_i64.is_err());
 
-            conn.execute(r"INSERT INTO TEST_TABLE (name) VALUES ('one')", &[]).unwrap();
-            conn.execute(r"INSERT INTO TEST_TABLE (name) VALUES ('two')", &[]).unwrap();
-            conn.execute(r"INSERT INTO TEST_TABLE (name) VALUES ('three')", &[]).unwrap();
+            conn.batch_execute(r"INSERT INTO TEST_TABLE (name) VALUES ('one');
+                                    INSERT INTO TEST_TABLE (name) VALUES ('two');
+                                    INSERT INTO TEST_TABLE (name) VALUES ('three')").unwrap();
 
             let all_string = conn.fetch_all_values::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
             assert!(all_string.is_ok());
