@@ -1,5 +1,5 @@
 use c3p0::pool::{C3p0Base, ConnectionBase};
-use c3p0_pg_migrate::migration::{from_fs, Migration};
+use c3p0_pg_migrate::migration::{fs::from_fs, Migration};
 use c3p0_pg_migrate::{PgMigrateBuilder, C3P0_MIGRATE_TABLE_DEFAULT};
 use testcontainers::clients;
 
@@ -179,7 +179,7 @@ fn should_read_migrations_from_files() -> Result<(), Box<std::error::Error>> {
     let c3p0 = postgres_node.0.clone();
 
     let pg_migrate = PgMigrateBuilder::new()
-        .with_migrations(from_fs("./tests/migrations")?)
+        .with_migrations(from_fs("./tests/migrations_00")?)
         .build();
 
     pg_migrate.migrate(&c3p0)?;

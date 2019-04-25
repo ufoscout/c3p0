@@ -13,11 +13,11 @@ keywords = ["postgres", "pg", "json"]
 [dependencies]
 c3p0 = { path = "../c3p0", version = "0.3.0", features = ["pg"] }
 err-derive = "0.1"
+include_dir="0.2"
 log = "0.4"
 md-5 = "0.8"
 postgres = "0.15"
 r2d2 = "0.8"
-rust-embed="4.3"
 same-file = "1"
 serde = "1.0"
 serde_derive = "1.0"
