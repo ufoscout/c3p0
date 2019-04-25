@@ -1,6 +1,7 @@
 use c3p0_pg_migrate::migration::Migration;
 use c3p0_pg_migrate::{PgMigrateBuilder, C3P0_MIGRATE_TABLE_DEFAULT};
 use testcontainers::clients;
+use c3p0::pool::{C3p0Base, ConnectionBase};
 
 mod shared;
 
@@ -8,15 +9,14 @@ mod shared;
 fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
-    let conn = postgres_node.0.get().unwrap();
 
     let pg_migrate = PgMigrateBuilder::new().with_migrations(vec![]).build();
 
-    pg_migrate.migrate(&conn)?;
+    pg_migrate.migrate(&postgres_node.0)?;
 
+    let conn = postgres_node.0.connection().unwrap();
     assert!(conn
-        .execute(
-            &format!("select * from {}", C3P0_MIGRATE_TABLE_DEFAULT),
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", C3P0_MIGRATE_TABLE_DEFAULT),
             &[]
         )
         .is_ok());
@@ -28,7 +28,6 @@ fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<st
 fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
-    let conn = postgres_node.0.get().unwrap();
 
     let custom_name = "c3p0_custom_name";
 
@@ -37,10 +36,11 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std
         .with_migrations(vec![])
         .build();
 
-    pg_migrate.migrate(&conn)?;
+    pg_migrate.migrate(&postgres_node.0)?;
 
+    let conn = postgres_node.0.connection().unwrap();
     assert!(conn
-        .execute(&format!("select * from {}", custom_name), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
         .is_ok());
 
     Ok(())
@@ -50,7 +50,7 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std
 fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
-    let conn = postgres_node.0.get().unwrap();
+    let c3p0 = postgres_node.0.clone();
 
     let custom_name = "c3p0_custom_name";
 
@@ -70,16 +70,18 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
         ])
         .build();
 
-    pg_migrate.migrate(&conn)?;
+    pg_migrate.migrate(&c3p0)?;
+
+    let conn = postgres_node.0.connection().unwrap();
 
     assert!(conn
-        .execute(&format!("select * from {}", custom_name), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
         .is_ok());
     assert!(conn
-        .execute(&format!("select * from FIRST_TABLE"), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from FIRST_TABLE"), &[])
         .is_ok());
     assert!(conn
-        .execute(&format!("select * from SECOND_TABLE"), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from SECOND_TABLE"), &[])
         .is_ok());
 
     let status = pg_migrate.fetch_migrations_history(&conn).unwrap();
@@ -93,7 +95,7 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
 fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
-    let conn = postgres_node.0.get().unwrap();
+    let c3p0 = postgres_node.0.clone();
 
     let custom_name = "c3p0_custom_name";
 
@@ -106,14 +108,16 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
         }])
         .build();
 
-    pg_migrate.migrate(&conn)?;
-    pg_migrate.migrate(&conn)?;
+    pg_migrate.migrate(&c3p0)?;
+    pg_migrate.migrate(&c3p0)?;
+
+    let conn = postgres_node.0.connection().unwrap();
 
     assert!(conn
-        .execute(&format!("select * from {}", custom_name), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
         .is_ok());
     assert!(conn
-        .execute(&format!("select * from FIRST_TABLE"), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from FIRST_TABLE"), &[])
         .is_ok());
 
     let status = pg_migrate.fetch_migrations_history(&conn).unwrap();
@@ -127,7 +131,7 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
 fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let postgres_node = shared::new_connection(&docker);
-    let pool = postgres_node.0;
+    let c3p0 = postgres_node.0.clone();
 
     let custom_name = "c3p0_custom_name";
     let pg_migrate = PgMigrateBuilder::new()
@@ -142,12 +146,12 @@ fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
     let mut threads = vec![];
 
     for _i in 1..50 {
-        let pool_clone = pool.clone();
+        let pool_clone = c3p0.clone();
         let pg_migrate = pg_migrate.clone();
 
         let handle = std::thread::spawn(move || {
             //println!("Thread [{:?}] - {} started", std::thread::current().id(), i);
-            let result = pg_migrate.migrate(&pool_clone.get().unwrap());
+            let result = pg_migrate.migrate(&pool_clone);
             //println!("Thread [{:?}] - {} completed: {:?}", std::thread::current().id(), i, result);
             assert!(result.is_ok());
         });
@@ -159,7 +163,7 @@ fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
     }
 
     let status = pg_migrate
-        .fetch_migrations_history(&pool.get().unwrap())
+        .fetch_migrations_history(&c3p0.connection().unwrap())
         .unwrap();
     assert_eq!(1, status.len());
     assert_eq!("first", status.get(0).unwrap().data.migration_id);

@@ -2,8 +2,8 @@ use crate::error::C3p0MigrateError;
 use crate::migration::{to_sql_migrations, Migration, SqlMigration};
 use c3p0::prelude::*;
 use log::*;
-use postgres::Connection;
 use serde_derive::{Deserialize, Serialize};
+use c3p0::json::codec::DefaultJsonCodec;
 
 pub mod error;
 mod md5;
@@ -87,18 +87,26 @@ pub struct PgMigrate {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
-    repo: C3p0JsonRepository<MigrationData, JsonManager<'static, MigrationData>>,
+    repo: C3p0JsonRepository<MigrationData, DefaultJsonCodec, JsonManager<'static, MigrationData, DefaultJsonCodec>>,
 }
 
 impl PgMigrate {
-    pub fn migrate(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
-        if let Err(err) = self.repo.create_table_if_not_exists(conn) {
-            warn!("Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
-        };
+    pub fn migrate(&self, c3p0: &C3p0) -> Result<(), C3p0MigrateError> {
+        {
+            let conn = c3p0.connection()?;
+            if let Err(err) = self.repo.create_table_if_not_exists(&conn) {
+                warn!("Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
+            };
+        }
 
-        let tx = conn.transaction()?;
+        c3p0.transaction(|conn| {
+            Ok(self.start_migration(conn)?)
+        }).map_err(C3p0MigrateError::from)
 
-        tx.execute(
+    }
+
+    fn start_migration(&self, conn: &Transaction) -> Result<(), C3p0MigrateError> {
+        conn.execute(
             &format!(
                 "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE;",
                 self.repo.json_manager().qualified_table_name
@@ -106,7 +114,7 @@ impl PgMigrate {
             &[],
         )?;
 
-        let migration_history = self.fetch_migrations_history(tx.connection())?;
+        let migration_history = self.fetch_migrations_history(conn)?;
         let migration_history = PgMigrate::clean_history(migration_history)?;
 
         for i in 0..self.migrations.len() {
@@ -136,10 +144,10 @@ impl PgMigrate {
                 });
             }
 
-            tx.batch_execute(&migration.up.sql)?;
+            conn.batch_execute(&migration.up.sql)?;
 
             self.repo.save(
-                tx.connection(),
+                conn,
                 NewModel::new(MigrationData {
                     success: true,
                     md5_checksum: migration.up.md5.clone(),
@@ -151,12 +159,12 @@ impl PgMigrate {
             )?;
         }
 
-        tx.commit().map_err(C3p0MigrateError::from)
+        Ok(())
     }
 
     pub fn fetch_migrations_history(
         &self,
-        conn: &Connection,
+        conn: &Transaction,
     ) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
         self.repo.find_all(conn).map_err(C3p0MigrateError::from)
     }

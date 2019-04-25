@@ -16,6 +16,8 @@ pub enum C3p0Error {
     PoolError { cause: String },
     #[error(display = "ResultNotFoundError: Expected one result but found zero.")]
     ResultNotFoundError,
+    #[error(display = "TransactionError: [{}]", cause)]
+    TransactionError { cause: Box<std::error::Error> },
 }
 
 impl From<serde_json::error::Error> for C3p0Error {

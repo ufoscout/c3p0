@@ -33,7 +33,7 @@ impl C3p0Base for C3p0Pg {
             .map(|conn| PgConnection { conn })
     }
 
-    fn transaction<T, F: Fn(&Transaction) -> Result<T, C3p0Error>>(
+    fn transaction<T, F: Fn(&Transaction) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {
@@ -44,7 +44,9 @@ impl C3p0Base for C3p0Pg {
 
         let transaction = sql_executor.conn.transaction().map_err(into_c3p0_error)?;
 
-        (tx)(&sql_executor).and_then(move |result| {
+        (tx)(&sql_executor)
+            .map_err(|err| C3p0Error::TransactionError {cause: err})
+            .and_then(move |result| {
             transaction
                 .commit()
                 .map_err(into_c3p0_error)

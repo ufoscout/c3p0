@@ -66,7 +66,7 @@ fn should_rollback_transaction() {
             conn.execute(r"INSERT INTO TEST_TABLE (name) VALUES ('one')", &[]).unwrap();
             conn.execute(r"INSERT INTO TEST_TABLE (name) VALUES ('two')", &[]).unwrap();
             conn.execute(r"INSERT INTO TEST_TABLE (name) VALUES ('three')", &[]).unwrap();
-            Err(C3p0Error::ResultNotFoundError)
+            Err(C3p0Error::ResultNotFoundError)?
         });
 
         assert!(result.is_err());
