@@ -1,7 +1,7 @@
-use c3p0_pg_migrate::migration::Migration;
+use c3p0::pool::{C3p0Base, ConnectionBase};
+use c3p0_pg_migrate::migration::{from_fs, Migration};
 use c3p0_pg_migrate::{PgMigrateBuilder, C3P0_MIGRATE_TABLE_DEFAULT};
 use testcontainers::clients;
-use c3p0::pool::{C3p0Base, ConnectionBase};
 
 mod shared;
 
@@ -16,7 +16,8 @@ fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<st
 
     let conn = postgres_node.0.connection().unwrap();
     assert!(conn
-        .fetch_all_values::<i64>(&format!("select count(*) from {}", C3P0_MIGRATE_TABLE_DEFAULT),
+        .fetch_all_values::<i64>(
+            &format!("select count(*) from {}", C3P0_MIGRATE_TABLE_DEFAULT),
             &[]
         )
         .is_ok());
@@ -167,6 +168,34 @@ fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
         .unwrap();
     assert_eq!(1, status.len());
     assert_eq!("first", status.get(0).unwrap().data.migration_id);
+
+    Ok(())
+}
+
+#[test]
+fn should_read_migrations_from_files() -> Result<(), Box<std::error::Error>> {
+    let docker = clients::Cli::default();
+    let postgres_node = shared::new_connection(&docker);
+    let c3p0 = postgres_node.0.clone();
+
+    let pg_migrate = PgMigrateBuilder::new()
+        .with_migrations(from_fs("./tests/migrations")?)
+        .build();
+
+    pg_migrate.migrate(&c3p0)?;
+    pg_migrate.migrate(&c3p0)?;
+
+    let conn = postgres_node.0.connection().unwrap();
+
+    assert_eq!(
+        3,
+        conn.fetch_one_value::<i64>(&format!("select count(*) from TEST_TABLE"), &[])?
+    );
+
+    let status = pg_migrate.fetch_migrations_history(&conn).unwrap();
+    assert_eq!(2, status.len());
+    assert_eq!("00010_create_test_data", status[0].data.migration_id);
+    assert_eq!("00011_insert_test_data", status[1].data.migration_id);
 
     Ok(())
 }
