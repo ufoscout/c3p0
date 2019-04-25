@@ -27,7 +27,7 @@ script = [
 # > cargo make --no-workspace publish_all
 [tasks.publish_all]
 script = [
-  "cd ./c3p0               && cargo publish",
+  "cd ./c3p0               && cargo publish --features pg",
   "cd .. && sleep 4",
   "cd ./c3p0_diesel_macro  && cargo publish",
   "cd .. && sleep 4",
