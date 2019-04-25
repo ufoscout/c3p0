@@ -1,15 +1,15 @@
 use crate::error::C3p0MigrateError;
 use crate::migration::{Migration, Migrations};
 use crate::sql_migration::{to_sql_migrations, SqlMigration};
+use c3p0::json::codec::DefaultJsonCodec;
 use c3p0::prelude::*;
 use log::*;
 use serde_derive::{Deserialize, Serialize};
-use c3p0::json::codec::DefaultJsonCodec;
 
 pub mod error;
 mod md5;
-mod sql_migration;
 pub mod migration;
+mod sql_migration;
 
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 
@@ -89,7 +89,11 @@ pub struct PgMigrate {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
-    repo: C3p0JsonRepository<MigrationData, DefaultJsonCodec, JsonManager<'static, MigrationData, DefaultJsonCodec>>,
+    repo: C3p0JsonRepository<
+        MigrationData,
+        DefaultJsonCodec,
+        JsonManager<'static, MigrationData, DefaultJsonCodec>,
+    >,
 }
 
 impl PgMigrate {
@@ -101,20 +105,12 @@ impl PgMigrate {
             };
         }
 
-        c3p0.transaction(|conn| {
-            Ok(self.start_migration(conn)?)
-        }).map_err(C3p0MigrateError::from)
-
+        c3p0.transaction(|conn| Ok(self.start_migration(conn)?))
+            .map_err(C3p0MigrateError::from)
     }
 
     fn start_migration(&self, conn: &Transaction) -> Result<(), C3p0MigrateError> {
-        conn.execute(
-            &format!(
-                "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE;",
-                self.repo.json_manager().qualified_table_name
-            ),
-            &[],
-        )?;
+        self.repo.lock_table_exclusively(&conn)?;
 
         let migration_history = self.fetch_migrations_history(conn)?;
         let migration_history = PgMigrate::clean_history(migration_history)?;

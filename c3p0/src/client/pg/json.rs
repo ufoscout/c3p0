@@ -38,6 +38,7 @@ where
 
     pub create_table_sql_query: String,
     pub drop_table_sql_query: String,
+    pub lock_table_exclusively_sql_query: String,
 }
 
 #[derive(Clone)]
@@ -204,6 +205,11 @@ where
 
             drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
 
+            lock_table_exclusively_sql_query: format!(
+                "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
+                qualified_table_name
+            ),
+
             codec: self.codec,
             qualified_table_name,
             table_name: self.table_name,
@@ -215,7 +221,8 @@ where
     }
 }
 
-impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManagerBase<DATA, CODEC> for PostgresJsonManager<'a, DATA, CODEC>
+impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManagerBase<DATA, CODEC>
+    for PostgresJsonManager<'a, DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -303,12 +310,13 @@ where
     fn drop_table_sql_query(&self) -> &str {
         &self.drop_table_sql_query
     }
+
+    fn lock_table_exclusively_sql_query(&self) -> &str {
+        &self.lock_table_exclusively_sql_query
+    }
 }
 
-fn get_or_error<T: postgres::types::FromSql>(
-    row: &Row,
-    index: usize,
-) -> Result<T, C3p0Error> {
+fn get_or_error<T: postgres::types::FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
     row.get_opt(index)
         .ok_or_else(|| C3p0Error::SqlError {
             cause: format!("Row contains no values for index {}", index),

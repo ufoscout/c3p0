@@ -1,11 +1,11 @@
+use crate::client::mysql::pool::MySqlConnection;
 use crate::error::C3p0Error;
 use crate::json::codec::DefaultJsonCodec;
 use crate::json::{codec::JsonCodec, JsonManagerBase, Model, NewModel};
+use crate::pool::ConnectionBase;
 use crate::types::OptString;
 use mysql_client::prelude::FromValue;
-use mysql_client::{Row};
-use crate::client::mysql::pool::MySqlConnection;
-use crate::pool::ConnectionBase;
+use mysql_client::Row;
 
 #[derive(Clone)]
 pub struct MySqlJsonManager<'a, DATA, CODEC: JsonCodec<DATA>>
@@ -40,6 +40,7 @@ where
 
     pub create_table_sql_query: String,
     pub drop_table_sql_query: String,
+    pub lock_table_exclusively_sql_query: String,
 }
 
 #[derive(Clone)]
@@ -202,6 +203,8 @@ where
 
             drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
 
+            lock_table_exclusively_sql_query: format!("LOCK TABLES {} WRITE", qualified_table_name),
+
             codec: self.codec,
             qualified_table_name,
             table_name: self.table_name,
@@ -213,8 +216,8 @@ where
     }
 }
 
-
-impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManagerBase<DATA, CODEC> for MySqlJsonManager<'a, DATA, CODEC>
+impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManagerBase<DATA, CODEC>
+    for MySqlJsonManager<'a, DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -303,16 +306,17 @@ where
         &self.drop_table_sql_query
     }
 
-    fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn lock_table_exclusively_sql_query(&self) -> &str {
+        &self.lock_table_exclusively_sql_query
+    }
 
+    fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
         {
             conn.execute(&self.save_sql_query, &[&obj.version, &json_data])?;
         }
 
-        let id = {
-            conn.fetch_one_value("SELECT LAST_INSERT_ID()", &[])?
-        };
+        let id = { conn.fetch_one_value("SELECT LAST_INSERT_ID()", &[])? };
 
         Ok(Model {
             id,
@@ -320,7 +324,6 @@ where
             data: obj.data,
         })
     }
-
 }
 
 fn get_or_error<T: FromValue>(row: &Row, index: usize) -> Result<T, C3p0Error> {

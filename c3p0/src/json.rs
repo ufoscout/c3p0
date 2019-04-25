@@ -1,10 +1,10 @@
+use crate::client::Row;
 use crate::error::C3p0Error;
+use crate::json::codec::JsonCodec;
+use crate::pool::ConnectionBase;
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
 use std::ops::Deref;
-use crate::pool::ConnectionBase;
-use crate::json::codec::JsonCodec;
-use crate::client::Row;
 
 pub mod codec;
 
@@ -42,14 +42,21 @@ where
 
     fn create_table_sql_query(&self) -> &str;
     fn drop_table_sql_query(&self) -> &str;
+    fn lock_table_exclusively_sql_query(&self) -> &str;
 
-
-    fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
-        conn.execute(self.create_table_sql_query(), &[])
+    fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<(), C3p0Error> {
+        conn.execute(self.create_table_sql_query(), &[])?;
+        Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
-        conn.execute(self.drop_table_sql_query(), &[])
+    fn drop_table_if_exists(&self, conn: Self::Ref) -> Result<(), C3p0Error> {
+        conn.execute(self.drop_table_sql_query(), &[])?;
+        Ok(())
+    }
+
+    fn lock_table_exclusively(&self, conn: Self::Ref) -> Result<(), C3p0Error> {
+        conn.execute(self.lock_table_exclusively_sql_query(), &[])?;
+        Ok(())
     }
 
     fn count_all(&self, conn: Self::Ref) -> Result<i64, C3p0Error> {
@@ -61,11 +68,17 @@ where
     }
 
     fn find_all(&self, conn: Self::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        conn.fetch_all(self.find_all_sql_query(), &[], |row| Ok(self.to_model(row)?))
+        conn.fetch_all(
+            self.find_all_sql_query(),
+            &[],
+            |row| Ok(self.to_model(row)?),
+        )
     }
 
     fn find_by_id(&self, conn: Self::Ref, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
-        conn.fetch_one_option(self.find_by_id_sql_query(), &[&id], |row| Ok(self.to_model(row)?))
+        conn.fetch_one_option(self.find_by_id_sql_query(), &[&id], |row| {
+            Ok(self.to_model(row)?)
+        })
     }
 
     fn delete(&self, conn: Self::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
@@ -97,12 +110,15 @@ where
             data: obj.data,
         };
 
-        let result = conn.execute(self.update_sql_query(), &[
-            &updated_model.version,
-            &json_data,
-            &updated_model.id,
-            &obj.version,
-        ])?;
+        let result = conn.execute(
+            self.update_sql_query(),
+            &[
+                &updated_model.version,
+                &json_data,
+                &updated_model.id,
+                &obj.version,
+            ],
+        )?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
@@ -122,7 +138,6 @@ where
             data: obj.data,
         })
     }
-
 }
 
 pub type IdType = i64;
@@ -180,19 +195,23 @@ where
 }
 
 pub trait C3p0Json<DATA, CODEC, DB>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        CODEC: JsonCodec<DATA>,
-        DB: JsonManagerBase<DATA, CODEC>,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    CODEC: JsonCodec<DATA>,
+    DB: JsonManagerBase<DATA, CODEC>,
 {
     fn json_manager(&self) -> &DB;
 
-    fn create_table_if_not_exists(&self, conn: DB::Ref) -> Result<u64, C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: DB::Ref) -> Result<(), C3p0Error> {
         self.json_manager().create_table_if_not_exists(conn)
     }
 
-    fn drop_table_if_exists(&self, conn: DB::Ref) -> Result<u64, C3p0Error> {
+    fn drop_table_if_exists(&self, conn: DB::Ref) -> Result<(), C3p0Error> {
         self.json_manager().drop_table_if_exists(conn)
+    }
+
+    fn lock_table_exclusively(&self, conn: DB::Ref) -> Result<(), C3p0Error> {
+        self.json_manager().lock_table_exclusively(conn)
     }
 
     fn count_all(&self, conn: DB::Ref) -> Result<IdType, C3p0Error> {
@@ -257,10 +276,10 @@ where
 }
 
 impl<DATA, CODEC, DB> C3p0JsonRepository<DATA, CODEC, DB>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        CODEC: JsonCodec<DATA>,
-        DB: JsonManagerBase<DATA, CODEC>,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    CODEC: JsonCodec<DATA>,
+    DB: JsonManagerBase<DATA, CODEC>,
 {
     pub fn build(db: DB) -> Self {
         C3p0JsonRepository {
@@ -272,10 +291,10 @@ impl<DATA, CODEC, DB> C3p0JsonRepository<DATA, CODEC, DB>
 }
 
 impl<DATA, CODEC, DB> C3p0Json<DATA, CODEC, DB> for C3p0JsonRepository<DATA, CODEC, DB>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        CODEC: JsonCodec<DATA>,
-        DB: JsonManagerBase<DATA, CODEC>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    CODEC: JsonCodec<DATA>,
+    DB: JsonManagerBase<DATA, CODEC>,
 {
     fn json_manager(&self) -> &DB {
         &self.db
