@@ -14,6 +14,8 @@ pub enum C3p0MigrateError {
     AlteredMigrationSql { message: String },
     #[error(display = "WrongMigrationSet: [{}]", message)]
     WrongMigrationSet { message: String },
+    #[error(display = "FileSystemError: [{}]", message)]
+    FileSystemError { message: String },
 }
 
 impl From<postgres::error::Error> for C3p0MigrateError {

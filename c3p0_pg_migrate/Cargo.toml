@@ -17,8 +17,11 @@ log = "0.4"
 md-5 = "0.8"
 postgres = "0.15"
 r2d2 = "0.8"
+rust-embed="4.3"
+same-file = "1"
 serde = "1.0"
 serde_derive = "1.0"
+walkdir = "2.2"
 
 [dev-dependencies]
 lazy_static = "1.3"

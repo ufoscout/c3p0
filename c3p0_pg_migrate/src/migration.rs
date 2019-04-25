@@ -1,6 +1,7 @@
-pub fn to_sql_migrations(migrations: Vec<Migration>) -> Vec<SqlMigration> {
-    migrations.into_iter().map(SqlMigration::new).collect()
-}
+use walkdir::WalkDir;
+use std::convert::TryFrom;
+use std::fs::read_to_string;
+use crate::error::C3p0MigrateError;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Migration {
@@ -10,89 +11,85 @@ pub struct Migration {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct SqlMigration {
-    pub id: String,
-    pub up: SqlScript,
-    pub down: SqlScript,
+pub struct Migrations {
+    pub migrations: Vec<Migration>,
 }
 
-impl SqlMigration {
-    pub fn new(migration: Migration) -> SqlMigration {
-        SqlMigration {
-            id: migration.id,
-            up: SqlScript::new(migration.up),
-            down: SqlScript::new(migration.down),
+impl From<Vec<Migration>> for Migrations {
+    fn from(migrations: Vec<Migration>) -> Self {
+        Migrations{
+            migrations
         }
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct SqlScript {
-    pub sql: String,
-    pub md5: String,
-}
+impl TryFrom<&str> for Migrations {
+    type Error = C3p0MigrateError;
 
-impl SqlScript {
-    pub fn new<S: Into<String>>(sql: S) -> SqlScript {
-        let sql = sql.into();
-        let md5 = crate::md5::calculate_md5(&sql);
-        SqlScript { sql, md5 }
+    fn try_from(path: &str) -> Result<Self, Self::Error> {
+
+        let mut migrations = vec![];
+
+        for entry in WalkDir::new(path)
+            .max_depth(1)
+            .sort_by(|a, b| a.path().cmp(b.path()))
+            .into_iter()
+            .filter_entry(|e| e.path().is_dir())
+            .filter_map(|e| e.ok()) {
+
+            //println!("analise: {}", entry.path().display());
+
+            let direct_child = if let Some(parent) = entry.path().parent() {
+                //println!("parent: {}", parent.display());
+                same_file::is_same_file(parent, path).unwrap_or_else(|_e| false)
+            } else {
+                false
+            };
+
+            println!("is children: {}", direct_child);
+
+            if direct_child {
+
+                let id = entry.path().file_name().and_then(|os_name| os_name.to_str())
+                    .ok_or_else(|| C3p0MigrateError::FileSystemError {message: format!("Cannot get filename of [{}]", entry.path().display())})?;
+
+                let up = entry.path().join("up.sql");
+                let up_script = read_to_string(up.as_path())
+                    .map_err(|err| C3p0MigrateError::FileSystemError {message: format!("Error reading file [{}]. Err: [{}]", up.display(), err)})?;
+
+                let down = entry.path().join("down.sql");
+                let down_script = read_to_string(down.as_path())
+                    .map_err(|err| C3p0MigrateError::FileSystemError {message: format!("Error reading file [{}]. Err: [{}]", up.display(), err)})?;
+
+                migrations.push(Migration{
+                    id: id.to_owned(),
+                    down: down_script,
+                    up: up_script
+                })
+            }
+
+        };
+
+        Ok(Migrations{
+            migrations
+        })
     }
 }
+
+
 
 #[cfg(test)]
 mod test {
 
     use super::*;
+    use std::convert::TryInto;
 
     #[test]
-    fn should_create_migrations_with_md5() {
-        let source_sqls = vec![
-            Migration {
-                id: "first".to_owned(),
-                up: "insert into table1".to_owned(),
-                down: "delete from table1".to_owned(),
-            },
-            Migration {
-                id: "second".to_owned(),
-                up: "insert into table2".to_owned(),
-                down: "delete from table2".to_owned(),
-            },
-        ];
+    fn should_read_migrations_from_fs() {
+        let migrations: Migrations = "./tests/migrations".try_into().unwrap();
 
-        let migrations = to_sql_migrations(source_sqls.clone());
+        assert_eq!(2, migrations.migrations.len())
 
-        assert_eq!(2, migrations.len());
-
-        assert_eq!(
-            &SqlMigration {
-                id: "first".to_owned(),
-                up: SqlScript {
-                    sql: "insert into table1".to_owned(),
-                    md5: "7f1145b3d3b6654e3388610423abb12f".to_owned(),
-                },
-                down: SqlScript {
-                    sql: "delete from table1".to_owned(),
-                    md5: "7e8ab3d9327f4f1a80e2b9de1acc35c0".to_owned(),
-                }
-            },
-            migrations.get(0).unwrap()
-        );
-
-        assert_eq!(
-            &SqlMigration {
-                id: "second".to_owned(),
-                up: SqlScript {
-                    sql: "insert into table2".to_owned(),
-                    md5: "7233bb544a3a701c33590a8c72d74e22".to_owned(),
-                },
-                down: SqlScript {
-                    sql: "delete from table2".to_owned(),
-                    md5: "116ee10121cdb2cc04c3c523c51af1d3".to_owned(),
-                }
-            },
-            migrations.get(1).unwrap()
-        );
     }
 
 }

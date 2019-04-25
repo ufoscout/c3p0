@@ -1,5 +1,6 @@
 use crate::error::C3p0MigrateError;
-use crate::migration::{to_sql_migrations, Migration, SqlMigration};
+use crate::migration::{Migration, Migrations};
+use crate::sql_migration::{to_sql_migrations, SqlMigration};
 use c3p0::prelude::*;
 use log::*;
 use serde_derive::{Deserialize, Serialize};
@@ -7,6 +8,7 @@ use c3p0::json::codec::DefaultJsonCodec;
 
 pub mod error;
 mod md5;
+mod sql_migration;
 pub mod migration;
 
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
@@ -43,8 +45,8 @@ impl PgMigrateBuilder {
         self
     }
 
-    pub fn with_migrations(mut self, migrations: Vec<Migration>) -> PgMigrateBuilder {
-        self.migrations = migrations;
+    pub fn with_migrations<M: Into<Migrations>>(mut self, migrations: M) -> PgMigrateBuilder {
+        self.migrations = migrations.into().migrations;
         self
     }
 
