@@ -52,6 +52,10 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0MigrateError> {
         })
     }
 
+    migrations.sort_by(|first, second| {
+        first.id.cmp(&second.id)
+    });
+
     Ok(Migrations { migrations })
 }
 

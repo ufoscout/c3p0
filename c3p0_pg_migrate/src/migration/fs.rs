@@ -63,6 +63,10 @@ pub fn from_fs<P: AsRef<Path>>(path_ref: P) -> Result<Migrations, C3p0MigrateErr
         })
     }
 
+    migrations.sort_by(|first, second| {
+        first.id.cmp(&second.id)
+    });
+
     Ok(Migrations { migrations })
 }
 
