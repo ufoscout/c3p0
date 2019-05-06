@@ -20,7 +20,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0MigrateError> {
         let id = entry
             .path()
             .file_name()
-            .and_then(|os_name| os_name.to_str())
+            .and_then(std::ffi::OsStr::to_str)
             .ok_or_else(|| C3p0MigrateError::FileSystemError {
                 message: format!("Cannot get filename of [{}]", entry.path().display()),
             })?;
@@ -52,9 +52,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0MigrateError> {
         })
     }
 
-    migrations.sort_by(|first, second| {
-        first.id.cmp(&second.id)
-    });
+    migrations.sort_by(|first, second| first.id.cmp(&second.id));
 
     Ok(Migrations { migrations })
 }

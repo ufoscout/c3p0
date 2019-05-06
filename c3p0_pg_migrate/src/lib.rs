@@ -109,7 +109,7 @@ impl PgMigrate {
             .map_err(C3p0MigrateError::from)
     }
 
-    fn start_migration(&self, conn: &Transaction) -> Result<(), C3p0MigrateError> {
+    fn start_migration(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
         self.repo.lock_table_exclusively(&conn)?;
 
         let migration_history = self.fetch_migrations_history(conn)?;
@@ -162,7 +162,7 @@ impl PgMigrate {
 
     pub fn fetch_migrations_history(
         &self,
-        conn: &Transaction,
+        conn: &Connection,
     ) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
         self.repo.find_all(conn).map_err(C3p0MigrateError::from)
     }

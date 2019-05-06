@@ -221,8 +221,7 @@ impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManagerBase<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type Conn = MySqlConnection;
-    type Ref = &'a mut Self::Conn;
+    type Conn = MySqlConnection<'a>;
 
     fn codec(&self) -> &CODEC {
         &self.codec
@@ -310,7 +309,7 @@ where
         &self.lock_table_exclusively_sql_query
     }
 
-    fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
         {
             conn.execute(&self.save_sql_query, &[&obj.version, &json_data])?;

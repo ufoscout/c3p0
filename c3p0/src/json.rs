@@ -4,7 +4,6 @@ use crate::json::codec::JsonCodec;
 use crate::pool::ConnectionBase;
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
-use std::ops::Deref;
 
 pub mod codec;
 
@@ -13,7 +12,6 @@ where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     type Conn: ConnectionBase;
-    type Ref: Deref<Target = Self::Conn>;
 
     fn codec(&self) -> &CODEC;
 
@@ -44,30 +42,30 @@ where
     fn drop_table_sql_query(&self) -> &str;
     fn lock_table_exclusively_sql_query(&self) -> &str;
 
-    fn create_table_if_not_exists(&self, conn: Self::Ref) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &Self::Conn) -> Result<(), C3p0Error> {
         conn.execute(self.create_table_sql_query(), &[])?;
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: Self::Ref) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(&self, conn: &Self::Conn) -> Result<(), C3p0Error> {
         conn.execute(self.drop_table_sql_query(), &[])?;
         Ok(())
     }
 
-    fn lock_table_exclusively(&self, conn: Self::Ref) -> Result<(), C3p0Error> {
+    fn lock_table_exclusively(&self, conn: &Self::Conn) -> Result<(), C3p0Error> {
         conn.execute(self.lock_table_exclusively_sql_query(), &[])?;
         Ok(())
     }
 
-    fn count_all(&self, conn: Self::Ref) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: &Self::Conn) -> Result<i64, C3p0Error> {
         conn.fetch_one_value(self.count_all_sql_query(), &[])
     }
 
-    fn exists_by_id(&self, conn: Self::Ref, id: i64) -> Result<bool, C3p0Error> {
+    fn exists_by_id(&self, conn: &Self::Conn, id: i64) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(self.exists_by_id_sql_query(), &[&id])
     }
 
-    fn find_all(&self, conn: Self::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn find_all(&self, conn: &Self::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(
             self.find_all_sql_query(),
             &[],
@@ -75,13 +73,13 @@ where
         )
     }
 
-    fn find_by_id(&self, conn: Self::Ref, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
+    fn find_by_id(&self, conn: &Self::Conn, id: i64) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(self.find_by_id_sql_query(), &[&id], |row| {
             Ok(self.to_model(row)?)
         })
     }
 
-    fn delete(&self, conn: Self::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &Self::Conn, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         let result = conn.execute(self.delete_sql_query(), &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -93,15 +91,15 @@ where
         Ok(result)
     }
 
-    fn delete_all(&self, conn: Self::Ref) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &Self::Conn) -> Result<u64, C3p0Error> {
         conn.execute(self.delete_all_sql_query(), &[])
     }
 
-    fn delete_by_id(&self, conn: Self::Ref, id: i64) -> Result<u64, C3p0Error> {
+    fn delete_by_id(&self, conn: &Self::Conn, id: i64) -> Result<u64, C3p0Error> {
         conn.execute(self.delete_by_id_sql_query(), &[&id])
     }
 
-    fn update(&self, conn: Self::Ref, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(&self, conn: &Self::Conn, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
@@ -129,7 +127,7 @@ where
         Ok(updated_model)
     }
 
-    fn save(&self, conn: Self::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
         let id = conn.fetch_one_value(self.save_sql_query(), &[&obj.version, &json_data])?;
         Ok(Model {
@@ -202,63 +200,63 @@ where
 {
     fn json_manager(&self) -> &DB;
 
-    fn create_table_if_not_exists(&self, conn: DB::Ref) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &DB::Conn) -> Result<(), C3p0Error> {
         self.json_manager().create_table_if_not_exists(conn)
     }
 
-    fn drop_table_if_exists(&self, conn: DB::Ref) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(&self, conn: &DB::Conn) -> Result<(), C3p0Error> {
         self.json_manager().drop_table_if_exists(conn)
     }
 
-    fn lock_table_exclusively(&self, conn: DB::Ref) -> Result<(), C3p0Error> {
+    fn lock_table_exclusively(&self, conn: &DB::Conn) -> Result<(), C3p0Error> {
         self.json_manager().lock_table_exclusively(conn)
     }
 
-    fn count_all(&self, conn: DB::Ref) -> Result<IdType, C3p0Error> {
+    fn count_all(&self, conn: &DB::Conn) -> Result<IdType, C3p0Error> {
         self.json_manager().count_all(conn)
     }
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: DB::Ref,
+        conn: &DB::Conn,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         self.json_manager().exists_by_id(conn, *id.into())
     }
 
-    fn find_all(&self, conn: DB::Ref) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn find_all(&self, conn: &DB::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
         self.json_manager().find_all(conn)
     }
 
     fn find_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: DB::Ref,
+        conn: &DB::Conn,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         self.json_manager().find_by_id(conn, *id.into())
     }
 
-    fn delete(&self, conn: DB::Ref, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &DB::Conn, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         self.json_manager().delete(conn, obj)
     }
 
-    fn delete_all(&self, conn: DB::Ref) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &DB::Conn) -> Result<u64, C3p0Error> {
         self.json_manager().delete_all(conn)
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: DB::Ref,
+        conn: &DB::Conn,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         self.json_manager().delete_by_id(conn, *id.into())
     }
 
-    fn save(&self, conn: DB::Ref, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &DB::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         self.json_manager().save(conn, obj)
     }
 
-    fn update(&self, conn: DB::Ref, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(&self, conn: &DB::Conn, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         self.json_manager().update(conn, obj)
     }
 }

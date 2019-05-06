@@ -13,7 +13,7 @@ use crate::shared_mysql::*;
 #[test]
 fn should_create_and_drop_table() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
 
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
 
@@ -24,53 +24,53 @@ fn should_create_and_drop_table() {
             last_name: "my_last_name".to_owned(),
         });
 
-        assert!(jpo.drop_table_if_exists(&mut conn).is_ok());
-        assert!(jpo.save(&mut conn, model.clone()).is_err());
+        assert!(jpo.drop_table_if_exists(&conn).is_ok());
+        assert!(jpo.save(&conn, model.clone()).is_err());
 
-        println!("first {:?}", jpo.create_table_if_not_exists(&mut conn));
+        println!("first {:?}", jpo.create_table_if_not_exists(&conn));
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
 
-        assert!(jpo.save(&mut conn, model.clone()).is_ok());
+        assert!(jpo.save(&conn, model.clone()).is_ok());
 
-        assert!(jpo.drop_table_if_exists(&mut conn).is_ok());
-        assert!(jpo.drop_table_if_exists(&mut conn).is_ok());
-        assert!(jpo.save(&mut conn, model.clone()).is_err());
+        assert!(jpo.drop_table_if_exists(&conn).is_ok());
+        assert!(jpo.drop_table_if_exists(&conn).is_ok());
+        assert!(jpo.save(&conn, model.clone()).is_err());
 
-        println!("second {:?}", jpo.create_table_if_not_exists(&mut conn));
+        println!("second {:?}", jpo.create_table_if_not_exists(&conn));
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        assert!(jpo.save(&mut conn, model.clone()).is_ok());
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        assert!(jpo.save(&conn, model.clone()).is_ok());
     });
 }
 
 #[test]
 fn basic_crud() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0JsonRepository::build(conf);
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        jpo.delete_all(&mut conn).unwrap();
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        let saved_model = jpo.save(&mut conn, model.clone()).unwrap();
+        let saved_model = jpo.save(&conn, model.clone()).unwrap();
         assert!(saved_model.id >= 0);
 
-        let found_model = jpo.find_by_id(&mut conn, &saved_model).unwrap().unwrap();
+        let found_model = jpo.find_by_id(&conn, &saved_model).unwrap().unwrap();
         assert_eq!(saved_model.id, found_model.id);
         assert_eq!(saved_model.version, found_model.version);
         assert_eq!(saved_model.data.first_name, found_model.data.first_name);
         assert_eq!(saved_model.data.last_name, found_model.data.last_name);
 
-        let deleted = jpo.delete_by_id(&mut conn, &saved_model).unwrap();
+        let deleted = jpo.delete_by_id(&conn, &saved_model).unwrap();
         assert_eq!(1, deleted);
     });
 }
@@ -78,23 +78,23 @@ fn basic_crud() {
 #[test]
 fn should_find_all() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
         let jpo = C3p0JsonRepository::build(conf);
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        jpo.delete_all(&mut conn).unwrap();
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        let saved_model_0 = jpo.save(&mut conn, model.clone()).unwrap();
-        let saved_model_1 = jpo.save(&mut conn, model.clone()).unwrap();
-        let saved_model_2 = jpo.save(&mut conn, model.clone()).unwrap();
+        let saved_model_0 = jpo.save(&conn, model.clone()).unwrap();
+        let saved_model_1 = jpo.save(&conn, model.clone()).unwrap();
+        let saved_model_2 = jpo.save(&conn, model.clone()).unwrap();
 
-        let models = jpo.find_all(&mut conn).unwrap();
+        let models = jpo.find_all(&conn).unwrap();
 
         assert_eq!(3, models.len());
         assert_eq!(saved_model_0.id, models[0].id);
@@ -106,119 +106,119 @@ fn should_find_all() {
 #[test]
 fn should_delete_all() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
         let jpo = C3p0JsonRepository::build(conf);
-        assert!(jpo.drop_table_if_exists(&mut conn).is_ok());
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
+        assert!(jpo.drop_table_if_exists(&conn).is_ok());
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        let model1 = jpo.save(&mut conn, model.clone()).unwrap();
-        jpo.save(&mut conn, model.clone()).unwrap();
-        jpo.save(&mut conn, model.clone()).unwrap();
+        let model1 = jpo.save(&conn, model.clone()).unwrap();
+        jpo.save(&conn, model.clone()).unwrap();
+        jpo.save(&conn, model.clone()).unwrap();
 
-        assert!(jpo.find_by_id(&mut conn, &model1.id).unwrap().is_some());
-        assert_eq!(1, jpo.delete_by_id(&mut conn, &model1.id).unwrap());
-        assert!(jpo.find_by_id(&mut conn, &model1).unwrap().is_none());
-        assert_eq!(2, jpo.count_all(&mut conn).unwrap());
+        assert!(jpo.find_by_id(&conn, &model1.id).unwrap().is_some());
+        assert_eq!(1, jpo.delete_by_id(&conn, &model1.id).unwrap());
+        assert!(jpo.find_by_id(&conn, &model1).unwrap().is_none());
+        assert_eq!(2, jpo.count_all(&conn).unwrap());
 
-        assert_eq!(2, jpo.delete_all(&mut conn).unwrap());
-        assert_eq!(0, jpo.count_all(&mut conn).unwrap());
+        assert_eq!(2, jpo.delete_all(&conn).unwrap());
+        assert_eq!(0, jpo.count_all(&conn).unwrap());
     });
 }
 
 #[test]
 fn should_count() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
         let jpo = C3p0JsonRepository::build(conf);
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        assert!(jpo.delete_all(&mut conn).is_ok());
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        assert!(jpo.delete_all(&conn).is_ok());
 
-        assert_eq!(0, jpo.count_all(&mut conn).unwrap());
+        assert_eq!(0, jpo.count_all(&conn).unwrap());
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        jpo.save(&mut conn, model.clone()).unwrap();
-        assert_eq!(1, jpo.count_all(&mut conn).unwrap());
+        jpo.save(&conn, model.clone()).unwrap();
+        assert_eq!(1, jpo.count_all(&conn).unwrap());
 
-        jpo.save(&mut conn, model.clone()).unwrap();
-        assert_eq!(2, jpo.count_all(&mut conn).unwrap());
+        jpo.save(&conn, model.clone()).unwrap();
+        assert_eq!(2, jpo.count_all(&conn).unwrap());
 
-        jpo.save(&mut conn, model.clone()).unwrap();
-        assert_eq!(3, jpo.count_all(&mut conn).unwrap());
+        jpo.save(&conn, model.clone()).unwrap();
+        assert_eq!(3, jpo.count_all(&conn).unwrap());
 
-        assert_eq!(3, jpo.delete_all(&mut conn).unwrap());
-        assert_eq!(0, jpo.count_all(&mut conn).unwrap());
+        assert_eq!(3, jpo.delete_all(&conn).unwrap());
+        assert_eq!(0, jpo.count_all(&conn).unwrap());
     });
 }
 
 #[test]
 fn should_return_whether_exists_by_id() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
         let jpo = C3p0JsonRepository::build(conf);
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        let model = jpo.save(&mut conn, model.clone()).unwrap();
-        assert!(jpo.exists_by_id(&mut conn, &model).unwrap());
-        assert!(jpo.exists_by_id(&mut conn, &model.id).unwrap());
+        let model = jpo.save(&conn, model.clone()).unwrap();
+        assert!(jpo.exists_by_id(&conn, &model).unwrap());
+        assert!(jpo.exists_by_id(&conn, &model.id).unwrap());
 
-        assert_eq!(1, jpo.delete_by_id(&mut conn, &model).unwrap());
-        assert!(!jpo.exists_by_id(&mut conn, &model).unwrap());
-        assert!(!jpo.exists_by_id(&mut conn, &model.id).unwrap());
+        assert_eq!(1, jpo.delete_by_id(&conn, &model).unwrap());
+        assert!(!jpo.exists_by_id(&conn, &model).unwrap());
+        assert!(!jpo.exists_by_id(&conn, &model.id).unwrap());
     });
 }
 
 #[test]
 fn should_update_and_increase_version() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0JsonRepository::build(conf);
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        jpo.delete_all(&mut conn).unwrap();
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        let mut saved_model = jpo.save(&mut conn, model.clone()).unwrap();
+        let mut saved_model = jpo.save(&conn, model.clone()).unwrap();
 
         saved_model.data.first_name = "second_first_name".to_owned();
-        let mut updated_model = jpo.update(&mut conn, saved_model.clone()).unwrap();
+        let mut updated_model = jpo.update(&conn, saved_model.clone()).unwrap();
         assert_eq!(saved_model.id, updated_model.id);
         assert_eq!(saved_model.version + 1, updated_model.version);
         assert_eq!("second_first_name", updated_model.data.first_name);
         assert_eq!("my_last_name", updated_model.data.last_name);
 
         updated_model.data.last_name = "second_last_name".to_owned();
-        updated_model = jpo.update(&mut conn, updated_model.clone()).unwrap();
+        updated_model = jpo.update(&conn, updated_model.clone()).unwrap();
         assert_eq!(saved_model.id, updated_model.id);
         assert_eq!(saved_model.version + 2, updated_model.version);
         assert_eq!("second_first_name", updated_model.data.first_name);
         assert_eq!("second_last_name", updated_model.data.last_name);
 
-        let found_model = jpo.find_by_id(&mut conn, &saved_model).unwrap().unwrap();
+        let found_model = jpo.find_by_id(&conn, &saved_model).unwrap().unwrap();
         assert_eq!(found_model.id, updated_model.id);
         assert_eq!(found_model.version, updated_model.version);
         assert_eq!(found_model.data, updated_model.data);
@@ -228,25 +228,25 @@ fn should_update_and_increase_version() {
 #[test]
 fn update_should_return_optimistic_lock_exception() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0JsonRepository::build(conf);
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        jpo.delete_all(&mut conn).unwrap();
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        let mut saved_model = jpo.save(&mut conn, model.clone()).unwrap();
+        let mut saved_model = jpo.save(&conn, model.clone()).unwrap();
 
         saved_model.data.first_name = "second_first_name".to_owned();
-        assert!(jpo.update(&mut conn, saved_model.clone()).is_ok());
+        assert!(jpo.update(&conn, saved_model.clone()).is_ok());
 
-        let expected_error = jpo.update(&mut conn, saved_model.clone());
+        let expected_error = jpo.update(&conn, saved_model.clone());
         assert!(expected_error.is_err());
 
         match expected_error {
@@ -268,47 +268,47 @@ fn update_should_return_optimistic_lock_exception() {
 #[test]
 fn should_delete_based_on_id_and_version() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0JsonRepository::build(conf);
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        jpo.delete_all(&mut conn).unwrap();
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        let saved_model = jpo.save(&mut conn, model.clone()).unwrap();
+        let saved_model = jpo.save(&conn, model.clone()).unwrap();
 
-        let deleted = jpo.delete(&mut conn, &saved_model).unwrap();
+        let deleted = jpo.delete(&conn, &saved_model).unwrap();
         assert_eq!(1, deleted);
-        assert!(!jpo.exists_by_id(&mut conn, &saved_model).unwrap());
+        assert!(!jpo.exists_by_id(&conn, &saved_model).unwrap());
     });
 }
 
 #[test]
 fn delete_should_return_optimistic_lock_exception() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let conf = JsonManagerBuilder::new("TEST_TABLE").build();
 
         let jpo = C3p0JsonRepository::build(conf);
 
-        assert!(jpo.create_table_if_not_exists(&mut conn).is_ok());
-        jpo.delete_all(&mut conn).unwrap();
+        assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+        jpo.delete_all(&conn).unwrap();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
 
-        let saved_model = jpo.save(&mut conn, model.clone()).unwrap();
-        assert!(jpo.update(&mut conn, saved_model.clone()).is_ok());
+        let saved_model = jpo.save(&conn, model.clone()).unwrap();
+        assert!(jpo.update(&conn, saved_model.clone()).is_ok());
 
-        let expected_error = jpo.delete(&mut conn, &saved_model);
+        let expected_error = jpo.delete(&conn, &saved_model);
         assert!(expected_error.is_err());
 
         match expected_error {
@@ -325,6 +325,6 @@ fn delete_should_return_optimistic_lock_exception() {
             },
         };
 
-        assert!(jpo.exists_by_id(&mut conn, &saved_model).unwrap());
+        assert!(jpo.exists_by_id(&conn, &saved_model).unwrap());
     });
 }

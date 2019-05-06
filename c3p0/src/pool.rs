@@ -9,7 +9,7 @@ use postgres::types::FromSql;
 pub trait C3p0Base: Clone {
     fn connection(&self) -> Result<crate::client::Connection, C3p0Error>;
 
-    fn transaction<T, F: Fn(&crate::client::Transaction) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, F: Fn(&crate::client::Connection) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error>;

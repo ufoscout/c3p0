@@ -1,12 +1,12 @@
 #![cfg(feature = "mysql")]
 
+use c3p0::prelude::*;
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use mysql_client::{Opts, OptsBuilder};
 use r2d2_mysql::MysqlConnectionManager;
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
-use c3p0::prelude::*;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct TestData {

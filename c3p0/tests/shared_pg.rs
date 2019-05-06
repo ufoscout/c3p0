@@ -1,11 +1,11 @@
 #![cfg(feature = "pg")]
 
+use c3p0::prelude::*;
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
-use c3p0::prelude::*;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct TestData {

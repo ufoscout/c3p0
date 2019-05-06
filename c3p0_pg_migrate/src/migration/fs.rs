@@ -32,14 +32,14 @@ pub fn from_fs<P: AsRef<Path>>(path_ref: P) -> Result<Migrations, C3p0MigrateErr
         .sort_by(|a, b| a.file_name().cmp(b.file_name()))
         .into_iter()
         .filter_entry(|e| e.path().is_dir())
-        .filter_map(|e| e.ok())
+        .filter_map(std::result::Result::ok)
     {
         //println!("analise: {}", entry.path().display());
 
         let id = entry
             .path()
             .file_name()
-            .and_then(|os_name| os_name.to_str())
+            .and_then(std::ffi::OsStr::to_str)
             .ok_or_else(|| C3p0MigrateError::FileSystemError {
                 message: format!("Cannot get filename of [{}]", entry.path().display()),
             })?;
@@ -63,9 +63,7 @@ pub fn from_fs<P: AsRef<Path>>(path_ref: P) -> Result<Migrations, C3p0MigrateErr
         })
     }
 
-    migrations.sort_by(|first, second| {
-        first.id.cmp(&second.id)
-    });
+    migrations.sort_by(|first, second| first.id.cmp(&second.id));
 
     Ok(Migrations { migrations })
 }

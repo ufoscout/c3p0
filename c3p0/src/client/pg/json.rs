@@ -227,7 +227,6 @@ where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     type Conn = crate::client::pg::pool::PgConnection;
-    type Ref = &'a Self::Conn;
 
     fn codec(&self) -> &CODEC {
         &self.codec

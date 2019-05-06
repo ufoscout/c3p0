@@ -12,12 +12,9 @@ pub type ToSql = mysql::pool::ToSql;
 #[cfg(feature = "mysql")]
 pub type Row = mysql::pool::Row;
 #[cfg(feature = "mysql")]
-pub type Connection = mysql::pool::Connection;
-#[cfg(feature = "mysql")]
-pub type Transaction<'a> = mysql::pool::Transaction<'a>;
+pub type Connection<'a> = mysql::pool::Connection<'a>;
 #[cfg(feature = "mysql")]
 pub type C3p0 = mysql::pool::C3p0MySql;
-
 
 #[cfg(feature = "pg")]
 mod pg;
@@ -34,8 +31,6 @@ pub type ToSql = pg::pool::ToSql;
 pub type Row<'a> = pg::pool::Row<'a>;
 #[cfg(feature = "pg")]
 pub type Connection = pg::pool::Connection;
-#[cfg(feature = "pg")]
-pub type Transaction = pg::pool::Connection;
 #[cfg(feature = "pg")]
 pub type C3p0 = pg::pool::C3p0Pg;
 

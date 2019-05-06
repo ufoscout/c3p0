@@ -149,22 +149,26 @@ fn should_fetch_values() {
             let one_i64 = conn.fetch_one_value::<i64>("SELECT * FROM TEST_TABLE", &[]);
             assert!(one_i64.is_err());
 
-            conn.batch_execute(r"INSERT INTO TEST_TABLE (name) VALUES ('one');
+            conn.batch_execute(
+                r"INSERT INTO TEST_TABLE (name) VALUES ('one');
                                     INSERT INTO TEST_TABLE (name) VALUES ('two');
-                                    INSERT INTO TEST_TABLE (name) VALUES ('three')").unwrap();
+                                    INSERT INTO TEST_TABLE (name) VALUES ('three')",
+            )
+            .unwrap();
 
-            let all_string = conn.fetch_all_values::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
+            let all_string =
+                conn.fetch_all_values::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
             assert!(all_string.is_ok());
-            assert_eq!(vec![
-                "one".to_owned(),
-                "three".to_owned(),
-                "two".to_owned(),
-            ], all_string.unwrap());
+            assert_eq!(
+                vec!["one".to_owned(), "three".to_owned(), "two".to_owned(),],
+                all_string.unwrap()
+            );
 
             let all_i64 = conn.fetch_all_values::<i64>("SELECT * FROM TEST_TABLE", &[]);
             assert!(all_i64.is_err());
 
-            let one_string = conn.fetch_one_value::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
+            let one_string =
+                conn.fetch_one_value::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
             assert!(one_string.is_ok());
             assert_eq!("one".to_owned(), one_string.unwrap());
 

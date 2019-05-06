@@ -79,7 +79,7 @@ impl JsonCodec<UserVersion2> for UserVersionCoded2 {
 #[test]
 fn should_upgrade_structs_on_load() {
     SINGLETON.get(|(pool, _)| {
-        let mut conn = pool.connection().unwrap();
+        let conn = pool.connection().unwrap();
         let table_name = "USER_TABLE";
 
         let conf_v1 = JsonManagerBuilder::new(table_name)
@@ -97,12 +97,12 @@ fn should_upgrade_structs_on_load() {
             email: "user_v1_email@test.com".to_owned(),
         });
 
-        assert!(jpo_v1.create_table_if_not_exists(&mut conn).is_ok());
-        assert!(jpo_v1.delete_all(&mut conn).is_ok());
+        assert!(jpo_v1.create_table_if_not_exists(&conn).is_ok());
+        assert!(jpo_v1.delete_all(&conn).is_ok());
 
-        let user_v1 = jpo_v1.save(&mut conn, new_user_v1.clone()).unwrap();
+        let user_v1 = jpo_v1.save(&conn, new_user_v1.clone()).unwrap();
 
-        let user_v2_found = jpo_v2.find_by_id(&mut conn, &user_v1.id).unwrap();
+        let user_v2_found = jpo_v2.find_by_id(&conn, &user_v1.id).unwrap();
         assert!(user_v2_found.is_some());
 
         let user_v2_found = user_v2_found.unwrap();

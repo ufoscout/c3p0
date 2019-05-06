@@ -1,13 +1,10 @@
+use c3p0::prelude::*;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use testcontainers::*;
-use c3p0::prelude::*;
 
 pub fn new_connection(
     docker: &clients::Cli,
-) -> (
-    C3p0,
-    Container<clients::Cli, images::postgres::Postgres>,
-) {
+) -> (C3p0, Container<clients::Cli, images::postgres::Postgres>) {
     let node = docker.run(images::postgres::Postgres::default());
 
     let manager = PostgresConnectionManager::new(
