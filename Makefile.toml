@@ -33,7 +33,7 @@ script = [
   "cd .. && sleep 4",
   "cd ./c3p0_diesel        && cargo publish",
   "cd .. && sleep 4",
-  "cd ./c3p0_migrate       && ./cargo.sh publish",
+  "cd ./c3p0_migrate       && cargo publish --features pg",
   "cd ..",
 ]
 
