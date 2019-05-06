@@ -14,15 +14,15 @@ mod sql_migration;
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 
 #[derive(Clone, Debug)]
-pub struct PgMigrateBuilder {
+pub struct C3p0MigrateBuilder {
     table: String,
     schema: Option<String>,
     migrations: Vec<Migration>,
 }
 
-impl Default for PgMigrateBuilder {
+impl Default for C3p0MigrateBuilder {
     fn default() -> Self {
-        PgMigrateBuilder {
+        C3p0MigrateBuilder {
             table: C3P0_MIGRATE_TABLE_DEFAULT.to_owned(),
             schema: None,
             migrations: vec![],
@@ -30,34 +30,34 @@ impl Default for PgMigrateBuilder {
     }
 }
 
-impl PgMigrateBuilder {
+impl C3p0MigrateBuilder {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_schema_name<T: Into<Option<String>>>(mut self, schema_name: T) -> PgMigrateBuilder {
+    pub fn with_schema_name<T: Into<Option<String>>>(mut self, schema_name: T) -> C3p0MigrateBuilder {
         self.schema = schema_name.into();
         self
     }
 
-    pub fn with_table_name<T: Into<String>>(mut self, table_name: T) -> PgMigrateBuilder {
+    pub fn with_table_name<T: Into<String>>(mut self, table_name: T) -> C3p0MigrateBuilder {
         self.table = table_name.into();
         self
     }
 
-    pub fn with_migrations<M: Into<Migrations>>(mut self, migrations: M) -> PgMigrateBuilder {
+    pub fn with_migrations<M: Into<Migrations>>(mut self, migrations: M) -> C3p0MigrateBuilder {
         self.migrations = migrations.into().migrations;
         self
     }
 
-    pub fn build(self) -> PgMigrate {
+    pub fn build(self) -> C3p0Migrate {
         let conf = JsonManagerBuilder::new(self.table.clone())
             .with_schema_name(self.schema.clone())
             .build();
 
         let repo = C3p0JsonRepository::build(conf);
 
-        PgMigrate {
+        C3p0Migrate {
             table: self.table,
             schema: self.schema,
             migrations: to_sql_migrations(self.migrations),
@@ -85,7 +85,7 @@ pub enum MigrationType {
 }
 
 #[derive(Clone)]
-pub struct PgMigrate {
+pub struct C3p0Migrate {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
@@ -96,7 +96,7 @@ pub struct PgMigrate {
     >,
 }
 
-impl PgMigrate {
+impl C3p0Migrate {
     pub fn migrate(&self, c3p0: &C3p0) -> Result<(), C3p0MigrateError> {
         {
             let conn = c3p0.connection()?;
@@ -113,7 +113,7 @@ impl PgMigrate {
         self.repo.lock_table_exclusively(&conn)?;
 
         let migration_history = self.fetch_migrations_history(conn)?;
-        let migration_history = PgMigrate::clean_history(migration_history)?;
+        let migration_history = C3p0Migrate::clean_history(migration_history)?;
 
         for i in 0..self.migrations.len() {
             let migration = &self.migrations[i];

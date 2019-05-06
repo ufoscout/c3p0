@@ -4,8 +4,6 @@ use err_derive::Error;
 pub enum C3p0MigrateError {
     #[error(display = "C3p0Error: [{}]", cause)]
     C3p0Error { cause: c3p0::error::C3p0Error },
-    #[error(display = "PostgresError: [{}]", cause)]
-    PostgresError { cause: postgres::error::Error },
     #[error(display = "IteratorError: [{}]", message)]
     IteratorError { message: String },
     #[error(display = "CorruptedDbMigrationState: [{}]", message)]
@@ -16,12 +14,6 @@ pub enum C3p0MigrateError {
     WrongMigrationSet { message: String },
     #[error(display = "FileSystemError: [{}]", message)]
     FileSystemError { message: String },
-}
-
-impl From<postgres::error::Error> for C3p0MigrateError {
-    fn from(cause: postgres::error::Error) -> Self {
-        C3p0MigrateError::PostgresError { cause }
-    }
 }
 
 impl From<c3p0::error::C3p0Error> for C3p0MigrateError {

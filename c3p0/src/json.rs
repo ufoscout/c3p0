@@ -53,7 +53,7 @@ where
     }
 
     fn lock_table_exclusively(&self, conn: &Self::Conn) -> Result<(), C3p0Error> {
-        conn.execute(self.lock_table_exclusively_sql_query(), &[])?;
+        conn.batch_execute(self.lock_table_exclusively_sql_query())?;
         Ok(())
     }
 

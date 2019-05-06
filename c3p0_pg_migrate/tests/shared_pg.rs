@@ -1,3 +1,5 @@
+#![cfg(feature = "pg")]
+
 use c3p0::prelude::*;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use testcontainers::*;
