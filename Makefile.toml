@@ -7,7 +7,7 @@ script = [
   "cd ..",
   "cd ./c3p0_diesel        && cargo build",
   "cd ..",
-  "cd ./c3p0_pg_migrate    && cargo build",
+  "cd ./c3p0_migrate       && ./cargo.sh build",
   "cd ..",
 ]
 
@@ -20,7 +20,7 @@ script = [
   "cd ..",
   "cd ./c3p0_diesel        && cargo test",
   "cd ..",
-  "cd ./c3p0_pg_migrate    && cargo test",
+  "cd ./c3p0_migrate       && ./cargo.sh test",
   "cd ..",
 ]
 
@@ -33,7 +33,7 @@ script = [
   "cd .. && sleep 4",
   "cd ./c3p0_diesel        && cargo publish",
   "cd .. && sleep 4",
-  "cd ./c3p0_pg_migrate    && cargo publish",
+  "cd ./c3p0_migrate       && ./cargo.sh publish",
   "cd ..",
 ]
 
