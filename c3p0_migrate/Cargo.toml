@@ -1,5 +1,5 @@
 [package]
-name = "c3p0_pg_migrate"
+name = "c3p0_migrate"
 license = "MIT"
 version = "0.3.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
