@@ -16,13 +16,13 @@ use crate::shared_mysql::*;
 #[test]
 fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
-    let postgres_node = new_connection(&docker);
+    let node = new_connection(&docker);
 
     let migrate = C3p0MigrateBuilder::new().with_migrations(vec![]).build();
 
-    migrate.migrate(&postgres_node.0)?;
+    migrate.migrate(&node.0)?;
 
-    let conn = postgres_node.0.connection().unwrap();
+    let conn = node.0.connection().unwrap();
     assert!(conn
         .fetch_all_values::<i64>(
             &format!("select count(*) from {}", C3P0_MIGRATE_TABLE_DEFAULT),
@@ -36,7 +36,7 @@ fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<st
 #[test]
 fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
-    let postgres_node = new_connection(&docker);
+    let node = new_connection(&docker);
 
     let custom_name = "c3p0_custom_name";
 
@@ -45,9 +45,9 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std
         .with_migrations(vec![])
         .build();
 
-    migrate.migrate(&postgres_node.0)?;
+    migrate.migrate(&node.0)?;
 
-    let conn = postgres_node.0.connection().unwrap();
+    let conn = node.0.connection().unwrap();
     assert!(conn
         .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
         .is_ok());
@@ -58,8 +58,8 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std
 #[test]
 fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
-    let postgres_node = new_connection(&docker);
-    let c3p0 = postgres_node.0.clone();
+    let node = new_connection(&docker);
+    let c3p0 = node.0.clone();
 
     let custom_name = "c3p0_custom_name";
 
@@ -81,7 +81,7 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
 
     migrate.migrate(&c3p0)?;
 
-    let conn = postgres_node.0.connection().unwrap();
+    let conn = node.0.connection().unwrap();
 
     assert!(conn
         .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
@@ -103,8 +103,8 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
 #[test]
 fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
-    let postgres_node = new_connection(&docker);
-    let c3p0 = postgres_node.0.clone();
+    let node = new_connection(&docker);
+    let c3p0 = node.0.clone();
 
     let custom_name = "c3p0_custom_name";
 
@@ -120,7 +120,7 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
     migrate.migrate(&c3p0)?;
     migrate.migrate(&c3p0)?;
 
-    let conn = postgres_node.0.connection().unwrap();
+    let conn = node.0.connection().unwrap();
 
     assert!(conn
         .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
@@ -139,8 +139,8 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
 #[test]
 fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
-    let postgres_node = new_connection(&docker);
-    let c3p0 = postgres_node.0.clone();
+    let node = new_connection(&docker);
+    let c3p0 = node.0.clone();
 
     let custom_name = "c3p0_custom_name";
     let migrate = C3p0MigrateBuilder::new()
@@ -183,8 +183,8 @@ fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
 #[test]
 fn should_read_migrations_from_files() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
-    let postgres_node = new_connection(&docker);
-    let c3p0 = postgres_node.0.clone();
+    let node = new_connection(&docker);
+    let c3p0 = node.0.clone();
 
     let migrate = C3p0MigrateBuilder::new()
         .with_migrations(from_fs("./tests/migrations_00")?)
@@ -193,7 +193,7 @@ fn should_read_migrations_from_files() -> Result<(), Box<std::error::Error>> {
     migrate.migrate(&c3p0)?;
     migrate.migrate(&c3p0)?;
 
-    let conn = postgres_node.0.connection().unwrap();
+    let conn = node.0.connection().unwrap();
 
     assert_eq!(
         3,
