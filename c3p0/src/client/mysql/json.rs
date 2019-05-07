@@ -242,15 +242,15 @@ where
     }
 
     fn version_field_name(&self) -> &str {
-        &self.id_field_name
+        &self.version_field_name
     }
 
     fn data_field_name(&self) -> &str {
-        &self.id_field_name
+        &self.data_field_name
     }
 
     fn table_name(&self) -> &str {
-        &self.id_field_name
+        &self.table_name
     }
 
     fn schema_name(&self) -> &Option<String> {

@@ -127,7 +127,8 @@ where
         Ok(updated_model)
     }
 
-    fn save(&self, conn: &Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save<M: Into<NewModel<DATA>>>(&self, conn: &Self::Conn, data: M) -> Result<Model<DATA>, C3p0Error> {
+        let obj = data.into();
         let json_data = self.codec().to_value(&obj.data)?;
         let id = conn.fetch_one_value(self.save_sql_query(), &[&obj.version, &json_data])?;
         Ok(Model {
@@ -180,6 +181,14 @@ where
 {
     pub fn new(data: DATA) -> Self {
         NewModel { version: 0, data }
+    }
+}
+
+impl <DATA> From<DATA> for NewModel<DATA>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
+    fn from(data: DATA) -> Self {
+        NewModel::new(data)
     }
 }
 
@@ -252,7 +261,7 @@ where
         self.json_manager().delete_by_id(conn, *id.into())
     }
 
-    fn save(&self, conn: &DB::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save<M: Into<NewModel<DATA>>>(&self, conn: &DB::Conn, obj: M) -> Result<Model<DATA>, C3p0Error> {
         self.json_manager().save(conn, obj)
     }
 

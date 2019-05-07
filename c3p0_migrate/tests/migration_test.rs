@@ -94,8 +94,10 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
         .is_ok());
 
     let status = migrate.fetch_migrations_history(&conn).unwrap();
-    assert_eq!(2, status.len());
-    assert_eq!("first", status.get(0).unwrap().data.migration_id);
+    assert_eq!(3, status.len());
+    assert_eq!("C3P0_INIT_MIGRATION", status.get(0).unwrap().data.migration_id);
+    assert_eq!("first", status.get(1).unwrap().data.migration_id);
+    assert_eq!("second", status.get(2).unwrap().data.migration_id);
 
     Ok(())
 }
@@ -130,8 +132,9 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
         .is_ok());
 
     let status = migrate.fetch_migrations_history(&conn).unwrap();
-    assert_eq!(1, status.len());
-    assert_eq!("first", status.get(0).unwrap().data.migration_id);
+    assert_eq!(2, status.len());
+    assert_eq!("C3P0_INIT_MIGRATION", status.get(0).unwrap().data.migration_id);
+    assert_eq!("first", status.get(1).unwrap().data.migration_id);
 
     Ok(())
 }
@@ -174,8 +177,9 @@ fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
     let status = migrate
         .fetch_migrations_history(&c3p0.connection().unwrap())
         .unwrap();
-    assert_eq!(1, status.len());
-    assert_eq!("first", status.get(0).unwrap().data.migration_id);
+    assert_eq!(2, status.len());
+    assert_eq!("C3P0_INIT_MIGRATION", status.get(0).unwrap().data.migration_id);
+    assert_eq!("first", status.get(1).unwrap().data.migration_id);
 
     Ok(())
 }
@@ -201,9 +205,10 @@ fn should_read_migrations_from_files() -> Result<(), Box<std::error::Error>> {
     );
 
     let status = migrate.fetch_migrations_history(&conn).unwrap();
-    assert_eq!(2, status.len());
-    assert_eq!("00010_create_test_data", status[0].data.migration_id);
-    assert_eq!("00011_insert_test_data", status[1].data.migration_id);
+    assert_eq!(3, status.len());
+    assert_eq!("C3P0_INIT_MIGRATION", status[0].data.migration_id);
+    assert_eq!("00010_create_test_data", status[1].data.migration_id);
+    assert_eq!("00011_insert_test_data", status[2].data.migration_id);
 
     Ok(())
 }

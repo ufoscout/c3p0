@@ -2,6 +2,7 @@ use crate::error::C3p0MigrateError;
 use crate::migration::{Migration, Migrations};
 use crate::sql_migration::{to_sql_migrations, SqlMigration};
 use c3p0::json::codec::DefaultJsonCodec;
+use c3p0::json::JsonManagerBase;
 use c3p0::prelude::*;
 use log::*;
 use serde_derive::{Deserialize, Serialize};
@@ -80,6 +81,7 @@ pub struct MigrationData {
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub enum MigrationType {
+    C3P0INIT,
     UP,
     DOWN,
 }
@@ -96,6 +98,8 @@ pub struct C3p0Migrate {
     >,
 }
 
+const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
+
 impl C3p0Migrate {
     pub fn migrate(&self, c3p0: &C3p0) -> Result<(), C3p0MigrateError> {
         {
@@ -105,12 +109,46 @@ impl C3p0Migrate {
             };
         }
 
+        // Start Migration
+        c3p0.transaction(|conn| Ok(self.create_migration_zero(conn)?))
+            .map_err(C3p0MigrateError::from)?;
+
+        // Start Migration
         c3p0.transaction(|conn| Ok(self.start_migration(conn)?))
             .map_err(C3p0MigrateError::from)
     }
 
-    fn start_migration(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
+    fn create_migration_zero(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
         self.repo.lock_table_exclusively(&conn)?;
+
+        let count: i64 = conn.fetch_one_value(
+            &format!(r#"select count(*) from {} where {}->>'migration_id' = $1"#,
+                     self.repo.json_manager().qualified_table_name(),
+                     self.repo.json_manager().data_field_name())
+            , &[&C3P0_INIT_MIGRATION_ID])?;
+
+        if count == 0 {
+            let migration_zero = MigrationData {
+                md5_checksum: "".to_owned(),
+                migration_id: C3P0_INIT_MIGRATION_ID.to_owned(),
+                migration_type: MigrationType::C3P0INIT,
+                execution_time_ms: 0,
+                installed_on_epoch_ms: 0,
+                success: true
+            };
+            self.repo.save(&conn, migration_zero)?;
+        };
+
+        Ok(())
+    }
+
+    fn start_migration(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
+
+        conn.fetch_one(
+            &format!(r#"select * from {} where {}->>'migration_id' = $1 FOR UPDATE"#,
+                     self.repo.json_manager().qualified_table_name(),
+                     self.repo.json_manager().data_field_name()),
+            &[&C3P0_INIT_MIGRATION_ID], |_row|{Ok(())})?;
 
         let migration_history = self.fetch_migrations_history(conn)?;
         let migration_history = C3p0Migrate::clean_history(migration_history)?;
@@ -176,7 +214,7 @@ impl C3p0Migrate {
             match migration.data.migration_type {
                 MigrationType::UP => {
                     result.push(migration);
-                }
+                },
                 MigrationType::DOWN => {
                     let last = result.remove(result.len() - 1);
                     if !migration.data.migration_id.eq(&last.data.migration_id)
@@ -186,7 +224,8 @@ impl C3p0Migrate {
                             message: "Migration history is not valid!!".to_owned(),
                         });
                     }
-                }
+                },
+                MigrationType::C3P0INIT => {}
             }
         }
 

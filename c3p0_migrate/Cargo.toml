@@ -37,7 +37,7 @@ r2d2_postgres = { version = "0.14" }
 
 
 [features]
-default = []
+default = ["pg"]
 
 mysql = ["c3p0/mysql"]
 pg = ["c3p0/pg"]
