@@ -91,7 +91,7 @@ mod test {
         assert_eq!("00011_insert_test_data", migrations.migrations[1].id);
         assert!(migrations.migrations[1]
             .up
-            .contains("INSERT INTO TEST_TABLE (name) VALUES ('one');"));
+            .contains("INSERT INTO TEST_TABLE (id, name) VALUES ('one', 'one');"));
         assert!(migrations.migrations[1]
             .down
             .contains("delete from TEST_TABLE;"));

@@ -95,7 +95,10 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
 
     let status = migrate.fetch_migrations_history(&conn).unwrap();
     assert_eq!(3, status.len());
-    assert_eq!("C3P0_INIT_MIGRATION", status.get(0).unwrap().data.migration_id);
+    assert_eq!(
+        "C3P0_INIT_MIGRATION",
+        status.get(0).unwrap().data.migration_id
+    );
     assert_eq!("first", status.get(1).unwrap().data.migration_id);
     assert_eq!("second", status.get(2).unwrap().data.migration_id);
 
@@ -133,12 +136,16 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
 
     let status = migrate.fetch_migrations_history(&conn).unwrap();
     assert_eq!(2, status.len());
-    assert_eq!("C3P0_INIT_MIGRATION", status.get(0).unwrap().data.migration_id);
+    assert_eq!(
+        "C3P0_INIT_MIGRATION",
+        status.get(0).unwrap().data.migration_id
+    );
     assert_eq!("first", status.get(1).unwrap().data.migration_id);
 
     Ok(())
 }
 
+#[cfg(not(feature = "mysql"))]
 #[test]
 fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
@@ -164,21 +171,30 @@ fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
         let handle = std::thread::spawn(move || {
             //println!("Thread [{:?}] - {} started", std::thread::current().id(), i);
             let result = migrate.migrate(&pool_clone);
-            //println!("Thread [{:?}] - {} completed: {:?}", std::thread::current().id(), i, result);
+            println!(
+                "Thread [{:?}] - completed: {:?}",
+                std::thread::current().id(),
+                result
+            );
             assert!(result.is_ok());
         });
         threads.push(handle);
     }
 
     for handle in threads {
-        handle.join().unwrap();
+        let result = handle.join();
+        println!("thread result: \n{:?}", result);
+        result.unwrap();
     }
 
     let status = migrate
         .fetch_migrations_history(&c3p0.connection().unwrap())
         .unwrap();
     assert_eq!(2, status.len());
-    assert_eq!("C3P0_INIT_MIGRATION", status.get(0).unwrap().data.migration_id);
+    assert_eq!(
+        "C3P0_INIT_MIGRATION",
+        status.get(0).unwrap().data.migration_id
+    );
     assert_eq!("first", status.get(1).unwrap().data.migration_id);
 
     Ok(())

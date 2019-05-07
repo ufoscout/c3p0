@@ -36,7 +36,10 @@ impl C3p0MigrateBuilder {
         Default::default()
     }
 
-    pub fn with_schema_name<T: Into<Option<String>>>(mut self, schema_name: T) -> C3p0MigrateBuilder {
+    pub fn with_schema_name<T: Into<Option<String>>>(
+        mut self,
+        schema_name: T,
+    ) -> C3p0MigrateBuilder {
         self.schema = schema_name.into();
         self
     }
@@ -121,11 +124,21 @@ impl C3p0Migrate {
     fn create_migration_zero(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
         self.repo.lock_table_exclusively(&conn)?;
 
-        let count: i64 = conn.fetch_one_value(
-            &format!(r#"select count(*) from {} where {}->>'migration_id' = $1"#,
-                     self.repo.json_manager().qualified_table_name(),
-                     self.repo.json_manager().data_field_name())
-            , &[&C3P0_INIT_MIGRATION_ID])?;
+        #[cfg(feature = "mysql")]
+        let sql = format!(
+            r#"select count(*) from {} where JSON_EXTRACT({}, "$.migration_id") = ?"#,
+            self.repo.json_manager().qualified_table_name(),
+            self.repo.json_manager().data_field_name()
+        );
+
+        #[cfg(feature = "pg")]
+        let sql = format!(
+            r#"select count(*) from {} where {}->>'migration_id' = $1"#,
+            self.repo.json_manager().qualified_table_name(),
+            self.repo.json_manager().data_field_name()
+        );
+
+        let count: i64 = conn.fetch_one_value(&sql, &[&C3P0_INIT_MIGRATION_ID])?;
 
         if count == 0 {
             let migration_zero = MigrationData {
@@ -134,21 +147,30 @@ impl C3p0Migrate {
                 migration_type: MigrationType::C3P0INIT,
                 execution_time_ms: 0,
                 installed_on_epoch_ms: 0,
-                success: true
+                success: true,
             };
-            self.repo.save(&conn, migration_zero)?;
+            self.repo.save(&conn, migration_zero.into())?;
         };
 
         Ok(())
     }
 
     fn start_migration(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
+        #[cfg(feature = "mysql")]
+        let lock_sql = format!(
+            r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ? FOR UPDATE"#,
+            self.repo.json_manager().qualified_table_name(),
+            self.repo.json_manager().data_field_name()
+        );
 
-        conn.fetch_one(
-            &format!(r#"select * from {} where {}->>'migration_id' = $1 FOR UPDATE"#,
-                     self.repo.json_manager().qualified_table_name(),
-                     self.repo.json_manager().data_field_name()),
-            &[&C3P0_INIT_MIGRATION_ID], |_row|{Ok(())})?;
+        #[cfg(feature = "pg")]
+        let lock_sql = format!(
+            r#"select * from {} where {}->>'migration_id' = $1 FOR UPDATE"#,
+            self.repo.json_manager().qualified_table_name(),
+            self.repo.json_manager().data_field_name()
+        );
+
+        conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))?;
 
         let migration_history = self.fetch_migrations_history(conn)?;
         let migration_history = C3p0Migrate::clean_history(migration_history)?;
@@ -214,7 +236,7 @@ impl C3p0Migrate {
             match migration.data.migration_type {
                 MigrationType::UP => {
                     result.push(migration);
-                },
+                }
                 MigrationType::DOWN => {
                     let last = result.remove(result.len() - 1);
                     if !migration.data.migration_id.eq(&last.data.migration_id)
@@ -224,7 +246,7 @@ impl C3p0Migrate {
                             message: "Migration history is not valid!!".to_owned(),
                         });
                     }
-                },
+                }
                 MigrationType::C3P0INIT => {}
             }
         }
