@@ -28,8 +28,8 @@ r2d2 = "0.8"
 testcontainers = "0.6"
 
 # mysql feature
-mysql_client = { package = "mysql", version = "15" }
-r2d2_mysql = { version = "15.0" }
+mysql_client = { package = "mysql", version = "16" }
+r2d2_mysql = { version = "16.0" }
 
 # pg feature
 postgres = { version = "0.15" }
