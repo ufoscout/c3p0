@@ -16,6 +16,8 @@ pub type Connection<'a> = mysql::pool::Connection<'a>;
 #[cfg(feature = "mysql")]
 pub type C3p0 = mysql::pool::C3p0MySql;
 
+// ------------------------------- //
+
 #[cfg(feature = "pg")]
 mod pg;
 
@@ -33,5 +35,27 @@ pub type Row<'a> = pg::pool::Row<'a>;
 pub type Connection = pg::pool::Connection;
 #[cfg(feature = "pg")]
 pub type C3p0 = pg::pool::C3p0Pg;
+
+// ------------------------------- //
+
+#[cfg(feature = "sqlite")]
+mod sqlite;
+
+#[cfg(feature = "sqlite")]
+pub type C3p0Builder = sqlite::pool::C3p0SqliteBuilder;
+#[cfg(feature = "sqlite")]
+pub type JsonManager<'a, DATA, CODEC> = sqlite::json::SqliteJsonManager<'a, DATA, CODEC>;
+#[cfg(feature = "sqlite")]
+pub type JsonManagerBuilder<DATA, CODEC> = sqlite::json::SqliteJsonManagerBuilder<DATA, CODEC>;
+#[cfg(feature = "sqlite")]
+pub type ToSql = sqlite::pool::ToSql;
+#[cfg(feature = "sqlite")]
+pub type Row<'a> = sqlite::pool::Row<'a>;
+#[cfg(feature = "sqlite")]
+pub type Connection = sqlite::pool::Connection;
+#[cfg(feature = "sqlite")]
+pub type C3p0 = sqlite::pool::C3p0Sqlite;
+
+// ------------------------------- //
 
 pub const NO_PARAMS: &[&ToSql] = &[];
