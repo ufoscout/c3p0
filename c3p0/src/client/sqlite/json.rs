@@ -1,4 +1,3 @@
-use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::json::codec::DefaultJsonCodec;
 use crate::json::{codec::JsonCodec, JsonManagerBase, Model};
@@ -316,9 +315,7 @@ where
 }
 
 fn get_or_error<T: rusqlite::types::FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
-    row.get_opt(index)
-        .ok_or_else(|| C3p0Error::SqlError {
-            cause: format!("Row contains no values for index {}", index),
-        })?
-        .map_err(into_c3p0_error)
+    row.get(index).map_err(|err| C3p0Error::SqlError {
+        cause: format!("Row contains no values for index {}. Err: {}", index, err),
+    })
 }

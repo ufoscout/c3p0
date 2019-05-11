@@ -36,14 +36,14 @@ impl C3p0Base for C3p0Sqlite {
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {
-        let conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
+        let mut conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
             cause: format!("{}", err),
         })?;
-        let sql_executor = SqliteConnection { conn };
+        let mut sql_executor = SqliteConnection { conn };
 
         let transaction = sql_executor.conn.transaction().map_err(into_c3p0_error)?;
 
-        (tx)(&sql_executor)
+        transaction.execute_batch()(tx)(&sql_executor)
             .map_err(|err| C3p0Error::TransactionError { cause: err })
             .and_then(move |result| {
                 transaction
@@ -64,7 +64,7 @@ impl crate::pool::ConnectionBase for SqliteConnection {
     }
 
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
-        self.conn.batch_execute(sql).map_err(into_c3p0_error)
+        self.conn.execute_batch(sql).map_err(into_c3p0_error)
     }
 
     fn fetch_one_value<T: FromSql>(&self, sql: &str, params: &[&ToSql]) -> Result<T, C3p0Error> {
@@ -87,16 +87,19 @@ impl crate::pool::ConnectionBase for SqliteConnection {
         params: &[&ToSql],
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
-        let stmt = self.conn.prepare(sql).map_err(into_c3p0_error)?;
-        stmt.query(params)
-            .map_err(into_c3p0_error)?
-            .iter()
-            .next()
-            .map(|row| mapper(&row))
-            .transpose()
+        let mut stmt = self.conn.prepare(sql).map_err(into_c3p0_error)?;
+
+        let mut rows = stmt
+            .query_and_then(params, |row| {
+                mapper(row).map_err(|err| C3p0Error::RowMapperError {
+                    cause: format!("{}", err),
+                })
+            })
             .map_err(|err| C3p0Error::RowMapperError {
                 cause: format!("{}", err),
-            })
+            })?;
+
+        rows.next().transpose()
     }
 
     fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
@@ -105,15 +108,21 @@ impl crate::pool::ConnectionBase for SqliteConnection {
         params: &[&ToSql],
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
-        let stmt = self.conn.prepare(sql).map_err(into_c3p0_error)?;
-        stmt.query(params)
-            .map_err(into_c3p0_error)?
-            .iter()
-            .map(|row| mapper(&row))
-            .collect::<Result<Vec<T>, Box<std::error::Error>>>()
+        let mut stmt = self.conn.prepare(sql).map_err(into_c3p0_error)?;
+        let rows = stmt
+            .query_and_then(params, |row| mapper(row))
             .map_err(|err| C3p0Error::RowMapperError {
                 cause: format!("{}", err),
-            })
+            })?;
+
+        let mut result = vec![];
+        for row in rows {
+            result.push(row.map_err(|err| C3p0Error::RowMapperError {
+                cause: format!("{}", err),
+            })?)
+        }
+
+        Ok(result)
     }
 
     fn fetch_all_values<T: FromSql>(
@@ -126,8 +135,8 @@ impl crate::pool::ConnectionBase for SqliteConnection {
 }
 
 fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, Box<std::error::Error>> {
-    let result = row
-        .get_opt(0)
-        .ok_or_else(|| C3p0Error::ResultNotFoundError)?;
-    Ok(result?)
+    let result = row.get(0).map_err(|err| C3p0Error::RowMapperError {
+        cause: format!("{}", err),
+    })?;
+    Ok(result)
 }

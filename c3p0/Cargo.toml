@@ -13,6 +13,7 @@ keywords = ["mysql", "postgres", "pg", "json", "diesel"]
 [dependencies]
 err-derive = "0.1"
 log = "0.4"
+#maybe-owned = "0.3"
 r2d2 = "0.8"
 serde = "1.0"
 serde_derive = "1.0"
@@ -27,8 +28,9 @@ postgres = { version = "0.15", features = ["with-serde_json"], optional = true  
 r2d2_postgres = { version = "0.14", optional = true }
 
 # sqlite feature
-rusqlite = { version = "0.17", features = ["bundled", "serde_json"], optional = true  }
+rusqlite = { version = "0.17", features = ["bundled", "serde_json", "functions"], optional = true  }
 r2d2_sqlite = { version = "0.9", optional = true }
+
 
 [dev-dependencies]
 lazy_static = "1.3"
