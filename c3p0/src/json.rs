@@ -1,7 +1,7 @@
 use crate::client::Row;
 use crate::error::C3p0Error;
 use crate::json::codec::JsonCodec;
-use crate::pool::ConnectionBase;
+use crate::pool::{ConnectionBase, ExecuteResult};
 use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
 
@@ -79,7 +79,7 @@ where
         })
     }
 
-    fn delete(&self, conn: &Self::Conn, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &Self::Conn, obj: &Model<DATA>) -> Result<ExecuteResult, C3p0Error> {
         let result = conn.execute(self.delete_sql_query(), &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -91,11 +91,11 @@ where
         Ok(result)
     }
 
-    fn delete_all(&self, conn: &Self::Conn) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &Self::Conn) -> Result<ExecuteResult, C3p0Error> {
         conn.execute(self.delete_all_sql_query(), &[])
     }
 
-    fn delete_by_id(&self, conn: &Self::Conn, id: i64) -> Result<u64, C3p0Error> {
+    fn delete_by_id(&self, conn: &Self::Conn, id: i64) -> Result<ExecuteResult, C3p0Error> {
         conn.execute(self.delete_by_id_sql_query(), &[&id])
     }
 
@@ -127,11 +127,7 @@ where
         Ok(updated_model)
     }
 
-    fn save(
-        &self,
-        conn: &Self::Conn,
-        obj: NewModel<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
         let id = conn.fetch_one_value(self.save_sql_query(), &[&obj.version, &json_data])?;
         Ok(Model {
@@ -249,11 +245,11 @@ where
         self.json_manager().find_by_id(conn, *id.into())
     }
 
-    fn delete(&self, conn: &DB::Conn, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &DB::Conn, obj: &Model<DATA>) -> Result<ExecuteResult, C3p0Error> {
         self.json_manager().delete(conn, obj)
     }
 
-    fn delete_all(&self, conn: &DB::Conn) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &DB::Conn) -> Result<ExecuteResult, C3p0Error> {
         self.json_manager().delete_all(conn)
     }
 
@@ -261,15 +257,11 @@ where
         &'a self,
         conn: &DB::Conn,
         id: ID,
-    ) -> Result<u64, C3p0Error> {
+    ) -> Result<ExecuteResult, C3p0Error> {
         self.json_manager().delete_by_id(conn, *id.into())
     }
 
-    fn save(
-        &self,
-        conn: &DB::Conn,
-        obj: NewModel<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &DB::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         self.json_manager().save(conn, obj)
     }
 

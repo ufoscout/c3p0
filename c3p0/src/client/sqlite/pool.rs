@@ -1,9 +1,9 @@
 use super::error::into_c3p0_error;
 use crate::error::C3p0Error;
 use crate::pool::C3p0Base;
-use rusqlite::types::FromSql;
 use r2d2::{Pool, PooledConnection};
 use r2d2_sqlite::SqliteConnectionManager;
+use rusqlite::types::FromSql;
 
 pub type ToSql = rusqlite::types::ToSql;
 pub type Row<'a> = rusqlite::Row<'a>;
@@ -59,7 +59,7 @@ pub struct SqliteConnection {
 }
 
 impl crate::pool::ConnectionBase for SqliteConnection {
-    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
+    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<usize, C3p0Error> {
         self.conn.execute(sql, params).map_err(into_c3p0_error)
     }
 

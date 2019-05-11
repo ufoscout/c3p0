@@ -27,7 +27,7 @@ postgres = { version = "0.15", features = ["with-serde_json"], optional = true  
 r2d2_postgres = { version = "0.14", optional = true }
 
 # sqlite feature
-rusqlite = { version = "0.17", features = ["bundled"], optional = true  }
+rusqlite = { version = "0.17", features = ["bundled", "serde_json"], optional = true  }
 r2d2_sqlite = { version = "0.9", optional = true }
 
 [dev-dependencies]
