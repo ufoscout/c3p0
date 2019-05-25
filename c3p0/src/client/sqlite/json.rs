@@ -190,7 +190,7 @@ where
             create_table_sql_query: format!(
                 r#"
                 CREATE TABLE IF NOT EXISTS {} (
-                    {} integer primary key not null,
+                    {} integer primary key autoincrement,
                     {} integer not null,
                     {} JSON
                 )
