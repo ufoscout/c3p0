@@ -106,6 +106,12 @@ fn should_upgrade_structs_on_load() {
         assert!(jpo_v1.delete_all(&conn).is_ok());
 
         let user_v1 = jpo_v1.save(&conn, new_user_v1.clone()).unwrap();
+        println!("user id is {}", user_v1.id);
+        println!("total users: {}", jpo_v1.count_all(&conn).unwrap());
+        println!(
+            "select all users len: {}",
+            jpo_v1.find_all(&conn).unwrap().len()
+        );
 
         let user_v2_found = jpo_v2.find_by_id(&conn, &user_v1.id).unwrap();
         assert!(user_v2_found.is_some());

@@ -1,7 +1,9 @@
 use crate::error::C3p0Error;
 use crate::json::codec::DefaultJsonCodec;
-use crate::json::{codec::JsonCodec, JsonManagerBase, Model};
+use crate::json::{codec::JsonCodec, JsonManagerBase, Model, NewModel};
+use crate::pool::ConnectionBase;
 use crate::types::OptString;
+
 use rusqlite::Row;
 
 #[derive(Clone)]
@@ -137,7 +139,7 @@ where
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
             exists_by_id_sql_query: format!(
-                "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = $1)",
+                "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = ?)",
                 qualified_table_name, self.id_field_name,
             ),
 
@@ -151,7 +153,7 @@ where
             ),
 
             find_by_id_sql_query: format!(
-                "SELECT {}, {}, {} FROM {} WHERE {} = $1 LIMIT 1",
+                "SELECT {}, {}, {} FROM {} WHERE {} = ? LIMIT 1",
                 self.id_field_name,
                 self.version_field_name,
                 self.data_field_name,
@@ -160,27 +162,24 @@ where
             ),
 
             delete_sql_query: format!(
-                "DELETE FROM {} WHERE {} = $1 AND {} = $2",
+                "DELETE FROM {} WHERE {} = ? AND {} = ?",
                 qualified_table_name, self.id_field_name, self.version_field_name,
             ),
 
             delete_all_sql_query: format!("DELETE FROM {}", qualified_table_name,),
 
             delete_by_id_sql_query: format!(
-                "DELETE FROM {} WHERE {} = $1",
+                "DELETE FROM {} WHERE {} = ?",
                 qualified_table_name, self.id_field_name,
             ),
 
             save_sql_query: format!(
-                "INSERT INTO {} ({}, {}) VALUES ($1, $2) RETURNING {}",
-                qualified_table_name,
-                self.version_field_name,
-                self.data_field_name,
-                self.id_field_name
+                "INSERT INTO {} ({}, {}) VALUES (?, ?)",
+                qualified_table_name, self.version_field_name, self.data_field_name
             ),
 
             update_sql_query: format!(
-                "UPDATE {} SET {} = $1, {} = $2 WHERE {} = $3 AND {} = $4",
+                "UPDATE {} SET {} = ?, {} = ? WHERE {} = ? AND {} = ?",
                 qualified_table_name,
                 self.version_field_name,
                 self.data_field_name,
@@ -191,9 +190,9 @@ where
             create_table_sql_query: format!(
                 r#"
                 CREATE TABLE IF NOT EXISTS {} (
-                    {} bigserial primary key,
-                    {} int not null,
-                    {} JSONB
+                    {} integer primary key not null,
+                    {} integer not null,
+                    {} JSON
                 )
                 "#,
                 qualified_table_name,
@@ -311,6 +310,21 @@ where
 
     fn lock_table_exclusively_sql_query(&self) -> &str {
         &self.lock_table_exclusively_sql_query
+    }
+
+    fn save(&self, conn: &Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        let json_data = self.codec.to_value(&obj.data)?;
+        {
+            conn.execute(&self.save_sql_query, &[&obj.version, &json_data])?;
+        }
+
+        let id = { conn.fetch_one_value("SELECT last_insert_rowid()", &[])? };
+
+        Ok(Model {
+            id,
+            version: obj.version,
+            data: obj.data,
+        })
     }
 }
 

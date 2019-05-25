@@ -3,6 +3,7 @@
 declare -a features=(
     "pg"
     "mysql"
+    "sqlite"
 )
 
 for i in "${features[@]}"
