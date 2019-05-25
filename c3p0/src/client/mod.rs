@@ -52,7 +52,7 @@ pub type ToSql = sqlite::pool::ToSql;
 #[cfg(feature = "sqlite")]
 pub type Row<'a> = sqlite::pool::Row<'a>;
 #[cfg(feature = "sqlite")]
-pub type Connection = sqlite::pool::Connection;
+pub type Connection<'a> = sqlite::pool::Connection<'a>;
 #[cfg(feature = "sqlite")]
 pub type C3p0 = sqlite::pool::C3p0Sqlite;
 

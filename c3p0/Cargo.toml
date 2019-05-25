@@ -8,12 +8,11 @@ edition = "2018"
 readme = "../README.md"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
-keywords = ["mysql", "postgres", "pg", "json", "diesel"]
+keywords = ["mysql", "postgres", "pg", "sqlite", "json", "diesel"]
 
 [dependencies]
 err-derive = "0.1"
 log = "0.4"
-#maybe-owned = "0.3"
 r2d2 = "0.8"
 serde = "1.0"
 serde_derive = "1.0"
@@ -38,7 +37,7 @@ maybe-single = "0.1"
 testcontainers = "0.6"
 
 [features]
-default = []
+default = ["sqlite"]
 
 mysql = ["mysql_client", "r2d2_mysql"]
 pg = ["postgres", "r2d2_postgres"]

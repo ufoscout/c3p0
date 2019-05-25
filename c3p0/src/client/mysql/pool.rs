@@ -46,13 +46,14 @@ impl C3p0Base for C3p0MySql {
         let transaction = conn
             .start_transaction(true, None, None)
             .map_err(into_c3p0_error)?;
-        let transaction = RefCell::new(transaction);
+
         let result = {
-            let mut sql_executor = MySqlConnection::Tx(transaction);
+            let mut sql_executor = MySqlConnection::Tx(RefCell::new(transaction));
             let result = (tx)(&mut sql_executor)
                 .map_err(|err| C3p0Error::TransactionError { cause: err })?;
             (result, sql_executor)
         };
+
         match result.1 {
             MySqlConnection::Tx(tx) => {
                 tx.into_inner().commit().map_err(into_c3p0_error)?;

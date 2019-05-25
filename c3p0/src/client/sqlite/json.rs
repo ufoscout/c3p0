@@ -225,7 +225,7 @@ impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManagerBase<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type Conn = crate::client::sqlite::pool::SqliteConnection;
+    type Conn = crate::client::sqlite::pool::SqliteConnection<'a>;
 
     fn codec(&self) -> &CODEC {
         &self.codec
