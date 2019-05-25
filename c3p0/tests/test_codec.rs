@@ -13,6 +13,11 @@ mod shared_mysql;
 #[cfg(feature = "mysql")]
 use crate::shared_mysql::*;
 
+#[cfg(feature = "sqlite")]
+mod shared_sqlite;
+#[cfg(feature = "sqlite")]
+use crate::shared_sqlite::*;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 struct UserVersion1 {
     pub username: String,
