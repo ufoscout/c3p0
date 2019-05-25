@@ -10,6 +10,11 @@ mod shared_mysql;
 #[cfg(feature = "mysql")]
 use crate::shared_mysql::*;
 
+#[cfg(feature = "sqlite")]
+mod shared_sqlite;
+#[cfg(feature = "sqlite")]
+use crate::shared_sqlite::*;
+
 #[test]
 fn should_create_and_drop_table() {
     SINGLETON.get(|(pool, _)| {

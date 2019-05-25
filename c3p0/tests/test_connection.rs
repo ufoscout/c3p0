@@ -1,3 +1,4 @@
+use c3p0::client::Row;
 use c3p0::prelude::*;
 
 #[cfg(feature = "pg")]
@@ -9,7 +10,11 @@ use crate::shared_pg::*;
 mod shared_mysql;
 #[cfg(feature = "mysql")]
 use crate::shared_mysql::*;
-use c3p0::client::Row;
+
+#[cfg(feature = "sqlite")]
+mod shared_sqlite;
+#[cfg(feature = "sqlite")]
+use crate::shared_sqlite::*;
 
 #[test]
 fn should_execute_and_fetch() {
@@ -35,7 +40,7 @@ fn should_execute_and_fetch() {
 
         #[cfg(feature = "pg")]
         let insert = r"INSERT INTO TEST_TABLE (name) VALUES ($1)";
-        #[cfg(feature = "mysql")]
+        #[cfg(any(feature = "mysql", feature = "sqlite"))]
         let insert = r"INSERT INTO TEST_TABLE (name) VALUES (?)";
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
@@ -56,7 +61,11 @@ fn should_execute_and_fetch() {
             let value: String = row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?;
             Ok(value)
         };
-
+        #[cfg(feature = "sqlite")]
+        let mapper = |row: &Row| {
+            let value: String = row.get(0)?;
+            Ok(value)
+        };
         let fetch_result_1 =
             conn.fetch_one(r"SELECT * FROM TEST_TABLE WHERE name = 'one'", &[], mapper);
         assert!(fetch_result_1.is_ok());
@@ -88,7 +97,7 @@ fn should_execute_and_fetch_option() {
 
         #[cfg(feature = "pg")]
         let insert = r"INSERT INTO TEST_TABLE (name) VALUES ($1)";
-        #[cfg(feature = "mysql")]
+        #[cfg(any(feature = "mysql", feature = "sqlite"))]
         let insert = r"INSERT INTO TEST_TABLE (name) VALUES (?)";
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
@@ -97,6 +106,8 @@ fn should_execute_and_fetch_option() {
         let mapper = |row: &Row| Ok(row.get(0));
         #[cfg(feature = "mysql")]
         let mapper = |row: &Row| Ok(row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?);
+        #[cfg(feature = "sqlite")]
+        let mapper = |row: &Row| Ok(row.get(0)?);
 
         let fetch_result =
             conn.fetch_one_option(r"SELECT * FROM TEST_TABLE WHERE name = 'one'", &[], mapper);

@@ -10,6 +10,11 @@ mod shared_mysql;
 #[cfg(feature = "mysql")]
 use crate::shared_mysql::*;
 
+#[cfg(feature = "sqlite")]
+mod shared_sqlite;
+#[cfg(feature = "sqlite")]
+use crate::shared_sqlite::*;
+
 #[test]
 fn should_commit_transaction() {
     SINGLETON.get(|(pool, _)| {

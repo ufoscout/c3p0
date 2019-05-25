@@ -1,3 +1,4 @@
+use c3p0::json::codec::DefaultJsonCodec;
 use c3p0::prelude::*;
 
 #[cfg(feature = "pg")]
@@ -9,7 +10,11 @@ use crate::shared_pg::*;
 mod shared_mysql;
 #[cfg(feature = "mysql")]
 use crate::shared_mysql::*;
-use c3p0::json::codec::DefaultJsonCodec;
+
+#[cfg(feature = "sqlite")]
+mod shared_sqlite;
+#[cfg(feature = "sqlite")]
+use crate::shared_sqlite::*;
 
 struct TestTableRepository<'a> {
     conf: JsonManager<'a, TestData, DefaultJsonCodec>,
