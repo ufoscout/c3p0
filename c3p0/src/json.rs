@@ -40,7 +40,6 @@ where
 
     fn create_table_sql_query(&self) -> &str;
     fn drop_table_sql_query(&self) -> &str;
-    fn lock_table_exclusively_sql_query(&self) -> &str;
 
     fn create_table_if_not_exists(&self, conn: &Self::Conn) -> Result<(), C3p0Error> {
         conn.execute(self.create_table_sql_query(), &[])?;
@@ -49,11 +48,6 @@ where
 
     fn drop_table_if_exists(&self, conn: &Self::Conn) -> Result<(), C3p0Error> {
         conn.execute(self.drop_table_sql_query(), &[])?;
-        Ok(())
-    }
-
-    fn lock_table_exclusively(&self, conn: &Self::Conn) -> Result<(), C3p0Error> {
-        conn.batch_execute(self.lock_table_exclusively_sql_query())?;
         Ok(())
     }
 
@@ -215,10 +209,6 @@ where
 
     fn drop_table_if_exists(&self, conn: &DB::Conn) -> Result<(), C3p0Error> {
         self.json_manager().drop_table_if_exists(conn)
-    }
-
-    fn lock_table_exclusively(&self, conn: &DB::Conn) -> Result<(), C3p0Error> {
-        self.json_manager().lock_table_exclusively(conn)
     }
 
     fn count_all(&self, conn: &DB::Conn) -> Result<IdType, C3p0Error> {

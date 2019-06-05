@@ -122,9 +122,26 @@ impl C3p0Migrate {
     }
 
     fn create_migration_zero(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
-        self.repo.lock_table_exclusively(&conn)?;
+
+        #[cfg(feature = "pg")]
+        {
+            conn.batch_execute(&format!(
+                "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
+                self.repo.json_manager().qualified_table_name()
+            ))?;
+        };
 
         #[cfg(feature = "mysql")]
+            {
+                conn.batch_execute(&format!(
+                    "LOCK TABLES {} WRITE",
+                    self.repo.json_manager().qualified_table_name()
+                ))?;
+
+            };
+
+
+        #[cfg(any(feature = "mysql", feature = "sqlite"))]
         let sql = format!(
             r#"select count(*) from {} where JSON_EXTRACT({}, "$.migration_id") = ?"#,
             self.repo.json_manager().qualified_table_name(),
@@ -156,6 +173,7 @@ impl C3p0Migrate {
     }
 
     fn start_migration(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
+
         #[cfg(feature = "mysql")]
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ? FOR UPDATE"#,
@@ -166,6 +184,13 @@ impl C3p0Migrate {
         #[cfg(feature = "pg")]
         let lock_sql = format!(
             r#"select * from {} where {}->>'migration_id' = $1 FOR UPDATE"#,
+            self.repo.json_manager().qualified_table_name(),
+            self.repo.json_manager().data_field_name()
+        );
+
+        #[cfg(feature = "sqlite")]
+        let lock_sql = format!(
+            r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ?"#,
             self.repo.json_manager().qualified_table_name(),
             self.repo.json_manager().data_field_name()
         );

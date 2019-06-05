@@ -13,6 +13,12 @@ mod shared_mysql;
 #[cfg(feature = "mysql")]
 use crate::shared_mysql::*;
 
+#[cfg(feature = "sqlite")]
+mod shared_sqlite;
+#[cfg(feature = "sqlite")]
+use crate::shared_sqlite::*;
+
+
 #[test]
 fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
@@ -145,7 +151,7 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
     Ok(())
 }
 
-#[cfg(not(feature = "mysql"))]
+#[cfg(feature = "pg")]
 #[test]
 fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();

@@ -39,7 +39,6 @@ where
 
     pub create_table_sql_query: String,
     pub drop_table_sql_query: String,
-    pub lock_table_exclusively_sql_query: String,
 }
 
 #[derive(Clone)]
@@ -203,11 +202,6 @@ where
 
             drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
 
-            lock_table_exclusively_sql_query: format!(
-                "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
-                qualified_table_name
-            ),
-
             codec: self.codec,
             qualified_table_name,
             table_name: self.table_name,
@@ -306,10 +300,6 @@ where
 
     fn drop_table_sql_query(&self) -> &str {
         &self.drop_table_sql_query
-    }
-
-    fn lock_table_exclusively_sql_query(&self) -> &str {
-        &self.lock_table_exclusively_sql_query
     }
 
     fn save(&self, conn: &Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {

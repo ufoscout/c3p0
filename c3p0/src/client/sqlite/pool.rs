@@ -30,7 +30,7 @@ impl C3p0Base for C3p0Sqlite {
             .map_err(|err| C3p0Error::PoolError {
                 cause: format!("{}", err),
             })
-            .map(|conn| SqliteConnection::Conn(conn))
+            .map(SqliteConnection::Conn)
     }
 
     fn transaction<T, F: Fn(&Connection) -> Result<T, Box<std::error::Error>>>(
