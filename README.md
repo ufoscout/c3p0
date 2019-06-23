@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ufoscout/c3p0.svg?branch=master)](https://travis-ci.org/ufoscout/c3p0)
+
 # "A pleasure to meet you. I am C-3p0, JSON-DB Relations."
 
 
