@@ -2,7 +2,6 @@ use crate::client::Row;
 use crate::error::C3p0Error;
 use crate::json::codec::JsonCodec;
 use crate::pool::{ConnectionBase, ExecuteResult};
-use serde::Deserialize;
 use serde_derive::{Deserialize, Serialize};
 
 pub mod codec;
@@ -142,7 +141,7 @@ where
 {
     pub id: IdType,
     pub version: VersionType,
-    #[serde(bound(deserialize = "DATA: Deserialize<'de>"))]
+    #[serde(bound(deserialize = "DATA: serde::Deserialize<'de>"))]
     pub data: DATA,
 }
 
@@ -164,7 +163,7 @@ where
     DATA: Clone + serde::ser::Serialize,
 {
     pub version: VersionType,
-    #[serde(bound(deserialize = "DATA: Deserialize<'de>"))]
+    #[serde(bound(deserialize = "DATA: serde::Deserialize<'de>"))]
     pub data: DATA,
 }
 

@@ -1,7 +1,7 @@
 [package]
 name = "c3p0_diesel_macro"
 license = "MIT"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "Macros for c3p0_diesel"
 edition = "2018"
