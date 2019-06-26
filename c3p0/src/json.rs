@@ -1,7 +1,7 @@
-use crate::client::Row;
+use crate::client::{ExecuteResult, Row};
 use crate::error::C3p0Error;
 use crate::json::codec::JsonCodec;
-use crate::pool::{ConnectionBase, ExecuteResult};
+use crate::pool::ConnectionBase;
 use serde_derive::{Deserialize, Serialize};
 
 pub mod codec;

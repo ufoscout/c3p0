@@ -1,3 +1,6 @@
+[tasks.build]
+args = ["build", "--features", "pg"]
+
 # > cargo make --no-workspace build_all
 [tasks.build_all]
 script = [
