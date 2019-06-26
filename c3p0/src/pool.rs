@@ -1,14 +1,5 @@
-use crate::client::{ExecuteResult, Row, ToSql};
+use crate::client::{ExecuteResult, Row, ToSql, FromSql};
 use crate::error::C3p0Error;
-
-#[cfg(feature = "mysql")]
-use mysql_client::prelude::FromValue as FromSql;
-
-#[cfg(feature = "pg")]
-use postgres::types::FromSql;
-
-#[cfg(feature = "sqlite")]
-use rusqlite::types::FromSql;
 
 pub trait C3p0Base: Clone {
     fn connection(&self) -> Result<crate::client::Connection, C3p0Error>;
