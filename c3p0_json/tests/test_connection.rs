@@ -1,6 +1,3 @@
-use c3p0::client::Row;
-use c3p0::prelude::*;
-
 #[cfg(feature = "pg")]
 mod shared_pg;
 #[cfg(feature = "pg")]
