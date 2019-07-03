@@ -1,0 +1,15 @@
+[package]
+name = "c3p0_common"
+license = "MIT"
+version = "0.5.1"
+authors = ["Francesco Cina <ufoscout@gmail.com>"]
+description = "A good friend for r2d2"
+edition = "2018"
+readme = "../README.md"
+homepage = "https://github.com/ufoscout/c3p0"
+repository = "https://github.com/ufoscout/c3p0"
+keywords = ["c3p0"]
+
+[dependencies]
+err-derive = "0.1"
+serde_json = "1.0"
