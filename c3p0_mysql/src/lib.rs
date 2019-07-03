@@ -10,20 +10,20 @@ use r2d2_mysql::MysqlConnectionManager;
 use std::cell::RefCell;
 use std::ops::DerefMut;
 
-pub struct C3p0MySqlBuilder {}
+pub struct C3p0MysqlBuilder {}
 
-impl C3p0MySqlBuilder {
-    pub fn build(pool: Pool<MysqlConnectionManager>) -> C3p0MySql {
-        C3p0MySql { pool }
+impl C3p0MysqlBuilder {
+    pub fn build(pool: Pool<MysqlConnectionManager>) -> C3p0Mysql {
+        C3p0Mysql { pool }
     }
 }
 
 #[derive(Clone)]
-pub struct C3p0MySql {
+pub struct C3p0Mysql {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl C3p0MySql {
+impl C3p0Mysql {
     pub fn connection(&self) -> Result<MySqlConnection, C3p0Error> {
         self.pool
             .get()

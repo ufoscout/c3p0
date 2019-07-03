@@ -1,12 +1,18 @@
 #![cfg(feature = "mysql")]
 
-use c3p0::prelude::*;
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use mysql_client::{Opts, OptsBuilder};
 use r2d2_mysql::MysqlConnectionManager;
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
+
+pub use c3p0_json::C3p0Mysql as C3p0;
+pub use c3p0_json::C3p0MysqlBuilder as C3p0Builder;
+pub use c3p0_json::C3p0MysqlJson as C3p0Json;
+pub use c3p0_json::C3p0MysqlJsonBuilder as C3p0JsonBuilder;
+
+pub use mysql_client::Row;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct TestData {

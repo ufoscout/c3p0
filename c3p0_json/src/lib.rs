@@ -1,6 +1,11 @@
 pub mod client;
 pub mod json;
 
+#[cfg(feature = "mysql")]
+pub use crate::client::mysql::{C3p0MysqlJson, C3p0MysqlJsonBuilder};
+#[cfg(feature = "mysql")]
+pub use c3p0_mysql::{C3p0Mysql, C3p0MysqlBuilder, MySqlConnection};
+
 #[cfg(feature = "pg")]
 pub use crate::client::pg::{C3p0PgJson, C3p0PgJsonBuilder};
 #[cfg(feature = "pg")]

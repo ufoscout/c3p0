@@ -4,7 +4,15 @@ args = ["build", "--features", "pg"]
 # > cargo make --no-workspace build_all
 [tasks.build_all]
 script = [
-  "cd ./c3p0               && ./cargo.sh build",
+  "cd ./c3p0_common        && cargo build",
+  "cd ..",
+  "cd ./c3p0_mysql         && cargo build",
+  "cd ..",
+  "cd ./c3p0_pg            && cargo build",
+  "cd ..",
+  "cd ./c3p0_sqlite        && cargo build",
+  "cd ..",
+  "cd ./c3p0_json          && ./cargo.sh build",
   "cd ..",
   "cd ./c3p0_migrate       && ./cargo.sh build",
   "cd ..",
@@ -13,7 +21,15 @@ script = [
 # > cargo make --no-workspace test_all
 [tasks.test_all]
 script = [
-  "cd ./c3p0               && ./cargo.sh test",
+  "cd ./c3p0_common        && cargo test",
+  "cd ..",
+  "cd ./c3p0_mysql         && cargo test",
+  "cd ..",
+  "cd ./c3p0_pg            && cargo test",
+  "cd ..",
+  "cd ./c3p0_sqlite        && cargo test",
+  "cd ..",
+  "cd ./c3p0_json          && ./cargo.sh test",
   "cd ..",
   "cd ./c3p0_migrate       && ./cargo.sh test",
   "cd ..",
@@ -22,8 +38,16 @@ script = [
 # > cargo make --no-workspace publish_all
 [tasks.publish_all]
 script = [
-  "cd ./c3p0               && cargo publish --features pg",
-  "cd .. && sleep 4",
+  "cd ./c3p0_common        && cargo publish && sleep 4",
+  "cd ..",
+  "cd ./c3p0_mysql         && cargo publish && sleep 4",
+  "cd ..",
+  "cd ./c3p0_pg            && cargo publish && sleep 4",
+  "cd ..",
+  "cd ./c3p0_sqlite        && cargo publish && sleep 4",
+  "cd ..",
+  "cd ./c3p0_json          && cargo publish --features pg && sleep 4",
+  "cd ..",
   "cd ./c3p0_migrate       && cargo publish --features pg",
   "cd ..",
 ]
