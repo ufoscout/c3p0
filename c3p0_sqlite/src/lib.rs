@@ -66,12 +66,13 @@ pub enum SqliteConnection<'a> {
 }
 
 impl<'a> SqliteConnection<'a> {
-    pub fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<usize, C3p0Error> {
+    pub fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         match self {
-            SqliteConnection::Conn(conn) => conn.execute(sql, params).map_err(into_c3p0_error),
+            SqliteConnection::Conn(conn) => conn.execute(sql, params).map_err(into_c3p0_error).map(|res| res as u64),
             SqliteConnection::Tx(tx) => tx
                 .borrow_mut()
                 .execute(sql, params)
+                .map(|res| res as u64)
                 .map_err(into_c3p0_error),
         }
     }

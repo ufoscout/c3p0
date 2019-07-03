@@ -1,6 +1,5 @@
 #![cfg(feature = "pg")]
 
-use c3p0_json::*;
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use r2d2_postgres::{PostgresConnectionManager, TlsMode};
@@ -23,13 +22,13 @@ pub struct TestData {
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
     pub static ref SINGLETON: MaybeSingle<(
-        C3p0Pg,
+        C3p0,
         Container<'static, clients::Cli, images::postgres::Postgres>
     )> = MaybeSingle::new(|| init());
 }
 
 fn init() -> (
-    C3p0Pg,
+    C3p0,
     Container<'static, clients::Cli, images::postgres::Postgres>,
 ) {
     let node = DOCKER.run(images::postgres::Postgres::default());
@@ -47,7 +46,7 @@ fn init() -> (
         .build(manager)
         .unwrap();
 
-    let pool = C3p0PgBuilder::build(pool);
+    let pool = C3p0Builder::build(pool);
 
     (pool, node)
 }
