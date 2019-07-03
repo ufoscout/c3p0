@@ -1,5 +1,5 @@
 [package]
-name = "c3p0"
+name = "c3p0_json"
 license = "MIT"
 version = "0.5.1"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]

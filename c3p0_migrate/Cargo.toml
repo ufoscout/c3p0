@@ -11,7 +11,7 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
 
 [dependencies]
-c3p0 = { path = "../c3p0", version = "0.5.1" }
+c3p0_json = { path = "../c3p0_json", version = "0.5.1" }
 err-derive = "0.1"
 include_dir="0.2"
 log = "0.4"
@@ -42,6 +42,6 @@ r2d2_sqlite = { version = "0.9" }
 [features]
 default = []
 
-mysql = ["c3p0/mysql"]
-pg = ["c3p0/pg"]
-sqlite = ["c3p0/sqlite"]
+mysql = ["c3p0_json/mysql"]
+pg = ["c3p0_json/pg"]
+sqlite = ["c3p0_json/sqlite"]

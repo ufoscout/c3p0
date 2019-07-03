@@ -6,10 +6,6 @@ args = ["build", "--features", "pg"]
 script = [
   "cd ./c3p0               && ./cargo.sh build",
   "cd ..",
-  "cd ./c3p0_diesel_macro  && cargo build",
-  "cd ..",
-  "cd ./c3p0_diesel        && cargo build",
-  "cd ..",
   "cd ./c3p0_migrate       && ./cargo.sh build",
   "cd ..",
 ]
@@ -19,10 +15,6 @@ script = [
 script = [
   "cd ./c3p0               && ./cargo.sh test",
   "cd ..",
-  "cd ./c3p0_diesel_macro  && cargo test",
-  "cd ..",
-  "cd ./c3p0_diesel        && cargo test",
-  "cd ..",
   "cd ./c3p0_migrate       && ./cargo.sh test",
   "cd ..",
 ]
@@ -31,10 +23,6 @@ script = [
 [tasks.publish_all]
 script = [
   "cd ./c3p0               && cargo publish --features pg",
-  "cd .. && sleep 4",
-  "cd ./c3p0_diesel_macro  && cargo publish",
-  "cd .. && sleep 4",
-  "cd ./c3p0_diesel        && cargo publish",
   "cd .. && sleep 4",
   "cd ./c3p0_migrate       && cargo publish --features pg",
   "cd ..",
