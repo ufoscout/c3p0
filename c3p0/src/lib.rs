@@ -1,12 +1,5 @@
 pub mod client;
-pub mod error;
 pub mod json;
-pub mod pool;
-pub mod types;
 
-pub mod prelude {
-    pub use crate::client::{C3p0, C3p0Builder, Connection, JsonManager, JsonManagerBuilder};
-    pub use crate::error::C3p0Error;
-    pub use crate::json::{codec::JsonCodec, C3p0Json, C3p0JsonRepository, Model, NewModel};
-    pub use crate::pool::{C3p0Base, ConnectionBase};
-}
+pub use crate::json::{codec::JsonCodec, model::Model, model::NewModel, C3p0Json};
+pub use c3p0_common::error::C3p0Error;

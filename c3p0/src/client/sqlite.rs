@@ -1,7 +1,6 @@
 use crate::error::C3p0Error;
 use crate::json::codec::DefaultJsonCodec;
 use crate::json::{codec::JsonCodec, JsonManagerBase, Model, NewModel};
-use crate::pool::ConnectionBase;
 use crate::types::OptString;
 
 use rusqlite::Row;

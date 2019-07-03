@@ -1,11 +1,11 @@
-use crate::client::{ExecuteResult, Row};
-use crate::error::C3p0Error;
 use crate::json::codec::JsonCodec;
-use crate::pool::ConnectionBase;
-use serde_derive::{Deserialize, Serialize};
+use crate::json::model::*;
+use c3p0_common::error::C3p0Error;
 
 pub mod codec;
+pub mod model;
 
+/*
 pub trait JsonManagerBase<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
@@ -13,8 +13,6 @@ where
     type Conn: ConnectionBase;
 
     fn codec(&self) -> &CODEC;
-
-    fn to_model(&self, row: &Row) -> Result<Model<DATA>, C3p0Error>;
 
     fn id_field_name(&self) -> &str;
     fn version_field_name(&self) -> &str;
@@ -72,7 +70,7 @@ where
         })
     }
 
-    fn delete(&self, conn: &Self::Conn, obj: &Model<DATA>) -> Result<ExecuteResult, C3p0Error> {
+    fn delete(&self, conn: &Self::Conn, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         let result = conn.execute(self.delete_sql_query(), &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -84,11 +82,11 @@ where
         Ok(result)
     }
 
-    fn delete_all(&self, conn: &Self::Conn) -> Result<ExecuteResult, C3p0Error> {
+    fn delete_all(&self, conn: &Self::Conn) -> Result<u64, C3p0Error> {
         conn.execute(self.delete_all_sql_query(), &[])
     }
 
-    fn delete_by_id(&self, conn: &Self::Conn, id: i64) -> Result<ExecuteResult, C3p0Error> {
+    fn delete_by_id(&self, conn: &Self::Conn, id: i64) -> Result<u64, C3p0Error> {
         conn.execute(self.delete_by_id_sql_query(), &[&id])
     }
 
@@ -130,216 +128,48 @@ where
         })
     }
 }
+*/
 
-pub type IdType = i64;
-pub type VersionType = i32;
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Model<DATA>
-where
-    DATA: Clone + serde::ser::Serialize,
-{
-    pub id: IdType,
-    pub version: VersionType,
-    #[serde(bound(deserialize = "DATA: serde::Deserialize<'de>"))]
-    pub data: DATA,
-}
-
-impl<DATA> Model<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    pub fn into_new(self) -> NewModel<DATA> {
-        NewModel {
-            version: 0,
-            data: self.data,
-        }
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct NewModel<DATA>
-where
-    DATA: Clone + serde::ser::Serialize,
-{
-    pub version: VersionType,
-    #[serde(bound(deserialize = "DATA: serde::Deserialize<'de>"))]
-    pub data: DATA,
-}
-
-impl<DATA> NewModel<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    pub fn new(data: DATA) -> Self {
-        NewModel { version: 0, data }
-    }
-}
-
-impl<DATA> From<DATA> for NewModel<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn from(data: DATA) -> Self {
-        NewModel::new(data)
-    }
-}
-
-impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn into(self) -> &'a IdType {
-        &self.id
-    }
-}
-
-pub trait C3p0Json<DATA, CODEC, DB>
+pub trait C3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
     CODEC: JsonCodec<DATA>,
-    DB: JsonManagerBase<DATA, CODEC>,
 {
-    fn json_manager(&self) -> &DB;
+    type Connection;
 
-    fn create_table_if_not_exists(&self, conn: &DB::Conn) -> Result<(), C3p0Error> {
-        self.json_manager().create_table_if_not_exists(conn)
-    }
+    fn codec(&self) -> &CODEC;
 
-    fn drop_table_if_exists(&self, conn: &DB::Conn) -> Result<(), C3p0Error> {
-        self.json_manager().drop_table_if_exists(conn)
-    }
+    fn create_table_if_not_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error>;
 
-    fn count_all(&self, conn: &DB::Conn) -> Result<IdType, C3p0Error> {
-        self.json_manager().count_all(conn)
-    }
+    fn drop_table_if_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error>;
+
+    fn count_all(&self, conn: &Self::Connection) -> Result<IdType, C3p0Error>;
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &DB::Conn,
+        conn: &Self::Connection,
         id: ID,
-    ) -> Result<bool, C3p0Error> {
-        self.json_manager().exists_by_id(conn, *id.into())
-    }
+    ) -> Result<bool, C3p0Error>;
 
-    fn find_all(&self, conn: &DB::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        self.json_manager().find_all(conn)
-    }
+    fn find_all(&self, conn: &Self::Connection) -> Result<Vec<Model<DATA>>, C3p0Error>;
 
     fn find_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &DB::Conn,
+        conn: &Self::Connection,
         id: ID,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        self.json_manager().find_by_id(conn, *id.into())
-    }
+    ) -> Result<Option<Model<DATA>>, C3p0Error>;
 
-    fn delete(&self, conn: &DB::Conn, obj: &Model<DATA>) -> Result<ExecuteResult, C3p0Error> {
-        self.json_manager().delete(conn, obj)
-    }
+    fn delete(&self, conn: &Self::Connection, obj: &Model<DATA>) -> Result<u64, C3p0Error>;
 
-    fn delete_all(&self, conn: &DB::Conn) -> Result<ExecuteResult, C3p0Error> {
-        self.json_manager().delete_all(conn)
-    }
+    fn delete_all(&self, conn: &Self::Connection) -> Result<u64, C3p0Error>;
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &DB::Conn,
+        conn: &Self::Connection,
         id: ID,
-    ) -> Result<ExecuteResult, C3p0Error> {
-        self.json_manager().delete_by_id(conn, *id.into())
-    }
+    ) -> Result<u64, C3p0Error>;
 
-    fn save(&self, conn: &DB::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
-        self.json_manager().save(conn, obj)
-    }
+    fn save(&self, conn: &Self::Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
-    fn update(&self, conn: &DB::Conn, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
-        self.json_manager().update(conn, obj)
-    }
-}
-
-#[derive(Clone)]
-pub struct C3p0JsonRepository<DATA, CODEC, DB>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-    CODEC: JsonCodec<DATA>,
-    DB: JsonManagerBase<DATA, CODEC>,
-{
-    db: DB,
-    phantom_data: std::marker::PhantomData<DATA>,
-    phantom_codec: std::marker::PhantomData<CODEC>,
-}
-
-impl<DATA, CODEC, DB> C3p0JsonRepository<DATA, CODEC, DB>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-    CODEC: JsonCodec<DATA>,
-    DB: JsonManagerBase<DATA, CODEC>,
-{
-    pub fn build(db: DB) -> Self {
-        C3p0JsonRepository {
-            db,
-            phantom_data: std::marker::PhantomData,
-            phantom_codec: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<DATA, CODEC, DB> C3p0Json<DATA, CODEC, DB> for C3p0JsonRepository<DATA, CODEC, DB>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-    CODEC: JsonCodec<DATA>,
-    DB: JsonManagerBase<DATA, CODEC>,
-{
-    fn json_manager(&self) -> &DB {
-        &self.db
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    use super::*;
-    use serde_derive::{Deserialize, Serialize};
-    use serde_json;
-
-    #[test]
-    fn model_should_be_serializable() -> Result<(), Box<std::error::Error>> {
-        let model = Model {
-            id: 1,
-            version: 1,
-            data: SimpleData {
-                name: "test".to_owned(),
-            },
-        };
-
-        let serialize = serde_json::to_string(&model)?;
-        let deserialize: Model<SimpleData> = serde_json::from_str(&serialize)?;
-
-        assert_eq!(model.id, deserialize.id);
-        assert_eq!(model.version, deserialize.version);
-        assert_eq!(model.data, deserialize.data);
-
-        Ok(())
-    }
-
-    #[test]
-    fn new_model_should_be_serializable() -> Result<(), Box<std::error::Error>> {
-        let model = NewModel::new(SimpleData {
-            name: "test".to_owned(),
-        });
-
-        let serialize = serde_json::to_string(&model)?;
-        let deserialize: NewModel<SimpleData> = serde_json::from_str(&serialize)?;
-
-        assert_eq!(model.version, deserialize.version);
-        assert_eq!(model.data, deserialize.data);
-        Ok(())
-    }
-
-    #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
-    struct SimpleData {
-        name: String,
-    }
+    fn update(&self, conn: &Self::Connection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 }

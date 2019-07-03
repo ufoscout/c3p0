@@ -1,3 +1,4 @@
+/*
 use crate::client::{ExecuteResult, Row, ToSql, FromSql};
 use crate::error::C3p0Error;
 
@@ -48,3 +49,4 @@ pub trait ConnectionBase {
 
     //lock_table
 }
+*/

@@ -1,4 +1,4 @@
-use crate::error::C3p0Error;
+use c3p0_common::error::C3p0Error;
 use serde_json::Value;
 
 pub trait JsonCodec<DATA>

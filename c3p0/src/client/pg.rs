@@ -1,44 +1,13 @@
-use super::error::into_c3p0_error;
-use crate::error::C3p0Error;
 use crate::json::codec::DefaultJsonCodec;
-use crate::json::{codec::JsonCodec, JsonManagerBase, Model};
-use crate::types::OptString;
+use crate::json::{
+    codec::JsonCodec,
+    model::{IdType, Model, NewModel},
+};
+use crate::C3p0Json;
+use c3p0_common::error::C3p0Error;
+use c3p0_common::types::OptString;
+use c3p0_pg::error::into_c3p0_error;
 use postgres::rows::Row;
-
-#[derive(Clone)]
-pub struct PostgresJsonManager<'a, DATA, CODEC: JsonCodec<DATA>>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    phantom_a: std::marker::PhantomData<&'a ()>,
-    phantom_data: std::marker::PhantomData<DATA>,
-
-    pub codec: CODEC,
-
-    pub id_field_name: String,
-    pub version_field_name: String,
-    pub data_field_name: String,
-    pub table_name: String,
-    pub schema_name: Option<String>,
-    pub qualified_table_name: String,
-
-    pub count_all_sql_query: String,
-    pub exists_by_id_sql_query: String,
-
-    pub find_all_sql_query: String,
-    pub find_by_id_sql_query: String,
-
-    pub delete_sql_query: String,
-    pub delete_all_sql_query: String,
-    pub delete_by_id_sql_query: String,
-
-    pub save_sql_query: String,
-
-    pub update_sql_query: String,
-
-    pub create_table_sql_query: String,
-    pub drop_table_sql_query: String,
-}
 
 #[derive(Clone)]
 pub struct PostgresJsonManagerBuilder<DATA, CODEC: JsonCodec<DATA>>
@@ -124,14 +93,13 @@ where
         self
     }
 
-    pub fn build<'a>(self) -> PostgresJsonManager<'a, DATA, CODEC> {
+    pub fn build(self) -> PostgresJsonManager<DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
         PostgresJsonManager {
-            phantom_a: std::marker::PhantomData,
             phantom_data: std::marker::PhantomData,
 
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
@@ -215,18 +183,45 @@ where
     }
 }
 
-impl<'a, DATA, CODEC: JsonCodec<DATA>> JsonManagerBase<DATA, CODEC>
-    for PostgresJsonManager<'a, DATA, CODEC>
+#[derive(Clone)]
+pub struct PostgresJsonManager<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type Conn = crate::client::pg::pool::PgConnection;
+    phantom_data: std::marker::PhantomData<DATA>,
 
-    fn codec(&self) -> &CODEC {
-        &self.codec
-    }
+    pub codec: CODEC,
 
-    fn to_model(&self, row: &Row) -> Result<Model<DATA>, C3p0Error> {
+    pub id_field_name: String,
+    pub version_field_name: String,
+    pub data_field_name: String,
+    pub table_name: String,
+    pub schema_name: Option<String>,
+    pub qualified_table_name: String,
+
+    pub count_all_sql_query: String,
+    pub exists_by_id_sql_query: String,
+
+    pub find_all_sql_query: String,
+    pub find_by_id_sql_query: String,
+
+    pub delete_sql_query: String,
+    pub delete_all_sql_query: String,
+    pub delete_by_id_sql_query: String,
+
+    pub save_sql_query: String,
+
+    pub update_sql_query: String,
+
+    pub create_table_sql_query: String,
+    pub drop_table_sql_query: String,
+}
+
+impl<DATA, CODEC: JsonCodec<DATA>> PostgresJsonManager<DATA, CODEC>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, C3p0Error> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
@@ -235,73 +230,114 @@ where
         let data = self.codec.from_value(get_or_error(&row, 2)?)?;
         Ok(Model { id, version, data })
     }
+}
 
-    fn id_field_name(&self) -> &str {
-        &self.id_field_name
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for PostgresJsonManager<DATA, CODEC>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    type Connection = c3p0_pg::PgConnection;
+
+    fn codec(&self) -> &CODEC {
+        &self.codec
     }
 
-    fn version_field_name(&self) -> &str {
-        &self.version_field_name
+    fn create_table_if_not_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error> {
+        conn.execute(&self.create_table_sql_query, &[])?;
+        Ok(())
     }
 
-    fn data_field_name(&self) -> &str {
-        &self.data_field_name
+    fn drop_table_if_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error> {
+        conn.execute(&self.drop_table_sql_query, &[])?;
+        Ok(())
     }
 
-    fn table_name(&self) -> &str {
-        &self.table_name
+    fn count_all(&self, conn: &Self::Connection) -> Result<i64, C3p0Error> {
+        conn.fetch_one_value(&self.count_all_sql_query, &[])
     }
 
-    fn schema_name(&self) -> &Option<String> {
-        &self.schema_name
+    fn exists_by_id<'a, ID: Into<&'a IdType>>(
+        &self,
+        conn: &Self::Connection,
+        id: ID,
+    ) -> Result<bool, C3p0Error> {
+        conn.fetch_one_value(&self.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn qualified_table_name(&self) -> &str {
-        &self.qualified_table_name
+    fn find_all(&self, conn: &Self::Connection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        conn.fetch_all(&self.find_all_sql_query, &[], |row| Ok(self.to_model(row)?))
     }
 
-    fn count_all_sql_query(&self) -> &str {
-        &self.count_all_sql_query
+    fn find_by_id<'a, ID: Into<&'a IdType>>(
+        &self,
+        conn: &Self::Connection,
+        id: ID,
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
+        conn.fetch_one_option(&self.find_by_id_sql_query, &[&id.into()], |row| {
+            Ok(self.to_model(row)?)
+        })
     }
 
-    fn exists_by_id_sql_query(&self) -> &str {
-        &self.exists_by_id_sql_query
+    fn delete(&self, conn: &Self::Connection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+        let result = conn.execute(&self.delete_sql_query, &[&obj.id, &obj.version])?;
+
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                                                                        &self.qualified_table_name, &obj.id, &obj.version
+            )});
+        }
+
+        Ok(result)
     }
 
-    fn find_all_sql_query(&self) -> &str {
-        &self.find_all_sql_query
+    fn delete_all(&self, conn: &Self::Connection) -> Result<u64, C3p0Error> {
+        conn.execute(&self.delete_all_sql_query, &[])
     }
 
-    fn find_by_id_sql_query(&self) -> &str {
-        &self.find_by_id_sql_query
+    fn delete_by_id<'a, ID: Into<&'a IdType>>(
+        &self,
+        conn: &Self::Connection,
+        id: ID,
+    ) -> Result<u64, C3p0Error> {
+        conn.execute(&self.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn delete_sql_query(&self) -> &str {
-        &self.delete_sql_query
+    fn update(&self, conn: &Self::Connection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        let json_data = self.codec().to_value(&obj.data)?;
+
+        let updated_model = Model {
+            id: obj.id,
+            version: obj.version + 1,
+            data: obj.data,
+        };
+
+        let result = conn.execute(
+            &self.update_sql_query,
+            &[
+                &updated_model.version,
+                &json_data,
+                &updated_model.id,
+                &obj.version,
+            ],
+        )?;
+
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                                                                        &self.qualified_table_name, &updated_model.id, &obj.version
+            )});
+        }
+
+        Ok(updated_model)
     }
 
-    fn delete_all_sql_query(&self) -> &str {
-        &self.delete_all_sql_query
-    }
-
-    fn delete_by_id_sql_query(&self) -> &str {
-        &self.delete_by_id_sql_query
-    }
-
-    fn save_sql_query(&self) -> &str {
-        &self.save_sql_query
-    }
-
-    fn update_sql_query(&self) -> &str {
-        &self.update_sql_query
-    }
-
-    fn create_table_sql_query(&self) -> &str {
-        &self.create_table_sql_query
-    }
-
-    fn drop_table_sql_query(&self) -> &str {
-        &self.drop_table_sql_query
+    fn save(&self, conn: &Self::Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        let json_data = self.codec().to_value(&obj.data)?;
+        let id = conn.fetch_one_value(&self.save_sql_query, &[&obj.version, &json_data])?;
+        Ok(Model {
+            id,
+            version: obj.version,
+            data: obj.data,
+        })
     }
 }
 
