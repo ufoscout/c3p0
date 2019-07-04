@@ -6,6 +6,7 @@ use crate::error::into_c3p0_error;
 use crate::postgres::rows::Row;
 use crate::postgres::types::{FromSql, ToSql};
 use crate::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
+use c3p0_common::pool::Connection;
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -64,14 +65,17 @@ pub struct PgConnection {
     conn: PooledConnection<PostgresConnectionManager>,
 }
 
+impl Connection for PgConnection {
+    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
+        self.conn.batch_execute(sql).map_err(into_c3p0_error)
+    }
+}
+
 impl PgConnection {
     pub fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         self.conn.execute(sql, params).map_err(into_c3p0_error)
     }
 
-    pub fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
-        self.conn.batch_execute(sql).map_err(into_c3p0_error)
-    }
 
     pub fn fetch_one_value<T: FromSql>(
         &self,

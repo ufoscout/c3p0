@@ -18,7 +18,6 @@ mod shared_sqlite;
 #[cfg(feature = "sqlite")]
 use crate::shared_sqlite::*;
 
-
 #[test]
 fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();

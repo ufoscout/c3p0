@@ -1,3 +1,5 @@
+use c3p0_json::*;
+
 #[cfg(feature = "pg")]
 mod shared_pg;
 #[cfg(feature = "pg")]

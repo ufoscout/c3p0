@@ -1,6 +1,6 @@
+use crate::error::C3p0Error;
 /*
 use crate::client::{ExecuteResult, Row, ToSql, FromSql};
-use crate::error::C3p0Error;
 
 pub trait C3p0Base: Clone {
     fn connection(&self) -> Result<crate::client::Connection, C3p0Error>;
@@ -10,11 +10,14 @@ pub trait C3p0Base: Clone {
         tx: F,
     ) -> Result<T, C3p0Error>;
 }
+*/
 
-pub trait ConnectionBase {
-    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<ExecuteResult, C3p0Error>;
+pub trait Connection {
 
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error>;
+
+    /*
+    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<ExecuteResult, C3p0Error>;
 
     fn fetch_one_value<T: FromSql>(&self, sql: &str, params: &[&ToSql]) -> Result<T, C3p0Error>;
 
@@ -48,5 +51,5 @@ pub trait ConnectionBase {
     //count_all_from_table
 
     //lock_table
+    */
 }
-*/

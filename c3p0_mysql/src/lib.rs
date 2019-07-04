@@ -8,6 +8,7 @@ use crate::mysql::Row;
 use crate::r2d2::{Pool, PooledConnection, MysqlConnectionManager};
 use std::cell::RefCell;
 use std::ops::DerefMut;
+use c3p0_common::pool::Connection;
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -75,6 +76,22 @@ pub enum MySqlConnection<'a> {
     Tx(RefCell<mysql_client::Transaction<'a>>),
 }
 
+impl<'a> Connection for MySqlConnection<'a> {
+    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
+        match self {
+            MySqlConnection::Conn(conn) => {
+                let mut conn_borrow = conn.borrow_mut();
+                let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
+                batch_execute(conn, sql)
+            }
+            MySqlConnection::Tx(tx) => {
+                let mut transaction = tx.borrow_mut();
+                batch_execute(transaction.deref_mut(), sql)
+            }
+        }
+    }
+}
+
 impl<'a> MySqlConnection<'a> {
     pub fn execute(&self, sql: &str, params: &[&ToValue]) -> Result<u64, C3p0Error> {
         match self {
@@ -86,20 +103,6 @@ impl<'a> MySqlConnection<'a> {
             MySqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 execute(transaction.deref_mut(), sql, params)
-            }
-        }
-    }
-
-    pub fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
-        match self {
-            MySqlConnection::Conn(conn) => {
-                let mut conn_borrow = conn.borrow_mut();
-                let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
-                batch_execute(conn, sql)
-            }
-            MySqlConnection::Tx(tx) => {
-                let mut transaction = tx.borrow_mut();
-                batch_execute(transaction.deref_mut(), sql)
             }
         }
     }

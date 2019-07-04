@@ -1,5 +1,5 @@
-use c3p0_json::C3p0Error;
 use crate::migration::{Migration, Migrations};
+use c3p0_json::C3p0Error;
 use include_dir::Dir;
 use std::convert::TryFrom;
 

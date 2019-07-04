@@ -7,6 +7,7 @@ use crate::r2d2::{Pool, PooledConnection, SqliteConnectionManager};
 use crate::rusqlite::types::{FromSql, ToSql};
 use crate::rusqlite::Row;
 use std::cell::RefCell;
+use c3p0_common::pool::Connection;
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -73,6 +74,15 @@ pub enum SqliteConnection<'a> {
     Tx(RefCell<rusqlite::Transaction<'a>>),
 }
 
+impl<'a> Connection for SqliteConnection<'a> {
+    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
+        match self {
+            SqliteConnection::Conn(conn) => conn.execute_batch(sql).map_err(into_c3p0_error),
+            SqliteConnection::Tx(tx) => tx.borrow_mut().execute_batch(sql).map_err(into_c3p0_error),
+        }
+    }
+}
+
 impl<'a> SqliteConnection<'a> {
     pub fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         match self {
@@ -82,13 +92,6 @@ impl<'a> SqliteConnection<'a> {
                 .execute(sql, params)
                 .map(|res| res as u64)
                 .map_err(into_c3p0_error),
-        }
-    }
-
-    pub fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
-        match self {
-            SqliteConnection::Conn(conn) => conn.execute_batch(sql).map_err(into_c3p0_error),
-            SqliteConnection::Tx(tx) => tx.borrow_mut().execute_batch(sql).map_err(into_c3p0_error),
         }
     }
 

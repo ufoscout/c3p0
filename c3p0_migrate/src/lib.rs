@@ -85,14 +85,13 @@ pub struct C3p0Migrate<C3P0> {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
-    c3p0: C3P0
+    c3p0: C3P0,
 }
 
 const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
 
 #[cfg(feature = "pg")]
-impl C3p0Migrate<c3p0_json::pg::C3p0Pg>
-{
+impl C3p0Migrate<c3p0_json::pg::C3p0Pg> {
     pub fn migrate(&self) -> Result<(), C3p0Error> {
         let c3p0_json = C3p0PgJsonBuilder::new(self.table.clone())
             .with_schema_name(self.schema.clone())
@@ -118,27 +117,32 @@ impl C3p0Migrate<c3p0_json::pg::C3p0Pg>
         })
     }
 
-    fn lock_table(&self, c3po_json: &c3p0_json::C3p0PgJson<MigrationData, DefaultJsonCodec>, conn: &c3p0_json::pg::PgConnection) -> Result<(), C3p0Error> {
-                conn.batch_execute(&format!(
-                    "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
-                    c3po_json.qualified_table_name
-                ))
+    fn lock_table(
+        &self,
+        c3po_json: &c3p0_json::C3p0PgJson<MigrationData, DefaultJsonCodec>,
+        conn: &c3p0_json::pg::PgConnection,
+    ) -> Result<(), C3p0Error> {
+        conn.batch_execute(&format!(
+            "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
+            c3po_json.qualified_table_name
+        ))
     }
 
-    fn lock_first_migration_row(&self, c3p0_json: &c3p0_json::C3p0PgJson<MigrationData, DefaultJsonCodec>, conn: &c3p0_json::pg::PgConnection) -> Result<(), C3p0Error> {
+    fn lock_first_migration_row(
+        &self,
+        c3p0_json: &c3p0_json::C3p0PgJson<MigrationData, DefaultJsonCodec>,
+        conn: &c3p0_json::pg::PgConnection,
+    ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where {}->>'migration_id' = $1 FOR UPDATE"#,
-            c3p0_json.qualified_table_name,
-            c3p0_json.data_field_name
+            c3p0_json.qualified_table_name, c3p0_json.data_field_name
         );
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
-
 }
 
 #[cfg(feature = "mysql")]
-impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql>
-{
+impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql> {
     pub fn migrate(&self) -> Result<(), C3p0Error> {
         let c3p0_json = C3p0MysqlJsonBuilder::new(self.table.clone())
             .with_schema_name(self.schema.clone())
@@ -154,37 +158,42 @@ impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql>
         // Start Migration
         self.c3p0.transaction(|conn| {
             self.lock_table(&c3p0_json, conn)?;
-            self.create_migration_zero(&c3p0_json, conn)
+            Ok(self.create_migration_zero(&c3p0_json, conn)?)
         })?;
 
         // Start Migration
         self.c3p0.transaction(|conn| {
             self.lock_first_migration_row(&c3p0_json, conn)?;
-            self.start_migration(&c3p0_json, conn)
+            Ok(self.start_migration(&c3p0_json, conn)?)
         })
     }
 
-    fn lock_table(&self, c3po_json: &c3p0_json::C3p0MysqlJson<MigrationData, DefaultJsonCodec>, conn: &c3p0_json::mysql::MySqlConnection) -> Result<(), C3p0Error> {
-                conn.batch_execute(&format!(
-                    "LOCK TABLES {} WRITE",
-                    c3po_json.qualified_table_name
-                ))
+    fn lock_table(
+        &self,
+        c3po_json: &c3p0_json::C3p0MysqlJson<MigrationData, DefaultJsonCodec>,
+        conn: &c3p0_json::mysql::MySqlConnection,
+    ) -> Result<(), C3p0Error> {
+        conn.batch_execute(&format!(
+            "LOCK TABLES {} WRITE",
+            c3po_json.qualified_table_name
+        ))
     }
 
-    fn lock_first_migration_row(&self, c3p0_json: &c3p0_json::C3p0MysqlJson<MigrationData, DefaultJsonCodec>, conn: &c3p0_json::mysql::MySqlConnection) -> Result<(), C3p0Error> {
+    fn lock_first_migration_row(
+        &self,
+        c3p0_json: &c3p0_json::C3p0MysqlJson<MigrationData, DefaultJsonCodec>,
+        conn: &c3p0_json::mysql::MySqlConnection,
+    ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ? FOR UPDATE"#,
-            c3p0_json.qualified_table_name,
-            c3p0_json.data_field_name
+            c3p0_json.qualified_table_name, c3p0_json.data_field_name
         );
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
-
 }
 
 #[cfg(feature = "sqlite")]
-impl C3p0Migrate<c3p0_json::sqlite::C3p0Sqlite>
-{
+impl C3p0Migrate<c3p0_json::sqlite::C3p0Sqlite> {
     pub fn migrate(&self) -> Result<(), C3p0Error> {
         let c3p0_json = C3p0SqliteJsonBuilder::new(self.table.clone())
             .with_schema_name(self.schema.clone())
@@ -198,32 +207,40 @@ impl C3p0Migrate<c3p0_json::sqlite::C3p0Sqlite>
         }
 
         // Start Migration
-        self.c3p0.transaction(|conn| {
-            self.create_migration_zero(&c3p0_json, conn)
-        })?;
+        self.c3p0
+            .transaction(|conn| {
+                Ok(self.create_migration_zero(&c3p0_json, conn)?)
+            })?;
 
         // Start Migration
         self.c3p0.transaction(|conn| {
             self.lock_first_migration_row(&c3p0_json, conn)?;
-            self.start_migration(&c3p0_json, conn)
+            Ok(self.start_migration(&c3p0_json, conn)?)
         })
     }
 
-    fn lock_first_migration_row(&self, c3p0_json: &c3p0_json::C3p0SqliteJson<MigrationData, DefaultJsonCodec>, conn: &c3p0_json::sqlite::SqliteConnection) -> Result<(), C3p0Error> {
+    fn lock_first_migration_row(
+        &self,
+        c3p0_json: &c3p0_json::C3p0SqliteJson<MigrationData, DefaultJsonCodec>,
+        conn: &c3p0_json::sqlite::SqliteConnection,
+    ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ?"#,
-            c3po_json.qualified_table_name,
-            c3po_json.data_field_name
+            c3p0_json.qualified_table_name, c3p0_json.data_field_name
         );
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
-
 }
 
-impl <C3P0> C3p0Migrate<C3P0> {
-
-    fn create_migration_zero<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>, CONN>(&self, c3po_json: &C3P0JSON, conn: &CONN) -> Result<(), C3p0Error> {
-
+impl<C3P0> C3p0Migrate<C3P0> {
+    fn create_migration_zero<
+        C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>,
+        CONN: Connection,
+    >(
+        &self,
+        c3po_json: &C3P0JSON,
+        conn: &CONN,
+    ) -> Result<(), C3p0Error> {
         let count = c3po_json.count_all(&conn)?;
 
         if count == 0 {
@@ -241,8 +258,14 @@ impl <C3P0> C3p0Migrate<C3P0> {
         Ok(())
     }
 
-    fn start_migration<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>, CONN>(&self, c3po_json: &C3P0JSON, conn: &CONN) -> Result<(), C3p0Error> {
-
+    fn start_migration<
+        C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>,
+        CONN: Connection,
+    >(
+        &self,
+        c3po_json: &C3P0JSON,
+        conn: &CONN,
+    ) -> Result<(), C3p0Error> {
         let migration_history = self.fetch_migrations_history(c3po_json, conn)?;
         let migration_history = self.clean_history(migration_history)?;
 
@@ -291,7 +314,14 @@ impl <C3P0> C3p0Migrate<C3P0> {
         Ok(())
     }
 
-    pub fn fetch_migrations_history<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>, CONN>(&self, c3po_json: &C3P0JSON, conn: &CONN) -> Result<Vec<MigrationModel>, C3p0Error> {
+    pub fn fetch_migrations_history<
+        C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>,
+        CONN: Connection,
+    >(
+        &self,
+        c3po_json: &C3P0JSON,
+        conn: &CONN,
+    ) -> Result<Vec<MigrationModel>, C3p0Error> {
         c3po_json.find_all(conn)
     }
 

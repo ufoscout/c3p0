@@ -1,6 +1,7 @@
 use crate::json::codec::JsonCodec;
 use crate::json::model::*;
 use c3p0_common::error::C3p0Error;
+use c3p0_common::pool::Connection;
 
 pub mod codec;
 pub mod model;
@@ -133,7 +134,8 @@ where
 pub trait C3p0Json<DATA, CODEC, CONNECTION>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-    CODEC: JsonCodec<DATA>
+    CODEC: JsonCodec<DATA>,
+    CONNECTION: Connection
 {
 
     fn codec(&self) -> &CODEC;
