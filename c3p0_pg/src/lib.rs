@@ -3,10 +3,17 @@ pub mod error;
 pub use c3p0_common::error::C3p0Error;
 
 use crate::error::into_c3p0_error;
-use postgres::rows::Row;
-use postgres::types::{FromSql, ToSql};
-use r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
+use crate::postgres::rows::Row;
+use crate::postgres::types::{FromSql, ToSql};
+use crate::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
+
+pub mod r2d2 {
+    pub use r2d2::*;
+    pub use r2d2_postgres::*;
+}
+pub mod postgres {
+    pub use postgres::*;
+}
 
 pub struct C3p0PgBuilder {}
 

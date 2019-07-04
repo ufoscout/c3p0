@@ -3,12 +3,19 @@ pub mod error;
 pub use c3p0_common::error::C3p0Error;
 
 use crate::error::into_c3p0_error;
-use mysql_client::prelude::{FromValue, GenericConnection, ToValue};
-use mysql_client::Row;
-use r2d2::{Pool, PooledConnection};
-use r2d2_mysql::MysqlConnectionManager;
+use crate::mysql::prelude::{FromValue, GenericConnection, ToValue};
+use crate::mysql::Row;
+use crate::r2d2::{Pool, PooledConnection, MysqlConnectionManager};
 use std::cell::RefCell;
 use std::ops::DerefMut;
+
+pub mod r2d2 {
+    pub use r2d2::*;
+    pub use r2d2_mysql::*;
+}
+pub mod mysql {
+    pub use mysql_client::*;
+}
 
 pub struct C3p0MysqlBuilder {}
 

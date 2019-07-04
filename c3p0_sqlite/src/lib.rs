@@ -3,11 +3,19 @@ pub mod error;
 pub use c3p0_common::error::C3p0Error;
 
 use crate::error::into_c3p0_error;
-use r2d2::{Pool, PooledConnection};
-use r2d2_sqlite::SqliteConnectionManager;
-use rusqlite::types::{FromSql, ToSql};
-use rusqlite::Row;
+use crate::r2d2::{Pool, PooledConnection, SqliteConnectionManager};
+use crate::rusqlite::types::{FromSql, ToSql};
+use crate::rusqlite::Row;
 use std::cell::RefCell;
+
+pub mod r2d2 {
+    pub use r2d2::*;
+    pub use r2d2_sqlite::*;
+}
+pub mod rusqlite {
+    pub use rusqlite::*;
+}
+
 
 pub struct C3p0SqliteBuilder {}
 

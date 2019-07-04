@@ -1,17 +1,16 @@
 #![cfg(feature = "pg")]
 
+use c3p0_json::pg::r2d2::{Pool, PostgresConnectionManager, TlsMode};
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
-use r2d2_postgres::{PostgresConnectionManager, TlsMode};
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
-pub use c3p0_json::C3p0Pg as C3p0;
-pub use c3p0_json::C3p0PgBuilder as C3p0Builder;
+pub use c3p0_json::pg::postgres::rows::Row;
+pub use c3p0_json::pg::C3p0Pg as C3p0;
+pub use c3p0_json::pg::C3p0PgBuilder as C3p0Builder;
 pub use c3p0_json::C3p0PgJson as C3p0Json;
 pub use c3p0_json::C3p0PgJsonBuilder as C3p0JsonBuilder;
-
-pub use postgres::rows::Row;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct TestData {
@@ -41,10 +40,7 @@ fn init() -> (
         TlsMode::None,
     )
     .unwrap();
-    let pool = r2d2::Pool::builder()
-        .min_idle(Some(10))
-        .build(manager)
-        .unwrap();
+    let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
     let pool = C3p0Builder::build(pool);
 

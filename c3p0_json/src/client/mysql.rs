@@ -1,11 +1,14 @@
-use c3p0_mysql::MySqlConnection;
+use crate::json::codec::DefaultJsonCodec;
+use crate::json::{
+    codec::JsonCodec,
+    model::{IdType, Model, NewModel},
+};
+use crate::C3p0Json;
 use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
-use crate::json::codec::DefaultJsonCodec;
-use crate::json::{codec::JsonCodec, model::{IdType, Model, NewModel}};
-use mysql_client::prelude::FromValue;
-use mysql_client::Row;
-use crate::C3p0Json;
+use c3p0_mysql::mysql::prelude::FromValue;
+use c3p0_mysql::mysql::Row;
+use c3p0_mysql::MySqlConnection;
 
 #[derive(Clone)]
 pub struct C3p0MysqlJsonBuilder<DATA, CODEC: JsonCodec<DATA>>
@@ -180,8 +183,8 @@ where
 
 #[derive(Clone)]
 pub struct C3p0MysqlJson<'a, DATA, CODEC: JsonCodec<DATA>>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     phantom_a: std::marker::PhantomData<&'a ()>,
     phantom_data: std::marker::PhantomData<DATA>,
@@ -214,10 +217,9 @@ pub struct C3p0MysqlJson<'a, DATA, CODEC: JsonCodec<DATA>>
 }
 
 impl<'a, DATA, CODEC: JsonCodec<DATA>> C3p0MysqlJson<'a, DATA, CODEC>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-
     fn to_model(&self, row: &Row) -> Result<Model<DATA>, C3p0Error> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
@@ -229,8 +231,7 @@ impl<'a, DATA, CODEC: JsonCodec<DATA>> C3p0MysqlJson<'a, DATA, CODEC>
     }
 }
 
-impl<'a, DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC>
-    for C3p0MysqlJson<'a, DATA, CODEC>
+impl<'a, DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0MysqlJson<'a, DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

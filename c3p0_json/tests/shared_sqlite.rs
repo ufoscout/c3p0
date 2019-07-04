@@ -1,15 +1,15 @@
 #![cfg(feature = "sqlite")]
 
+use c3p0_json::sqlite::r2d2::{Pool, SqliteConnectionManager};
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
-use r2d2_sqlite::SqliteConnectionManager;
 use serde_derive::{Deserialize, Serialize};
 
-pub use c3p0_json::C3p0Sqlite as C3p0;
-pub use c3p0_json::C3p0SqliteBuilder as C3p0Builder;
+pub use c3p0_json::sqlite::rusqlite::Row;
+pub use c3p0_json::sqlite::C3p0Sqlite as C3p0;
+pub use c3p0_json::sqlite::C3p0SqliteBuilder as C3p0Builder;
 pub use c3p0_json::C3p0SqliteJson as C3p0Json;
 pub use c3p0_json::C3p0SqliteJsonBuilder as C3p0JsonBuilder;
-pub use rusqlite::Row;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct TestData {
@@ -24,7 +24,7 @@ lazy_static! {
 fn init() -> (C3p0, String) {
     let manager = SqliteConnectionManager::memory();
 
-    let pool = r2d2::Pool::builder().build(manager).unwrap();
+    let pool = Pool::builder().build(manager).unwrap();
 
     let pool = C3p0Builder::build(pool);
 

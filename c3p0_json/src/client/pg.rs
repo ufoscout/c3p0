@@ -7,7 +7,7 @@ use crate::C3p0Json;
 use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
 use c3p0_pg::error::into_c3p0_error;
-use postgres::rows::Row;
+use c3p0_pg::postgres::{rows::Row, types::FromSql};
 
 #[derive(Clone)]
 pub struct C3p0PgJsonBuilder<DATA, CODEC: JsonCodec<DATA>>
@@ -341,7 +341,7 @@ where
     }
 }
 
-fn get_or_error<T: postgres::types::FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
+fn get_or_error<T: FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
     row.get_opt(index)
         .ok_or_else(|| C3p0Error::SqlError {
             cause: format!("Row contains no values for index {}", index),

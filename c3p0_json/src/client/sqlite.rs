@@ -4,7 +4,7 @@ use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
 
 use crate::C3p0Json;
-use rusqlite::Row;
+use c3p0_sqlite::rusqlite::{types::FromSql, Row};
 
 #[derive(Clone)]
 pub struct C3p0SqliteJsonBuilder<DATA, CODEC: JsonCodec<DATA>>
@@ -342,7 +342,7 @@ where
     }
 }
 
-fn get_or_error<T: rusqlite::types::FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
+fn get_or_error<T: FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
     row.get(index).map_err(|err| C3p0Error::SqlError {
         cause: format!("Row contains no values for index {}. Err: {}", index, err),
     })

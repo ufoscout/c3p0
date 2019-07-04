@@ -1,4 +1,3 @@
-
 #[cfg(feature = "pg")]
 mod shared_pg;
 #[cfg(feature = "pg")]
@@ -13,7 +12,6 @@ use crate::shared_mysql::*;
 mod shared_sqlite;
 #[cfg(feature = "sqlite")]
 use crate::shared_sqlite::*;
-
 
 #[test]
 fn should_execute_and_fetch() {
@@ -57,7 +55,9 @@ fn should_execute_and_fetch() {
         };
         #[cfg(feature = "mysql")]
         let mapper = |row: &Row| {
-            let value: String = row.get(0).ok_or_else(|| c3p0_json::C3p0Error::ResultNotFoundError)?;
+            let value: String = row
+                .get(0)
+                .ok_or_else(|| c3p0_json::C3p0Error::ResultNotFoundError)?;
             Ok(value)
         };
         #[cfg(feature = "sqlite")]
@@ -104,7 +104,11 @@ fn should_execute_and_fetch_option() {
         #[cfg(feature = "pg")]
         let mapper = |row: &Row| Ok(row.get(0));
         #[cfg(feature = "mysql")]
-        let mapper = |row: &Row| Ok(row.get(0).ok_or_else(|| c3p0_json::C3p0Error::ResultNotFoundError)?);
+        let mapper = |row: &Row| {
+            Ok(row
+                .get(0)
+                .ok_or_else(|| c3p0_json::C3p0Error::ResultNotFoundError)?)
+        };
         #[cfg(feature = "sqlite")]
         let mapper = |row: &Row| Ok(row.get(0)?);
 
