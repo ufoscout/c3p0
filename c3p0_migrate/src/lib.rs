@@ -1,13 +1,11 @@
-use crate::error::C3p0MigrateError;
 use crate::migration::{Migration, Migrations};
 use crate::sql_migration::{to_sql_migrations, SqlMigration};
 use c3p0::json::codec::DefaultJsonCodec;
 use c3p0::json::JsonManagerBase;
-use c3p0::prelude::*;
+use c3p0_json::*;
 use log::*;
 use serde_derive::{Deserialize, Serialize};
 
-pub mod error;
 mod md5;
 pub mod migration;
 mod sql_migration;
@@ -104,7 +102,7 @@ pub struct C3p0Migrate {
 const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
 
 impl C3p0Migrate {
-    pub fn migrate(&self, c3p0: &C3p0) -> Result<(), C3p0MigrateError> {
+    pub fn migrate(&self, c3p0: &C3p0) -> Result<(), C3p0Error> {
         {
             let conn = c3p0.connection()?;
             if let Err(err) = self.repo.create_table_if_not_exists(&conn) {
@@ -114,14 +112,14 @@ impl C3p0Migrate {
 
         // Start Migration
         c3p0.transaction(|conn| Ok(self.create_migration_zero(conn)?))
-            .map_err(C3p0MigrateError::from)?;
+            .map_err(C3p0Error::from)?;
 
         // Start Migration
         c3p0.transaction(|conn| Ok(self.start_migration(conn)?))
-            .map_err(C3p0MigrateError::from)
+            .map_err(C3p0Error::from)
     }
 
-    fn create_migration_zero(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
+    fn create_migration_zero(&self, conn: &Connection) -> Result<(), C3p0Error> {
 
         #[cfg(feature = "pg")]
         {
@@ -172,7 +170,7 @@ impl C3p0Migrate {
         Ok(())
     }
 
-    fn start_migration(&self, conn: &Connection) -> Result<(), C3p0MigrateError> {
+    fn start_migration(&self, conn: &Connection) -> Result<(), C3p0Error> {
 
         #[cfg(feature = "mysql")]
         let lock_sql = format!(
@@ -210,7 +208,7 @@ impl C3p0Migrate {
                     if applied_migration.data.md5_checksum.eq(&migration.up.md5) {
                         continue;
                     }
-                    return Err(C3p0MigrateError::AlteredMigrationSql {
+                    return Err(C3p0Error::AlteredMigrationSql {
                         message: format!(
                             "Wrong checksum for migration [{}]. Expected [{}], found [{}].",
                             applied_migration.data.migration_id,
@@ -219,7 +217,7 @@ impl C3p0Migrate {
                         ),
                     });
                 }
-                return Err(C3p0MigrateError::WrongMigrationSet {
+                return Err(C3p0Error::WrongMigrationSet {
                     message: format!(
                         "Wrong migration set! Expected migration [{}], found [{}].",
                         applied_migration.data.migration_id, migration.id
@@ -248,13 +246,13 @@ impl C3p0Migrate {
     pub fn fetch_migrations_history(
         &self,
         conn: &Connection,
-    ) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
-        self.repo.find_all(conn).map_err(C3p0MigrateError::from)
+    ) -> Result<Vec<MigrationModel>, C3p0Error> {
+        self.repo.find_all(conn).map_err(C3p0Error::from)
     }
 
     fn clean_history(
         migrations: Vec<MigrationModel>,
-    ) -> Result<Vec<MigrationModel>, C3p0MigrateError> {
+    ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let mut result = vec![];
 
         for migration in migrations {
@@ -267,7 +265,7 @@ impl C3p0Migrate {
                     if !migration.data.migration_id.eq(&last.data.migration_id)
                         || !last.data.migration_type.eq(&MigrationType::UP)
                     {
-                        return Err(C3p0MigrateError::CorruptedDbMigrationState {
+                        return Err(C3p0Error::CorruptedDbMigrationState {
                             message: "Migration history is not valid!!".to_owned(),
                         });
                     }

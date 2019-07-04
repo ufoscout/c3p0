@@ -18,6 +18,14 @@ pub enum C3p0Error {
     ResultNotFoundError,
     #[error(display = "TransactionError: [{}]", cause)]
     TransactionError { cause: Box<std::error::Error> },
+    #[error(display = "CorruptedDbMigrationState: [{}]", message)]
+    CorruptedDbMigrationState { message: String },
+    #[error(display = "AlteredMigrationSql: [{}]", message)]
+    AlteredMigrationSql { message: String },
+    #[error(display = "WrongMigrationSet: [{}]", message)]
+    WrongMigrationSet { message: String },
+    #[error(display = "FileSystemError: [{}]", message)]
+    FileSystemError { message: String },
 }
 
 impl From<serde_json::error::Error> for C3p0Error {

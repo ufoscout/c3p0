@@ -1,17 +1,17 @@
-use crate::error::C3p0MigrateError;
+use c3p0_json::C3p0Error;
 use crate::migration::{Migration, Migrations};
 use include_dir::Dir;
 use std::convert::TryFrom;
 
 impl<'a> TryFrom<&'a Dir<'a>> for Migrations {
-    type Error = C3p0MigrateError;
+    type Error = C3p0Error;
 
     fn try_from(path: &'a Dir) -> Result<Self, Self::Error> {
         from_embed(path)
     }
 }
 
-pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0MigrateError> {
+pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0Error> {
     let mut migrations = vec![];
 
     for entry in dir.dirs() {
@@ -21,7 +21,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0MigrateError> {
             .path()
             .file_name()
             .and_then(std::ffi::OsStr::to_str)
-            .ok_or_else(|| C3p0MigrateError::FileSystemError {
+            .ok_or_else(|| C3p0Error::FileSystemError {
                 message: format!("Cannot get filename of [{}]", entry.path().display()),
             })?;
 
@@ -33,7 +33,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0MigrateError> {
         let up_script = entry
             .get_file(&up_filename)
             .and_then(|file| file.contents_utf8())
-            .ok_or_else(|| C3p0MigrateError::FileSystemError {
+            .ok_or_else(|| C3p0Error::FileSystemError {
                 message: format!("Error reading file [{}].", up_filename),
             })?;
 
@@ -41,7 +41,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0MigrateError> {
         let down_script = entry
             .get_file(&down_filename)
             .and_then(|file| file.contents_utf8())
-            .ok_or_else(|| C3p0MigrateError::FileSystemError {
+            .ok_or_else(|| C3p0Error::FileSystemError {
                 message: format!("Error reading file [{}].", down_filename),
             })?;
 
@@ -98,7 +98,7 @@ mod test {
         assert!(migrations.is_err());
 
         match migrations {
-            Err(C3p0MigrateError::FileSystemError { message }) => {
+            Err(C3p0Error::FileSystemError { message }) => {
                 assert!(message.contains("Error reading file [00010_create_test_data/down.sql]"));
             }
             _ => assert!(false),
@@ -111,7 +111,7 @@ mod test {
         assert!(migrations.is_err());
 
         match migrations {
-            Err(C3p0MigrateError::FileSystemError { message }) => {
+            Err(C3p0Error::FileSystemError { message }) => {
                 assert!(message.contains("Error reading file [00010_create_test_data/up.sql]"));
             }
             _ => assert!(false),
