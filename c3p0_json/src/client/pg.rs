@@ -8,6 +8,7 @@ use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
 use c3p0_pg::error::into_c3p0_error;
 use c3p0_pg::postgres::{rows::Row, types::FromSql};
+use c3p0_pg::PgConnection;
 
 #[derive(Clone)]
 pub struct C3p0PgJsonBuilder<DATA, CODEC: JsonCodec<DATA>>
@@ -232,45 +233,44 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0PgJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC, PgConnection> for C3p0PgJson<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type Connection = c3p0_pg::PgConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &PgConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.create_table_sql_query, &[])?;
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(&self, conn: &PgConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.drop_table_sql_query, &[])?;
         Ok(())
     }
 
-    fn count_all(&self, conn: &Self::Connection) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: &PgConnection) -> Result<i64, C3p0Error> {
         conn.fetch_one_value(&self.count_all_sql_query, &[])
     }
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &Self::Connection,
+        conn: &PgConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(&self.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn find_all(&self, conn: &Self::Connection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn find_all(&self, conn: &PgConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.find_all_sql_query, &[], |row| Ok(self.to_model(row)?))
     }
 
     fn find_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &Self::Connection,
+        conn: &PgConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(&self.find_by_id_sql_query, &[&id.into()], |row| {
@@ -278,7 +278,7 @@ where
         })
     }
 
-    fn delete(&self, conn: &Self::Connection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &PgConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         let result = conn.execute(&self.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -290,19 +290,19 @@ where
         Ok(result)
     }
 
-    fn delete_all(&self, conn: &Self::Connection) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &PgConnection) -> Result<u64, C3p0Error> {
         conn.execute(&self.delete_all_sql_query, &[])
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &Self::Connection,
+        conn: &PgConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.execute(&self.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn update(&self, conn: &Self::Connection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(&self, conn: &PgConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
@@ -330,7 +330,7 @@ where
         Ok(updated_model)
     }
 
-    fn save(&self, conn: &Self::Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &PgConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
         let id = conn.fetch_one_value(&self.save_sql_query, &[&obj.version, &json_data])?;
         Ok(Model {

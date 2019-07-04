@@ -130,46 +130,45 @@ where
 }
 */
 
-pub trait C3p0Json<DATA, CODEC>
+pub trait C3p0Json<DATA, CODEC, CONNECTION>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-    CODEC: JsonCodec<DATA>,
+    CODEC: JsonCodec<DATA>
 {
-    type Connection;
 
     fn codec(&self) -> &CODEC;
 
-    fn create_table_if_not_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error>;
+    fn create_table_if_not_exists(&self, conn: &CONNECTION) -> Result<(), C3p0Error>;
 
-    fn drop_table_if_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error>;
+    fn drop_table_if_exists(&self, conn: &CONNECTION) -> Result<(), C3p0Error>;
 
-    fn count_all(&self, conn: &Self::Connection) -> Result<IdType, C3p0Error>;
+    fn count_all(&self, conn: &CONNECTION) -> Result<IdType, C3p0Error>;
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &Self::Connection,
+        conn: &CONNECTION,
         id: ID,
     ) -> Result<bool, C3p0Error>;
 
-    fn find_all(&self, conn: &Self::Connection) -> Result<Vec<Model<DATA>>, C3p0Error>;
+    fn find_all(&self, conn: &CONNECTION) -> Result<Vec<Model<DATA>>, C3p0Error>;
 
     fn find_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &Self::Connection,
+        conn: &CONNECTION,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error>;
 
-    fn delete(&self, conn: &Self::Connection, obj: &Model<DATA>) -> Result<u64, C3p0Error>;
+    fn delete(&self, conn: &CONNECTION, obj: &Model<DATA>) -> Result<u64, C3p0Error>;
 
-    fn delete_all(&self, conn: &Self::Connection) -> Result<u64, C3p0Error>;
+    fn delete_all(&self, conn: &CONNECTION) -> Result<u64, C3p0Error>;
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &Self::Connection,
+        conn: &CONNECTION,
         id: ID,
     ) -> Result<u64, C3p0Error>;
 
-    fn save(&self, conn: &Self::Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
+    fn save(&self, conn: &CONNECTION, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
-    fn update(&self, conn: &Self::Connection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
+    fn update(&self, conn: &CONNECTION, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 }

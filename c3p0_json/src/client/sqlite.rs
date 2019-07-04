@@ -5,6 +5,7 @@ use c3p0_common::types::OptString;
 
 use crate::C3p0Json;
 use c3p0_sqlite::rusqlite::{types::FromSql, Row};
+use c3p0_sqlite::SqliteConnection;
 
 #[derive(Clone)]
 pub struct C3p0SqliteJsonBuilder<DATA, CODEC: JsonCodec<DATA>>
@@ -228,45 +229,44 @@ where
     }
 }
 
-impl<'a, DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0SqliteJson<'a, DATA, CODEC>
+impl<'a, DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC, SqliteConnection<'a>> for C3p0SqliteJson<'a, DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type Connection = c3p0_sqlite::SqliteConnection<'a>;
 
     fn codec(&self) -> &CODEC {
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &SqliteConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.create_table_sql_query, &[])?;
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &Self::Connection) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(&self, conn: &SqliteConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.drop_table_sql_query, &[])?;
         Ok(())
     }
 
-    fn count_all(&self, conn: &Self::Connection) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: &SqliteConnection) -> Result<i64, C3p0Error> {
         conn.fetch_one_value(&self.count_all_sql_query, &[])
     }
 
     fn exists_by_id<'b, ID: Into<&'b IdType>>(
         &self,
-        conn: &Self::Connection,
+        conn: &SqliteConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(&self.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn find_all(&self, conn: &Self::Connection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn find_all(&self, conn: &SqliteConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.find_all_sql_query, &[], |row| Ok(self.to_model(row)?))
     }
 
     fn find_by_id<'b, ID: Into<&'b IdType>>(
         &self,
-        conn: &Self::Connection,
+        conn: &SqliteConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(&self.find_by_id_sql_query, &[&id.into()], |row| {
@@ -274,7 +274,7 @@ where
         })
     }
 
-    fn delete(&self, conn: &Self::Connection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &SqliteConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         let result = conn.execute(&self.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -286,19 +286,19 @@ where
         Ok(result)
     }
 
-    fn delete_all(&self, conn: &Self::Connection) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &SqliteConnection) -> Result<u64, C3p0Error> {
         conn.execute(&self.delete_all_sql_query, &[])
     }
 
     fn delete_by_id<'b, ID: Into<&'b IdType>>(
         &self,
-        conn: &Self::Connection,
+        conn: &SqliteConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.execute(&self.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn update(&self, conn: &Self::Connection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(&self, conn: &SqliteConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
@@ -326,7 +326,7 @@ where
         Ok(updated_model)
     }
 
-    fn save(&self, conn: &Self::Connection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &SqliteConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
         {
             conn.execute(&self.save_sql_query, &[&obj.version, &json_data])?;

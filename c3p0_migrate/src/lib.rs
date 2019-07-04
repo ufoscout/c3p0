@@ -5,6 +5,7 @@ use c3p0::json::JsonManagerBase;
 use c3p0_json::*;
 use log::*;
 use serde_derive::{Deserialize, Serialize};
+use c3p0_json::json::codec::DefaultJsonCodec;
 
 mod md5;
 pub mod migration;
@@ -52,18 +53,12 @@ impl C3p0MigrateBuilder {
         self
     }
 
-    pub fn build(self) -> C3p0Migrate {
-        let conf = JsonManagerBuilder::new(self.table.clone())
-            .with_schema_name(self.schema.clone())
-            .build();
-
-        let repo = C3p0JsonRepository::build(conf);
-
+    pub fn build<C3P0>(self, c3p0: C3P0) -> C3p0Migrate<C3P0> {
         C3p0Migrate {
             table: self.table,
             schema: self.schema,
             migrations: to_sql_migrations(self.migrations),
-            repo,
+            c3p0,
         }
     }
 }
@@ -88,44 +83,50 @@ pub enum MigrationType {
 }
 
 #[derive(Clone)]
-pub struct C3p0Migrate {
+pub struct C3p0Migrate<C3P0> {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
-    repo: C3p0JsonRepository<
-        MigrationData,
-        DefaultJsonCodec,
-        JsonManager<'static, MigrationData, DefaultJsonCodec>,
-    >,
+    c3p0: C3P0
 }
 
 const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
 
-impl C3p0Migrate {
-    pub fn migrate(&self, c3p0: &C3p0) -> Result<(), C3p0Error> {
+impl C3p0Migrate<c3p0_json::pg::C3p0Pg>
+{
+    pub fn migrate(&self) -> Result<(), C3p0Error> {
+        let c3p0_json = C3p0PgJsonBuilder::new(self.table.clone())
+            .with_schema_name(self.schema.clone())
+            .build();
+
         {
-            let conn = c3p0.connection()?;
-            if let Err(err) = self.repo.create_table_if_not_exists(&conn) {
+            let conn = self.c3p0.connection()?;
+            if let Err(err) = c3p0_json.create_table_if_not_exists(&conn) {
                 warn!("Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
             };
         }
 
         // Start Migration
-        c3p0.transaction(|conn| Ok(self.create_migration_zero(conn)?))
-            .map_err(C3p0Error::from)?;
+        self.c3p0.transaction(|conn| {
+            C3p0Migrate::create_migration_zero(&c3p0_json, conn)
+        })?;
 
         // Start Migration
-        c3p0.transaction(|conn| Ok(self.start_migration(conn)?))
-            .map_err(C3p0Error::from)
+        self.c3p0.transaction(|conn| C3p0Migrate::start_migration(&c3p0_json, conn))
     }
 
-    fn create_migration_zero(&self, conn: &Connection) -> Result<(), C3p0Error> {
+
+}
+
+impl <C3P0> C3p0Migrate<C3P0> {
+
+    fn create_migration_zero<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>, CONN>(c3po_json: &C3P0JSON, conn: &CONN) -> Result<(), C3p0Error> {
 
         #[cfg(feature = "pg")]
         {
             conn.batch_execute(&format!(
                 "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
-                self.repo.json_manager().qualified_table_name()
+                c3po_json.json_manager().qualified_table_name()
             ))?;
         };
 
@@ -133,27 +134,13 @@ impl C3p0Migrate {
             {
                 conn.batch_execute(&format!(
                     "LOCK TABLES {} WRITE",
-                    self.repo.json_manager().qualified_table_name()
+                    c3po_json.json_manager().qualified_table_name()
                 ))?;
 
             };
 
 
-        #[cfg(any(feature = "mysql", feature = "sqlite"))]
-        let sql = format!(
-            r#"select count(*) from {} where JSON_EXTRACT({}, "$.migration_id") = ?"#,
-            self.repo.json_manager().qualified_table_name(),
-            self.repo.json_manager().data_field_name()
-        );
-
-        #[cfg(feature = "pg")]
-        let sql = format!(
-            r#"select count(*) from {} where {}->>'migration_id' = $1"#,
-            self.repo.json_manager().qualified_table_name(),
-            self.repo.json_manager().data_field_name()
-        );
-
-        let count: i64 = conn.fetch_one_value(&sql, &[&C3P0_INIT_MIGRATION_ID])?;
+        let count = c3po_json.count_all(&conn)?;
 
         if count == 0 {
             let migration_zero = MigrationData {
@@ -164,13 +151,13 @@ impl C3p0Migrate {
                 installed_on_epoch_ms: 0,
                 success: true,
             };
-            self.repo.save(&conn, migration_zero.into())?;
+            c3po_json.save(&conn, migration_zero.into())?;
         };
 
         Ok(())
     }
 
-    fn start_migration(&self, conn: &Connection) -> Result<(), C3p0Error> {
+    fn start_migration<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>, CONN>(c3po_json: &C3P0JSON, conn: &CONN) -> Result<(), C3p0Error> {
 
         #[cfg(feature = "mysql")]
         let lock_sql = format!(
@@ -243,11 +230,8 @@ impl C3p0Migrate {
         Ok(())
     }
 
-    pub fn fetch_migrations_history(
-        &self,
-        conn: &Connection,
-    ) -> Result<Vec<MigrationModel>, C3p0Error> {
-        self.repo.find_all(conn).map_err(C3p0Error::from)
+    pub fn fetch_migrations_history<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>, CONN>(c3po_json: &C3P0JSON, conn: &CONN) -> Result<Vec<MigrationModel>, C3p0Error> {
+        c3po_json.find_all(conn)
     }
 
     fn clean_history(
