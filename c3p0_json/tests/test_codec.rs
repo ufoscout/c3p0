@@ -87,11 +87,11 @@ fn should_upgrade_structs_on_load() {
         let conn = pool.connection().unwrap();
         let table_name = "USER_TABLE";
 
-        let jpo_v1 = C3p0JsonBuilder::new(table_name)
+        let jpo_v1 = C3p0JsonBuilderImpl::new(table_name)
             .with_codec(UserVersionCoded1 {})
             .build();
 
-        let jpo_v2 = C3p0JsonBuilder::new(table_name)
+        let jpo_v2 = C3p0JsonBuilderImpl::new(table_name)
             .with_codec(UserVersionCoded2 {})
             .build();
 

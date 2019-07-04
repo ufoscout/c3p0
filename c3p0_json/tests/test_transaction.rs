@@ -18,7 +18,7 @@ use crate::shared_sqlite::*;
 #[test]
 fn should_commit_transaction() {
     SINGLETON.get(|(pool, _)| {
-        let c3p0: C3p0 = pool.clone();
+        let c3p0: C3p0Impl = pool.clone();
 
         {
             let conn = c3p0.connection().unwrap();
@@ -59,7 +59,7 @@ fn should_commit_transaction() {
 #[test]
 fn should_rollback_transaction() {
     SINGLETON.get(|(pool, _)| {
-        let c3p0: C3p0 = pool.clone();
+        let c3p0: C3p0Impl = pool.clone();
 
         {
             let conn = c3p0.connection().unwrap();

@@ -20,7 +20,7 @@ fn should_create_and_drop_table() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
 
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
@@ -52,7 +52,7 @@ fn should_create_and_drop_table() {
 fn basic_crud() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
         jpo.delete_all(&conn).unwrap();
@@ -80,7 +80,7 @@ fn basic_crud() {
 fn should_find_all() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
         jpo.delete_all(&conn).unwrap();
@@ -107,7 +107,7 @@ fn should_find_all() {
 fn should_delete_all() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.drop_table_if_exists(&conn).is_ok());
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
@@ -135,7 +135,7 @@ fn should_delete_all() {
 fn should_count() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
         assert!(jpo.delete_all(&conn).is_ok());
@@ -165,7 +165,7 @@ fn should_count() {
 fn should_return_whether_exists_by_id() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
 
@@ -188,7 +188,7 @@ fn should_return_whether_exists_by_id() {
 fn should_update_and_increase_version() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
         jpo.delete_all(&conn).unwrap();
@@ -225,7 +225,7 @@ fn should_update_and_increase_version() {
 fn update_should_return_optimistic_lock_exception() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
         jpo.delete_all(&conn).unwrap();
@@ -263,7 +263,7 @@ fn update_should_return_optimistic_lock_exception() {
 fn should_delete_based_on_id_and_version() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
         jpo.delete_all(&conn).unwrap();
@@ -285,7 +285,7 @@ fn should_delete_based_on_id_and_version() {
 fn delete_should_return_optimistic_lock_exception() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let jpo = C3p0JsonBuilder::new("TEST_TABLE").build();
+        let jpo = C3p0JsonBuilderImpl::new("TEST_TABLE").build();
 
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
         jpo.delete_all(&conn).unwrap();

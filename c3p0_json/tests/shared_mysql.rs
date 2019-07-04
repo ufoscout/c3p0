@@ -7,10 +7,10 @@ use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
-pub use c3p0_json::mysql::C3p0Mysql as C3p0;
-pub use c3p0_json::mysql::C3p0MysqlBuilder as C3p0Builder;
-pub use c3p0_json::C3p0MysqlJson as C3p0Json;
-pub use c3p0_json::C3p0MysqlJsonBuilder as C3p0JsonBuilder;
+pub use c3p0_json::mysql::C3p0Mysql as C3p0Impl;
+pub use c3p0_json::mysql::C3p0MysqlBuilder as C3p0BuilderImpl;
+pub use c3p0_json::C3p0MysqlJson as C3p0JsonImpl;
+pub use c3p0_json::C3p0MysqlJsonBuilder as C3p0JsonBuilderImpl;
 
 pub use c3p0_json::mysql::mysql::Row;
 
@@ -23,13 +23,13 @@ pub struct TestData {
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
     pub static ref SINGLETON: MaybeSingle<(
-        C3p0,
+        C3p0Impl,
         Container<'static, clients::Cli, images::generic::GenericImage>
     )> = MaybeSingle::new(|| init());
 }
 
 fn init() -> (
-    C3p0,
+    C3p0Impl,
     Container<'static, clients::Cli, images::generic::GenericImage>,
 ) {
     let mysql_version = "5.7.25";
@@ -55,7 +55,7 @@ fn init() -> (
 
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0Builder::build(pool);
+    let pool = C3p0BuilderImpl::build(pool);
 
     (pool, node)
 }
