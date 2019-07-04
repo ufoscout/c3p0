@@ -1,9 +1,12 @@
 #![cfg(feature = "mysql")]
 
-use c3p0::prelude::*;
-use mysql_client::{Opts, OptsBuilder};
-use r2d2_mysql::MysqlConnectionManager;
+use c3p0_json::*;
+use c3p0_json::mysql::mysql::{Opts, OptsBuilder};
+use c3p0_json::mysql::r2d2::{Pool, MysqlConnectionManager};
 use testcontainers::*;
+
+pub use c3p0_json::mysql::C3p0Mysql as C3p0;
+pub use c3p0_json::mysql::C3p0MysqlBuilder as C3p0Builder;
 
 pub fn new_connection(
     docker: &clients::Cli,
@@ -29,7 +32,7 @@ pub fn new_connection(
 
     let manager = MysqlConnectionManager::new(builder);
 
-    let pool = r2d2::Pool::builder()
+    let pool = Pool::builder()
         .min_idle(Some(10))
         .build(manager)
         .unwrap();
