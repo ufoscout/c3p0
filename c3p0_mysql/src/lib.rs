@@ -100,21 +100,21 @@ rental! {
 }
 
 
-fn test(conn: PooledConnection<MysqlConnectionManager>) {
+fn test(conn: PooledConnection<MysqlConnectionManager>) -> Result<(), C3p0Error> {
 
+
+    let mut rent = rentals::SimpleMut::try_new(Box::new(conn), |c| c
+        .start_transaction(true, None, None))
+        .map_err(|err| C3p0Error::SqlError { cause: "".to_owned() })?;
     /*
-    let rent = rentals::SimpleMut::try_new(Box::new(conn), |c| c
-        .start_transaction(true, None, None)).unwrap();
-    */
     let mut rent = rentals::SimpleMut::new(Box::new(conn), |c| c
         .start_transaction(true, None, None).unwrap());
-
+*/
 
     let sql = "";
-    let tx = rent.rent_mut(|mut tref| {
-        batch_execute(tref.deref_mut(), sql);
-        tref.query(sql).map(|_result| ()).map_err(into_c3p0_error);
-        ""
+    let result = rent.rent_mut(|mut tref| {
+        batch_execute(tref.deref_mut(), sql)?;
+        tref.query(sql).map(|_result| ()).map_err(into_c3p0_error)
     });
     //let mut transaction = tx.borrow_mut();
 
@@ -123,6 +123,7 @@ fn test(conn: PooledConnection<MysqlConnectionManager>) {
     //tx.query(sql).map(|_result| ()).map_err(into_c3p0_error);
 
     //batch_execute(tx.deref_mut(), sql);
+    result
 }
 
 
