@@ -1,6 +1,5 @@
 #![cfg(feature = "sqlite")]
 
-use c3p0_json::*;
 use c3p0_json::sqlite::r2d2::{Pool, SqliteConnectionManager};
 use testcontainers::*;
 
