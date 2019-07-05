@@ -93,7 +93,7 @@ where
         self
     }
 
-    pub fn build<'a>(self) -> C3p0MysqlJson<DATA, CODEC> {
+    pub fn build(self) -> C3p0MysqlJson<DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),

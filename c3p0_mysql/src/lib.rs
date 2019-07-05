@@ -49,12 +49,10 @@ impl C3p0Mysql {
             cause: format!("{}", err),
         })?;
 
-        let rent = new_simple_mut(conn)?;
+        let transaction = new_simple_mut(conn)?;
 
         let result = {
-
-
-            let mut sql_executor = MySqlConnection::Tx(RefCell::new(rent));
+            let mut sql_executor = MySqlConnection::Tx(RefCell::new(transaction));
             let result = (tx)(&mut sql_executor)
                 .map_err(|err| C3p0Error::TransactionError { cause: err })?;
             (result, sql_executor)

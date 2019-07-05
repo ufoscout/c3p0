@@ -91,14 +91,13 @@ where
         self
     }
 
-    pub fn build<'a>(self) -> C3p0SqliteJson<'a, DATA, CODEC> {
+    pub fn build(self) -> C3p0SqliteJson<DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
         C3p0SqliteJson {
-            phantom_a: std::marker::PhantomData,
             phantom_data: std::marker::PhantomData,
 
             count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
@@ -180,11 +179,10 @@ where
 }
 
 #[derive(Clone)]
-pub struct C3p0SqliteJson<'a, DATA, CODEC: JsonCodec<DATA>>
+pub struct C3p0SqliteJson<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    phantom_a: std::marker::PhantomData<&'a ()>,
     phantom_data: std::marker::PhantomData<DATA>,
 
     pub codec: CODEC,
@@ -214,7 +212,7 @@ where
     pub drop_table_sql_query: String,
 }
 
-impl<'a, DATA, CODEC: JsonCodec<DATA>> C3p0SqliteJson<'a, DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0SqliteJson<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -229,7 +227,7 @@ where
     }
 }
 
-impl<'a, DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC, SqliteConnection<'a>> for C3p0SqliteJson<'a, DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC, SqliteConnection> for C3p0SqliteJson<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -252,7 +250,7 @@ where
         conn.fetch_one_value(&self.count_all_sql_query, &[])
     }
 
-    fn exists_by_id<'b, ID: Into<&'b IdType>>(
+    fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &SqliteConnection,
         id: ID,
@@ -264,7 +262,7 @@ where
         conn.fetch_all(&self.find_all_sql_query, &[], |row| Ok(self.to_model(row)?))
     }
 
-    fn find_by_id<'b, ID: Into<&'b IdType>>(
+    fn find_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &SqliteConnection,
         id: ID,
@@ -290,7 +288,7 @@ where
         conn.execute(&self.delete_all_sql_query, &[])
     }
 
-    fn delete_by_id<'b, ID: Into<&'b IdType>>(
+    fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &SqliteConnection,
         id: ID,

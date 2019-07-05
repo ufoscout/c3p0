@@ -17,7 +17,6 @@ pub mod rusqlite {
     pub use rusqlite::*;
 }
 
-
 pub struct C3p0SqliteBuilder {}
 
 impl C3p0SqliteBuilder {
@@ -32,35 +31,40 @@ pub struct C3p0Sqlite {
 }
 
 impl C3p0Sqlite {
-    pub fn connection(&self) -> Result<SqliteConnectionOld, C3p0Error> {
+    pub fn connection(&self) -> Result<SqliteConnection, C3p0Error> {
         self.pool
             .get()
             .map_err(|err| C3p0Error::PoolError {
                 cause: format!("{}", err),
             })
-            .map(SqliteConnectionOld::Conn)
+            .map(SqliteConnection::Conn)
     }
 
-    pub fn transaction<T, F: Fn(&SqliteConnectionOld) -> Result<T, Box<std::error::Error>>>(
+    pub fn transaction<T, F: Fn(&SqliteConnection) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {
-        let mut conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
+        let conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
             cause: format!("{}", err),
         })?;
 
-        let transaction = conn.transaction().map_err(into_c3p0_error)?;
+        let transaction = new_simple_mut(conn)?;
 
         let result = {
-            let mut sql_executor = SqliteConnectionOld::Tx(RefCell::new(transaction));
+            let mut sql_executor = SqliteConnection::Tx(RefCell::new(transaction));
             let result = (tx)(&mut sql_executor)
                 .map_err(|err| C3p0Error::TransactionError { cause: err })?;
             (result, sql_executor)
         };
 
         match result.1 {
-            SqliteConnectionOld::Tx(tx) => {
-                tx.into_inner().commit().map_err(into_c3p0_error)?;
+            SqliteConnection::Tx(tx) => {
+                let mut transaction = tx.borrow_mut();
+                transaction.rent_mut(|tref| {
+                    let tref_some = tref.take();
+                    tref_some.unwrap().commit()?;
+                    Ok(())
+                }).map_err(into_c3p0_error)?;
             }
             _ => panic!("It should have been a transaction"),
         };
@@ -118,7 +122,6 @@ impl SqliteConnection {
             SqliteConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
-                    let mut transaction = tx.borrow_mut();
                     tref.as_mut().unwrap().execute(sql, params)
                         .map(|res| res as u64)
                         .map_err(into_c3p0_error)
@@ -188,98 +191,6 @@ impl SqliteConnection {
                     )
                 })
             },
-        }
-    }
-
-    pub fn fetch_all_values<T: FromSql>(
-        &self,
-        sql: &str,
-        params: &[&ToSql],
-    ) -> Result<Vec<T>, C3p0Error> {
-        self.fetch_all(sql, params, to_value_mapper)
-    }
-}
-
-
-
-
-pub enum SqliteConnectionOld<'a> {
-    Conn(PooledConnection<SqliteConnectionManager>),
-    Tx(RefCell<rusqlite::Transaction<'a>>),
-}
-
-impl<'a> Connection for SqliteConnectionOld<'a> {
-    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
-        match self {
-            SqliteConnectionOld::Conn(conn) => conn.execute_batch(sql).map_err(into_c3p0_error),
-            SqliteConnectionOld::Tx(tx) => tx.borrow_mut().execute_batch(sql).map_err(into_c3p0_error),
-        }
-    }
-}
-
-impl<'a> SqliteConnectionOld<'a> {
-    pub fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
-        match self {
-            SqliteConnectionOld::Conn(conn) => conn.execute(sql, params).map_err(into_c3p0_error).map(|res| res as u64),
-            SqliteConnectionOld::Tx(tx) => tx
-                .borrow_mut()
-                .execute(sql, params)
-                .map(|res| res as u64)
-                .map_err(into_c3p0_error),
-        }
-    }
-
-    pub fn fetch_one_value<T: FromSql>(
-        &self,
-        sql: &str,
-        params: &[&ToSql],
-    ) -> Result<T, C3p0Error> {
-        self.fetch_one(sql, params, to_value_mapper)
-    }
-
-    pub fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
-        &self,
-        sql: &str,
-        params: &[&ToSql],
-        mapper: F,
-    ) -> Result<T, C3p0Error> {
-        self.fetch_one_option(sql, params, mapper)
-            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
-    }
-
-    pub fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
-        &self,
-        sql: &str,
-        params: &[&ToSql],
-        mapper: F,
-    ) -> Result<Option<T>, C3p0Error> {
-        match self {
-            SqliteConnectionOld::Conn(conn) => {
-                fetch_one_option(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
-            }
-            SqliteConnectionOld::Tx(tx) => fetch_one_option(
-                tx.borrow_mut().prepare(sql).map_err(into_c3p0_error)?,
-                params,
-                mapper,
-            ),
-        }
-    }
-
-    pub fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
-        &self,
-        sql: &str,
-        params: &[&ToSql],
-        mapper: F,
-    ) -> Result<Vec<T>, C3p0Error> {
-        match self {
-            SqliteConnectionOld::Conn(conn) => {
-                fetch_all(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
-            }
-            SqliteConnectionOld::Tx(tx) => fetch_all(
-                tx.borrow_mut().prepare(sql).map_err(into_c3p0_error)?,
-                params,
-                mapper,
-            ),
         }
     }
 
