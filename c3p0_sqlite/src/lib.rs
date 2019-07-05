@@ -91,29 +91,39 @@ rental! {
 }
 
 
-pub enum SqliteConnection<'a> {
+pub enum SqliteConnection {
     Conn(PooledConnection<SqliteConnectionManager>),
-    Tx(RefCell<rusqlite::Transaction<'a>>),
+    Tx(RefCell<rentals::SimpleMut>),
 }
 
-impl<'a> Connection for SqliteConnection<'a> {
+impl Connection for SqliteConnection {
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             SqliteConnection::Conn(conn) => conn.execute_batch(sql).map_err(into_c3p0_error),
-            SqliteConnection::Tx(tx) => tx.borrow_mut().execute_batch(sql).map_err(into_c3p0_error),
+            SqliteConnection::Tx(tx) => {
+                let mut transaction = tx.borrow_mut();
+                transaction.rent_mut(|tref| {
+                    tref.as_mut().unwrap().execute_batch(sql).map_err(into_c3p0_error)
+                })
+                //tx.borrow_mut().execute_batch(sql).map_err(into_c3p0_error)
+            },
         }
     }
 }
 
-impl<'a> SqliteConnection<'a> {
+impl SqliteConnection {
     pub fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         match self {
             SqliteConnection::Conn(conn) => conn.execute(sql, params).map_err(into_c3p0_error).map(|res| res as u64),
-            SqliteConnection::Tx(tx) => tx
-                .borrow_mut()
-                .execute(sql, params)
-                .map(|res| res as u64)
-                .map_err(into_c3p0_error),
+            SqliteConnection::Tx(tx) => {
+                let mut transaction = tx.borrow_mut();
+                transaction.rent_mut(|tref| {
+                    let mut transaction = tx.borrow_mut();
+                    tref.as_mut().unwrap().execute(sql, params)
+                        .map(|res| res as u64)
+                        .map_err(into_c3p0_error)
+                })
+            },
         }
     }
 
@@ -145,11 +155,16 @@ impl<'a> SqliteConnection<'a> {
             SqliteConnection::Conn(conn) => {
                 fetch_one_option(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
             }
-            SqliteConnection::Tx(tx) => fetch_one_option(
-                tx.borrow_mut().prepare(sql).map_err(into_c3p0_error)?,
-                params,
-                mapper,
-            ),
+            SqliteConnection::Tx(tx) => {
+                let mut transaction = tx.borrow_mut();
+                transaction.rent_mut(|tref| {
+                    fetch_one_option(
+                        tref.as_mut().unwrap().prepare(sql).map_err(into_c3p0_error)?,
+                        params,
+                        mapper,
+                    )
+                })
+            },
         }
     }
 
@@ -163,11 +178,16 @@ impl<'a> SqliteConnection<'a> {
             SqliteConnection::Conn(conn) => {
                 fetch_all(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
             }
-            SqliteConnection::Tx(tx) => fetch_all(
-                tx.borrow_mut().prepare(sql).map_err(into_c3p0_error)?,
-                params,
-                mapper,
-            ),
+            SqliteConnection::Tx(tx) => {
+                let mut transaction = tx.borrow_mut();
+                transaction.rent_mut(|tref| {
+                    fetch_all(
+                        tref.as_mut().unwrap().prepare(sql).map_err(into_c3p0_error)?,
+                        params,
+                        mapper,
+                    )
+                })
+            },
         }
     }
 
