@@ -71,6 +71,61 @@ impl C3p0Mysql {
     }
 }
 
+
+#[macro_use]
+extern crate rental;
+/*
+rental! {
+	mod rentals {
+		use super::*;
+
+		#[rental_mut]
+		pub struct SimpleMut {
+			conn: Box<PooledConnection<MysqlConnectionManager>>,
+			tx: &'conn mut mysql_client::Transaction<'conn>,
+		}
+	}
+}
+*/
+rental! {
+	mod rentals {
+		use super::*;
+
+		#[rental_mut]
+		pub struct SimpleMut {
+			conn: Box<PooledConnection<MysqlConnectionManager>>,
+			tx: mysql_client::Transaction<'conn>,
+		}
+	}
+}
+
+
+fn test(conn: PooledConnection<MysqlConnectionManager>) {
+
+    /*
+    let rent = rentals::SimpleMut::try_new(Box::new(conn), |c| c
+        .start_transaction(true, None, None)).unwrap();
+    */
+    let mut rent = rentals::SimpleMut::new(Box::new(conn), |c| c
+        .start_transaction(true, None, None).unwrap());
+
+
+    let sql = "";
+    let tx = rent.rent_mut(|mut tref| {
+        batch_execute(tref.deref_mut(), sql);
+        tref.query(sql).map(|_result| ()).map_err(into_c3p0_error);
+        ""
+    });
+    //let mut transaction = tx.borrow_mut();
+
+    //println!("found tx: {}", tx)
+
+    //tx.query(sql).map(|_result| ()).map_err(into_c3p0_error);
+
+    //batch_execute(tx.deref_mut(), sql);
+}
+
+
 pub enum MySqlConnection<'a> {
     Conn(RefCell<PooledConnection<MysqlConnectionManager>>),
     Tx(RefCell<mysql_client::Transaction<'a>>),
