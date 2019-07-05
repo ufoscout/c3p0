@@ -178,9 +178,9 @@ impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql> {
         })
     }
 
-    pub fn get_migrations_history<'a>(
-        &'a self,
-        conn: &'a c3p0_json::mysql::MySqlConnection<'a>,
+    pub fn get_migrations_history(
+        &self,
+        conn: &c3p0_json::mysql::MySqlConnection,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self.build_cp30_json();
         c3p0_json.find_all(conn)

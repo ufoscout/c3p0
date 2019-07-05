@@ -26,7 +26,7 @@ maybe-single = "0.1"
 testcontainers = "0.6"
 
 [features]
-default = ["pg"]
+default = []
 
 mysql = ["c3p0_json/mysql"]
 pg = ["c3p0_json/pg"]
