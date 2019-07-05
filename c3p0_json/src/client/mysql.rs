@@ -8,7 +8,7 @@ use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
 use c3p0_mysql::mysql::prelude::FromValue;
 use c3p0_mysql::mysql::Row;
-use c3p0_mysql::MySqlConnection;
+use c3p0_mysql::MysqlConnection;
 
 #[derive(Clone)]
 pub struct C3p0MysqlJsonBuilder<DATA, CODEC: JsonCodec<DATA>>
@@ -229,7 +229,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC, MySqlConnection> for C3p0MysqlJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC, MysqlConnection> for C3p0MysqlJson<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
 {
@@ -238,35 +238,35 @@ where
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &MySqlConnection) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &MysqlConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.create_table_sql_query, &[])?;
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &MySqlConnection) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(&self, conn: &MysqlConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.drop_table_sql_query, &[])?;
         Ok(())
     }
 
-    fn count_all(&self, conn: &MySqlConnection) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: &MysqlConnection) -> Result<i64, C3p0Error> {
         conn.fetch_one_value(&self.count_all_sql_query, &[])
     }
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &MySqlConnection,
+        conn: &MysqlConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(&self.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn find_all(&self, conn: &MySqlConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn find_all(&self, conn: &MysqlConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.find_all_sql_query, &[], |row| Ok(self.to_model(row)?))
     }
 
     fn find_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &MySqlConnection,
+        conn: &MysqlConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(&self.find_by_id_sql_query, &[&id.into()], |row| {
@@ -274,7 +274,7 @@ where
         })
     }
 
-    fn delete(&self, conn: &MySqlConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &MysqlConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         let result = conn.execute(&self.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -286,19 +286,19 @@ where
         Ok(result)
     }
 
-    fn delete_all(&self, conn: &MySqlConnection) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &MysqlConnection) -> Result<u64, C3p0Error> {
         conn.execute(&self.delete_all_sql_query, &[])
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &MySqlConnection,
+        conn: &MysqlConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.execute(&self.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn update(&self, conn: &MySqlConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(&self, conn: &MysqlConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
@@ -326,7 +326,7 @@ where
         Ok(updated_model)
     }
 
-    fn save(&self, conn: &MySqlConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &MysqlConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
         {
             conn.execute(&self.save_sql_query, &[&obj.version, &json_data])?;

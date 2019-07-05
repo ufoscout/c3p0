@@ -1,3 +1,4 @@
+use c3p0_json::*;
 use c3p0_migrate::migration::{fs::from_fs, Migration};
 use c3p0_migrate::{C3p0MigrateBuilder, C3P0_MIGRATE_TABLE_DEFAULT};
 use testcontainers::clients;

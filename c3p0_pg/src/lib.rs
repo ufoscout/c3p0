@@ -1,12 +1,12 @@
 pub mod error;
 
-pub use c3p0_common::error::C3p0Error;
-
 use crate::error::into_c3p0_error;
 use crate::postgres::rows::Row;
 use crate::postgres::types::{FromSql, ToSql};
 use crate::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
-use c3p0_common::pool::Connection;
+
+pub use c3p0_common::error::C3p0Error;
+pub use c3p0_common::pool::{Connection, C3p0};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -29,8 +29,8 @@ pub struct C3p0Pg {
     pool: Pool<PostgresConnectionManager>,
 }
 
-impl C3p0Pg {
-    pub fn connection(&self) -> Result<PgConnection, C3p0Error> {
+impl C3p0<PgConnection> for C3p0Pg {
+    fn connection(&self) -> Result<PgConnection, C3p0Error> {
         self.pool
             .get()
             .map_err(|err| C3p0Error::PoolError {
@@ -39,7 +39,7 @@ impl C3p0Pg {
             .map(|conn| PgConnection { conn })
     }
 
-    pub fn transaction<T, F: Fn(&PgConnection) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, F: Fn(&PgConnection) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {

@@ -180,7 +180,7 @@ impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql> {
 
     pub fn get_migrations_history(
         &self,
-        conn: &c3p0_json::mysql::MySqlConnection,
+        conn: &c3p0_json::mysql::MysqlConnection,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self.build_cp30_json();
         c3p0_json.find_all(conn)
@@ -189,7 +189,7 @@ impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql> {
     fn lock_table(
         &self,
         c3p0_json: &c3p0_json::C3p0MysqlJson<MigrationData, DefaultJsonCodec>,
-        conn: &c3p0_json::mysql::MySqlConnection,
+        conn: &c3p0_json::mysql::MysqlConnection,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
             "LOCK TABLES {} WRITE",
@@ -200,7 +200,7 @@ impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql> {
     fn lock_first_migration_row(
         &self,
         c3p0_json: &c3p0_json::C3p0MysqlJson<MigrationData, DefaultJsonCodec>,
-        conn: &c3p0_json::mysql::MySqlConnection,
+        conn: &c3p0_json::mysql::MysqlConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ? FOR UPDATE"#,

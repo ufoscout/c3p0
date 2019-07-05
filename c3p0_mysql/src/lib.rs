@@ -1,14 +1,14 @@
 pub mod error;
 
-pub use c3p0_common::error::C3p0Error;
-
 use crate::error::into_c3p0_error;
 use crate::mysql::prelude::{FromValue, GenericConnection, ToValue};
 use crate::mysql::Row;
 use crate::r2d2::{Pool, PooledConnection, MysqlConnectionManager};
 use std::cell::RefCell;
 use std::ops::DerefMut;
-use c3p0_common::pool::Connection;
+
+pub use c3p0_common::error::C3p0Error;
+pub use c3p0_common::pool::{Connection, C3p0};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -31,17 +31,17 @@ pub struct C3p0Mysql {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl C3p0Mysql {
-    pub fn connection(&self) -> Result<MySqlConnection, C3p0Error> {
+impl C3p0<MysqlConnection> for C3p0Mysql {
+    fn connection(&self) -> Result<MysqlConnection, C3p0Error> {
         self.pool
             .get()
             .map_err(|err| C3p0Error::PoolError {
                 cause: format!("{}", err),
             })
-            .map(|conn| MySqlConnection::Conn(RefCell::new(conn)))
+            .map(|conn| MysqlConnection::Conn(RefCell::new(conn)))
     }
 
-    pub fn transaction<T, F: Fn(&MySqlConnection) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, F: Fn(&MysqlConnection) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {
@@ -52,14 +52,14 @@ impl C3p0Mysql {
         let transaction = new_simple_mut(conn)?;
 
         let result = {
-            let mut sql_executor = MySqlConnection::Tx(RefCell::new(transaction));
+            let mut sql_executor = MysqlConnection::Tx(RefCell::new(transaction));
             let result = (tx)(&mut sql_executor)
                 .map_err(|err| C3p0Error::TransactionError { cause: err })?;
             (result, sql_executor)
         };
 
         match result.1 {
-            MySqlConnection::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     let tref_some = tref.take();
@@ -95,21 +95,21 @@ rental! {
 	}
 }
 
-pub enum MySqlConnection {
+pub enum MysqlConnection {
     Conn(RefCell<PooledConnection<MysqlConnectionManager>>),
     Tx(RefCell<rentals::SimpleMut>),
 }
 
 
-impl Connection for MySqlConnection {
+impl Connection for MysqlConnection {
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
         match self {
-            MySqlConnection::Conn(conn) => {
+            MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
                 let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
                 batch_execute(conn, sql)
             }
-            MySqlConnection::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     batch_execute(tref.as_mut().unwrap(), sql)
@@ -119,15 +119,15 @@ impl Connection for MySqlConnection {
     }
 }
 
-impl MySqlConnection {
+impl MysqlConnection {
     pub fn execute(&self, sql: &str, params: &[&ToValue]) -> Result<u64, C3p0Error> {
         match self {
-            MySqlConnection::Conn(conn) => {
+            MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
                 let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
                 execute(conn, sql, params)
             }
-            MySqlConnection::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     execute(tref.as_mut().unwrap(), sql, params)
@@ -142,12 +142,12 @@ impl MySqlConnection {
         params: &[&ToValue],
     ) -> Result<T, C3p0Error> {
         match self {
-            MySqlConnection::Conn(conn) => {
+            MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
                 let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
                 fetch_one_value(conn, sql, params)
             }
-            MySqlConnection::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     fetch_one_value(tref.as_mut().unwrap(), sql, params)
@@ -163,12 +163,12 @@ impl MySqlConnection {
         mapper: F,
     ) -> Result<T, C3p0Error> {
         match self {
-            MySqlConnection::Conn(conn) => {
+            MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
                 let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
                 fetch_one(conn, sql, params, mapper)
             }
-            MySqlConnection::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     fetch_one(tref.as_mut().unwrap(), sql, params, mapper)
@@ -184,12 +184,12 @@ impl MySqlConnection {
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
         match self {
-            MySqlConnection::Conn(conn) => {
+            MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
                 let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
                 fetch_one_option(conn, sql, params, mapper)
             }
-            MySqlConnection::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     fetch_one_option(tref.as_mut().unwrap(), sql, params, mapper)
@@ -205,12 +205,12 @@ impl MySqlConnection {
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
-            MySqlConnection::Conn(conn) => {
+            MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
                 let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
                 fetch_all(conn, sql, params, mapper)
             }
-            MySqlConnection::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     fetch_all(tref.as_mut().unwrap(), sql, params, mapper)
@@ -225,12 +225,12 @@ impl MySqlConnection {
         params: &[&ToValue],
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
-            MySqlConnection::Conn(conn) => {
+            MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
                 let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
                 fetch_all_values(conn, sql, params)
             }
-            MySqlConnection::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     fetch_all_values(tref.as_mut().unwrap(), sql, params)

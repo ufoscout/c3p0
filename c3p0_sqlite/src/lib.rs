@@ -7,7 +7,8 @@ use crate::r2d2::{Pool, PooledConnection, SqliteConnectionManager};
 use crate::rusqlite::types::{FromSql, ToSql};
 use crate::rusqlite::Row;
 use std::cell::RefCell;
-use c3p0_common::pool::Connection;
+
+pub use c3p0_common::pool::{Connection, C3p0};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -30,8 +31,8 @@ pub struct C3p0Sqlite {
     pool: Pool<SqliteConnectionManager>,
 }
 
-impl C3p0Sqlite {
-    pub fn connection(&self) -> Result<SqliteConnection, C3p0Error> {
+impl C3p0<SqliteConnection> for C3p0Sqlite {
+    fn connection(&self) -> Result<SqliteConnection, C3p0Error> {
         self.pool
             .get()
             .map_err(|err| C3p0Error::PoolError {
@@ -40,7 +41,7 @@ impl C3p0Sqlite {
             .map(SqliteConnection::Conn)
     }
 
-    pub fn transaction<T, F: Fn(&SqliteConnection) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, F: Fn(&SqliteConnection) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {
