@@ -4,6 +4,7 @@ use serde_json::Value;
 use std::borrow::Cow;
 
 use crate::*;
+use crate::tests::util::rand_string;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 struct UserVersion1 {
@@ -72,13 +73,13 @@ impl JsonCodec<UserVersion2> for UserVersionCoded2 {
 fn should_upgrade_structs_on_load() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
-        let table_name = "USER_TABLE";
+        let table_name = format!("USER_TABLE_{}", rand_string(8));
 
-        let jpo_v1 = C3p0JsonBuilderImpl::new(table_name)
+        let jpo_v1 = C3p0JsonBuilderImpl::new(&table_name)
             .with_codec(UserVersionCoded1 {})
             .build();
 
-        let jpo_v2 = C3p0JsonBuilderImpl::new(table_name)
+        let jpo_v2 = C3p0JsonBuilderImpl::new(&table_name)
             .with_codec(UserVersionCoded2 {})
             .build();
 

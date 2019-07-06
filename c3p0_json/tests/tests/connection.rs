@@ -1,5 +1,6 @@
 use c3p0_json::*;
 use crate::*;
+use crate::tests::util::rand_string;
 
 #[test]
 fn should_execute_and_fetch() {
@@ -8,31 +9,33 @@ fn should_execute_and_fetch() {
 
         let conn = c3p0.connection().unwrap();
 
+        let table_name = format!("TEST_TABLE_{}", rand_string(8));
+
         assert!(conn
             .execute(
-                r"CREATE TABLE TEST_TABLE (
+                &format!(r"CREATE TABLE {} (
                              name varchar(255)
-                          )",
+                          )", table_name),
                 &[]
             )
             .is_ok());
 
         assert_eq!(
             0,
-            conn.fetch_one_value::<i64>("SELECT COUNT(*) FROM TEST_TABLE", &[])
+            conn.fetch_one_value::<i64>(&format!("SELECT COUNT(*) FROM {}", table_name), &[])
                 .unwrap()
         );
 
         #[cfg(feature = "pg")]
-        let insert = r"INSERT INTO TEST_TABLE (name) VALUES ($1)";
+        let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
         #[cfg(any(feature = "mysql", feature = "sqlite"))]
-        let insert = r"INSERT INTO TEST_TABLE (name) VALUES (?)";
+        let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
 
         assert_eq!(
             1,
-            conn.fetch_one_value::<i64>("SELECT COUNT(*) FROM TEST_TABLE", &[])
+            conn.fetch_one_value::<i64>(&format!("SELECT COUNT(*) FROM {}", table_name), &[])
                 .unwrap()
         );
 
@@ -54,15 +57,15 @@ fn should_execute_and_fetch() {
             Ok(value)
         };
         let fetch_result_1 =
-            conn.fetch_one(r"SELECT * FROM TEST_TABLE WHERE name = 'one'", &[], mapper);
+            conn.fetch_one(&format!(r"SELECT * FROM {} WHERE name = 'one'", table_name), &[], mapper);
         assert!(fetch_result_1.is_ok());
         assert_eq!("one".to_owned(), fetch_result_1.unwrap());
 
         let fetch_result_2 =
-            conn.fetch_one(r"SELECT * FROM TEST_TABLE WHERE name = 'two'", &[], mapper);
+            conn.fetch_one(&format!(r"SELECT * FROM {} WHERE name = 'two'", table_name), &[], mapper);
         assert!(fetch_result_2.is_err());
 
-        assert!(conn.execute(r"DROP TABLE TEST_TABLE", &[]).is_ok());
+        assert!(conn.execute(&format!(r"DROP TABLE {}", table_name), &[]).is_ok());
     });
 }
 
@@ -73,19 +76,20 @@ fn should_execute_and_fetch_option() {
 
         let conn = c3p0.connection().unwrap();
 
+        let table_name = format!("TEST_TABLE_{}", rand_string(8));
         assert!(conn
             .execute(
-                r"CREATE TABLE TEST_TABLE (
+                &format!(r"CREATE TABLE {} (
                              name varchar(255)
-                          )",
+                          )", table_name),
                 &[]
             )
             .is_ok());
 
         #[cfg(feature = "pg")]
-        let insert = r"INSERT INTO TEST_TABLE (name) VALUES ($1)";
+        let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
         #[cfg(any(feature = "mysql", feature = "sqlite"))]
-        let insert = r"INSERT INTO TEST_TABLE (name) VALUES (?)";
+        let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
 
@@ -101,16 +105,16 @@ fn should_execute_and_fetch_option() {
         let mapper = |row: &Row| Ok(row.get(0)?);
 
         let fetch_result =
-            conn.fetch_one_option(r"SELECT * FROM TEST_TABLE WHERE name = 'one'", &[], mapper);
+            conn.fetch_one_option(&format!(r"SELECT * FROM {} WHERE name = 'one'", table_name), &[], mapper);
         assert!(fetch_result.is_ok());
         assert_eq!(Some("one".to_owned()), fetch_result.unwrap());
 
         let fetch_result =
-            conn.fetch_one_option(r"SELECT * FROM TEST_TABLE WHERE name = 'two'", &[], mapper);
+            conn.fetch_one_option(&format!(r"SELECT * FROM {} WHERE name = 'two'", table_name), &[], mapper);
         assert!(fetch_result.is_ok());
         assert_eq!(None, fetch_result.unwrap());
 
-        assert!(conn.execute(r"DROP TABLE TEST_TABLE", &[]).is_ok());
+        assert!(conn.execute(&format!(r"DROP TABLE {}", table_name), &[]).is_ok());
     });
 }
 
