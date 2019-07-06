@@ -6,6 +6,8 @@ use testcontainers::*;
 pub use c3p0_json::pg::C3p0Pg as C3p0Impl;
 pub use c3p0_json::pg::C3p0PgBuilder as C3p0BuilderImpl;
 
+mod tests;
+
 pub fn new_connection(
     docker: &clients::Cli,
 ) -> (C3p0Impl, Container<clients::Cli, images::postgres::Postgres>) {

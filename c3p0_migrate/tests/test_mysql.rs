@@ -7,6 +7,8 @@ use testcontainers::*;
 pub use c3p0_json::mysql::C3p0Mysql as C3p0Impl;
 pub use c3p0_json::mysql::C3p0MysqlBuilder as C3p0BuilderImpl;
 
+mod tests;
+
 pub fn new_connection(
     docker: &clients::Cli,
 ) -> (C3p0Impl, Container<clients::Cli, images::generic::GenericImage>) {

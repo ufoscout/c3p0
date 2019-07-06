@@ -3,20 +3,8 @@ use c3p0_migrate::migration::{fs::from_fs, Migration};
 use c3p0_migrate::{C3p0MigrateBuilder, C3P0_MIGRATE_TABLE_DEFAULT};
 use testcontainers::clients;
 
-#[cfg(feature = "pg")]
-mod shared_pg;
-#[cfg(feature = "pg")]
-use crate::shared_pg::*;
-
-#[cfg(feature = "mysql")]
-mod shared_mysql;
-#[cfg(feature = "mysql")]
-use crate::shared_mysql::*;
-
-#[cfg(feature = "sqlite")]
-mod shared_sqlite;
-#[cfg(feature = "sqlite")]
-use crate::shared_sqlite::*;
+use crate::*;
+use crate::tests::util::rand_string;
 
 #[test]
 fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<std::error::Error>> {
@@ -35,6 +23,7 @@ fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<st
         )
         .is_ok());
 
+    assert!(conn.execute(&format!(r"DROP TABLE {}", C3P0_MIGRATE_TABLE_DEFAULT), &[]).is_ok());
     Ok(())
 }
 
@@ -43,7 +32,7 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 
-    let custom_name = "c3p0_custom_name";
+    let custom_name = &format!("c3p0_custom_name_{}", rand_string(8));
 
     let migrate = C3p0MigrateBuilder::new()
         .with_table_name(custom_name)
@@ -65,19 +54,21 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 
-    let custom_name = "c3p0_custom_name";
+    let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
+    let first_table_name = &format!("first_table_{}", rand_string(8));
+    let second_table_name = &format!("second_table_{}", rand_string(8));
 
     let migrate = C3p0MigrateBuilder::new()
-        .with_table_name(custom_name)
+        .with_table_name(migration_table_name)
         .with_migrations(vec![
             Migration {
                 id: "first".to_owned(),
-                up: "create table FIRST_TABLE (id int)".to_owned(),
+                up: format!("create table {} (id int)", first_table_name),
                 down: "".to_owned(),
             },
             Migration {
                 id: "second".to_owned(),
-                up: "create table SECOND_TABLE (id int)".to_owned(),
+                up: format!("create table {} (id int)", second_table_name),
                 down: "".to_owned(),
             },
         ])
@@ -88,13 +79,13 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
     let conn = node.0.connection().unwrap();
 
     assert!(conn
-        .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", migration_table_name), &[])
         .is_ok());
     assert!(conn
-        .fetch_all_values::<i64>(&format!("select count(*) from FIRST_TABLE"), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", first_table_name), &[])
         .is_ok());
     assert!(conn
-        .fetch_all_values::<i64>(&format!("select count(*) from SECOND_TABLE"), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", second_table_name), &[])
         .is_ok());
 
     let status = migrate.get_migrations_history(&conn).unwrap();
@@ -114,13 +105,14 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 
-    let custom_name = "c3p0_custom_name";
+    let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
+    let first_table_name = &format!("first_table_{}", rand_string(8));
 
     let migrate = C3p0MigrateBuilder::new()
-        .with_table_name(custom_name)
+        .with_table_name(migration_table_name)
         .with_migrations(vec![Migration {
             id: "first".to_owned(),
-            up: "create table FIRST_TABLE (id int)".to_owned(),
+            up: format!("create table {} (id int)", first_table_name),
             down: "".to_owned(),
         }])
         .build(node.0.clone());
@@ -131,10 +123,10 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
     let conn = node.0.connection().unwrap();
 
     assert!(conn
-        .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", migration_table_name), &[])
         .is_ok());
     assert!(conn
-        .fetch_all_values::<i64>(&format!("select count(*) from FIRST_TABLE"), &[])
+        .fetch_all_values::<i64>(&format!("select count(*) from {}", first_table_name), &[])
         .is_ok());
 
     let status = migrate.get_migrations_history(&conn).unwrap();
@@ -155,12 +147,14 @@ fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
     let node = new_connection(&docker);
     let c3p0 = node.0.clone();
 
-    let custom_name = "c3p0_custom_name";
+    let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
+    let first_table_name = &format!("first_table_{}", rand_string(8));
+
     let migrate = C3p0MigrateBuilder::new()
-        .with_table_name(custom_name)
+        .with_table_name(migration_table_name)
         .with_migrations(vec![Migration {
             id: "first".to_owned(),
-            up: "create table FIRST_TABLE (id int)".to_owned(),
+            up: format!("create table {} (id int)", first_table_name),
             down: "".to_owned(),
         }])
         .build(c3p0.clone());

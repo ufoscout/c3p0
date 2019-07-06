@@ -6,6 +6,8 @@ use testcontainers::*;
 pub use c3p0_json::sqlite::C3p0Sqlite as C3p0Impl;
 pub use c3p0_json::sqlite::C3p0SqliteBuilder as C3p0BuilderImpl;
 
+mod tests;
+
 pub fn new_connection(_docker: &clients::Cli) -> (C3p0Impl, String) {
     let manager = SqliteConnectionManager::memory();
 
