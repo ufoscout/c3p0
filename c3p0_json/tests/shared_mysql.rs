@@ -11,8 +11,9 @@ pub use c3p0_json::mysql::C3p0Mysql as C3p0Impl;
 pub use c3p0_json::mysql::C3p0MysqlBuilder as C3p0BuilderImpl;
 pub use c3p0_json::C3p0MysqlJson as C3p0JsonImpl;
 pub use c3p0_json::C3p0MysqlJsonBuilder as C3p0JsonBuilderImpl;
-
 pub use c3p0_json::mysql::mysql::Row;
+
+mod tests;
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct TestData {

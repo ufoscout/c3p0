@@ -12,6 +12,8 @@ pub use c3p0_json::pg::C3p0PgBuilder as C3p0BuilderImpl;
 pub use c3p0_json::C3p0PgJson as C3p0JsonImpl;
 pub use c3p0_json::C3p0PgJsonBuilder as C3p0JsonBuilderImpl;
 
+mod tests;
+
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct TestData {
     pub first_name: String,

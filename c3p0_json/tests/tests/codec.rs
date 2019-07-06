@@ -3,20 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
 
-#[cfg(feature = "pg")]
-mod shared_pg;
-#[cfg(feature = "pg")]
-use crate::shared_pg::*;
-
-#[cfg(feature = "mysql")]
-mod shared_mysql;
-#[cfg(feature = "mysql")]
-use crate::shared_mysql::*;
-
-#[cfg(feature = "sqlite")]
-mod shared_sqlite;
-#[cfg(feature = "sqlite")]
-use crate::shared_sqlite::*;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 struct UserVersion1 {

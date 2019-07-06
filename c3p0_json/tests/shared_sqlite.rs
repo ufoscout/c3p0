@@ -11,6 +11,8 @@ pub use c3p0_json::sqlite::C3p0SqliteBuilder as C3p0BuilderImpl;
 pub use c3p0_json::C3p0SqliteJson as C3p0JsonImpl;
 pub use c3p0_json::C3p0SqliteJsonBuilder as C3p0JsonBuilderImpl;
 
+mod tests;
+
 #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct TestData {
     pub first_name: String,

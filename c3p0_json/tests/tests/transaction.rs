@@ -1,19 +1,5 @@
 use c3p0_json::*;
-
-#[cfg(feature = "pg")]
-mod shared_pg;
-#[cfg(feature = "pg")]
-use crate::shared_pg::*;
-
-#[cfg(feature = "mysql")]
-mod shared_mysql;
-#[cfg(feature = "mysql")]
-use crate::shared_mysql::*;
-
-#[cfg(feature = "sqlite")]
-mod shared_sqlite;
-#[cfg(feature = "sqlite")]
-use crate::shared_sqlite::*;
+use crate::*;
 
 #[test]
 fn should_commit_transaction() {
