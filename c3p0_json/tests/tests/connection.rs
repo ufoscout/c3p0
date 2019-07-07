@@ -124,12 +124,14 @@ fn should_batch_execute() {
         let c3p0: C3p0Impl = pool.clone();
         let conn = c3p0.connection().unwrap();
 
-        let insert = r"
-                CREATE TABLE TEST_TABLE ( name varchar(255) );
-                INSERT INTO TEST_TABLE (name) VALUES ('new-name-1');
-                INSERT INTO TEST_TABLE (name) VALUES ('new-name-2');
-                DROP TABLE TEST_TABLE;
-        ";
+        let table_name = format!("TEST_TABLE_{}", rand_string(8));
+
+        let insert = &format!(r"
+                CREATE TABLE {} ( name varchar(255) );
+                INSERT INTO {} (name) VALUES ('new-name-1');
+                INSERT INTO {} (name) VALUES ('new-name-2');
+                DROP TABLE {};
+        ", table_name, table_name, table_name, table_name);
 
         assert!(conn.batch_execute(insert).is_ok());
     });
@@ -140,48 +142,50 @@ fn should_fetch_values() {
     SINGLETON.get(|(pool, _)| {
         let c3p0: C3p0Impl = pool.clone();
 
+        let table_name = &format!("TEST_TABLE_{}", rand_string(8));
+
         c3p0.transaction(|conn| {
             assert!(conn
-                .batch_execute("CREATE TABLE TEST_TABLE ( name varchar(255) )")
+                .batch_execute(&format!("CREATE TABLE {} ( name varchar(255) )", table_name))
                 .is_ok());
 
-            let all_string = conn.fetch_all_values::<String>("SELECT * FROM TEST_TABLE", &[]);
+            let all_string = conn.fetch_all_values::<String>(&format!("SELECT * FROM {}", table_name), &[]);
             assert!(all_string.is_ok());
             assert!(all_string.unwrap().is_empty());
 
-            let one_string = conn.fetch_one_value::<String>("SELECT * FROM TEST_TABLE", &[]);
+            let one_string = conn.fetch_one_value::<String>(&format!("SELECT * FROM {}", table_name), &[]);
             assert!(one_string.is_err());
 
-            let one_i64 = conn.fetch_one_value::<i64>("SELECT * FROM TEST_TABLE", &[]);
+            let one_i64 = conn.fetch_one_value::<i64>(&format!("SELECT * FROM {}", table_name), &[]);
             assert!(one_i64.is_err());
 
             conn.batch_execute(
-                r"INSERT INTO TEST_TABLE (name) VALUES ('one');
-                                    INSERT INTO TEST_TABLE (name) VALUES ('two');
-                                    INSERT INTO TEST_TABLE (name) VALUES ('three')",
+                &format!(r"INSERT INTO {} (name) VALUES ('one');
+                                    INSERT INTO {} (name) VALUES ('two');
+                                    INSERT INTO {} (name) VALUES ('three')", table_name, table_name, table_name),
             )
             .unwrap();
 
             let all_string =
-                conn.fetch_all_values::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
+                conn.fetch_all_values::<String>(&format!("SELECT name FROM {} order by name", table_name), &[]);
             assert!(all_string.is_ok());
             assert_eq!(
                 vec!["one".to_owned(), "three".to_owned(), "two".to_owned(),],
                 all_string.unwrap()
             );
 
-            let all_i64 = conn.fetch_all_values::<i64>("SELECT * FROM TEST_TABLE", &[]);
+            let all_i64 = conn.fetch_all_values::<i64>(&format!("SELECT * FROM {}", table_name), &[]);
             assert!(all_i64.is_err());
 
             let one_string =
-                conn.fetch_one_value::<String>("SELECT name FROM TEST_TABLE order by name", &[]);
+                conn.fetch_one_value::<String>(&format!("SELECT name FROM {} order by name", table_name), &[]);
             assert!(one_string.is_ok());
             assert_eq!("one".to_owned(), one_string.unwrap());
 
-            let one_i64 = conn.fetch_one_value::<i64>("SELECT * FROM TEST_TABLE", &[]);
+            let one_i64 = conn.fetch_one_value::<i64>(&format!("SELECT * FROM {}", table_name), &[]);
             assert!(one_i64.is_err());
 
-            assert!(conn.batch_execute("DROP TABLE TEST_TABLE").is_ok());
+            assert!(conn.batch_execute(&format!("DROP TABLE {}", table_name)).is_ok());
 
             Ok(())
         })
