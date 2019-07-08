@@ -3,12 +3,12 @@ pub mod error;
 use crate::error::into_c3p0_error;
 use crate::mysql::prelude::{FromValue, GenericConnection, ToValue};
 use crate::mysql::Row;
-use crate::r2d2::{Pool, PooledConnection, MysqlConnectionManager};
+use crate::r2d2::{MysqlConnectionManager, Pool, PooledConnection};
 use std::cell::RefCell;
 use std::ops::DerefMut;
 
 pub use c3p0_common::error::C3p0Error;
-pub use c3p0_common::pool::{Connection, C3p0};
+pub use c3p0_common::pool::{C3p0, Connection};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -31,7 +31,9 @@ pub struct C3p0Mysql {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl C3p0<MysqlConnection> for C3p0Mysql {
+impl C3p0 for C3p0Mysql {
+    type CONN = MysqlConnection;
+
     fn connection(&self) -> Result<MysqlConnection, C3p0Error> {
         self.pool
             .get()
@@ -61,11 +63,13 @@ impl C3p0<MysqlConnection> for C3p0Mysql {
         match result.1 {
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    let tref_some = tref.take();
-                    tref_some.unwrap().commit()?;
-                    Ok(())
-                }).map_err(into_c3p0_error)?;
+                transaction
+                    .rent_mut(|tref| {
+                        let tref_some = tref.take();
+                        tref_some.unwrap().commit()?;
+                        Ok(())
+                    })
+                    .map_err(into_c3p0_error)?;
             }
             _ => panic!("It should have been a transaction"),
         };
@@ -74,9 +78,13 @@ impl C3p0<MysqlConnection> for C3p0Mysql {
     }
 }
 
-fn new_simple_mut(conn: PooledConnection<MysqlConnectionManager>) -> Result<rentals::SimpleMut, C3p0Error> {
+fn new_simple_mut(
+    conn: PooledConnection<MysqlConnectionManager>,
+) -> Result<rentals::SimpleMut, C3p0Error> {
     rentals::SimpleMut::try_new_or_drop(Box::new(conn), |c| {
-        let tx = c.start_transaction(true, None, None).map_err(into_c3p0_error)?;
+        let tx = c
+            .start_transaction(true, None, None)
+            .map_err(into_c3p0_error)?;
         Ok(Some(tx))
     })
 }
@@ -84,22 +92,21 @@ fn new_simple_mut(conn: PooledConnection<MysqlConnectionManager>) -> Result<rent
 #[macro_use]
 extern crate rental;
 rental! {
-	mod rentals {
-		use super::*;
+    mod rentals {
+        use super::*;
 
-		#[rental_mut]
-		pub struct SimpleMut {
-			conn: Box<PooledConnection<MysqlConnectionManager>>,
-			tx: Option<mysql_client::Transaction<'conn>>,
-		}
-	}
+        #[rental_mut]
+        pub struct SimpleMut {
+            conn: Box<PooledConnection<MysqlConnectionManager>>,
+            tx: Option<mysql_client::Transaction<'conn>>,
+        }
+    }
 }
 
 pub enum MysqlConnection {
     Conn(RefCell<PooledConnection<MysqlConnectionManager>>),
     Tx(RefCell<rentals::SimpleMut>),
 }
-
 
 impl Connection for MysqlConnection {
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
@@ -111,9 +118,7 @@ impl Connection for MysqlConnection {
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    batch_execute(tref.as_mut().unwrap(), sql)
-                })
+                transaction.rent_mut(|tref| batch_execute(tref.as_mut().unwrap(), sql))
             }
         }
     }
@@ -129,9 +134,7 @@ impl MysqlConnection {
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    execute(tref.as_mut().unwrap(), sql, params)
-                })
+                transaction.rent_mut(|tref| execute(tref.as_mut().unwrap(), sql, params))
             }
         }
     }
@@ -149,9 +152,7 @@ impl MysqlConnection {
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    fetch_one_value(tref.as_mut().unwrap(), sql, params)
-                })
+                transaction.rent_mut(|tref| fetch_one_value(tref.as_mut().unwrap(), sql, params))
             }
         }
     }
@@ -170,9 +171,7 @@ impl MysqlConnection {
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    fetch_one(tref.as_mut().unwrap(), sql, params, mapper)
-                })
+                transaction.rent_mut(|tref| fetch_one(tref.as_mut().unwrap(), sql, params, mapper))
             }
         }
     }
@@ -191,9 +190,8 @@ impl MysqlConnection {
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    fetch_one_option(tref.as_mut().unwrap(), sql, params, mapper)
-                })
+                transaction
+                    .rent_mut(|tref| fetch_one_option(tref.as_mut().unwrap(), sql, params, mapper))
             }
         }
     }
@@ -212,9 +210,7 @@ impl MysqlConnection {
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    fetch_all(tref.as_mut().unwrap(), sql, params, mapper)
-                })
+                transaction.rent_mut(|tref| fetch_all(tref.as_mut().unwrap(), sql, params, mapper))
             }
         }
     }
@@ -232,9 +228,7 @@ impl MysqlConnection {
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    fetch_all_values(tref.as_mut().unwrap(), sql, params)
-                })
+                transaction.rent_mut(|tref| fetch_all_values(tref.as_mut().unwrap(), sql, params))
             }
         }
     }

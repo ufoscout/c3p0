@@ -229,10 +229,11 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC, MysqlConnection> for C3p0MysqlJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0MysqlJson<DATA, CODEC>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
+    type CONNECTION = MysqlConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec

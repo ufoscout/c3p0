@@ -227,10 +227,11 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC, SqliteConnection> for C3p0SqliteJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0SqliteJson<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
+    type CONNECTION = SqliteConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec

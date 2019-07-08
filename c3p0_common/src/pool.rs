@@ -1,17 +1,17 @@
 use crate::error::C3p0Error;
 
-pub trait C3p0<CONN: Connection>: Clone {
-    fn connection(&self) -> Result<CONN, C3p0Error>;
+pub trait C3p0: Clone {
+    type CONN: Connection;
 
-    fn transaction<T, F: Fn(&CONN) -> Result<T, Box<std::error::Error>>>(
+    fn connection(&self) -> Result<Self::CONN, C3p0Error>;
+
+    fn transaction<T, F: Fn(&Self::CONN) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error>;
 }
 
-
 pub trait Connection {
-
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error>;
 
     /*

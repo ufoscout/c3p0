@@ -122,7 +122,7 @@ impl C3p0Migrate<c3p0_json::pg::C3p0Pg> {
         let c3p0_json = self.build_cp30_json();
         c3p0_json.find_all(conn)
     }
-    
+
     fn lock_table(
         &self,
         c3p0_json: &c3p0_json::C3p0PgJson<MigrationData, DefaultJsonCodec>,
@@ -145,12 +145,12 @@ impl C3p0Migrate<c3p0_json::pg::C3p0Pg> {
         );
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
-    
+
     fn build_cp30_json(&self) -> C3p0PgJson<MigrationData, DefaultJsonCodec> {
         C3p0PgJsonBuilder::new(self.table.clone())
             .with_schema_name(self.schema.clone())
             .build()
-    } 
+    }
 }
 
 #[cfg(feature = "mysql")]
@@ -230,9 +230,7 @@ impl C3p0Migrate<c3p0_json::sqlite::C3p0Sqlite> {
 
         // Start Migration
         self.c3p0
-            .transaction(|conn| {
-                Ok(self.create_migration_zero(&c3p0_json, conn)?)
-            })?;
+            .transaction(|conn| Ok(self.create_migration_zero(&c3p0_json, conn)?))?;
 
         // Start Migration
         self.c3p0.transaction(|conn| {
@@ -269,13 +267,10 @@ impl C3p0Migrate<c3p0_json::sqlite::C3p0Sqlite> {
 }
 
 impl<C3P0> C3p0Migrate<C3P0> {
-    fn create_migration_zero<
-        C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>,
-        CONN: Connection,
-    >(
+    fn create_migration_zero<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec>>(
         &self,
         c3p0_json: &C3P0JSON,
-        conn: &CONN,
+        conn: &C3P0JSON::CONNECTION,
     ) -> Result<(), C3p0Error> {
         let count = c3p0_json.count_all(&conn)?;
 
@@ -294,13 +289,10 @@ impl<C3P0> C3p0Migrate<C3P0> {
         Ok(())
     }
 
-    fn start_migration<
-        C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>,
-        CONN: Connection,
-    >(
+    fn start_migration<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec>>(
         &self,
         c3p0_json: &C3P0JSON,
-        conn: &CONN,
+        conn: &C3P0JSON::CONNECTION,
     ) -> Result<(), C3p0Error> {
         let migration_history = self.fetch_migrations_history(c3p0_json, conn)?;
         let migration_history = self.clean_history(migration_history)?;
@@ -350,13 +342,10 @@ impl<C3P0> C3p0Migrate<C3P0> {
         Ok(())
     }
 
-    fn fetch_migrations_history<
-        C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN>,
-        CONN: Connection,
-    >(
+    fn fetch_migrations_history<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec>>(
         &self,
         c3p0_json: &C3P0JSON,
-        conn: &CONN,
+        conn: &C3P0JSON::CONNECTION,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         c3p0_json.find_all(conn)
     }

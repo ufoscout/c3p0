@@ -8,7 +8,7 @@ use crate::rusqlite::types::{FromSql, ToSql};
 use crate::rusqlite::Row;
 use std::cell::RefCell;
 
-pub use c3p0_common::pool::{Connection, C3p0};
+pub use c3p0_common::pool::{C3p0, Connection};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -31,7 +31,9 @@ pub struct C3p0Sqlite {
     pool: Pool<SqliteConnectionManager>,
 }
 
-impl C3p0<SqliteConnection> for C3p0Sqlite {
+impl C3p0 for C3p0Sqlite {
+    type CONN = SqliteConnection;
+
     fn connection(&self) -> Result<SqliteConnection, C3p0Error> {
         self.pool
             .get()
@@ -61,11 +63,13 @@ impl C3p0<SqliteConnection> for C3p0Sqlite {
         match result.1 {
             SqliteConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
-                    let tref_some = tref.take();
-                    tref_some.unwrap().commit()?;
-                    Ok(())
-                }).map_err(into_c3p0_error)?;
+                transaction
+                    .rent_mut(|tref| {
+                        let tref_some = tref.take();
+                        tref_some.unwrap().commit()?;
+                        Ok(())
+                    })
+                    .map_err(into_c3p0_error)?;
             }
             _ => panic!("It should have been a transaction"),
         };
@@ -74,7 +78,9 @@ impl C3p0<SqliteConnection> for C3p0Sqlite {
     }
 }
 
-fn new_simple_mut(conn: PooledConnection<SqliteConnectionManager>) -> Result<rentals::SimpleMut, C3p0Error> {
+fn new_simple_mut(
+    conn: PooledConnection<SqliteConnectionManager>,
+) -> Result<rentals::SimpleMut, C3p0Error> {
     rentals::SimpleMut::try_new_or_drop(Box::new(conn), |c| {
         let tx = c.transaction().map_err(into_c3p0_error)?;
         Ok(Some(tx))
@@ -84,17 +90,16 @@ fn new_simple_mut(conn: PooledConnection<SqliteConnectionManager>) -> Result<ren
 #[macro_use]
 extern crate rental;
 rental! {
-	mod rentals {
-		use super::*;
+    mod rentals {
+        use super::*;
 
-		#[rental_mut]
-		pub struct SimpleMut {
-			conn: Box<PooledConnection<SqliteConnectionManager>>,
-			tx: Option<rusqlite::Transaction<'conn>>,
-		}
-	}
+        #[rental_mut]
+        pub struct SimpleMut {
+            conn: Box<PooledConnection<SqliteConnectionManager>>,
+            tx: Option<rusqlite::Transaction<'conn>>,
+        }
+    }
 }
-
 
 pub enum SqliteConnection {
     Conn(PooledConnection<SqliteConnectionManager>),
@@ -108,10 +113,13 @@ impl Connection for SqliteConnection {
             SqliteConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
-                    tref.as_mut().unwrap().execute_batch(sql).map_err(into_c3p0_error)
+                    tref.as_mut()
+                        .unwrap()
+                        .execute_batch(sql)
+                        .map_err(into_c3p0_error)
                 })
                 //tx.borrow_mut().execute_batch(sql).map_err(into_c3p0_error)
-            },
+            }
         }
     }
 }
@@ -119,15 +127,20 @@ impl Connection for SqliteConnection {
 impl SqliteConnection {
     pub fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
         match self {
-            SqliteConnection::Conn(conn) => conn.execute(sql, params).map_err(into_c3p0_error).map(|res| res as u64),
+            SqliteConnection::Conn(conn) => conn
+                .execute(sql, params)
+                .map_err(into_c3p0_error)
+                .map(|res| res as u64),
             SqliteConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
-                    tref.as_mut().unwrap().execute(sql, params)
+                    tref.as_mut()
+                        .unwrap()
+                        .execute(sql, params)
                         .map(|res| res as u64)
                         .map_err(into_c3p0_error)
                 })
-            },
+            }
         }
     }
 
@@ -163,12 +176,15 @@ impl SqliteConnection {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     fetch_one_option(
-                        tref.as_mut().unwrap().prepare(sql).map_err(into_c3p0_error)?,
+                        tref.as_mut()
+                            .unwrap()
+                            .prepare(sql)
+                            .map_err(into_c3p0_error)?,
                         params,
                         mapper,
                     )
                 })
-            },
+            }
         }
     }
 
@@ -186,12 +202,15 @@ impl SqliteConnection {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
                     fetch_all(
-                        tref.as_mut().unwrap().prepare(sql).map_err(into_c3p0_error)?,
+                        tref.as_mut()
+                            .unwrap()
+                            .prepare(sql)
+                            .map_err(into_c3p0_error)?,
                         params,
                         mapper,
                     )
                 })
-            },
+            }
         }
     }
 
