@@ -3,8 +3,8 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
 
-use crate::*;
 use crate::tests::util::rand_string;
+use crate::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 struct UserVersion1 {

@@ -1,6 +1,6 @@
-use c3p0_json::*;
-use crate::*;
 use crate::tests::util::rand_string;
+use crate::*;
+use c3p0_json::*;
 
 #[test]
 fn should_create_and_drop_table() {

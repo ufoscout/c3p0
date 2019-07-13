@@ -1,6 +1,6 @@
-use c3p0_json::*;
-use crate::*;
 use crate::tests::util::rand_string;
+use crate::*;
+use c3p0_json::*;
 
 #[test]
 fn should_commit_transaction() {
@@ -11,21 +11,33 @@ fn should_commit_transaction() {
             let conn = c3p0.connection().unwrap();
             assert!(conn
                 .execute(
-                    &format!(r"CREATE TABLE {} (
+                    &format!(
+                        r"CREATE TABLE {} (
                              name varchar(255)
-                          )", table_name),
+                          )",
+                        table_name
+                    ),
                     &[]
                 )
                 .is_ok());
         }
 
         let result: Result<(), C3p0Error> = c3p0.transaction(|conn| {
-            conn.execute(&format!(r"INSERT INTO {} (name) VALUES ('one')", table_name), &[])
-                .unwrap();
-            conn.execute(&format!(r"INSERT INTO {} (name) VALUES ('two')", table_name), &[])
-                .unwrap();
-            conn.execute(&format!(r"INSERT INTO {} (name) VALUES ('three')", table_name), &[])
-                .unwrap();
+            conn.execute(
+                &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
+                &[],
+            )
+            .unwrap();
+            conn.execute(
+                &format!(r"INSERT INTO {} (name) VALUES ('two')", table_name),
+                &[],
+            )
+            .unwrap();
+            conn.execute(
+                &format!(r"INSERT INTO {} (name) VALUES ('three')", table_name),
+                &[],
+            )
+            .unwrap();
             Ok(())
         });
 
@@ -38,7 +50,9 @@ fn should_commit_transaction() {
                 .unwrap();
             assert_eq!(3, count);
 
-            assert!(conn.execute(&format!(r"DROP TABLE {}", table_name), &[]).is_ok());
+            assert!(conn
+                .execute(&format!(r"DROP TABLE {}", table_name), &[])
+                .is_ok());
         }
     });
 }
@@ -51,21 +65,31 @@ fn should_rollback_transaction() {
         {
             let conn = c3p0.connection().unwrap();
             assert!(conn
-                .batch_execute(
-                    &format!(r"CREATE TABLE {} (
+                .batch_execute(&format!(
+                    r"CREATE TABLE {} (
                              name varchar(255)
-                          )", table_name)
-                )
+                          )",
+                    table_name
+                ))
                 .is_ok());
         }
 
         let result: Result<(), C3p0Error> = c3p0.transaction(|conn| {
-            conn.execute(&format!(r"INSERT INTO {} (name) VALUES ('one')", table_name), &[])
-                .unwrap();
-            conn.execute(&format!(r"INSERT INTO {} (name) VALUES ('two')", table_name), &[])
-                .unwrap();
-            conn.execute(&format!(r"INSERT INTO {} (name) VALUES ('three')", table_name), &[])
-                .unwrap();
+            conn.execute(
+                &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
+                &[],
+            )
+            .unwrap();
+            conn.execute(
+                &format!(r"INSERT INTO {} (name) VALUES ('two')", table_name),
+                &[],
+            )
+            .unwrap();
+            conn.execute(
+                &format!(r"INSERT INTO {} (name) VALUES ('three')", table_name),
+                &[],
+            )
+            .unwrap();
             Err(C3p0Error::ResultNotFoundError)?
         });
 
@@ -78,7 +102,9 @@ fn should_rollback_transaction() {
                 .unwrap();
             assert_eq!(0, count);
 
-            assert!(conn.execute(&format!(r"DROP TABLE {}", table_name), &[]).is_ok());
+            assert!(conn
+                .execute(&format!(r"DROP TABLE {}", table_name), &[])
+                .is_ok());
         }
     });
 }

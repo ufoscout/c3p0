@@ -1,5 +1,5 @@
-use rand::Rng;
 use rand::distributions::Alphanumeric;
+use rand::Rng;
 
 pub fn rand_string(len: usize) -> String {
     rand::thread_rng()
