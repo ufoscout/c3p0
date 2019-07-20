@@ -4,8 +4,8 @@ use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
 
 use crate::C3p0Json;
-use c3p0_sqlite::rusqlite::{types::FromSql, Row};
-use c3p0_sqlite::SqliteConnection;
+use c3p0_pool_sqlite::rusqlite::{types::FromSql, Row};
+use c3p0_pool_sqlite::SqliteConnection;
 
 #[derive(Clone)]
 pub struct C3p0SqliteJsonBuilder<DATA, CODEC: JsonCodec<DATA>>

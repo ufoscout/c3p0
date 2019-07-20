@@ -19,13 +19,13 @@ serde_derive = "1.0"
 serde_json = "1.0"
 
 # mysql feature
-c3p0_mysql = { path = "../c3p0_mysql", version = "0.7.0", optional = true }
+c3p0_pool_mysql = { path = "../c3p0_pool_mysql", version = "0.7.0", optional = true }
 
 # pg feature
-c3p0_pg = { path = "../c3p0_pg", version = "0.7.0", optional = true }
+c3p0_pool_pg = { path = "../c3p0_pool_pg", version = "0.7.0", optional = true }
 
 # sqlite feature
-c3p0_sqlite = { path = "../c3p0_sqlite", version = "0.7.0", optional = true }
+c3p0_pool_sqlite = { path = "../c3p0_pool_sqlite", version = "0.7.0", optional = true }
 
 
 [dev-dependencies]
@@ -37,6 +37,6 @@ rand = "0.7"
 [features]
 default = []
 
-mysql = ["c3p0_mysql"]
-pg = ["c3p0_pg"]
-sqlite = ["c3p0_sqlite"]
+mysql = ["c3p0_pool_mysql"]
+pg = ["c3p0_pool_pg"]
+sqlite = ["c3p0_pool_sqlite"]

@@ -5,21 +5,21 @@ pub mod json;
 pub use crate::client::mysql::{C3p0MysqlJson, C3p0MysqlJsonBuilder};
 #[cfg(feature = "mysql")]
 pub mod mysql {
-    pub use c3p0_mysql::*;
+    pub use c3p0_pool_mysql::*;
 }
 
 #[cfg(feature = "pg")]
 pub use crate::client::pg::{C3p0PgJson, C3p0PgJsonBuilder};
 #[cfg(feature = "pg")]
 pub mod pg {
-    pub use c3p0_pg::*;
+    pub use c3p0_pool_pg::*;
 }
 
 #[cfg(feature = "sqlite")]
 pub use crate::client::sqlite::{C3p0SqliteJson, C3p0SqliteJsonBuilder};
 #[cfg(feature = "sqlite")]
 pub mod sqlite {
-    pub use c3p0_sqlite::*;
+    pub use c3p0_pool_sqlite::*;
 }
 
 pub use crate::json::{codec::JsonCodec, model::Model, model::NewModel, C3p0Json};

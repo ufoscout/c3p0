@@ -7,9 +7,9 @@ use crate::json::{
 use crate::C3p0Json;
 use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
-use c3p0_mysql::mysql::prelude::FromValue;
-use c3p0_mysql::mysql::Row;
-use c3p0_mysql::MysqlConnection;
+use c3p0_pool_mysql::mysql::prelude::FromValue;
+use c3p0_pool_mysql::mysql::Row;
+use c3p0_pool_mysql::MysqlConnection;
 
 #[derive(Clone)]
 pub struct C3p0MysqlJsonBuilder<DATA, CODEC: JsonCodec<DATA>>

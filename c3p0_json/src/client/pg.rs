@@ -7,9 +7,9 @@ use crate::json::{
 use crate::C3p0Json;
 use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
-use c3p0_pg::error::into_c3p0_error;
-use c3p0_pg::postgres::{rows::Row, types::FromSql};
-use c3p0_pg::PgConnection;
+use c3p0_pool_pg::error::into_c3p0_error;
+use c3p0_pool_pg::postgres::{rows::Row, types::FromSql};
+use c3p0_pool_pg::PgConnection;
 
 #[derive(Clone)]
 pub struct C3p0PgJsonBuilder<DATA, CODEC: JsonCodec<DATA>>

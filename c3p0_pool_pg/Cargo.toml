@@ -1,5 +1,5 @@
 [package]
-name = "c3p0_mysql"
+name = "c3p0_pool_pg"
 license = "MIT"
 version = "0.7.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
@@ -8,13 +8,12 @@ edition = "2018"
 readme = "../README.md"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
-keywords = ["mysql"]
+keywords = ["postgres", "pg"]
 
 [dependencies]
 c3p0_common = { path = "../c3p0_common", version = "0.7.0" }
 log = "0.4"
-mysql_client = { package = "mysql",  version = "16"}
 r2d2 = "0.8"
-r2d2_mysql = "16.0"
-rental = "0.5"
+postgres = { version = "0.15", features = ["with-serde_json"] }
+r2d2_postgres = "0.14"
 
