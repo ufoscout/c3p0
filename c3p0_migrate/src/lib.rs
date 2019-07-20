@@ -130,7 +130,7 @@ impl C3p0Migrate<c3p0_json::pg::C3p0Pg> {
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
             "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
-            c3p0_json.qualified_table_name
+            c3p0_json.queries().qualified_table_name
         ))
     }
 
@@ -141,7 +141,8 @@ impl C3p0Migrate<c3p0_json::pg::C3p0Pg> {
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where {}->>'migration_id' = $1 FOR UPDATE"#,
-            c3p0_json.qualified_table_name, c3p0_json.data_field_name
+            c3p0_json.queries().qualified_table_name,
+            c3p0_json.queries().data_field_name
         );
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
@@ -193,7 +194,7 @@ impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql> {
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
             "LOCK TABLES {} WRITE",
-            c3p0_json.qualified_table_name
+            c3p0_json.queries().qualified_table_name
         ))
     }
 
@@ -204,7 +205,8 @@ impl C3p0Migrate<c3p0_json::mysql::C3p0Mysql> {
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ? FOR UPDATE"#,
-            c3p0_json.qualified_table_name, c3p0_json.data_field_name
+            c3p0_json.queries().qualified_table_name,
+            c3p0_json.queries().data_field_name
         );
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
@@ -254,7 +256,8 @@ impl C3p0Migrate<c3p0_json::sqlite::C3p0Sqlite> {
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ?"#,
-            c3p0_json.qualified_table_name, c3p0_json.data_field_name
+            c3p0_json.queries().qualified_table_name,
+            c3p0_json.queries().data_field_name
         );
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
