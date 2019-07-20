@@ -7,4 +7,5 @@ members = [
     "c3p0_pool_sqlite",
     "c3p0_json",
     "c3p0_migrate",
+    "c3p0",
 ]

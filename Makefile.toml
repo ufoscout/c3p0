@@ -16,6 +16,8 @@ script = [
   "cd ..",
   "cd ./c3p0_migrate       && ./cargo.sh build",
   "cd ..",
+  "cd ./c3p0               && ./cargo.sh build",
+  "cd ..",
 ]
 
 # > cargo make --no-workspace test_all
@@ -33,6 +35,8 @@ script = [
   "cd ..",
   "cd ./c3p0_migrate       && ./cargo.sh test",
   "cd ..",
+  "cd ./c3p0               && ./cargo.sh test",
+  "cd ..",
 ]
 
 # > cargo make --no-workspace publish_all
@@ -48,7 +52,9 @@ script = [
   "cd ..",
   "cd ./c3p0_json          && cargo publish --features pg && sleep 4",
   "cd ..",
-  "cd ./c3p0_migrate       && cargo publish --features pg",
+  "cd ./c3p0_migrate       && cargo publish --features pg && sleep 4",
+  "cd ..",
+  "cd ./c3p0               && cargo publish --features pg",
   "cd ..",
 ]
 
