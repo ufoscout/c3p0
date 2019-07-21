@@ -13,6 +13,12 @@ pub struct C3p0Builder {
 
 #[cfg(feature = "mysql")]
 impl C3p0Builder {
+    pub fn new(
+        pool: c3p0_json::mysql::r2d2::Pool<c3p0_json::mysql::r2d2::MysqlConnectionManager>,
+    ) -> Self {
+        C3p0Builder { pool }
+    }
+
     pub fn pool(&self) -> c3p0_pool_mysql::C3p0Mysql {
         c3p0_pool_mysql::C3p0MysqlBuilder::build(self.pool.clone())
     }
@@ -40,6 +46,12 @@ pub struct C3p0Builder {
 
 #[cfg(feature = "pg")]
 impl C3p0Builder {
+    pub fn new(
+        pool: c3p0_json::pg::r2d2::Pool<c3p0_json::pg::r2d2::PostgresConnectionManager>,
+    ) -> Self {
+        C3p0Builder { pool }
+    }
+
     pub fn pool(&self) -> c3p0_pool_pg::C3p0Pg {
         c3p0_pool_pg::C3p0PgBuilder::build(self.pool.clone())
     }
@@ -67,6 +79,12 @@ pub struct C3p0Builder {
 
 #[cfg(feature = "sqlite")]
 impl C3p0Builder {
+    pub fn new(
+        pool: c3p0_json::sqlite::r2d2::Pool<c3p0_json::sqlite::r2d2::SqliteConnectionManager>,
+    ) -> Self {
+        C3p0Builder { pool }
+    }
+
     pub fn pool(&self) -> c3p0_pool_sqlite::C3p0Sqlite {
         c3p0_pool_sqlite::C3p0SqliteBuilder::build(self.pool.clone())
     }
