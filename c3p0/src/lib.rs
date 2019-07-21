@@ -1,5 +1,9 @@
 pub use c3p0_json::*;
-pub use c3p0_migrate::*;
+
+pub mod migrate {
+    pub use c3p0_migrate::migration::*;
+    pub use c3p0_migrate::*;
+}
 
 pub struct C3p0Builder;
 
