@@ -1,7 +1,7 @@
 [package]
 name = "c3p0"
 license = "MIT"
-version = "0.8.1"
+version = "0.8.2"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2. Based on rust-postgres."
 edition = "2018"
@@ -14,19 +14,19 @@ keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
 serde = "1.0"
 
 # mysql feature
-c3p0_pool_mysql = { path = "../c3p0_pool_mysql", version = "0.8.1", optional = true }
+c3p0_pool_mysql = { path = "../c3p0_pool_mysql", version = "0.8.2", optional = true }
 
 # pg feature
-c3p0_pool_pg = { path = "../c3p0_pool_pg", version = "0.8.1", optional = true }
+c3p0_pool_pg = { path = "../c3p0_pool_pg", version = "0.8.2", optional = true }
 
 # sqlite feature
-c3p0_pool_sqlite = { path = "../c3p0_pool_sqlite", version = "0.8.1", optional = true }
+c3p0_pool_sqlite = { path = "../c3p0_pool_sqlite", version = "0.8.2", optional = true }
 
 # json feature
-c3p0_json = { path = "../c3p0_json", version = "0.8.1", optional = true }
+c3p0_json = { path = "../c3p0_json", version = "0.8.2", optional = true }
 
 # migrate feature
-c3p0_migrate = { path = "../c3p0_migrate", version = "0.8.1", optional = true }
+c3p0_migrate = { path = "../c3p0_migrate", version = "0.8.2", optional = true }
 
 [features]
 default = []
