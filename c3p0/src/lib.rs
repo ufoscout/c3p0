@@ -5,56 +5,70 @@ pub mod migrate {
     pub use c3p0_migrate::*;
 }
 
-pub struct C3p0Builder;
+#[cfg(feature = "mysql")]
+#[derive(Clone)]
+pub struct C3p0Builder {
+    pool: c3p0_json::mysql::r2d2::Pool<c3p0_json::mysql::r2d2::MysqlConnectionManager>,
+}
 
 #[cfg(feature = "mysql")]
 impl C3p0Builder {
-    pub fn pool() -> c3p0_pool_mysql::C3p0MysqlBuilder {
-        c3p0_pool_mysql::C3p0MysqlBuilder {}
+    pub fn pool(&self) -> c3p0_pool_mysql::C3p0Mysql {
+        c3p0_pool_mysql::C3p0MysqlBuilder::build(self.pool.clone())
     }
 
     pub fn json<
         T: Into<String>,
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
     >(
+        &self,
         table_name: T,
     ) -> c3p0_json::C3p0MysqlJsonBuilder<DATA, c3p0_json::json::codec::DefaultJsonCodec> {
         c3p0_json::C3p0MysqlJsonBuilder::new(table_name)
     }
 
-    pub fn migrate(
-        c3p0: c3p0_pool_mysql::C3p0Mysql,
-    ) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_mysql::C3p0Mysql> {
-        c3p0_migrate::C3p0MigrateBuilder::new(c3p0)
+    pub fn migrate(&self) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_mysql::C3p0Mysql> {
+        c3p0_migrate::C3p0MigrateBuilder::new(self.pool())
     }
 }
 
 #[cfg(feature = "pg")]
+#[derive(Clone)]
+pub struct C3p0Builder {
+    pool: c3p0_json::pg::r2d2::Pool<c3p0_json::pg::r2d2::PostgresConnectionManager>,
+}
+
+#[cfg(feature = "pg")]
 impl C3p0Builder {
-    pub fn pool() -> c3p0_pool_pg::C3p0PgBuilder {
-        c3p0_pool_pg::C3p0PgBuilder {}
+    pub fn pool(&self) -> c3p0_pool_pg::C3p0Pg {
+        c3p0_pool_pg::C3p0PgBuilder::build(self.pool.clone())
     }
 
     pub fn json<
         T: Into<String>,
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
     >(
+        &self,
         table_name: T,
     ) -> c3p0_json::C3p0PgJsonBuilder<DATA, c3p0_json::json::codec::DefaultJsonCodec> {
         c3p0_json::C3p0PgJsonBuilder::new(table_name)
     }
 
-    pub fn migrate(
-        c3p0: c3p0_pool_pg::C3p0Pg,
-    ) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_pg::C3p0Pg> {
-        c3p0_migrate::C3p0MigrateBuilder::new(c3p0)
+    pub fn migrate(&self) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_pg::C3p0Pg> {
+        c3p0_migrate::C3p0MigrateBuilder::new(self.pool())
     }
 }
 
 #[cfg(feature = "sqlite")]
+#[derive(Clone)]
+pub struct C3p0Builder {
+    pool: c3p0_json::sqlite::r2d2::Pool<c3p0_json::sqlite::r2d2::SqliteConnectionManager>,
+}
+
+#[cfg(feature = "sqlite")]
 impl C3p0Builder {
-    pub fn pool() -> c3p0_pool_sqlite::C3p0SqliteBuilder {
-        c3p0_pool_sqlite::C3p0SqliteBuilder {}
+    pub fn pool(&self) -> c3p0_pool_sqlite::C3p0Sqlite {
+        c3p0_pool_sqlite::C3p0SqliteBuilder::build(self.pool.clone())
     }
 
     pub fn json<
@@ -66,9 +80,7 @@ impl C3p0Builder {
         c3p0_json::C3p0SqliteJsonBuilder::new(table_name)
     }
 
-    pub fn migrate(
-        c3p0: c3p0_pool_sqlite::C3p0Sqlite,
-    ) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_sqlite::C3p0Sqlite> {
-        c3p0_migrate::C3p0MigrateBuilder::new(c3p0)
+    pub fn migrate(&self) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_sqlite::C3p0Sqlite> {
+        c3p0_migrate::C3p0MigrateBuilder::new(self.pool())
     }
 }
