@@ -17,3 +17,4 @@ r2d2 = "0.8"
 r2d2_sqlite = "0.9"
 rental = "0.5"
 rusqlite = { version = "0.17", features = ["bundled", "serde_json", "functions"]  }
+serde = "1.0"

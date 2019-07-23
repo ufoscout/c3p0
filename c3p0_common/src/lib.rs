@@ -2,6 +2,7 @@ use crate::pool::C3p0PoolManager;
 use crate::error::C3p0Error;
 
 pub mod error;
+pub mod json;
 pub mod types;
 pub mod pool;
 

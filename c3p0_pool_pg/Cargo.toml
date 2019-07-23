@@ -16,4 +16,4 @@ log = "0.4"
 r2d2 = "0.8"
 postgres = { version = "0.15", features = ["with-serde_json"] }
 r2d2_postgres = "0.14"
-
+serde = "1.0"

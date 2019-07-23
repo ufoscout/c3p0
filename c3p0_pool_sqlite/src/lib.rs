@@ -9,6 +9,9 @@ use crate::rusqlite::Row;
 use std::cell::RefCell;
 
 pub use c3p0_common::pool::{C3p0PoolManager, Connection};
+use c3p0_common::json::builder::{C3p0JsonBuilderManager, C3p0JsonBuilder};
+use c3p0_common::json::C3p0JsonManger;
+use c3p0_common::json::codec::DefaultJsonCodec;
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -17,6 +20,8 @@ pub mod r2d2 {
 pub mod rusqlite {
     pub use rusqlite::*;
 }
+
+pub mod json;
 
 pub struct C3p0SqliteBuilder {}
 
@@ -33,6 +38,11 @@ pub struct C3p0Sqlite {
 
 impl C3p0PoolManager for C3p0Sqlite {
     type CONN = SqliteConnection;
+
+    fn json<T: Into<String>, DATA, JSONBUILDER: C3p0JsonBuilderManager<Self>, JSONMANAGER: C3p0JsonManger<DATA, DefaultJsonCodec, CONNECTION=Self::CONN>>(&self, table_name: T) -> C3p0JsonBuilder<DATA, DefaultJsonCodec, Self, JSONBUILDER, JSONMANAGER> where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
+        unimplemented!()
+    }
 
     fn connection(&self) -> Result<SqliteConnection, C3p0Error> {
         self.pool
