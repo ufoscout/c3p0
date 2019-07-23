@@ -4,7 +4,7 @@ use crate::json::{
     model::{IdType, Model, NewModel},
     Queries,
 };
-use crate::C3p0Json;
+use crate::C3p0JsonManger;
 use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
 use c3p0_pool_mysql::mysql::prelude::FromValue;
@@ -210,7 +210,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0MysqlJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonManger<DATA, CODEC> for C3p0MysqlJson<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

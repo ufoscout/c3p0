@@ -6,7 +6,7 @@ use crate::postgres::types::{FromSql, ToSql};
 use crate::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
 
 pub use c3p0_common::error::C3p0Error;
-pub use c3p0_common::pool::{C3p0, Connection};
+pub use c3p0_common::pool::{C3p0PoolManager, Connection};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -29,7 +29,7 @@ pub struct C3p0Pg {
     pool: Pool<PostgresConnectionManager>,
 }
 
-impl C3p0 for C3p0Pg {
+impl C3p0PoolManager for C3p0Pg {
     type CONN = PgConnection;
 
     fn connection(&self) -> Result<PgConnection, C3p0Error> {

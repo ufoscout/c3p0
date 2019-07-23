@@ -3,7 +3,7 @@ use crate::json::{codec::JsonCodec, model::IdType, model::Model, model::NewModel
 use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
 
-use crate::C3p0Json;
+use crate::C3p0JsonManger;
 use c3p0_pool_sqlite::rusqlite::{types::FromSql, Row};
 use c3p0_pool_sqlite::SqliteConnection;
 
@@ -207,7 +207,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0SqliteJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonManger<DATA, CODEC> for C3p0SqliteJson<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

@@ -269,7 +269,7 @@ impl C3p0Migrate<c3p0_json::sqlite::C3p0Sqlite> {
 }
 
 impl<C3P0> C3p0Migrate<C3P0> {
-    fn create_migration_zero<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec>>(
+    fn create_migration_zero<C3P0JSON: C3p0JsonManger<MigrationData, DefaultJsonCodec>>(
         &self,
         c3p0_json: &C3P0JSON,
         conn: &C3P0JSON::CONNECTION,
@@ -291,7 +291,7 @@ impl<C3P0> C3p0Migrate<C3P0> {
         Ok(())
     }
 
-    fn start_migration<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec>>(
+    fn start_migration<C3P0JSON: C3p0JsonManger<MigrationData, DefaultJsonCodec>>(
         &self,
         c3p0_json: &C3P0JSON,
         conn: &C3P0JSON::CONNECTION,
@@ -344,7 +344,7 @@ impl<C3P0> C3p0Migrate<C3P0> {
         Ok(())
     }
 
-    fn fetch_migrations_history<C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec>>(
+    fn fetch_migrations_history<C3P0JSON: C3p0JsonManger<MigrationData, DefaultJsonCodec>>(
         &self,
         c3p0_json: &C3P0JSON,
         conn: &C3P0JSON::CONNECTION,

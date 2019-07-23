@@ -8,7 +8,7 @@ use std::cell::RefCell;
 use std::ops::DerefMut;
 
 pub use c3p0_common::error::C3p0Error;
-pub use c3p0_common::pool::{C3p0, Connection};
+pub use c3p0_common::pool::{C3p0PoolManager, Connection};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -31,7 +31,7 @@ pub struct C3p0Mysql {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl C3p0 for C3p0Mysql {
+impl C3p0PoolManager for C3p0Mysql {
     type CONN = MysqlConnection;
 
     fn connection(&self) -> Result<MysqlConnection, C3p0Error> {

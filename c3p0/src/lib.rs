@@ -102,3 +102,36 @@ impl C3p0Builder {
         c3p0_migrate::C3p0MigrateBuilder::new(self.pool())
     }
 }
+
+
+
+#[derive(Clone)]
+pub struct C3p0BuilderNew<C3P0: C3p0PoolManager> {
+    pool_manager: C3P0,
+}
+
+impl <C3P0: C3p0PoolManager> C3p0BuilderNew<C3P0> {
+    pub fn new(
+        pool_manager: C3P0,
+    ) -> Self {
+        C3p0BuilderNew { pool_manager }
+    }
+
+    pub fn pool(&self) -> C3p0Pool<C3P0> {
+        C3p0Pool::new(self.pool_manager.clone())
+    }
+
+    pub fn json<
+        T: Into<String>,
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    >(
+        &self,
+        table_name: T,
+    ) -> c3p0_json::C3p0MysqlJsonBuilder<DATA, c3p0_json::json::codec::DefaultJsonCodec> {
+        c3p0_json::C3p0MysqlJsonBuilder::new(table_name)
+    }
+
+    pub fn migrate(&self) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_mysql::C3p0Mysql> {
+        c3p0_migrate::C3p0MigrateBuilder::new(self.pool())
+    }
+}
