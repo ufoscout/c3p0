@@ -39,7 +39,7 @@ pub struct Queries {
 
 
 
-pub trait C3p0JsonManger<DATA, CODEC>
+pub trait C3p0JsonManager<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
     CODEC: JsonCodec<DATA>,
@@ -91,7 +91,7 @@ pub struct C3p0Json<DATA, CODEC, JSONMANAGER>
     where
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
         CODEC: JsonCodec<DATA>,
-        JSONMANAGER: C3p0JsonManger<DATA, CODEC>
+        JSONMANAGER: C3p0JsonManager<DATA, CODEC>
 {
     json_manager: JSONMANAGER,
     phantom_data: std::marker::PhantomData<DATA>,
@@ -102,7 +102,7 @@ impl <DATA, CODEC, JSONMANAGER> C3p0Json<DATA, CODEC, JSONMANAGER>
     where
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
         CODEC: JsonCodec<DATA>,
-        JSONMANAGER: C3p0JsonManger<DATA, CODEC> {
+        JSONMANAGER: C3p0JsonManager<DATA, CODEC> {
 
     pub fn new(json_manager: JSONMANAGER) -> Self {
         C3p0Json{

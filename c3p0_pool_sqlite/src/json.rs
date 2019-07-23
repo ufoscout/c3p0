@@ -1,5 +1,5 @@
 use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::{codec::JsonCodec, model::IdType, model::Model, model::NewModel, Queries, C3p0JsonManger};
+use c3p0_common::json::{codec::JsonCodec, model::IdType, model::Model, model::NewModel, Queries, C3p0JsonManager};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::types::OptString;
 
@@ -206,7 +206,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonManger<DATA, CODEC> for C3p0SqliteJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonManager<DATA, CODEC> for C3p0SqliteJson<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

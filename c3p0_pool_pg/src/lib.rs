@@ -7,8 +7,8 @@ use crate::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
 
 pub use c3p0_common::error::C3p0Error;
 pub use c3p0_common::pool::{C3p0PoolManager, Connection};
-use c3p0_common::json::builder::{C3p0JsonBuilderManager, C3p0JsonBuilder};
-use c3p0_common::json::C3p0JsonManger;
+use c3p0_common::json::builder::{C3p0JsonBuilder};
+use c3p0_common::json::C3p0JsonManager;
 use c3p0_common::json::codec::DefaultJsonCodec;
 
 pub mod r2d2 {
@@ -36,11 +36,6 @@ pub struct C3p0Pg {
 
 impl C3p0PoolManager for C3p0Pg {
     type CONN = PgConnection;
-
-    fn json<T: Into<String>, DATA, JSONBUILDER: C3p0JsonBuilderManager<Self>, JSONMANAGER: C3p0JsonManger<DATA, DefaultJsonCodec, CONNECTION=Self::CONN>>(&self, table_name: T) -> C3p0JsonBuilder<DATA, DefaultJsonCodec, Self, JSONBUILDER, JSONMANAGER> where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
-        unimplemented!()
-    }
 
     fn connection(&self) -> Result<PgConnection, C3p0Error> {
         self.pool

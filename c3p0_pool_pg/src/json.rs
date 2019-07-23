@@ -1,110 +1,26 @@
 use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::{codec::JsonCodec, model::{IdType, Model, NewModel}, Queries, C3p0JsonManger};
+use c3p0_common::json::{codec::JsonCodec, model::{IdType, Model, NewModel}, Queries, C3p0JsonManager, C3p0Json};
 use c3p0_common::error::C3p0Error;
-use c3p0_common::types::OptString;
 use crate::error::into_c3p0_error;
 use crate::postgres::{rows::Row, types::FromSql};
-use crate::PgConnection;
-use c3p0_common::json::builder::C3p0JsonBuilderManager;
+use crate::{PgConnection, C3p0Pg};
+use c3p0_common::json::builder::{C3p0JsonBuilder};
 
-#[derive(Clone)]
-pub struct C3p0PgJsonBuilderManager<DATA, CODEC: JsonCodec<DATA>>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    phantom_data: std::marker::PhantomData<DATA>,
-
-    codec: CODEC,
-    id_field_name: String,
-    version_field_name: String,
-    data_field_name: String,
-    table_name: String,
-    schema_name: Option<String>,
+pub trait PgJsonBuilder<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>>{
+    fn build(self) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>>;
 }
 
-impl <DATA, CODEC: JsonCodec<DATA>> C3p0JsonBuilderManager<C3p0PgJson> for C3p0PgJsonBuilderManager<DATA, CODEC>
-where
-DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, {
-
-}
-
-
-impl<DATA> C3p0PgJsonBuilderManager<DATA, DefaultJsonCodec>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+impl<DATA, CODEC: JsonCodec<DATA>> PgJsonBuilder<DATA, CODEC> for C3p0JsonBuilder<DATA, CODEC, C3p0Pg>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub fn new<T: Into<String>>(table_name: T) -> Self {
-        let table_name = table_name.into();
-        C3p0PgJsonBuilderManager {
-            phantom_data: std::marker::PhantomData,
-            codec: DefaultJsonCodec {},
-            table_name: table_name.clone(),
-            id_field_name: "id".to_owned(),
-            version_field_name: "version".to_owned(),
-            data_field_name: "data".to_owned(),
-            schema_name: None,
-        }
-    }
-}
-
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0PgJsonBuilderManager<DATA, CODEC>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    pub fn with_codec<NEWCODEC: JsonCodec<DATA>>(
-        self,
-        codec: NEWCODEC,
-    ) -> C3p0PgJsonBuilderManager<DATA, NEWCODEC> {
-        C3p0PgJsonBuilderManager {
-            phantom_data: self.phantom_data,
-            codec,
-            table_name: self.table_name,
-            id_field_name: self.id_field_name,
-            version_field_name: self.version_field_name,
-            data_field_name: self.data_field_name,
-            schema_name: self.schema_name,
-        }
-    }
-
-    pub fn with_id_field_name<T: Into<String>>(
-        mut self,
-        id_field_name: T,
-    ) -> C3p0PgJsonBuilderManager<DATA, CODEC> {
-        self.id_field_name = id_field_name.into();
-        self
-    }
-
-    pub fn with_version_field_name<T: Into<String>>(
-        mut self,
-        version_field_name: T,
-    ) -> C3p0PgJsonBuilderManager<DATA, CODEC> {
-        self.version_field_name = version_field_name.into();
-        self
-    }
-
-    pub fn with_data_field_name<T: Into<String>>(
-        mut self,
-        data_field_name: T,
-    ) -> C3p0PgJsonBuilderManager<DATA, CODEC> {
-        self.data_field_name = data_field_name.into();
-        self
-    }
-
-    pub fn with_schema_name<O: Into<OptString>>(
-        mut self,
-        schema_name: O,
-    ) -> C3p0PgJsonBuilderManager<DATA, CODEC> {
-        self.schema_name = schema_name.into().value;
-        self
-    }
-
-    pub fn build(self) -> C3p0PgJson<DATA, CODEC> {
+    fn build(self) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        C3p0PgJson {
+        let pg_json = PgJsonManager {
             phantom_data: std::marker::PhantomData,
             codec: self.codec,
             queries: Queries {
@@ -190,12 +106,14 @@ where
                 data_field_name: self.data_field_name,
                 schema_name: self.schema_name,
             },
-        }
+        };
+
+        C3p0Json::new(pg_json)
     }
 }
 
 #[derive(Clone)]
-pub struct C3p0PgJson<DATA, CODEC: JsonCodec<DATA>>
+pub struct PgJsonManager<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -205,7 +123,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0PgJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> PgJsonManager<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -220,7 +138,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonManger<DATA, CODEC> for C3p0PgJson<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonManager<DATA, CODEC> for PgJsonManager<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
