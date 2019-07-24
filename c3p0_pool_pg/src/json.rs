@@ -3,14 +3,14 @@ use c3p0_common::json::{codec::JsonCodec, model::{IdType, Model, NewModel}, Quer
 use c3p0_common::error::C3p0Error;
 use crate::error::into_c3p0_error;
 use crate::postgres::{rows::Row, types::FromSql};
-use crate::{PgConnection, C3p0Pg};
+use crate::{PgConnection, PgPoolManager};
 use c3p0_common::json::builder::{C3p0JsonBuilder};
 
 pub trait PgJsonBuilder<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>>{
     fn build(self) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>>;
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> PgJsonBuilder<DATA, CODEC> for C3p0JsonBuilder<DATA, CODEC, C3p0Pg>
+impl<DATA, CODEC: JsonCodec<DATA>> PgJsonBuilder<DATA, CODEC> for C3p0JsonBuilder<DATA, CODEC, PgPoolManager>
     where
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

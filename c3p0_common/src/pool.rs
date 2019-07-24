@@ -1,10 +1,12 @@
 use crate::error::C3p0Error;
 use crate::json::builder::{C3p0JsonBuilder};
 use crate::json::C3p0JsonManager;
-use crate::json::codec::DefaultJsonCodec;
+use crate::json::codec::{DefaultJsonCodec, JsonCodec};
 
 pub trait C3p0PoolManager: Clone {
     type CONN: Connection;
+
+    fn json_builder<T: Into<String>, DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(&self, table_name: T) -> C3p0JsonBuilder<DATA, DefaultJsonCodec, Self>;
 
     fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 

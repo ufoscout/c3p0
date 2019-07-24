@@ -52,7 +52,7 @@ impl C3p0Builder {
         C3p0Builder { pool }
     }
 
-    pub fn pool(&self) -> c3p0_pool_pg::C3p0Pg {
+    pub fn pool(&self) -> c3p0_pool_pg::PgPoolManager {
         c3p0_pool_pg::C3p0PgBuilder::build(self.pool.clone())
     }
 
@@ -66,7 +66,7 @@ impl C3p0Builder {
         c3p0_json::C3p0PgJsonBuilder::new(table_name)
     }
 
-    pub fn migrate(&self) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_pg::C3p0Pg> {
+    pub fn migrate(&self) -> c3p0_migrate::C3p0MigrateBuilder<c3p0_pool_pg::PgPoolManager> {
         c3p0_migrate::C3p0MigrateBuilder::new(self.pool())
     }
 }

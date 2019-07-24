@@ -3,7 +3,7 @@
 use c3p0_json::pg::r2d2::{PostgresConnectionManager, TlsMode, Pool};
 use testcontainers::*;
 
-pub use c3p0_json::pg::C3p0Pg as C3p0Impl;
+pub use c3p0_json::pg::PgPoolManager as C3p0Impl;
 pub use c3p0_json::pg::C3p0PgBuilder as C3p0BuilderImpl;
 
 mod tests;

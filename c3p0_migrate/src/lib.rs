@@ -90,7 +90,7 @@ pub struct C3p0Migrate<C3P0> {
 const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
 
 #[cfg(feature = "pg")]
-impl C3p0Migrate<c3p0_json::pg::C3p0Pg> {
+impl C3p0Migrate<c3p0_json::pg::PgPoolManager> {
     pub fn migrate(&self) -> Result<(), C3p0Error> {
         let c3p0_json = self.build_cp30_json();
 
