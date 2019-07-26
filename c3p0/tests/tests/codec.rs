@@ -1,4 +1,4 @@
-use c3p0_json::*;
+use c3p0::*;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -75,11 +75,11 @@ fn should_upgrade_structs_on_load() {
         let conn = pool.connection().unwrap();
         let table_name = format!("USER_TABLE_{}", rand_string(8));
 
-        let jpo_v1 = C3p0JsonBuilderImpl::new(&table_name)
+        let jpo_v1 = C3p0JsonBuilder::new(&table_name)
             .with_codec(UserVersionCoded1 {})
             .build();
 
-        let jpo_v2 = C3p0JsonBuilderImpl::new(&table_name)
+        let jpo_v2 = C3p0JsonBuilder::new(&table_name)
             .with_codec(UserVersionCoded2 {})
             .build();
 

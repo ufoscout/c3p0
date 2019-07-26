@@ -1,6 +1,5 @@
 use crate::tests::util::rand_string;
 use crate::*;
-use c3p0_json::*;
 
 #[test]
 fn should_commit_transaction() {

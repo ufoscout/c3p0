@@ -1,15 +1,13 @@
 #![cfg(feature = "sqlite")]
 
-use c3p0_json::sqlite::r2d2::{Pool, SqliteConnectionManager};
+use c3p0::*;
+use c3p0::sqlite::r2d2::{Pool, SqliteConnectionManager};
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 
-pub use c3p0_json::sqlite::rusqlite::Row;
-pub use c3p0_json::sqlite::SqlitePoolManager as C3p0Impl;
-pub use c3p0_json::sqlite::C3p0SqliteBuilder as C3p0BuilderImpl;
-pub use c3p0_json::C3p0SqliteJson as C3p0JsonImpl;
-pub use c3p0_json::C3p0SqliteJsonBuilder as C3p0JsonBuilderImpl;
+pub use c3p0::sqlite::rusqlite::Row;
+pub type C3p0Impl = C3p0Pool<SqlitePoolManager>;
 
 mod tests;
 
@@ -28,7 +26,7 @@ fn init() -> (C3p0Impl, String) {
 
     let pool = Pool::builder().build(manager).unwrap();
 
-    let pool = C3p0BuilderImpl::build(pool);
+    let pool = C3p0Pool::new(SqlitePoolManager::new(pool));
 
     (pool, "".to_owned())
 }

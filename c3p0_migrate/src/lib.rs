@@ -162,7 +162,7 @@ impl C3p0Migrate<c3p0_pool_pg::PgPoolManager> {
 }
 
 #[cfg(feature = "mysql")]
-impl C3p0Migrate<c3p0_pool_mysql::MySqlPoolManager> {
+impl C3p0Migrate<c3p0_pool_mysql::MysqlPoolManager> {
     pub fn migrate(&self) -> Result<(), C3p0Error> {
         let c3p0_json = self.build_cp30_json();
 

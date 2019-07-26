@@ -1,17 +1,17 @@
 #![cfg(feature = "mysql")]
 
-use c3p0_json::mysql::mysql::{Opts, OptsBuilder};
-use c3p0_json::mysql::r2d2::{MysqlConnectionManager, Pool};
+use c3p0::*;
+use c3p0_pool_mysql::mysql::{Opts, OptsBuilder};
+use c3p0_pool_mysql::r2d2::{MysqlConnectionManager, Pool};
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
-pub use c3p0_json::mysql::mysql::Row;
-pub use c3p0_json::mysql::MySqlPoolManager as C3p0Impl;
-pub use c3p0_json::mysql::C3p0MysqlBuilder as C3p0BuilderImpl;
-pub use c3p0_json::C3p0MysqlJson as C3p0JsonImpl;
-pub use c3p0_json::C3p0MysqlJsonBuilder as C3p0JsonBuilderImpl;
+pub use c3p0::mysql::mysql::Row;
+use c3p0_common::C3p0Pool;
+
+pub type C3p0Impl = C3p0Pool<c3p0::mysql::MysqlPoolManager>;
 
 mod tests;
 
@@ -56,7 +56,7 @@ fn init() -> (
 
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0BuilderImpl::build(pool);
+    let pool = C3p0Pool::new(MysqlPoolManager::new(pool));
 
     (pool, node)
 }

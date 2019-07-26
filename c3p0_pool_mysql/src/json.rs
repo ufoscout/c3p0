@@ -2,14 +2,14 @@ use c3p0_common::json::{codec::JsonCodec, model::{IdType, Model, NewModel}, Quer
 use c3p0_common::error::C3p0Error;
 use crate::mysql::prelude::FromValue;
 use crate::mysql::Row;
-use crate::{MysqlConnection, MySqlPoolManager};
+use crate::{MysqlConnection, MysqlPoolManager};
 use c3p0_common::json::builder::C3p0JsonBuilder;
 
 pub trait MysqlJsonBuilder<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>>{
     fn build(self) -> C3p0Json<DATA, CODEC, MysqlJsonManager<DATA, CODEC>>;
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> MysqlJsonBuilder<DATA, CODEC> for C3p0JsonBuilder<DATA, CODEC, MySqlPoolManager>
+impl<DATA, CODEC: JsonCodec<DATA>> MysqlJsonBuilder<DATA, CODEC> for C3p0JsonBuilder<DATA, CODEC, MysqlPoolManager>
     where
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

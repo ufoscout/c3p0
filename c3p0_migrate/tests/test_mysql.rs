@@ -4,14 +4,14 @@ use c3p0_pool_mysql::mysql::{Opts, OptsBuilder};
 use c3p0_pool_mysql::r2d2::{Pool, MysqlConnectionManager};
 use testcontainers::*;
 
-use c3p0_pool_mysql::MySqlPoolManager;
+use c3p0_pool_mysql::MysqlPoolManager;
 use c3p0_common::C3p0Pool;
 
 mod tests;
 
 pub fn new_connection(
     docker: &clients::Cli,
-) -> (C3p0Pool<MySqlPoolManager>, Container<clients::Cli, images::generic::GenericImage>) {
+) -> (C3p0Pool<MysqlPoolManager>, Container<clients::Cli, images::generic::GenericImage>) {
     let mysql_version = "5.7.25";
     let mysql_image = images::generic::GenericImage::new(format!("mysql:{}", mysql_version))
         .with_wait_for(images::generic::WaitFor::message_on_stderr(
@@ -38,7 +38,7 @@ pub fn new_connection(
         .build(manager)
         .unwrap();
 
-    let pool = C3p0Pool::new(MySqlPoolManager::new(pool));
+    let pool = C3p0Pool::new(MysqlPoolManager::new(pool));
 
     (pool, node)
 }

@@ -23,19 +23,19 @@ pub mod mysql {
 pub mod json;
 
 #[derive(Clone)]
-pub struct MySqlPoolManager {
+pub struct MysqlPoolManager {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl MySqlPoolManager {
+impl MysqlPoolManager {
     pub fn new(pool: Pool<MysqlConnectionManager>) -> Self {
-        MySqlPoolManager{
+        MysqlPoolManager {
             pool
         }
     }
 }
 
-impl C3p0PoolManager for MySqlPoolManager {
+impl C3p0PoolManager for MysqlPoolManager {
     type CONN = MysqlConnection;
 
     fn json_builder<T: Into<String>, DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(&self, table_name: T) -> C3p0JsonBuilder<DATA, DefaultJsonCodec, Self> {
