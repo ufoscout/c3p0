@@ -1,19 +1,18 @@
 #![cfg(feature = "sqlite")]
 
-use c3p0_json::sqlite::r2d2::{Pool, SqliteConnectionManager};
+use c3p0_pool_sqlite::r2d2::{Pool, SqliteConnectionManager};
 use testcontainers::*;
-
-pub use c3p0_json::sqlite::C3p0Sqlite as C3p0Impl;
-pub use c3p0_json::sqlite::C3p0SqliteBuilder as C3p0BuilderImpl;
+use c3p0_pool_sqlite::SqlitePoolManager;
+use c3p0_common::C3p0Pool;
 
 mod tests;
 
-pub fn new_connection(_docker: &clients::Cli) -> (C3p0Impl, String) {
+pub fn new_connection(_docker: &clients::Cli) -> (C3p0Pool<SqlitePoolManager>, String) {
     let manager = SqliteConnectionManager::memory();
 
     let pool = Pool::builder().build(manager).unwrap();
 
-    let pool = C3p0BuilderImpl::build(pool);
+    let pool = C3p0Pool::new(SqlitePoolManager::new(pool));
 
     (pool, "".to_owned())
 }

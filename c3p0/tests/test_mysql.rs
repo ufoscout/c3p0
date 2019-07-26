@@ -8,7 +8,7 @@ use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
 pub use c3p0_json::mysql::mysql::Row;
-pub use c3p0_json::mysql::C3p0Mysql as C3p0Impl;
+pub use c3p0_json::mysql::MySqlPoolManager as C3p0Impl;
 pub use c3p0_json::mysql::C3p0MysqlBuilder as C3p0BuilderImpl;
 pub use c3p0_json::C3p0MysqlJson as C3p0JsonImpl;
 pub use c3p0_json::C3p0MysqlJsonBuilder as C3p0JsonBuilderImpl;

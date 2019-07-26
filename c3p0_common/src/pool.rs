@@ -1,7 +1,6 @@
 use crate::error::C3p0Error;
 use crate::json::builder::{C3p0JsonBuilder};
-use crate::json::C3p0JsonManager;
-use crate::json::codec::{DefaultJsonCodec, JsonCodec};
+use crate::json::codec::{DefaultJsonCodec};
 
 pub trait C3p0PoolManager: Clone {
     type CONN: Connection;

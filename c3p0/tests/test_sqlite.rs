@@ -6,7 +6,7 @@ use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 
 pub use c3p0_json::sqlite::rusqlite::Row;
-pub use c3p0_json::sqlite::C3p0Sqlite as C3p0Impl;
+pub use c3p0_json::sqlite::SqlitePoolManager as C3p0Impl;
 pub use c3p0_json::sqlite::C3p0SqliteBuilder as C3p0BuilderImpl;
 pub use c3p0_json::C3p0SqliteJson as C3p0JsonImpl;
 pub use c3p0_json::C3p0SqliteJsonBuilder as C3p0JsonBuilderImpl;

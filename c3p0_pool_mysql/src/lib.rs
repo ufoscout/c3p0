@@ -9,8 +9,7 @@ use std::ops::DerefMut;
 
 pub use c3p0_common::error::C3p0Error;
 pub use c3p0_common::pool::{C3p0PoolManager, Connection};
-use c3p0_common::json::builder::{C3p0JsonBuilderManager, C3p0JsonBuilder};
-use c3p0_common::json::C3p0JsonManager;
+use c3p0_common::json::builder::{C3p0JsonBuilder};
 use c3p0_common::json::codec::DefaultJsonCodec;
 
 pub mod r2d2 {
@@ -23,25 +22,24 @@ pub mod mysql {
 
 pub mod json;
 
-pub struct C3p0MysqlBuilder {}
-
-impl C3p0MysqlBuilder {
-    pub fn build(pool: Pool<MysqlConnectionManager>) -> C3p0Mysql {
-        C3p0Mysql { pool }
-    }
-}
-
 #[derive(Clone)]
-pub struct C3p0Mysql {
+pub struct MySqlPoolManager {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl C3p0PoolManager for C3p0Mysql {
+impl MySqlPoolManager {
+    pub fn new(pool: Pool<MysqlConnectionManager>) -> Self {
+        MySqlPoolManager{
+            pool
+        }
+    }
+}
+
+impl C3p0PoolManager for MySqlPoolManager {
     type CONN = MysqlConnection;
 
-    fn json<T: Into<String>, DATA, JSONBUILDER: C3p0JsonBuilderManager<Self>, JSONMANAGER: C3p0JsonManager<DATA, DefaultJsonCodec, CONNECTION=Self::CONN>>(&self, table_name: T) -> C3p0JsonBuilder<DATA, DefaultJsonCodec, Self, JSONBUILDER, JSONMANAGER> where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned {
-        unimplemented!()
+    fn json_builder<T: Into<String>, DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(&self, table_name: T) -> C3p0JsonBuilder<DATA, DefaultJsonCodec, Self> {
+        C3p0JsonBuilder::new(table_name)
     }
 
     fn connection(&self) -> Result<MysqlConnection, C3p0Error> {

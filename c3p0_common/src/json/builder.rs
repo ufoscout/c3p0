@@ -1,6 +1,5 @@
 use crate::json::codec::{JsonCodec, DefaultJsonCodec};
 use crate::types::OptString;
-use crate::json::{C3p0Json, C3p0JsonManager};
 use crate::pool::C3p0PoolManager;
 
 #[derive(Clone)]

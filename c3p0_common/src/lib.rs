@@ -6,6 +6,7 @@ pub mod json;
 pub mod types;
 pub mod pool;
 
+#[derive(Clone, Debug)]
 pub struct C3p0Pool<C3P0: C3p0PoolManager>{
     pool_manager: C3P0
 }

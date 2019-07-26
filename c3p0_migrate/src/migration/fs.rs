@@ -1,9 +1,9 @@
 use crate::migration::{Migration, Migrations};
-use c3p0_json::C3p0Error;
 use std::convert::TryFrom;
 use std::fs::read_to_string;
 use std::path::Path;
 use walkdir::WalkDir;
+use c3p0_common::error::C3p0Error;
 
 impl TryFrom<String> for Migrations {
     type Error = C3p0Error;

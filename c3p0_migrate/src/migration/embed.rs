@@ -1,7 +1,7 @@
 use crate::migration::{Migration, Migrations};
-use c3p0_json::C3p0Error;
 use include_dir::Dir;
 use std::convert::TryFrom;
+use c3p0_common::error::C3p0Error;
 
 impl<'a> TryFrom<&'a Dir<'a>> for Migrations {
     type Error = C3p0Error;

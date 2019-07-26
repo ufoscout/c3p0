@@ -8,8 +8,7 @@ use crate::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
 pub use c3p0_common::error::C3p0Error;
 pub use c3p0_common::pool::{C3p0PoolManager, Connection};
 use c3p0_common::json::builder::{C3p0JsonBuilder};
-use c3p0_common::json::C3p0JsonManager;
-use c3p0_common::json::codec::{DefaultJsonCodec, JsonCodec};
+use c3p0_common::json::codec::{DefaultJsonCodec};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -21,17 +20,17 @@ pub mod postgres {
 
 pub mod json;
 
-pub struct C3p0PgBuilder {}
-
-impl C3p0PgBuilder {
-    pub fn build(pool: Pool<PostgresConnectionManager>) -> PgPoolManager {
-        PgPoolManager { pool }
-    }
-}
-
 #[derive(Clone)]
 pub struct PgPoolManager {
     pool: Pool<PostgresConnectionManager>,
+}
+
+impl PgPoolManager {
+    pub fn new(pool: Pool<PostgresConnectionManager>) -> Self {
+        PgPoolManager{
+            pool
+        }
+    }
 }
 
 impl C3p0PoolManager for PgPoolManager {

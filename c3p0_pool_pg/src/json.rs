@@ -1,10 +1,10 @@
-use c3p0_common::json::codec::DefaultJsonCodec;
 use c3p0_common::json::{codec::JsonCodec, model::{IdType, Model, NewModel}, Queries, C3p0JsonManager, C3p0Json};
 use c3p0_common::error::C3p0Error;
 use crate::error::into_c3p0_error;
 use crate::postgres::{rows::Row, types::FromSql};
 use crate::{PgConnection, PgPoolManager};
 use c3p0_common::json::builder::{C3p0JsonBuilder};
+
 
 pub trait PgJsonBuilder<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>>{
     fn build(self) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>>;
@@ -20,7 +20,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgJsonBuilder<DATA, CODEC> for C3p0JsonBuilde
             None => self.table_name.clone(),
         };
 
-        let pg_json = PgJsonManager {
+        let json_manager = PgJsonManager {
             phantom_data: std::marker::PhantomData,
             codec: self.codec,
             queries: Queries {
@@ -108,7 +108,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgJsonBuilder<DATA, CODEC> for C3p0JsonBuilde
             },
         };
 
-        C3p0Json::new(pg_json)
+        C3p0Json::new(json_manager)
     }
 }
 
