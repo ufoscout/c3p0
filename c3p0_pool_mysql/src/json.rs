@@ -1,19 +1,42 @@
-use c3p0_common::json::{codec::JsonCodec, model::{IdType, Model, NewModel}, Queries, C3p0JsonManager, C3p0Json};
-use c3p0_common::error::C3p0Error;
 use crate::mysql::prelude::FromValue;
 use crate::mysql::Row;
 use crate::{MysqlConnection, MysqlPoolManager};
+use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
+use c3p0_common::json::codec::DefaultJsonCodec;
+use c3p0_common::json::{
+    codec::JsonCodec,
+    model::{IdType, Model, NewModel},
+    C3p0Json, C3p0JsonManager, Queries,
+};
 
-pub trait MysqlJsonBuilder<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>>{
-    fn build(self) -> C3p0Json<DATA, CODEC, MysqlJsonManager<DATA, CODEC>>;
+pub trait MysqlJsonBuilder {
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+        self,
+    ) -> C3p0Json<DATA, DefaultJsonCodec, MysqlJsonManager<DATA, DefaultJsonCodec>>;
+    fn build_with_codec<
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        CODEC: JsonCodec<DATA>,
+    >(
+        self,
+        codec: CODEC,
+    ) -> C3p0Json<DATA, CODEC, MysqlJsonManager<DATA, CODEC>>;
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> MysqlJsonBuilder<DATA, CODEC> for C3p0JsonBuilder<DATA, CODEC, MysqlPoolManager>
-    where
+impl MysqlJsonBuilder for C3p0JsonBuilder<MysqlPoolManager> {
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+        self,
+    ) -> C3p0Json<DATA, DefaultJsonCodec, MysqlJsonManager<DATA, DefaultJsonCodec>> {
+        self.build_with_codec(DefaultJsonCodec {})
+    }
+
+    fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn build(self) -> C3p0Json<DATA, CODEC, MysqlJsonManager<DATA, CODEC>> {
+        CODEC: JsonCodec<DATA>,
+    >(
+        self,
+        codec: CODEC,
+    ) -> C3p0Json<DATA, CODEC, MysqlJsonManager<DATA, CODEC>> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
@@ -21,7 +44,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> MysqlJsonBuilder<DATA, CODEC> for C3p0JsonBui
 
         let json_manager = MysqlJsonManager {
             phantom_data: std::marker::PhantomData,
-            codec: self.codec,
+            codec,
             queries: Queries {
                 count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 

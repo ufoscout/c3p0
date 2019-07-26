@@ -9,8 +9,6 @@ use crate::rusqlite::Row;
 use std::cell::RefCell;
 
 pub use c3p0_common::pool::{C3p0PoolManager, Connection};
-use c3p0_common::json::builder::{C3p0JsonBuilder};
-use c3p0_common::json::codec::DefaultJsonCodec;
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -29,18 +27,18 @@ pub struct SqlitePoolManager {
 
 impl SqlitePoolManager {
     pub fn new(pool: Pool<SqliteConnectionManager>) -> Self {
-        SqlitePoolManager{
-            pool
-        }
+        SqlitePoolManager { pool }
+    }
+}
+
+impl Into<SqlitePoolManager> for Pool<SqliteConnectionManager> {
+    fn into(self) -> SqlitePoolManager {
+        SqlitePoolManager::new(self)
     }
 }
 
 impl C3p0PoolManager for SqlitePoolManager {
     type CONN = SqliteConnection;
-
-    fn json_builder<T: Into<String>, DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(&self, table_name: T) -> C3p0JsonBuilder<DATA, DefaultJsonCodec, Self> {
-        C3p0JsonBuilder::new(table_name)
-    }
 
     fn connection(&self) -> Result<SqliteConnection, C3p0Error> {
         self.pool

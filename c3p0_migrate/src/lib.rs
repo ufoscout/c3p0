@@ -1,14 +1,14 @@
 use crate::migration::{Migration, Migrations};
 use crate::sql_migration::{to_sql_migrations, SqlMigration};
+use c3p0_common::error::C3p0Error;
+use c3p0_common::json::builder::C3p0JsonBuilder;
+use c3p0_common::json::codec::DefaultJsonCodec;
+use c3p0_common::json::model::{Model, NewModel};
+use c3p0_common::json::{C3p0Json, C3p0JsonManager};
+use c3p0_common::pool::{C3p0PoolManager, Connection};
+use c3p0_common::C3p0Pool;
 use log::*;
 use serde_derive::{Deserialize, Serialize};
-use c3p0_common::pool::{Connection, C3p0PoolManager};
-use c3p0_common::json::model::{Model, NewModel};
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::{C3p0JsonManager, C3p0Json};
-use c3p0_common::C3p0Pool;
-use c3p0_common::json::builder::C3p0JsonBuilder;
 
 mod md5;
 pub mod migration;
@@ -129,7 +129,11 @@ impl C3p0Migrate<c3p0_pool_pg::PgPoolManager> {
 
     fn lock_table(
         &self,
-        c3p0_json: &C3p0Json<MigrationData, DefaultJsonCodec, c3p0_pool_pg::json::PgJsonManager<MigrationData, DefaultJsonCodec>>,
+        c3p0_json: &C3p0Json<
+            MigrationData,
+            DefaultJsonCodec,
+            c3p0_pool_pg::json::PgJsonManager<MigrationData, DefaultJsonCodec>,
+        >,
         conn: &c3p0_pool_pg::PgConnection,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
@@ -140,7 +144,11 @@ impl C3p0Migrate<c3p0_pool_pg::PgPoolManager> {
 
     fn lock_first_migration_row(
         &self,
-        c3p0_json: &C3p0Json<MigrationData, DefaultJsonCodec, c3p0_pool_pg::json::PgJsonManager<MigrationData, DefaultJsonCodec>>,
+        c3p0_json: &C3p0Json<
+            MigrationData,
+            DefaultJsonCodec,
+            c3p0_pool_pg::json::PgJsonManager<MigrationData, DefaultJsonCodec>,
+        >,
         conn: &c3p0_pool_pg::PgConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
@@ -151,11 +159,16 @@ impl C3p0Migrate<c3p0_pool_pg::PgPoolManager> {
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
 
-    fn build_cp30_json(&self) -> C3p0Json<MigrationData, DefaultJsonCodec, c3p0_pool_pg::json::PgJsonManager<MigrationData, DefaultJsonCodec>> {
-
+    fn build_cp30_json(
+        &self,
+    ) -> C3p0Json<
+        MigrationData,
+        DefaultJsonCodec,
+        c3p0_pool_pg::json::PgJsonManager<MigrationData, DefaultJsonCodec>,
+    > {
         use c3p0_pool_pg::json::PgJsonBuilder;
 
-        C3p0JsonBuilder::new(self.table.clone())
+        C3p0JsonBuilder::<c3p0_pool_pg::PgPoolManager>::new(self.table.clone())
             .with_schema_name(self.schema.clone())
             .build()
     }
@@ -196,7 +209,11 @@ impl C3p0Migrate<c3p0_pool_mysql::MysqlPoolManager> {
 
     fn lock_table(
         &self,
-        c3p0_json: &C3p0Json<MigrationData, DefaultJsonCodec, c3p0_pool_mysql::json::MysqlJsonManager<MigrationData, DefaultJsonCodec>>,
+        c3p0_json: &C3p0Json<
+            MigrationData,
+            DefaultJsonCodec,
+            c3p0_pool_mysql::json::MysqlJsonManager<MigrationData, DefaultJsonCodec>,
+        >,
         conn: &c3p0_pool_mysql::MysqlConnection,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
@@ -207,7 +224,11 @@ impl C3p0Migrate<c3p0_pool_mysql::MysqlPoolManager> {
 
     fn lock_first_migration_row(
         &self,
-        c3p0_json: &C3p0Json<MigrationData, DefaultJsonCodec, c3p0_pool_mysql::json::MysqlJsonManager<MigrationData, DefaultJsonCodec>>,
+        c3p0_json: &C3p0Json<
+            MigrationData,
+            DefaultJsonCodec,
+            c3p0_pool_mysql::json::MysqlJsonManager<MigrationData, DefaultJsonCodec>,
+        >,
         conn: &c3p0_pool_mysql::MysqlConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
@@ -218,9 +239,15 @@ impl C3p0Migrate<c3p0_pool_mysql::MysqlPoolManager> {
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
 
-    fn build_cp30_json(&self) -> C3p0Json<MigrationData, DefaultJsonCodec, c3p0_pool_mysql::json::MysqlJsonManager<MigrationData, DefaultJsonCodec>> {
+    fn build_cp30_json(
+        &self,
+    ) -> C3p0Json<
+        MigrationData,
+        DefaultJsonCodec,
+        c3p0_pool_mysql::json::MysqlJsonManager<MigrationData, DefaultJsonCodec>,
+    > {
         use c3p0_pool_mysql::json::MysqlJsonBuilder;
-        C3p0JsonBuilder::new(self.table.clone())
+        C3p0JsonBuilder::<c3p0_pool_mysql::MysqlPoolManager>::new(self.table.clone())
             .with_schema_name(self.schema.clone())
             .build()
     }
@@ -259,7 +286,11 @@ impl C3p0Migrate<c3p0_pool_sqlite::SqlitePoolManager> {
 
     fn lock_first_migration_row(
         &self,
-        c3p0_json: &C3p0Json<MigrationData, DefaultJsonCodec, c3p0_pool_sqlite::json::SqliteJsonManager<MigrationData, DefaultJsonCodec>>,
+        c3p0_json: &C3p0Json<
+            MigrationData,
+            DefaultJsonCodec,
+            c3p0_pool_sqlite::json::SqliteJsonManager<MigrationData, DefaultJsonCodec>,
+        >,
         conn: &c3p0_pool_sqlite::SqliteConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
@@ -270,9 +301,15 @@ impl C3p0Migrate<c3p0_pool_sqlite::SqlitePoolManager> {
         conn.fetch_one(&lock_sql, &[&C3P0_INIT_MIGRATION_ID], |_| Ok(()))
     }
 
-    fn build_cp30_json(&self) -> C3p0Json<MigrationData, DefaultJsonCodec, c3p0_pool_sqlite::json::SqliteJsonManager<MigrationData, DefaultJsonCodec>> {
+    fn build_cp30_json(
+        &self,
+    ) -> C3p0Json<
+        MigrationData,
+        DefaultJsonCodec,
+        c3p0_pool_sqlite::json::SqliteJsonManager<MigrationData, DefaultJsonCodec>,
+    > {
         use c3p0_pool_sqlite::json::SqliteJsonBuilder;
-        C3p0JsonBuilder::new(self.table.clone())
+        C3p0JsonBuilder::<c3p0_pool_sqlite::SqlitePoolManager>::new(self.table.clone())
             .with_schema_name(self.schema.clone())
             .build()
     }

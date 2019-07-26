@@ -1,7 +1,7 @@
 #![cfg(feature = "sqlite")]
 
-use c3p0::*;
 use c3p0::sqlite::r2d2::{Pool, SqliteConnectionManager};
+use c3p0::*;
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};

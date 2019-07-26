@@ -1,12 +1,11 @@
+use crate::error::C3p0Error;
 use crate::json::codec::JsonCodec;
 use crate::json::model::*;
-use crate::error::C3p0Error;
 use crate::pool::Connection;
 
 pub mod builder;
 pub mod codec;
 pub mod model;
-
 
 #[derive(Clone)]
 pub struct Queries {
@@ -36,8 +35,6 @@ pub struct Queries {
     pub drop_table_sql_query: String,
     pub lock_table_sql_query: Option<String>,
 }
-
-
 
 pub trait C3p0JsonManager<DATA, CODEC>
 where
@@ -85,30 +82,28 @@ where
     fn update(&self, conn: &Self::CONNECTION, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 }
 
-
-
 pub struct C3p0Json<DATA, CODEC, JSONMANAGER>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        CODEC: JsonCodec<DATA>,
-        JSONMANAGER: C3p0JsonManager<DATA, CODEC>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    CODEC: JsonCodec<DATA>,
+    JSONMANAGER: C3p0JsonManager<DATA, CODEC>,
 {
     json_manager: JSONMANAGER,
     phantom_data: std::marker::PhantomData<DATA>,
     phantom_codec: std::marker::PhantomData<CODEC>,
 }
 
-impl <DATA, CODEC, JSONMANAGER> C3p0Json<DATA, CODEC, JSONMANAGER>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        CODEC: JsonCodec<DATA>,
-        JSONMANAGER: C3p0JsonManager<DATA, CODEC> {
-
+impl<DATA, CODEC, JSONMANAGER> C3p0Json<DATA, CODEC, JSONMANAGER>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    CODEC: JsonCodec<DATA>,
+    JSONMANAGER: C3p0JsonManager<DATA, CODEC>,
+{
     pub fn new(json_manager: JSONMANAGER) -> Self {
-        C3p0Json{
+        C3p0Json {
             json_manager,
             phantom_data: std::marker::PhantomData,
-            phantom_codec: std::marker::PhantomData
+            phantom_codec: std::marker::PhantomData,
         }
     }
 
@@ -120,11 +115,14 @@ impl <DATA, CODEC, JSONMANAGER> C3p0Json<DATA, CODEC, JSONMANAGER>
         self.json_manager.queries()
     }
 
-    pub fn create_table_if_not_exists(&self, conn: &JSONMANAGER::CONNECTION) -> Result<(), C3p0Error> {
+    pub fn create_table_if_not_exists(
+        &self,
+        conn: &JSONMANAGER::CONNECTION,
+    ) -> Result<(), C3p0Error> {
         self.json_manager.create_table_if_not_exists(conn)
     }
 
-    pub fn drop_table_if_exists(&self, conn: &JSONMANAGER::CONNECTION) -> Result<(), C3p0Error>{
+    pub fn drop_table_if_exists(&self, conn: &JSONMANAGER::CONNECTION) -> Result<(), C3p0Error> {
         self.json_manager.drop_table_if_exists(conn)
     }
 
@@ -152,7 +150,11 @@ impl <DATA, CODEC, JSONMANAGER> C3p0Json<DATA, CODEC, JSONMANAGER>
         self.json_manager.find_by_id(conn, id)
     }
 
-    pub fn delete(&self, conn: &JSONMANAGER::CONNECTION, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    pub fn delete(
+        &self,
+        conn: &JSONMANAGER::CONNECTION,
+        obj: &Model<DATA>,
+    ) -> Result<u64, C3p0Error> {
         self.json_manager.delete(conn, obj)
     }
 
@@ -168,11 +170,19 @@ impl <DATA, CODEC, JSONMANAGER> C3p0Json<DATA, CODEC, JSONMANAGER>
         self.json_manager.delete_by_id(conn, id)
     }
 
-    pub fn save(&self, conn: &JSONMANAGER::CONNECTION, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    pub fn save(
+        &self,
+        conn: &JSONMANAGER::CONNECTION,
+        obj: NewModel<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         self.json_manager.save(conn, obj)
     }
 
-    pub fn update(&self, conn: &JSONMANAGER::CONNECTION, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    pub fn update(
+        &self,
+        conn: &JSONMANAGER::CONNECTION,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         self.json_manager.update(conn, obj)
     }
 }

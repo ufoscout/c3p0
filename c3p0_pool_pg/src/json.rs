@@ -1,20 +1,42 @@
-use c3p0_common::json::{codec::JsonCodec, model::{IdType, Model, NewModel}, Queries, C3p0JsonManager, C3p0Json};
-use c3p0_common::error::C3p0Error;
 use crate::error::into_c3p0_error;
 use crate::postgres::{rows::Row, types::FromSql};
 use crate::{PgConnection, PgPoolManager};
-use c3p0_common::json::builder::{C3p0JsonBuilder};
+use c3p0_common::error::C3p0Error;
+use c3p0_common::json::builder::C3p0JsonBuilder;
+use c3p0_common::json::codec::DefaultJsonCodec;
+use c3p0_common::json::{
+    codec::JsonCodec,
+    model::{IdType, Model, NewModel},
+    C3p0Json, C3p0JsonManager, Queries,
+};
 
-
-pub trait PgJsonBuilder<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>>{
-    fn build(self) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>>;
+pub trait PgJsonBuilder {
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+        self,
+    ) -> C3p0Json<DATA, DefaultJsonCodec, PgJsonManager<DATA, DefaultJsonCodec>>;
+    fn build_with_codec<
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        CODEC: JsonCodec<DATA>,
+    >(
+        self,
+        codec: CODEC,
+    ) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>>;
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> PgJsonBuilder<DATA, CODEC> for C3p0JsonBuilder<DATA, CODEC, PgPoolManager>
-    where
+impl PgJsonBuilder for C3p0JsonBuilder<PgPoolManager> {
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+        self,
+    ) -> C3p0Json<DATA, DefaultJsonCodec, PgJsonManager<DATA, DefaultJsonCodec>> {
+        self.build_with_codec(DefaultJsonCodec {})
+    }
+
+    fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn build(self) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>> {
+        CODEC: JsonCodec<DATA>,
+    >(
+        self,
+        codec: CODEC,
+    ) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
@@ -22,7 +44,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgJsonBuilder<DATA, CODEC> for C3p0JsonBuilde
 
         let json_manager = PgJsonManager {
             phantom_data: std::marker::PhantomData,
-            codec: self.codec,
+            codec,
             queries: Queries {
                 count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 

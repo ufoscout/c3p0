@@ -1,19 +1,41 @@
-use c3p0_common::json::{codec::JsonCodec, model::IdType, model::Model, model::NewModel, Queries, C3p0JsonManager, C3p0Json};
 use c3p0_common::error::C3p0Error;
+use c3p0_common::json::{
+    codec::JsonCodec, model::IdType, model::Model, model::NewModel, C3p0Json, C3p0JsonManager,
+    Queries,
+};
 
 use crate::rusqlite::{types::FromSql, Row};
 use crate::{SqliteConnection, SqlitePoolManager};
 use c3p0_common::json::builder::C3p0JsonBuilder;
+use c3p0_common::json::codec::DefaultJsonCodec;
 
-pub trait SqliteJsonBuilder<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>>{
-    fn build(self) -> C3p0Json<DATA, CODEC, SqliteJsonManager<DATA, CODEC>>;
+pub trait SqliteJsonBuilder {
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+        self,
+    ) -> C3p0Json<DATA, DefaultJsonCodec, SqliteJsonManager<DATA, DefaultJsonCodec>>;
+    fn build_with_codec<
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        CODEC: JsonCodec<DATA>,
+    >(
+        self,
+        codec: CODEC,
+    ) -> C3p0Json<DATA, CODEC, SqliteJsonManager<DATA, CODEC>>;
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> SqliteJsonBuilder<DATA, CODEC> for C3p0JsonBuilder<DATA, CODEC, SqlitePoolManager>
-    where
+impl SqliteJsonBuilder for C3p0JsonBuilder<SqlitePoolManager> {
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+        self,
+    ) -> C3p0Json<DATA, DefaultJsonCodec, SqliteJsonManager<DATA, DefaultJsonCodec>> {
+        self.build_with_codec(DefaultJsonCodec {})
+    }
+
+    fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn build(self) -> C3p0Json<DATA, CODEC, SqliteJsonManager<DATA, CODEC>> {
+        CODEC: JsonCodec<DATA>,
+    >(
+        self,
+        codec: CODEC,
+    ) -> C3p0Json<DATA, CODEC, SqliteJsonManager<DATA, CODEC>> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
@@ -21,7 +43,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> SqliteJsonBuilder<DATA, CODEC> for C3p0JsonBu
 
         let json_manager = SqliteJsonManager {
             phantom_data: std::marker::PhantomData,
-            codec: self.codec,
+            codec,
             queries: Queries {
                 count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 

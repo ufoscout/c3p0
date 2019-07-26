@@ -9,8 +9,6 @@ use std::ops::DerefMut;
 
 pub use c3p0_common::error::C3p0Error;
 pub use c3p0_common::pool::{C3p0PoolManager, Connection};
-use c3p0_common::json::builder::{C3p0JsonBuilder};
-use c3p0_common::json::codec::DefaultJsonCodec;
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -29,18 +27,18 @@ pub struct MysqlPoolManager {
 
 impl MysqlPoolManager {
     pub fn new(pool: Pool<MysqlConnectionManager>) -> Self {
-        MysqlPoolManager {
-            pool
-        }
+        MysqlPoolManager { pool }
+    }
+}
+
+impl Into<MysqlPoolManager> for Pool<MysqlConnectionManager> {
+    fn into(self) -> MysqlPoolManager {
+        MysqlPoolManager::new(self)
     }
 }
 
 impl C3p0PoolManager for MysqlPoolManager {
     type CONN = MysqlConnection;
-
-    fn json_builder<T: Into<String>, DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(&self, table_name: T) -> C3p0JsonBuilder<DATA, DefaultJsonCodec, Self> {
-        C3p0JsonBuilder::new(table_name)
-    }
 
     fn connection(&self) -> Result<MysqlConnection, C3p0Error> {
         self.pool
