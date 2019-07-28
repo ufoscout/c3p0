@@ -30,7 +30,8 @@ pub use c3p0_pool_sqlite::{
 
 pub use c3p0_common::error::C3p0Error;
 pub use c3p0_common::json::{
-    builder::C3p0JsonBuilder, codec::JsonCodec, model::Model, model::NewModel, C3p0JsonManager, codec::DefaultJsonCodec
+    builder::C3p0JsonBuilder, codec::DefaultJsonCodec, codec::JsonCodec, model::Model,
+    model::NewModel, C3p0Json, C3p0JsonManager,
 };
 pub use c3p0_common::pool::{C3p0PoolManager, Connection};
 pub use c3p0_common::*;
