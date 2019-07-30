@@ -1,7 +1,7 @@
 use crate::error::C3p0Error;
 use serde_json::Value;
 
-pub trait JsonCodec<DATA>
+pub trait JsonCodec<DATA>: Clone
 where
     DATA: serde::ser::Serialize + serde::de::DeserializeOwned,
 {

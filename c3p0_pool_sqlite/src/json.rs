@@ -142,7 +142,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> SqliteJsonManager<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, C3p0Error> {
+    pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<std::error::Error>> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
@@ -189,19 +189,19 @@ where
         conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn find_all(&self, conn: &SqliteConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn fetch_all_existing(&self, conn: &SqliteConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
-            Ok(self.to_model(row)?)
+            self.to_model(row)
         })
     }
 
-    fn find_by_id<'a, ID: Into<&'a IdType>>(
+    fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &SqliteConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
-            Ok(self.to_model(row)?)
+            self.to_model(row)
         })
     }
 

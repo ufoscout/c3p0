@@ -124,7 +124,7 @@ impl C3p0Migrate<c3p0_pool_pg::PgPoolManager> {
         conn: &c3p0_pool_pg::PgConnection,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self.build_cp30_json();
-        c3p0_json.find_all(conn)
+        c3p0_json.fetch_all(conn)
     }
 
     fn lock_table(
@@ -204,7 +204,7 @@ impl C3p0Migrate<c3p0_pool_mysql::MysqlPoolManager> {
         conn: &c3p0_pool_mysql::MysqlConnection,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self.build_cp30_json();
-        c3p0_json.find_all(conn)
+        c3p0_json.fetch_all(conn)
     }
 
     fn lock_table(
@@ -281,7 +281,7 @@ impl C3p0Migrate<c3p0_pool_sqlite::SqlitePoolManager> {
         conn: &c3p0_pool_sqlite::SqliteConnection,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self.build_cp30_json();
-        c3p0_json.find_all(conn)
+        c3p0_json.fetch_all(conn)
     }
 
     fn lock_first_migration_row(
@@ -396,7 +396,7 @@ impl<C3P0: C3p0PoolManager> C3p0Migrate<C3P0> {
         c3p0_json: &C3p0Json<MigrationData, DefaultJsonCodec, C3P0JSON>,
         conn: &C3P0JSON::CONNECTION,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
-        c3p0_json.find_all(conn)
+        c3p0_json.fetch_all(conn)
     }
 
     fn clean_history(

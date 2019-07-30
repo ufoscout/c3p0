@@ -36,7 +36,7 @@ pub struct Queries {
     pub lock_table_sql_query: Option<String>,
 }
 
-pub trait C3p0JsonManager<DATA, CODEC>
+pub trait C3p0JsonManager<DATA, CODEC>: Clone
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
     CODEC: JsonCodec<DATA>,
@@ -59,9 +59,9 @@ where
         id: ID,
     ) -> Result<bool, C3p0Error>;
 
-    fn find_all(&self, conn: &Self::CONNECTION) -> Result<Vec<Model<DATA>>, C3p0Error>;
+    fn fetch_all_existing(&self, conn: &Self::CONNECTION) -> Result<Vec<Model<DATA>>, C3p0Error>;
 
-    fn find_by_id<'a, ID: Into<&'a IdType>>(
+    fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
         conn: &Self::CONNECTION,
         id: ID,
@@ -82,6 +82,7 @@ where
     fn update(&self, conn: &Self::CONNECTION, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 }
 
+#[derive(Clone)]
 pub struct C3p0Json<DATA, CODEC, JSONMANAGER>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
@@ -105,6 +106,10 @@ where
             phantom_data: std::marker::PhantomData,
             phantom_codec: std::marker::PhantomData,
         }
+    }
+
+    pub fn json(&self) -> &JSONMANAGER {
+        &self.json_manager
     }
 
     pub fn codec(&self) -> &CODEC {
@@ -138,16 +143,16 @@ where
         self.json_manager.exists_by_id(conn, id)
     }
 
-    pub fn find_all(&self, conn: &JSONMANAGER::CONNECTION) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        self.json_manager.find_all(conn)
+    pub fn fetch_all(&self, conn: &JSONMANAGER::CONNECTION) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        self.json_manager.fetch_all_existing(conn)
     }
 
-    pub fn find_by_id<'a, ID: Into<&'a IdType>>(
+    pub fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
         conn: &JSONMANAGER::CONNECTION,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        self.json_manager.find_by_id(conn, id)
+        self.json_manager.fetch_one_by_id(conn, id)
     }
 
     pub fn delete(
