@@ -64,7 +64,7 @@ fn basic_crud() {
 }
 
 #[test]
-fn should_find_all() {
+fn should_fetch_all() {
     SINGLETON.get(|(pool, _)| {
         let conn = pool.connection().unwrap();
         let table_name = format!("TEST_TABLE_{}", rand_string(8));

@@ -14,6 +14,10 @@ mod md5;
 pub mod migration;
 mod sql_migration;
 
+pub mod include_dir {
+    pub use include_dir::*;
+}
+
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 
 #[derive(Clone, Debug)]

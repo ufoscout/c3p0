@@ -25,6 +25,7 @@ enum Versioning1<'a> {
     V1(Cow<'a, UserVersion1>),
 }
 
+#[derive(Clone)]
 struct UserVersionCoded1 {}
 
 impl JsonCodec<UserVersion1> for UserVersionCoded1 {
@@ -48,6 +49,7 @@ enum Versioning2<'a> {
     V2(Cow<'a, UserVersion2>),
 }
 
+#[derive(Clone)]
 struct UserVersionCoded2 {}
 
 impl JsonCodec<UserVersion2> for UserVersionCoded2 {
@@ -94,10 +96,10 @@ fn should_upgrade_structs_on_load() {
         println!("total users: {}", jpo_v1.count_all(&conn).unwrap());
         println!(
             "select all users len: {}",
-            jpo_v1.find_all(&conn).unwrap().len()
+            jpo_v1.fetch_all(&conn).unwrap().len()
         );
 
-        let user_v2_found = jpo_v2.find_by_id(&conn, &user_v1.id).unwrap();
+        let user_v2_found = jpo_v2.fetch_one_by_id(&conn, &user_v1.id).unwrap();
         assert!(user_v2_found.is_some());
 
         let user_v2_found = user_v2_found.unwrap();

@@ -143,7 +143,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> MysqlJsonManager<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    fn to_model(&self, row: &Row) -> Result<Model<DATA>, , Box<std::error::Error>> {
+    fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<std::error::Error>> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
