@@ -49,7 +49,7 @@ impl C3p0PoolManager for SqlitePoolManager {
             .map(SqliteConnection::Conn)
     }
 
-    fn transaction<T, F: Fn(&SqliteConnection) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, F: FnOnce(&SqliteConnection) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {

@@ -47,7 +47,7 @@ impl C3p0PoolManager for PgPoolManager {
             .map(|conn| PgConnection { conn })
     }
 
-    fn transaction<T, F: Fn(&PgConnection) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, F: FnOnce(&PgConnection) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {

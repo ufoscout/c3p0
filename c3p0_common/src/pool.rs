@@ -5,7 +5,7 @@ pub trait C3p0PoolManager: Clone {
 
     fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
-    fn transaction<T, F: Fn(&Self::CONN) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, F: FnOnce(&Self::CONN) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error>;

@@ -12,16 +12,17 @@ pub struct C3p0Pool<C3P0: C3p0PoolManager> {
 }
 
 impl<C3P0: C3p0PoolManager> C3p0Pool<C3P0> {
-
     pub fn new<INTOC3P0: Into<C3P0>>(pool_manager: INTOC3P0) -> Self {
-        C3p0Pool { pool_manager: pool_manager.into() }
+        C3p0Pool {
+            pool_manager: pool_manager.into(),
+        }
     }
 
     pub fn connection(&self) -> Result<C3P0::CONN, C3p0Error> {
         self.pool_manager.connection()
     }
 
-    pub fn transaction<T, F: Fn(&C3P0::CONN) -> Result<T, Box<std::error::Error>>>(
+    pub fn transaction<T, F: FnOnce(&C3P0::CONN) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {

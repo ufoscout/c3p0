@@ -49,7 +49,7 @@ impl C3p0PoolManager for MysqlPoolManager {
             .map(|conn| MysqlConnection::Conn(RefCell::new(conn)))
     }
 
-    fn transaction<T, F: Fn(&MysqlConnection) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, F: FnOnce(&MysqlConnection) -> Result<T, Box<std::error::Error>>>(
         &self,
         tx: F,
     ) -> Result<T, C3p0Error> {
