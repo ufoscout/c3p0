@@ -7,7 +7,7 @@ use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 
 pub use c3p0::sqlite::rusqlite::Row;
-pub type C3p0Impl = C3p0Pool<SqlitePoolManager>;
+pub type C3p0Impl = C3p0PoolSqlite;
 
 mod tests;
 
@@ -26,7 +26,7 @@ fn init() -> (C3p0Impl, String) {
 
     let pool = Pool::builder().build(manager).unwrap();
 
-    let pool = C3p0Pool::new(SqlitePoolManager::new(pool));
+    let pool = C3p0PoolSqlite::new(pool);
 
     (pool, "".to_owned())
 }

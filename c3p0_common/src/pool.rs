@@ -1,6 +1,6 @@
 use crate::error::C3p0Error;
 
-pub trait C3p0PoolManager: Clone {
+pub trait C3p0Pool: Clone {
     type CONN: Connection;
 
     fn connection(&self) -> Result<Self::CONN, C3p0Error>;

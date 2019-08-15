@@ -6,7 +6,7 @@ use crate::postgres::types::{FromSql, ToSql};
 use crate::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
 
 pub use c3p0_common::error::C3p0Error;
-pub use c3p0_common::pool::{C3p0PoolManager, Connection};
+pub use c3p0_common::pool::{C3p0Pool, Connection};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -19,23 +19,23 @@ pub mod postgres {
 pub mod json;
 
 #[derive(Clone)]
-pub struct PgPoolManager {
+pub struct C3p0PoolPg {
     pool: Pool<PostgresConnectionManager>,
 }
 
-impl PgPoolManager {
+impl C3p0PoolPg {
     pub fn new(pool: Pool<PostgresConnectionManager>) -> Self {
-        PgPoolManager { pool }
+        C3p0PoolPg { pool }
     }
 }
 
-impl Into<PgPoolManager> for Pool<PostgresConnectionManager> {
-    fn into(self) -> PgPoolManager {
-        PgPoolManager::new(self)
+impl Into<C3p0PoolPg> for Pool<PostgresConnectionManager> {
+    fn into(self) -> C3p0PoolPg {
+        C3p0PoolPg::new(self)
     }
 }
 
-impl C3p0PoolManager for PgPoolManager {
+impl C3p0Pool for C3p0PoolPg {
     type CONN = PgConnection;
 
     fn connection(&self) -> Result<PgConnection, C3p0Error> {

@@ -1,32 +1,32 @@
 use crate::error::into_c3p0_error;
 use crate::postgres::{rows::Row, types::FromSql};
-use crate::{PgConnection, PgPoolManager};
+use crate::{C3p0PoolPg, PgConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
 use c3p0_common::json::{
     codec::JsonCodec,
     model::{IdType, Model, NewModel},
-    C3p0Json, C3p0JsonManager, Queries,
+    C3p0Json, Queries,
 };
 
-pub trait PgJsonBuilder {
+pub trait C3p0JsonBuilderPg {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0Json<DATA, DefaultJsonCodec, PgJsonManager<DATA, DefaultJsonCodec>>;
+    ) -> C3p0JsonPg<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>>;
+    ) -> C3p0JsonPg<DATA, CODEC>;
 }
 
-impl PgJsonBuilder for C3p0JsonBuilder<PgPoolManager> {
+impl C3p0JsonBuilderPg for C3p0JsonBuilder<C3p0PoolPg> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0Json<DATA, DefaultJsonCodec, PgJsonManager<DATA, DefaultJsonCodec>> {
+    ) -> C3p0JsonPg<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -36,13 +36,13 @@ impl PgJsonBuilder for C3p0JsonBuilder<PgPoolManager> {
     >(
         self,
         codec: CODEC,
-    ) -> C3p0Json<DATA, CODEC, PgJsonManager<DATA, CODEC>> {
+    ) -> C3p0JsonPg<DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        let json_manager = PgJsonManager {
+        C3p0JsonPg {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: Queries {
@@ -128,14 +128,12 @@ impl PgJsonBuilder for C3p0JsonBuilder<PgPoolManager> {
                 data_field_name: self.data_field_name,
                 schema_name: self.schema_name,
             },
-        };
-
-        C3p0Json::new(json_manager)
+        }
     }
 }
 
 #[derive(Clone)]
-pub struct PgJsonManager<DATA, CODEC: JsonCodec<DATA>>
+pub struct C3p0JsonPg<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -145,7 +143,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> PgJsonManager<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonPg<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -160,7 +158,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonManager<DATA, CODEC> for PgJsonManager<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0JsonPg<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -196,7 +194,7 @@ where
         conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn fetch_all_existing(&self, conn: &PgConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn fetch_all(&self, conn: &PgConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         })

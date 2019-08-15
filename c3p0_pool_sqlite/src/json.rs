@@ -1,31 +1,30 @@
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::{
-    codec::JsonCodec, model::IdType, model::Model, model::NewModel, C3p0Json, C3p0JsonManager,
-    Queries,
+    codec::JsonCodec, model::IdType, model::Model, model::NewModel, C3p0Json, Queries,
 };
 
 use crate::rusqlite::{types::FromSql, Row};
-use crate::{SqliteConnection, SqlitePoolManager};
+use crate::{C3p0PoolSqlite, SqliteConnection};
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
 
-pub trait SqliteJsonBuilder {
+pub trait C3p0JsonBuilderSqlite {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0Json<DATA, DefaultJsonCodec, SqliteJsonManager<DATA, DefaultJsonCodec>>;
+    ) -> C3p0JsonSqlite<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> C3p0Json<DATA, CODEC, SqliteJsonManager<DATA, CODEC>>;
+    ) -> C3p0JsonSqlite<DATA, CODEC>;
 }
 
-impl SqliteJsonBuilder for C3p0JsonBuilder<SqlitePoolManager> {
+impl C3p0JsonBuilderSqlite for C3p0JsonBuilder<C3p0PoolSqlite> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0Json<DATA, DefaultJsonCodec, SqliteJsonManager<DATA, DefaultJsonCodec>> {
+    ) -> C3p0JsonSqlite<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -35,13 +34,13 @@ impl SqliteJsonBuilder for C3p0JsonBuilder<SqlitePoolManager> {
     >(
         self,
         codec: CODEC,
-    ) -> C3p0Json<DATA, CODEC, SqliteJsonManager<DATA, CODEC>> {
+    ) -> C3p0JsonSqlite<DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        let json_manager = SqliteJsonManager {
+        C3p0JsonSqlite {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: Queries {
@@ -121,14 +120,12 @@ impl SqliteJsonBuilder for C3p0JsonBuilder<SqlitePoolManager> {
                 data_field_name: self.data_field_name,
                 schema_name: self.schema_name,
             },
-        };
-
-        C3p0Json::new(json_manager)
+        }
     }
 }
 
 #[derive(Clone)]
-pub struct SqliteJsonManager<DATA, CODEC: JsonCodec<DATA>>
+pub struct C3p0JsonSqlite<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -138,7 +135,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> SqliteJsonManager<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonSqlite<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -153,7 +150,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonManager<DATA, CODEC> for SqliteJsonManager<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0JsonSqlite<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -189,7 +186,7 @@ where
         conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn fetch_all_existing(&self, conn: &SqliteConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn fetch_all(&self, conn: &SqliteConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         })

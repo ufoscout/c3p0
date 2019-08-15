@@ -9,7 +9,7 @@ use testcontainers::*;
 
 pub use c3p0::pg::postgres::rows::Row;
 
-pub type C3p0Impl = C3p0Pool<PgPoolManager>;
+pub type C3p0Impl = C3p0PoolPg;
 
 mod tests;
 
@@ -43,7 +43,7 @@ fn init() -> (
     .unwrap();
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0Pool::new(PgPoolManager::new(pool));
+    let pool = C3p0PoolPg::new(pool);
 
     (pool, node)
 }

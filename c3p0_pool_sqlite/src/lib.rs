@@ -8,7 +8,7 @@ use crate::rusqlite::types::{FromSql, ToSql};
 use crate::rusqlite::Row;
 use std::cell::RefCell;
 
-pub use c3p0_common::pool::{C3p0PoolManager, Connection};
+pub use c3p0_common::pool::{C3p0Pool, Connection};
 
 pub mod r2d2 {
     pub use r2d2::*;
@@ -21,23 +21,23 @@ pub mod rusqlite {
 pub mod json;
 
 #[derive(Clone)]
-pub struct SqlitePoolManager {
+pub struct C3p0PoolSqlite {
     pool: Pool<SqliteConnectionManager>,
 }
 
-impl SqlitePoolManager {
+impl C3p0PoolSqlite {
     pub fn new(pool: Pool<SqliteConnectionManager>) -> Self {
-        SqlitePoolManager { pool }
+        C3p0PoolSqlite { pool }
     }
 }
 
-impl Into<SqlitePoolManager> for Pool<SqliteConnectionManager> {
-    fn into(self) -> SqlitePoolManager {
-        SqlitePoolManager::new(self)
+impl Into<C3p0PoolSqlite> for Pool<SqliteConnectionManager> {
+    fn into(self) -> C3p0PoolSqlite {
+        C3p0PoolSqlite::new(self)
     }
 }
 
-impl C3p0PoolManager for SqlitePoolManager {
+impl C3p0Pool for C3p0PoolSqlite {
     type CONN = SqliteConnection;
 
     fn connection(&self) -> Result<SqliteConnection, C3p0Error> {

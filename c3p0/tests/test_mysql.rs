@@ -9,9 +9,8 @@ use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
 pub use c3p0::mysql::mysql::Row;
-use c3p0_common::C3p0Pool;
 
-pub type C3p0Impl = C3p0Pool<c3p0::mysql::MysqlPoolManager>;
+pub type C3p0Impl = c3p0::mysql::C3p0PoolMysql;
 
 mod tests;
 
@@ -56,7 +55,7 @@ fn init() -> (
 
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0Pool::new(MysqlPoolManager::new(pool));
+    let pool = C3p0PoolMysql::new(pool);
 
     (pool, node)
 }

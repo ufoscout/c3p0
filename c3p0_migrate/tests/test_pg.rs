@@ -1,8 +1,7 @@
 #![cfg(feature = "pg")]
 
-use c3p0_common::C3p0Pool;
 use c3p0_pool_pg::r2d2::{Pool, PostgresConnectionManager, TlsMode};
-use c3p0_pool_pg::PgPoolManager;
+use c3p0_pool_pg::C3p0PoolPg;
 use testcontainers::*;
 
 mod tests;
@@ -10,7 +9,7 @@ mod tests;
 pub fn new_connection(
     docker: &clients::Cli,
 ) -> (
-    C3p0Pool<PgPoolManager>,
+    C3p0PoolPg,
     Container<clients::Cli, images::postgres::Postgres>,
 ) {
     let node = docker.run(images::postgres::Postgres::default());
@@ -25,7 +24,7 @@ pub fn new_connection(
     .unwrap();
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0Pool::new(PgPoolManager::new(pool));
+    let pool = C3p0PoolPg::new(pool);
 
     (pool, node)
 }

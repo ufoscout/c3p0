@@ -36,7 +36,7 @@ pub struct Queries {
     pub lock_table_sql_query: Option<String>,
 }
 
-pub trait C3p0JsonManager<DATA, CODEC>: Clone
+pub trait C3p0Json<DATA, CODEC>: Clone
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
     CODEC: JsonCodec<DATA>,
@@ -59,7 +59,7 @@ where
         id: ID,
     ) -> Result<bool, C3p0Error>;
 
-    fn fetch_all_existing(&self, conn: &Self::CONNECTION) -> Result<Vec<Model<DATA>>, C3p0Error>;
+    fn fetch_all(&self, conn: &Self::CONNECTION) -> Result<Vec<Model<DATA>>, C3p0Error>;
 
     fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
@@ -80,114 +80,4 @@ where
     fn save(&self, conn: &Self::CONNECTION, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
     fn update(&self, conn: &Self::CONNECTION, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
-}
-
-#[derive(Clone)]
-pub struct C3p0Json<DATA, CODEC, JSONMANAGER>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-    CODEC: JsonCodec<DATA>,
-    JSONMANAGER: C3p0JsonManager<DATA, CODEC>,
-{
-    json_manager: JSONMANAGER,
-    phantom_data: std::marker::PhantomData<DATA>,
-    phantom_codec: std::marker::PhantomData<CODEC>,
-}
-
-impl<DATA, CODEC, JSONMANAGER> C3p0Json<DATA, CODEC, JSONMANAGER>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-    CODEC: JsonCodec<DATA>,
-    JSONMANAGER: C3p0JsonManager<DATA, CODEC>,
-{
-    pub fn new(json_manager: JSONMANAGER) -> Self {
-        C3p0Json {
-            json_manager,
-            phantom_data: std::marker::PhantomData,
-            phantom_codec: std::marker::PhantomData,
-        }
-    }
-
-    pub fn json(&self) -> &JSONMANAGER {
-        &self.json_manager
-    }
-
-    pub fn codec(&self) -> &CODEC {
-        self.json_manager.codec()
-    }
-
-    pub fn queries(&self) -> &Queries {
-        self.json_manager.queries()
-    }
-
-    pub fn create_table_if_not_exists(
-        &self,
-        conn: &JSONMANAGER::CONNECTION,
-    ) -> Result<(), C3p0Error> {
-        self.json_manager.create_table_if_not_exists(conn)
-    }
-
-    pub fn drop_table_if_exists(&self, conn: &JSONMANAGER::CONNECTION) -> Result<(), C3p0Error> {
-        self.json_manager.drop_table_if_exists(conn)
-    }
-
-    pub fn count_all(&self, conn: &JSONMANAGER::CONNECTION) -> Result<IdType, C3p0Error> {
-        self.json_manager.count_all(conn)
-    }
-
-    pub fn exists_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &JSONMANAGER::CONNECTION,
-        id: ID,
-    ) -> Result<bool, C3p0Error> {
-        self.json_manager.exists_by_id(conn, id)
-    }
-
-    pub fn fetch_all(&self, conn: &JSONMANAGER::CONNECTION) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        self.json_manager.fetch_all_existing(conn)
-    }
-
-    pub fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &JSONMANAGER::CONNECTION,
-        id: ID,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        self.json_manager.fetch_one_by_id(conn, id)
-    }
-
-    pub fn delete(
-        &self,
-        conn: &JSONMANAGER::CONNECTION,
-        obj: &Model<DATA>,
-    ) -> Result<u64, C3p0Error> {
-        self.json_manager.delete(conn, obj)
-    }
-
-    pub fn delete_all(&self, conn: &JSONMANAGER::CONNECTION) -> Result<u64, C3p0Error> {
-        self.json_manager.delete_all(conn)
-    }
-
-    pub fn delete_by_id<'a, ID: Into<&'a IdType>>(
-        &'a self,
-        conn: &JSONMANAGER::CONNECTION,
-        id: ID,
-    ) -> Result<u64, C3p0Error> {
-        self.json_manager.delete_by_id(conn, id)
-    }
-
-    pub fn save(
-        &self,
-        conn: &JSONMANAGER::CONNECTION,
-        obj: NewModel<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        self.json_manager.save(conn, obj)
-    }
-
-    pub fn update(
-        &self,
-        conn: &JSONMANAGER::CONNECTION,
-        obj: Model<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        self.json_manager.update(conn, obj)
-    }
 }
