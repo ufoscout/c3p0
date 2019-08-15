@@ -3,7 +3,10 @@ use c3p0_common::json::{
     codec::JsonCodec, model::IdType, model::Model, model::NewModel, C3p0Json, Queries,
 };
 
-use crate::rusqlite::{types::FromSql, Row};
+use crate::rusqlite::{
+    types::{FromSql, ToSql},
+    Row,
+};
 use crate::{C3p0PoolSqlite, SqliteConnection};
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
@@ -147,6 +150,24 @@ where
         let version = get_or_error(&row, 1)?;
         let data = self.codec.from_value(get_or_error(&row, 2)?)?;
         Ok(Model { id, version, data })
+    }
+
+    pub fn fetch_one_by_sql(
+        &self,
+        conn: &SqliteConnection,
+        sql: &str,
+        params: &[&ToSql],
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
+        conn.fetch_one_option(sql, params, |row| self.to_model(row))
+    }
+
+    pub fn fetch_all_by_sql(
+        &self,
+        conn: &SqliteConnection,
+        sql: &str,
+        params: &[&ToSql],
+    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        conn.fetch_all(sql, params, |row| self.to_model(row))
     }
 }
 

@@ -1,5 +1,8 @@
 use crate::error::into_c3p0_error;
-use crate::postgres::{rows::Row, types::FromSql};
+use crate::postgres::{
+    rows::Row,
+    types::{FromSql, ToSql},
+};
 use crate::{C3p0PoolPg, PgConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
@@ -155,6 +158,24 @@ where
         let version = get_or_error(&row, 1)?;
         let data = self.codec.from_value(get_or_error(&row, 2)?)?;
         Ok(Model { id, version, data })
+    }
+
+    pub fn fetch_one_by_sql(
+        &self,
+        conn: &PgConnection,
+        sql: &str,
+        params: &[&ToSql],
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
+        conn.fetch_one_option(sql, params, |row| self.to_model(row))
+    }
+
+    pub fn fetch_all_by_sql(
+        &self,
+        conn: &PgConnection,
+        sql: &str,
+        params: &[&ToSql],
+    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        conn.fetch_all(sql, params, |row| self.to_model(row))
     }
 }
 
