@@ -152,7 +152,11 @@ where
         Ok(Model { id, version, data })
     }
 
-    pub fn fetch_one_by_sql(
+    /// Allows the execution of a custom sql query and returns the first entry in the result set.
+    /// For this to work, the sql query:
+    /// - must be a SELECT
+    /// - must declare the ID, VERSION and DATA fields in this exact order
+    pub fn fetch_one_with_sql(
         &self,
         conn: &SqliteConnection,
         sql: &str,
@@ -161,7 +165,11 @@ where
         conn.fetch_one_option(sql, params, |row| self.to_model(row))
     }
 
-    pub fn fetch_all_by_sql(
+    /// Allows the execution of a custom sql query and returns all the entries in the result set.
+    /// For this to work, the sql query:
+    /// - must be a SELECT
+    /// - must declare the ID, VERSION and DATA fields in this exact order
+    pub fn fetch_all_with_sql(
         &self,
         conn: &SqliteConnection,
         sql: &str,

@@ -330,7 +330,7 @@ fn delete_should_return_optimistic_lock_exception() {
             let model = jpo.save(&conn, model.clone()).unwrap();
 
             let one = jpo
-                .fetch_one_by_sql(
+                .fetch_one_with_sql(
                     &conn,
                     &format!("select id, version, data from {}", table_name),
                     &[],
@@ -339,7 +339,7 @@ fn delete_should_return_optimistic_lock_exception() {
             assert!(one.is_some());
 
             let all = jpo
-                .fetch_all_by_sql(
+                .fetch_all_with_sql(
                     &conn,
                     &format!("select id, version, data from {}", table_name),
                     &[],
