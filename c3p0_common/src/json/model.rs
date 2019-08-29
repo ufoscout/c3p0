@@ -71,7 +71,7 @@ mod test {
     use serde_json;
 
     #[test]
-    fn model_should_be_serializable() -> Result<(), Box<std::error::Error>> {
+    fn model_should_be_serializable() -> Result<(), Box<dyn std::error::Error>> {
         let model = Model {
             id: 1,
             version: 1,
@@ -91,7 +91,7 @@ mod test {
     }
 
     #[test]
-    fn new_model_should_be_serializable() -> Result<(), Box<std::error::Error>> {
+    fn new_model_should_be_serializable() -> Result<(), Box<dyn std::error::Error>> {
         let model = NewModel::new(SimpleData {
             name: "test".to_owned(),
         });

@@ -7,7 +7,7 @@ use crate::tests::util::rand_string;
 use crate::*;
 
 #[test]
-fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<std::error::Error>> {
+fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<dyn std::error::Error>> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 
@@ -32,7 +32,7 @@ fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<st
 }
 
 #[test]
-fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std::error::Error>> {
+fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<dyn std::error::Error>> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 
@@ -54,7 +54,7 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<std
 }
 
 #[test]
-fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
+fn should_execute_migrations() -> Result<(), Box<dyn std::error::Error>> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 
@@ -108,7 +108,7 @@ fn should_execute_migrations() -> Result<(), Box<std::error::Error>> {
 }
 
 #[test]
-fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Error>> {
+fn should_not_execute_same_migrations_twice() -> Result<(), Box<dyn std::error::Error>> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 
@@ -152,7 +152,7 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<std::error::Erro
 
 #[cfg(feature = "pg")]
 #[test]
-fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
+fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::Error>> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
     let c3p0 = node.0.clone();
@@ -207,7 +207,7 @@ fn should_handle_parallel_executions() -> Result<(), Box<std::error::Error>> {
 }
 
 #[test]
-fn should_read_migrations_from_files() -> Result<(), Box<std::error::Error>> {
+fn should_read_migrations_from_files() -> Result<(), Box<dyn std::error::Error>> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
     let c3p0 = node.0.clone();

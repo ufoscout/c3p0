@@ -141,7 +141,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonMysql<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<std::error::Error>> {
+    fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
@@ -159,7 +159,7 @@ where
         &self,
         conn: &MysqlConnection,
         sql: &str,
-        params: &[&ToValue],
+        params: &[& dyn ToValue],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(sql, params, |row| self.to_model(row))
     }
@@ -172,7 +172,7 @@ where
         &self,
         conn: &MysqlConnection,
         sql: &str,
-        params: &[&ToValue],
+        params: &[& dyn ToValue],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row))
     }

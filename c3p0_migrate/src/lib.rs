@@ -113,13 +113,13 @@ impl C3p0Migrate<c3p0_pool_pg::C3p0PoolPg> {
         self.c3p0.transaction(|conn| {
             self.lock_table(&c3p0_json, conn)?;
             Ok(self.create_migration_zero(&c3p0_json, conn)?)
-        })?;
+        }).map_err(|err| C3p0Error::TransactionError { cause: err })?;
 
         // Start Migration
         self.c3p0.transaction(|conn| {
             self.lock_first_migration_row(&c3p0_json, conn)?;
             Ok(self.start_migration(&c3p0_json, conn)?)
-        })
+        }).map_err(|err| C3p0Error::TransactionError { cause: err })
     }
 
     pub fn get_migrations_history(
@@ -179,13 +179,13 @@ impl C3p0Migrate<c3p0_pool_mysql::C3p0PoolMysql> {
         self.c3p0.transaction(|conn| {
             self.lock_table(&c3p0_json, conn)?;
             Ok(self.create_migration_zero(&c3p0_json, conn)?)
-        })?;
+        }).map_err(|err| C3p0Error::TransactionError { cause: err })?;
 
         // Start Migration
         self.c3p0.transaction(|conn| {
             self.lock_first_migration_row(&c3p0_json, conn)?;
             Ok(self.start_migration(&c3p0_json, conn)?)
-        })
+        }).map_err(|err| C3p0Error::TransactionError { cause: err })
     }
 
     pub fn get_migrations_history(
@@ -244,13 +244,14 @@ impl C3p0Migrate<c3p0_pool_sqlite::C3p0PoolSqlite> {
 
         // Start Migration
         self.c3p0
-            .transaction(|conn| Ok(self.create_migration_zero(&c3p0_json, conn)?))?;
+            .transaction(|conn| Ok(self.create_migration_zero(&c3p0_json, conn)?))
+            .map_err(|err| C3p0Error::TransactionError { cause: err })?;
 
         // Start Migration
         self.c3p0.transaction(|conn| {
             self.lock_first_migration_row(&c3p0_json, conn)?;
             Ok(self.start_migration(&c3p0_json, conn)?)
-        })
+        }).map_err(|err| C3p0Error::TransactionError { cause: err })
     }
 
     pub fn get_migrations_history(

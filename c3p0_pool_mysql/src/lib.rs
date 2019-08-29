@@ -49,10 +49,10 @@ impl C3p0Pool for C3p0PoolMysql {
             .map(|conn| MysqlConnection::Conn(RefCell::new(conn)))
     }
 
-    fn transaction<T, F: FnOnce(&MysqlConnection) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&MysqlConnection) -> Result<T, E>>(
         &self,
         tx: F,
-    ) -> Result<T, C3p0Error> {
+    ) -> Result<T, E> {
         let conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
             cause: format!("{}", err),
         })?;
@@ -61,8 +61,7 @@ impl C3p0Pool for C3p0PoolMysql {
 
         let result = {
             let mut sql_executor = MysqlConnection::Tx(RefCell::new(transaction));
-            let result = (tx)(&mut sql_executor)
-                .map_err(|err| C3p0Error::TransactionError { cause: err })?;
+            let result = (tx)(&mut sql_executor)?;
             (result, sql_executor)
         };
 
@@ -131,7 +130,7 @@ impl Connection for MysqlConnection {
 }
 
 impl MysqlConnection {
-    pub fn execute(&self, sql: &str, params: &[&ToValue]) -> Result<u64, C3p0Error> {
+    pub fn execute(&self, sql: &str, params: &[& dyn ToValue]) -> Result<u64, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
@@ -148,7 +147,7 @@ impl MysqlConnection {
     pub fn fetch_one_value<T: FromValue>(
         &self,
         sql: &str,
-        params: &[&ToValue],
+        params: &[& dyn ToValue],
     ) -> Result<T, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
@@ -163,10 +162,10 @@ impl MysqlConnection {
         }
     }
 
-    pub fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    pub fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToValue],
+        params: &[& dyn ToValue],
         mapper: F,
     ) -> Result<T, C3p0Error> {
         match self {
@@ -182,10 +181,10 @@ impl MysqlConnection {
         }
     }
 
-    pub fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    pub fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToValue],
+        params: &[& dyn ToValue],
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
         match self {
@@ -202,10 +201,10 @@ impl MysqlConnection {
         }
     }
 
-    pub fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    pub fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToValue],
+        params: &[& dyn ToValue],
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
@@ -224,7 +223,7 @@ impl MysqlConnection {
     pub fn fetch_all_values<T: FromValue>(
         &self,
         sql: &str,
-        params: &[&ToValue],
+        params: &[& dyn ToValue],
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
@@ -243,7 +242,7 @@ impl MysqlConnection {
 fn execute<C: GenericConnection>(
     conn: &mut C,
     sql: &str,
-    params: &[&ToValue],
+    params: &[& dyn ToValue],
 ) -> Result<u64, C3p0Error> {
     conn.prep_exec(sql, params)
         .map(|row| row.affected_rows())
@@ -257,25 +256,25 @@ fn batch_execute<C: GenericConnection>(conn: &mut C, sql: &str) -> Result<(), C3
 fn fetch_one_value<C: GenericConnection, T: FromValue>(
     conn: &mut C,
     sql: &str,
-    params: &[&ToValue],
+    params: &[& dyn ToValue],
 ) -> Result<T, C3p0Error> {
     fetch_one(conn, sql, params, to_value_mapper)
 }
 
-fn fetch_one<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+fn fetch_one<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
     conn: &mut C,
     sql: &str,
-    params: &[&ToValue],
+    params: &[& dyn ToValue],
     mapper: F,
 ) -> Result<T, C3p0Error> {
     fetch_one_option(conn, sql, params, mapper)
         .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
 }
 
-fn fetch_one_option<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+fn fetch_one_option<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
     conn: &mut C,
     sql: &str,
-    params: &[&ToValue],
+    params: &[& dyn ToValue],
     mapper: F,
 ) -> Result<Option<T>, C3p0Error> {
     conn.prep_exec(sql, params)
@@ -291,16 +290,16 @@ fn fetch_one_option<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<std::e
         })
 }
 
-fn fetch_all<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+fn fetch_all<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
     conn: &mut C,
     sql: &str,
-    params: &[&ToValue],
+    params: &[& dyn ToValue],
     mapper: F,
 ) -> Result<Vec<T>, C3p0Error> {
     conn.prep_exec(sql, params)
         .map_err(into_c3p0_error)?
         .map(|row| mapper(&row.map_err(into_c3p0_error)?))
-        .collect::<Result<Vec<T>, Box<std::error::Error>>>()
+        .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
         .map_err(|err| C3p0Error::RowMapperError {
             cause: format!("{}", err),
         })
@@ -309,12 +308,12 @@ fn fetch_all<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<std::error::E
 fn fetch_all_values<C: GenericConnection, T: FromValue>(
     conn: &mut C,
     sql: &str,
-    params: &[&ToValue],
+    params: &[& dyn ToValue],
 ) -> Result<Vec<T>, C3p0Error> {
     fetch_all(conn, sql, params, to_value_mapper)
 }
 
-fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<std::error::Error>> {
+fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
     let result = row
         .get_opt(0)
         .ok_or_else(|| C3p0Error::ResultNotFoundError)?;

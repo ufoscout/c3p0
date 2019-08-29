@@ -49,10 +49,10 @@ impl C3p0Pool for C3p0PoolSqlite {
             .map(SqliteConnection::Conn)
     }
 
-    fn transaction<T, F: FnOnce(&SqliteConnection) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&SqliteConnection) -> Result<T, E>>(
         &self,
         tx: F,
-    ) -> Result<T, C3p0Error> {
+    ) -> Result<T, E> {
         let conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
             cause: format!("{}", err),
         })?;
@@ -61,8 +61,7 @@ impl C3p0Pool for C3p0PoolSqlite {
 
         let result = {
             let mut sql_executor = SqliteConnection::Tx(RefCell::new(transaction));
-            let result = (tx)(&mut sql_executor)
-                .map_err(|err| C3p0Error::TransactionError { cause: err })?;
+            let result = (tx)(&mut sql_executor)?;
             (result, sql_executor)
         };
 
@@ -131,7 +130,7 @@ impl Connection for SqliteConnection {
 }
 
 impl SqliteConnection {
-    pub fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<u64, C3p0Error> {
+    pub fn execute(&self, sql: &str, params: &[& dyn ToSql]) -> Result<u64, C3p0Error> {
         match self {
             SqliteConnection::Conn(conn) => conn
                 .execute(sql, params)
@@ -153,25 +152,25 @@ impl SqliteConnection {
     pub fn fetch_one_value<T: FromSql>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
     ) -> Result<T, C3p0Error> {
         self.fetch_one(sql, params, to_value_mapper)
     }
 
-    pub fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    pub fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
         mapper: F,
     ) -> Result<T, C3p0Error> {
         self.fetch_one_option(sql, params, mapper)
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
-    pub fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    pub fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
         match self {
@@ -194,10 +193,10 @@ impl SqliteConnection {
         }
     }
 
-    pub fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    pub fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
@@ -223,22 +222,22 @@ impl SqliteConnection {
     pub fn fetch_all_values<T: FromSql>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
     ) -> Result<Vec<T>, C3p0Error> {
         self.fetch_all(sql, params, to_value_mapper)
     }
 }
 
-fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, Box<std::error::Error>> {
+fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
     let result = row.get(0).map_err(|err| C3p0Error::RowMapperError {
         cause: format!("{}", err),
     })?;
     Ok(result)
 }
 
-fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
     mut stmt: rusqlite::Statement,
-    params: &[&ToSql],
+    params: &[& dyn ToSql],
     mapper: F,
 ) -> Result<Option<T>, C3p0Error> {
     let mut rows = stmt
@@ -254,9 +253,9 @@ fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
         })
 }
 
-fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
     mut stmt: rusqlite::Statement,
-    params: &[&ToSql],
+    params: &[& dyn ToSql],
     mapper: F,
 ) -> Result<Vec<T>, C3p0Error> {
     let rows = stmt

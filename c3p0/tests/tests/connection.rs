@@ -162,7 +162,7 @@ fn should_fetch_values() {
 
         let table_name = &format!("TEST_TABLE_{}", rand_string(8));
 
-        c3p0.transaction(|conn| {
+        let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
             assert!(conn
                 .batch_execute(&format!(
                     "CREATE TABLE {} ( name varchar(255) )",
@@ -221,7 +221,8 @@ fn should_fetch_values() {
                 .is_ok());
 
             Ok(())
-        })
-        .unwrap();
+        });
+
+        assert!(result.is_ok())
     });
 }

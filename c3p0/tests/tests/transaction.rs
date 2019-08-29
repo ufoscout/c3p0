@@ -21,7 +21,7 @@ fn should_commit_transaction() {
                 .is_ok());
         }
 
-        let result: Result<(), C3p0Error> = c3p0.transaction(|conn| {
+        let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
             conn.execute(
                 &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
                 &[],
@@ -105,5 +105,42 @@ fn should_rollback_transaction() {
                 .execute(&format!(r"DROP TABLE {}", table_name), &[])
                 .is_ok());
         }
+    });
+}
+
+#[test]
+fn transaction_should_return_internal_error() {
+
+    use err_derive::Error;
+
+    #[derive(Error, Debug, PartialEq)]
+    pub enum CustomError {
+        #[error(display = "InnerError")]
+        InnerError,
+        #[error(display = "C3p0Error")]
+        C3p0Error,
+    }
+
+    impl From<C3p0Error> for CustomError {
+        fn from(_: C3p0Error) -> Self {
+            CustomError::C3p0Error
+        }
+    }
+
+
+    SINGLETON.get(|(pool, _)| {
+        let c3p0: C3p0Impl = pool.clone();
+
+        let result: Result<(), _> = c3p0.transaction(|_| {
+            Err(CustomError::InnerError)
+        });
+
+        assert!(result.is_err());
+
+        match &result {
+            Err(CustomError::InnerError) => assert!(true),
+            _ => assert!(false)
+        }
+
     });
 }

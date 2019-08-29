@@ -5,45 +5,45 @@ pub trait C3p0Pool: Clone {
 
     fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
-    fn transaction<T, F: FnOnce(&Self::CONN) -> Result<T, Box<std::error::Error>>>(
+    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&Self::CONN) -> Result<T, E>>(
         &self,
         tx: F,
-    ) -> Result<T, C3p0Error>;
+    ) -> Result<T, E>;
 }
 
 pub trait Connection {
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error>;
 
     /*
-    fn execute(&self, sql: &str, params: &[&ToSql]) -> Result<ExecuteResult, C3p0Error>;
+    fn execute(&self, sql: &str, params: &[& dyn ToSql]) -> Result<ExecuteResult, C3p0Error>;
 
-    fn fetch_one_value<T: FromSql>(&self, sql: &str, params: &[&ToSql]) -> Result<T, C3p0Error>;
+    fn fetch_one_value<T: FromSql>(&self, sql: &str, params: &[& dyn ToSql]) -> Result<T, C3p0Error>;
 
-    fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
         mapper: F,
     ) -> Result<T, C3p0Error>;
 
-    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
         mapper: F,
     ) -> Result<Option<T>, C3p0Error>;
 
-    fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<std::error::Error>>>(
+    fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error>;
 
     fn fetch_all_values<T: FromSql>(
         &self,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
     ) -> Result<Vec<T>, C3p0Error>;
 
     //count_all_from_table

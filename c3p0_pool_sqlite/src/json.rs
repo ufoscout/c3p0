@@ -142,7 +142,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonSqlite<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<std::error::Error>> {
+    pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
@@ -160,7 +160,7 @@ where
         &self,
         conn: &SqliteConnection,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(sql, params, |row| self.to_model(row))
     }
@@ -173,7 +173,7 @@ where
         &self,
         conn: &SqliteConnection,
         sql: &str,
-        params: &[&ToSql],
+        params: &[& dyn ToSql],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row))
     }
