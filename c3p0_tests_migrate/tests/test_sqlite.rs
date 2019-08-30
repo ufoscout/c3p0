@@ -1,8 +1,8 @@
 #![cfg(feature = "sqlite")]
 
-use c3p0_pool_sqlite::sqlite::r2d2::{Pool, SqliteConnectionManager};
-use c3p0_pool_sqlite::sqlite::*;
-use c3p0_pool_sqlite::*;
+use c3p0_sqlite::sqlite::r2d2::{Pool, SqliteConnectionManager};
+use c3p0_sqlite::sqlite::*;
+use c3p0_sqlite::*;
 use testcontainers::*;
 
 mod tests;

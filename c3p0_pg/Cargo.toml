@@ -1,5 +1,5 @@
 [package]
-name = "c3p0_pool_sqlite"
+name = "c3p0_pg"
 license = "MIT"
 version = "0.20.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
@@ -8,15 +8,14 @@ edition = "2018"
 readme = "../README.md"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
-keywords = ["sqlite"]
+keywords = ["postgres", "pg"]
 
 [dependencies]
 c3p0_common = { path = "../c3p0_common", version = "0.20.0" }
 log = "0.4"
 r2d2 = "0.8"
-r2d2_sqlite = "0.9"
-rental = "0.5"
-rusqlite = { version = "0.17", features = ["bundled", "serde_json", "functions"]  }
+postgres = { version = "0.15", features = ["with-serde_json"] }
+r2d2_postgres = "0.14"
 serde = "1.0"
 
 [features]

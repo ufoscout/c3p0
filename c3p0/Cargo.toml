@@ -12,13 +12,13 @@ keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
 
 [dependencies]
 # mysql feature
-c3p0_pool_mysql = { path = "../c3p0_pool_mysql", version = "0.20.0", optional = true }
+c3p0_mysql = { path = "../c3p0_mysql", version = "0.20.0", optional = true }
 
 # pg feature
-c3p0_pool_pg = { path = "../c3p0_pool_pg", version = "0.20.0", optional = true }
+c3p0_pg = { path = "../c3p0_pg", version = "0.20.0", optional = true }
 
 # sqlite feature
-c3p0_pool_sqlite = { path = "../c3p0_pool_sqlite", version = "0.20.0", optional = true }
+c3p0_sqlite = { path = "../c3p0_sqlite", version = "0.20.0", optional = true }
 
 [dev-dependencies]
 err-derive = "0.1"
@@ -33,13 +33,13 @@ testcontainers = "0.6"
 [features]
 default = []
 
-mysql = ["c3p0_pool_mysql"]
-mysql_migrate = ["mysql", "c3p0_pool_mysql/migrate"]
+mysql = ["c3p0_mysql"]
+mysql_migrate = ["mysql", "c3p0_mysql/migrate"]
 
-pg = ["c3p0_pool_pg"]
-pg_migrate = ["pg", "c3p0_pool_pg/migrate"]
+pg = ["c3p0_pg"]
+pg_migrate = ["pg", "c3p0_pg/migrate"]
 
-sqlite = ["c3p0_pool_sqlite"]
-sqlite_migrate = ["sqlite", "c3p0_pool_sqlite/migrate"]
+sqlite = ["c3p0_sqlite"]
+sqlite_migrate = ["sqlite", "c3p0_sqlite/migrate"]
 
 #migrate = ["c3p0_migrate"]

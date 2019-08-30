@@ -1,9 +1,9 @@
 #![cfg(feature = "mysql")]
 
-use c3p0_pool_mysql::mysql::driver::{Opts, OptsBuilder};
-use c3p0_pool_mysql::mysql::r2d2::{MysqlConnectionManager, Pool};
-use c3p0_pool_mysql::mysql::*;
-use c3p0_pool_mysql::*;
+use c3p0_mysql::mysql::driver::{Opts, OptsBuilder};
+use c3p0_mysql::mysql::r2d2::{MysqlConnectionManager, Pool};
+use c3p0_mysql::mysql::*;
+use c3p0_mysql::*;
 
 use testcontainers::*;
 

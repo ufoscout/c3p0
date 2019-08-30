@@ -3,7 +3,7 @@ use crate::types::OptString;
 
 #[derive(Clone)]
 pub struct C3p0JsonBuilder<C3P0: C3p0Pool> {
-    phantom_c3p0_pool_manager: std::marker::PhantomData<C3P0>,
+    phantom_c3p0_manager: std::marker::PhantomData<C3P0>,
     pub id_field_name: String,
     pub version_field_name: String,
     pub data_field_name: String,
@@ -15,7 +15,7 @@ impl<C3P0: C3p0Pool> C3p0JsonBuilder<C3P0> {
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
         C3p0JsonBuilder {
-            phantom_c3p0_pool_manager: std::marker::PhantomData,
+            phantom_c3p0_manager: std::marker::PhantomData,
             table_name: table_name.clone(),
             id_field_name: "id".to_owned(),
             version_field_name: "version".to_owned(),

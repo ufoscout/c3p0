@@ -1,8 +1,8 @@
 #[cfg(feature = "mysql")]
-pub use c3p0_pool_mysql::*;
+pub use c3p0_mysql::*;
 
 #[cfg(feature = "pg")]
-pub use c3p0_pool_pg::*;
+pub use c3p0_pg::*;
 
 #[cfg(feature = "sqlite")]
-pub use c3p0_pool_sqlite::*;
+pub use c3p0_sqlite::*;

@@ -1,8 +1,8 @@
 #![cfg(feature = "pg")]
 
-use c3p0_pool_pg::pg::r2d2::{Pool, PostgresConnectionManager, TlsMode};
-use c3p0_pool_pg::pg::*;
-use c3p0_pool_pg::*;
+use c3p0_pg::pg::r2d2::{Pool, PostgresConnectionManager, TlsMode};
+use c3p0_pg::pg::*;
+use c3p0_pg::*;
 use testcontainers::*;
 
 mod tests;
