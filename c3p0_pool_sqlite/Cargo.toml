@@ -1,7 +1,7 @@
 [package]
 name = "c3p0_pool_sqlite"
 license = "MIT"
-version = "0.11.0"
+version = "0.20.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2"
 edition = "2018"
@@ -11,10 +11,15 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["sqlite"]
 
 [dependencies]
-c3p0_common = { path = "../c3p0_common", version = "0.11.0" }
+c3p0_common = { path = "../c3p0_common", version = "0.20.0" }
 log = "0.4"
 r2d2 = "0.8"
 r2d2_sqlite = "0.9"
 rental = "0.5"
 rusqlite = { version = "0.17", features = ["bundled", "serde_json", "functions"]  }
 serde = "1.0"
+
+[features]
+default = []
+
+migrate = ["c3p0_common/migrate"]

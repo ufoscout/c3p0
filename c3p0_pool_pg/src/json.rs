@@ -1,9 +1,9 @@
 use crate::error::into_c3p0_error;
-use crate::postgres::{
+use crate::pg::driver::{
     rows::Row,
     types::{FromSql, ToSql},
 };
-use crate::{C3p0PoolPg, PgConnection};
+use crate::pool::{C3p0PoolPg, PgConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
@@ -168,7 +168,7 @@ where
         &self,
         conn: &PgConnection,
         sql: &str,
-        params: &[& dyn ToSql],
+        params: &[&dyn ToSql],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(sql, params, |row| self.to_model(row))
     }
@@ -181,7 +181,7 @@ where
         &self,
         conn: &PgConnection,
         sql: &str,
-        params: &[& dyn ToSql],
+        params: &[&dyn ToSql],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row))
     }

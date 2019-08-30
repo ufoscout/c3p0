@@ -1,6 +1,9 @@
 pub mod embed;
 pub mod fs;
 
+pub use embed::*;
+pub use fs::*;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Migration {
     pub id: String,

@@ -312,7 +312,6 @@ fn delete_should_return_optimistic_lock_exception() {
 
         assert!(jpo.exists_by_id(&conn, &saved_model).unwrap());
     });
-
 }
 
 #[test]

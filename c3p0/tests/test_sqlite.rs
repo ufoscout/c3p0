@@ -1,12 +1,13 @@
 #![cfg(feature = "sqlite")]
 
 use c3p0::sqlite::r2d2::{Pool, SqliteConnectionManager};
+use c3p0::sqlite::*;
 use c3p0::*;
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 
-pub use c3p0::sqlite::rusqlite::Row;
+pub use c3p0::sqlite::driver::Row;
 pub type C3p0Impl = C3p0PoolSqlite;
 
 mod tests;

@@ -1,10 +1,11 @@
 #![cfg(feature = "mysql")]
 
-use c3p0_pool_mysql::mysql::{Opts, OptsBuilder};
-use c3p0_pool_mysql::r2d2::{MysqlConnectionManager, Pool};
-use testcontainers::*;
+use c3p0_pool_mysql::mysql::driver::{Opts, OptsBuilder};
+use c3p0_pool_mysql::mysql::r2d2::{MysqlConnectionManager, Pool};
+use c3p0_pool_mysql::mysql::*;
+use c3p0_pool_mysql::*;
 
-use c3p0_pool_mysql::C3p0PoolMysql;
+use testcontainers::*;
 
 mod tests;
 

@@ -1,5 +1,5 @@
-use crate::migration::{Migration, Migrations};
-use c3p0_common::error::C3p0Error;
+use crate::error::C3p0Error;
+use crate::migrate::migration::{Migration, Migrations};
 use include_dir::Dir;
 use std::convert::TryFrom;
 

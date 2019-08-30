@@ -3,11 +3,11 @@ use c3p0_common::json::{
     codec::JsonCodec, model::IdType, model::Model, model::NewModel, C3p0Json, Queries,
 };
 
-use crate::rusqlite::{
+use crate::sqlite::driver::{
     types::{FromSql, ToSql},
     Row,
 };
-use crate::{C3p0PoolSqlite, SqliteConnection};
+use crate::sqlite::{C3p0PoolSqlite, SqliteConnection};
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
 
@@ -160,7 +160,7 @@ where
         &self,
         conn: &SqliteConnection,
         sql: &str,
-        params: &[& dyn ToSql],
+        params: &[&dyn ToSql],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(sql, params, |row| self.to_model(row))
     }
@@ -173,7 +173,7 @@ where
         &self,
         conn: &SqliteConnection,
         sql: &str,
-        params: &[& dyn ToSql],
+        params: &[&dyn ToSql],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row))
     }

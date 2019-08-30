@@ -1,4 +1,4 @@
-use crate::migration::Migration;
+use crate::migrate::migration::Migration;
 
 pub fn to_sql_migrations(migrations: Vec<Migration>) -> Vec<SqlMigration> {
     migrations.into_iter().map(SqlMigration::new).collect()
@@ -30,7 +30,7 @@ pub struct SqlScript {
 impl SqlScript {
     pub fn new<S: Into<String>>(sql: S) -> SqlScript {
         let sql = sql.into();
-        let md5 = crate::md5::calculate_md5(&sql);
+        let md5 = crate::migrate::md5::calculate_md5(&sql);
         SqlScript { sql, md5 }
     }
 }

@@ -1,13 +1,11 @@
-use c3p0_common::pool::C3p0Pool;
-use c3p0_migrate::migration::{fs::from_fs, Migration};
-use c3p0_migrate::{C3p0MigrateBuilder, C3P0_MIGRATE_TABLE_DEFAULT};
 use testcontainers::clients;
 
 use crate::tests::util::rand_string;
 use crate::*;
 
 #[test]
-fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<dyn std::error::Error>> {
+fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<dyn std::error::Error>>
+{
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 
@@ -32,7 +30,8 @@ fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<dy
 }
 
 #[test]
-fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<dyn std::error::Error>> {
+fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<dyn std::error::Error>>
+{
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
 

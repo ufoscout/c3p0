@@ -110,7 +110,6 @@ fn should_rollback_transaction() {
 
 #[test]
 fn transaction_should_return_internal_error() {
-
     use err_derive::Error;
 
     #[derive(Error, Debug, PartialEq)]
@@ -127,20 +126,16 @@ fn transaction_should_return_internal_error() {
         }
     }
 
-
     SINGLETON.get(|(pool, _)| {
         let c3p0: C3p0Impl = pool.clone();
 
-        let result: Result<(), _> = c3p0.transaction(|_| {
-            Err(CustomError::InnerError)
-        });
+        let result: Result<(), _> = c3p0.transaction(|_| Err(CustomError::InnerError));
 
         assert!(result.is_err());
 
         match &result {
             Err(CustomError::InnerError) => assert!(true),
-            _ => assert!(false)
+            _ => assert!(false),
         }
-
     });
 }

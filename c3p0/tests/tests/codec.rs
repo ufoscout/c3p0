@@ -77,11 +77,9 @@ fn should_upgrade_structs_on_load() {
         let conn = pool.connection().unwrap();
         let table_name = format!("USER_TABLE_{}", rand_string(8));
 
-        let jpo_v1 = C3p0JsonBuilder::new(&table_name)
-            .build_with_codec(UserVersionCoded1 {});
+        let jpo_v1 = C3p0JsonBuilder::new(&table_name).build_with_codec(UserVersionCoded1 {});
 
-        let jpo_v2 = C3p0JsonBuilder::new(&table_name)
-            .build_with_codec(UserVersionCoded2 {});
+        let jpo_v2 = C3p0JsonBuilder::new(&table_name).build_with_codec(UserVersionCoded2 {});
 
         let new_user_v1 = NewModel::new(UserVersion1 {
             username: "user_v1_name".to_owned(),

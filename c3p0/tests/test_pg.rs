@@ -1,13 +1,14 @@
 #![cfg(feature = "pg")]
 
 use c3p0::pg::r2d2::{Pool, PostgresConnectionManager, TlsMode};
+use c3p0::pg::*;
 use c3p0::*;
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
-pub use c3p0::pg::postgres::rows::Row;
+pub use c3p0::pg::driver::rows::Row;
 
 pub type C3p0Impl = C3p0PoolPg;
 

@@ -1,6 +1,6 @@
-use crate::mysql::prelude::{FromValue, ToValue};
-use crate::mysql::Row;
-use crate::{C3p0PoolMysql, MysqlConnection};
+use crate::mysql::driver::prelude::{FromValue, ToValue};
+use crate::mysql::driver::Row;
+use crate::mysql::{C3p0PoolMysql, MysqlConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
@@ -159,7 +159,7 @@ where
         &self,
         conn: &MysqlConnection,
         sql: &str,
-        params: &[& dyn ToValue],
+        params: &[&dyn ToValue],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_option(sql, params, |row| self.to_model(row))
     }
@@ -172,7 +172,7 @@ where
         &self,
         conn: &MysqlConnection,
         sql: &str,
-        params: &[& dyn ToValue],
+        params: &[&dyn ToValue],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row))
     }

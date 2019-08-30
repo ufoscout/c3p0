@@ -4,6 +4,9 @@ declare -a features=(
     "pg"
     "sqlite"
     "mysql"
+    "pg_migrate"
+    "sqlite_migrate"
+    "mysql_migrate"
 )
 
 for i in "${features[@]}"

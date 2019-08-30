@@ -12,9 +12,9 @@ script = [
   "cd ..",
   "cd ./c3p0_pool_sqlite   && cargo build",
   "cd ..",
-  "cd ./c3p0_migrate       && ./cargo.sh build",
-  "cd ..",
   "cd ./c3p0               && ./cargo.sh build",
+  "cd ..",
+  "cd ./c3p0_tests_migrate && ./cargo.sh build",
   "cd ..",
 ]
 
@@ -29,9 +29,9 @@ script = [
   "cd ..",
   "cd ./c3p0_pool_sqlite   && cargo test",
   "cd ..",
-  "cd ./c3p0_migrate       && ./cargo.sh test",
-  "cd ..",
   "cd ./c3p0               && ./cargo.sh test",
+  "cd ..",
+  "cd ./c3p0_tests_migrate && ./cargo.sh test",
   "cd ..",
 ]
 
@@ -45,8 +45,6 @@ script = [
   "cd ./c3p0_pool_pg       && cargo publish && sleep 10",
   "cd ..",
   "cd ./c3p0_pool_sqlite   && cargo publish && sleep 10",
-  "cd ..",
-  "cd ./c3p0_migrate       && cargo publish --features pg && sleep 10",
   "cd ..",
   "cd ./c3p0               && cargo publish --features pg",
   "cd ..",

@@ -1,16 +1,17 @@
 #![cfg(feature = "mysql")]
 
+use c3p0::mysql::driver::{Opts, OptsBuilder};
+use c3p0::mysql::r2d2::{MysqlConnectionManager, Pool};
+use c3p0::mysql::*;
 use c3p0::*;
-use c3p0_pool_mysql::mysql::{Opts, OptsBuilder};
-use c3p0_pool_mysql::r2d2::{MysqlConnectionManager, Pool};
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
-pub use c3p0::mysql::mysql::Row;
+pub use c3p0::mysql::driver::Row;
 
-pub type C3p0Impl = c3p0::mysql::C3p0PoolMysql;
+pub type C3p0Impl = C3p0PoolMysql;
 
 mod tests;
 
