@@ -42,4 +42,7 @@ pg_migrate = ["pg", "c3p0_pg/migrate"]
 sqlite = ["c3p0_sqlite"]
 sqlite_migrate = ["sqlite", "c3p0_sqlite/migrate"]
 
+#tidb = ["mysql"]
+#tidb_migrate = ["mysql_migrate"]
+
 #migrate = ["c3p0_migrate"]
