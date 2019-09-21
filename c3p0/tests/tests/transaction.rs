@@ -6,8 +6,9 @@ fn should_commit_transaction() {
     SINGLETON.get(|(pool, _)| {
         let c3p0: C3p0Impl = pool.clone();
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
-        {
-            let conn = c3p0.connection().unwrap();
+
+        let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
+
             assert!(conn
                 .execute(
                     &format!(
@@ -19,9 +20,7 @@ fn should_commit_transaction() {
                     &[]
                 )
                 .is_ok());
-        }
 
-        let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
             conn.execute(
                 &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
                 &[],
@@ -61,8 +60,9 @@ fn should_rollback_transaction() {
     SINGLETON.get(|(pool, _)| {
         let c3p0: C3p0Impl = pool.clone();
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
-        {
-            let conn = c3p0.connection().unwrap();
+
+        let result: Result<(), C3p0Error> = c3p0.transaction(|conn| {
+
             assert!(conn
                 .batch_execute(&format!(
                     r"CREATE TABLE {} (
@@ -71,9 +71,7 @@ fn should_rollback_transaction() {
                     table_name
                 ))
                 .is_ok());
-        }
 
-        let result: Result<(), C3p0Error> = c3p0.transaction(|conn| {
             conn.execute(
                 &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
                 &[],
@@ -96,15 +94,11 @@ fn should_rollback_transaction() {
 
         {
             let conn = c3p0.connection().unwrap();
-            let count = conn
-                .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
-                .unwrap();
-            assert_eq!(0, count);
-
             assert!(conn
-                .execute(&format!(r"DROP TABLE {}", table_name), &[])
+                .execute(&format!(r"DROP TABLE IF EXISTS {}", table_name), &[])
                 .is_ok());
         }
+
     });
 }
 
