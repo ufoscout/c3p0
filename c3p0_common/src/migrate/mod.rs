@@ -105,20 +105,9 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
             .migrator
             .build_cp30_json(self.table.clone(), self.schema.clone());
 
-        {
-            let conn = self.c3p0.connection()?;
-            if let Err(err) = c3p0_json.create_table_if_not_exists(&conn) {
-                warn!("Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
-            };
-        }
-
-        // Start Migration
-        self.c3p0
-            .transaction(|conn| {
-                self.migrator.lock_table(&c3p0_json, conn)?;
-                Ok(self.create_migration_zero(&c3p0_json, conn)?)
-            })
-            .map_err(|err| C3p0Error::TransactionError { cause: err })?;
+        // Pre Migration
+        self.pre_migration(&c3p0_json)
+            .map_err(|err| C3p0Error::MigrationError {message: "C3p0Migrate - Failed to execute pre-migration DB preparation.".to_string(), cause: Box::new(err)})?;
 
         // Start Migration
         self.c3p0
@@ -126,7 +115,7 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
                 self.migrator.lock_first_migration_row(&c3p0_json, conn)?;
                 Ok(self.start_migration(&c3p0_json, conn)?)
             })
-            .map_err(|err| C3p0Error::TransactionError { cause: err })
+            .map_err(|err| C3p0Error::MigrationError {message: "C3p0Migrate - Failed to execute DB migration script.".to_string(), cause: err})
     }
 
     pub fn get_migrations_history(
@@ -159,6 +148,26 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
         };
 
         Ok(())
+    }
+
+    fn pre_migration(
+        &self,
+        c3p0_json: &MIGRATOR::C3P0JSON,
+    ) -> Result<(), C3p0Error> {
+
+        {
+            let conn = self.c3p0.connection()?;
+            if let Err(err) = c3p0_json.create_table_if_not_exists(&conn) {
+                warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
+            };
+        }
+
+        // Start Migration
+        self.c3p0
+            .transaction(|conn| {
+                self.migrator.lock_table(&c3p0_json, conn)?;
+                Ok(self.create_migration_zero(&c3p0_json, conn)?)
+            })
     }
 
     fn start_migration(
@@ -196,7 +205,8 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
                 });
             }
 
-            conn.batch_execute(&migration.up.sql)?;
+            conn.batch_execute(&migration.up.sql)
+                .map_err(|err| C3p0Error::MigrationError {message: format!("C3p0Migrate - Failed to execute migration with id [{}].", &migration.id), cause: Box::new(err)})?;
 
             c3p0_json.save(
                 conn,
