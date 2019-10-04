@@ -2,6 +2,8 @@ use err_derive::Error;
 
 #[derive(Error, Debug)]
 pub enum C3p0Error {
+    #[error(display = "InternalError: [{}]", cause)]
+    InternalError { cause: String },
     #[error(display = "SqlError: [{}]", cause)]
     SqlError { cause: String },
     #[error(display = "RowMapperError: [{}]", cause)]

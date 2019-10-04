@@ -3,7 +3,6 @@ use crate::sqlite::{C3p0PoolSqlite, SqliteConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::C3p0Json;
 
 pub use c3p0_common::migrate::*;
 

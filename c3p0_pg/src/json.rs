@@ -150,6 +150,11 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonPg<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
+
+    pub fn queries(&self) -> &Queries {
+        &self.queries
+    }
+
     pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
@@ -195,10 +200,6 @@ where
 
     fn codec(&self) -> &CODEC {
         &self.codec
-    }
-
-    fn queries(&self) -> &Queries {
-        &self.queries
     }
 
     fn create_table_if_not_exists(&self, conn: &PgConnection) -> Result<(), C3p0Error> {

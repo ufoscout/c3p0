@@ -45,8 +45,6 @@ where
 
     fn codec(&self) -> &CODEC;
 
-    fn queries(&self) -> &Queries;
-
     fn create_table_if_not_exists(&self, conn: &Self::CONNECTION) -> Result<(), C3p0Error>;
 
     fn drop_table_if_exists(&self, conn: &Self::CONNECTION) -> Result<(), C3p0Error>;

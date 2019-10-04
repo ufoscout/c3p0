@@ -9,7 +9,7 @@ where
     fn to_value(&self, data: &DATA) -> Result<Value, C3p0Error>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct DefaultJsonCodec {}
 
 impl<DATA> JsonCodec<DATA> for DefaultJsonCodec
