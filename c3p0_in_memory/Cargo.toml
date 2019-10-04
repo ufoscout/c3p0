@@ -13,7 +13,6 @@ keywords = []
 [dependencies]
 c3p0_common = { path = "../c3p0_common", version = "0.20.1" }
 chashmap = "2.2.2"
-rental = "0.5"
 guardian = "1"
 serde = "1.0"
 serde_json = "1.0"

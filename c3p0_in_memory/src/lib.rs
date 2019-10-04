@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate rental;
-
 mod json;
 mod pool;
 

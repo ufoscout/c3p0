@@ -35,9 +35,6 @@ impl C3p0Pool for C3p0PoolInMemory {
         };
 
         let mut locked_hashmap = ArcMutexGuardian::take(self.db.clone()).map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?;
-        //*locked_hashmap = db_clone;
-        //let locked_hashmap = new_locked(self.db.clone())?;
-        //locked_hashmap.rent(|data| *data = db_clone);
 
         let mut conn = InMemoryConnection::Tx(locked_hashmap);
 
@@ -52,28 +49,6 @@ impl C3p0Pool for C3p0PoolInMemory {
             }
         } else {
             result
-        }
-    }
-}
-
-fn new_locked(
-    repo: Arc<Mutex<CHashMap<String, CHashMap<IdType, serde_json::Value>>>>,
-) -> Result<rentals::LockedHashMap, C3p0Error> {
-    rentals::LockedHashMap::try_new_or_drop(
-        repo,
-        |c| {
-            Ok(c.lock().map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?)
-        })
-}
-
-rental! {
-    pub mod rentals {
-        use super::*;
-
-        #[rental]
-        pub struct LockedHashMap {
-            lock: Arc<Mutex<CHashMap<String, CHashMap<IdType, serde_json::Value>>>>,
-            guard: std::sync::MutexGuard<'lock, CHashMap<String, CHashMap<IdType, serde_json::Value>>>,
         }
     }
 }
