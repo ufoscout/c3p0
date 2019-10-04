@@ -62,8 +62,7 @@ impl InMemoryConnection {
         match self {
             InMemoryConnection::Conn(db) => {
                 let guard = db.lock().map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?;
-                let data = guard.deref();
-                (tx)(data)
+                (tx)(&guard)
             },
             InMemoryConnection::Tx(locked) => {
                 (tx)(&locked)
@@ -77,5 +76,134 @@ impl InMemoryConnection {
 impl Connection for InMemoryConnection {
     fn batch_execute(&self, _sql: &str) -> Result<(), C3p0Error> {
         Err(C3p0Error::InternalError{cause: "batch_execute is not implemented for InMemoryConnection".to_string()})
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn should_write_data_in_connection() -> Result<(), C3p0Error> {
+        let pool = C3p0PoolInMemory::new();
+
+        {
+            let conn = pool.connection()?;
+            let result: Result<(), C3p0Error> = conn.get_db(|db| {
+                db.insert("one".to_string(), Default::default());
+                Ok(())
+            });
+            assert!(result.is_ok())
+        }
+
+        {
+            let conn = pool.connection()?;
+            let result: Result<(), C3p0Error> = conn.get_db(|db| {
+                assert!(db.contains_key("one"));
+                db.insert("two".to_string(), Default::default());
+                db.remove("one");
+                Ok(())
+            });
+            assert!(result.is_ok())
+        }
+
+        {
+            let conn = pool.connection()?;
+            let result: Result<(), C3p0Error> = conn.get_db(|db| {
+                assert!(!db.contains_key("one"));
+                assert!(db.contains_key("two"));
+                Ok(())
+            });
+            assert!(result.is_ok())
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_commit_transaction() -> Result<(), C3p0Error> {
+        let pool = C3p0PoolInMemory::new();
+
+        {
+            let result: Result<(), C3p0Error> = pool.transaction(|tx| {
+                tx.get_db(|db| {
+                    db.insert("one".to_string(), Default::default());
+                    Ok(())
+                })
+            });
+            assert!(result.is_ok())
+        }
+
+        {
+            let result: Result<(), C3p0Error> = pool.transaction(|tx| {
+                tx.get_db(|db| {
+                    assert!(db.contains_key("one"));
+                    db.insert("two".to_string(), Default::default());
+                    db.remove("one");
+                    Ok(())
+                })
+
+            });
+            assert!(result.is_ok())
+        }
+
+        {
+            let result: Result<(), C3p0Error> = pool.transaction(|tx| {
+                tx.get_db(|db| {
+                    assert!(!db.contains_key("one"));
+                    assert!(db.contains_key("two"));
+                    Ok(())
+                })
+
+            });
+            assert!(result.is_ok())
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_rollback_transaction() -> Result<(), C3p0Error> {
+        let pool = C3p0PoolInMemory::new();
+
+        {
+            let result: Result<(), C3p0Error> = pool.transaction(|tx| {
+                tx.get_db(|db| {
+                    db.insert("one".to_string(), Default::default());
+                    Ok(())
+                })
+            });
+            assert!(result.is_ok())
+        }
+
+        {
+            let result: Result<(), C3p0Error> = pool.transaction(|tx| {
+                tx.get_db(|db| {
+                    assert!(db.contains_key("one"));
+                    db.insert("two".to_string(), Default::default());
+                    db.remove("one");
+                    Err(C3p0Error::InternalError {cause: "test error on purpose".to_string() })
+                })
+
+            });
+            match result {
+                Err(C3p0Error::InternalError {cause}) => assert_eq!("test error on purpose", cause),
+                _ => assert!(false)
+            }
+        }
+
+        {
+            let result: Result<(), C3p0Error> = pool.transaction(|tx| {
+                tx.get_db(|db| {
+                    assert!(db.contains_key("one"));
+                    assert!(!db.contains_key("two"));
+                    Ok(())
+                })
+
+            });
+            assert!(result.is_ok())
+        }
+
+        Ok(())
     }
 }
