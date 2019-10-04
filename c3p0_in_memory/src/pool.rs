@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex, MutexGuard, LockResult};
 use std::ops::{Deref, DerefMut};
 use std::any::Any;
 use chashmap::CHashMap;
+use guardian::ArcMutexGuardian;
 
 #[derive(Clone, Default)]
 pub struct C3p0PoolInMemory {
@@ -33,18 +34,25 @@ impl C3p0Pool for C3p0PoolInMemory {
             guard.deref().clone()
         };
 
-        let locked_hashmap = new_locked(self.db.clone())?;
+        let mut locked_hashmap = ArcMutexGuardian::take(self.db.clone()).map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?;
+        //*locked_hashmap = db_clone;
+        //let locked_hashmap = new_locked(self.db.clone())?;
         //locked_hashmap.rent(|data| *data = db_clone);
 
-        let conn = InMemoryConnection::Tx(locked_hashmap);
+        let mut conn = InMemoryConnection::Tx(locked_hashmap);
 
         let result = (tx)(&conn);
-        match &result {
-            Ok(smt) => {
-            },
-            _ => {}
-        };
-        result
+        if result.is_err() {
+            match conn {
+                InMemoryConnection::Tx(mut locked) => {
+                    *locked = db_clone;
+                    result
+                },
+                _ => Err(C3p0Error::InternalError {cause: "InMemoryTransaction must be Tx".to_owned()})?
+            }
+        } else {
+            result
+        }
     }
 }
 
@@ -72,7 +80,7 @@ rental! {
 
 pub enum  InMemoryConnection {
     Conn(Arc<Mutex<CHashMap<String, CHashMap<IdType, serde_json::Value>>>>),
-    Tx(rentals::LockedHashMap),
+    Tx(ArcMutexGuardian<CHashMap<String, CHashMap<IdType, serde_json::Value>>>),
 }
 
 impl InMemoryConnection {
@@ -87,7 +95,7 @@ impl InMemoryConnection {
                 (tx)(data)
             },
             InMemoryConnection::Tx(locked) => {
-                locked.rent(|data| (tx)(data))
+                (tx)(&locked)
             }
         }
 
