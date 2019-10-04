@@ -1,8 +1,7 @@
 use c3p0_common::*;
 use c3p0_common::json::model::IdType;
-use std::sync::{Arc, Mutex, MutexGuard, LockResult};
-use std::ops::{Deref, DerefMut};
-use std::any::Any;
+use std::sync::{Arc, Mutex};
+use std::ops::{Deref};
 use chashmap::CHashMap;
 use guardian::ArcMutexGuardian;
 
@@ -34,22 +33,19 @@ impl C3p0Pool for C3p0PoolInMemory {
             guard.deref().clone()
         };
 
-        let mut locked_hashmap = ArcMutexGuardian::take(self.db.clone()).map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?;
+        let locked_hashmap = ArcMutexGuardian::take(self.db.clone()).map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?;
 
-        let mut conn = InMemoryConnection::Tx(locked_hashmap);
+        let conn = InMemoryConnection::Tx(locked_hashmap);
 
-        let result = (tx)(&conn);
-        if result.is_err() {
+        (tx)(&conn).map_err(|err| {
             match conn {
                 InMemoryConnection::Tx(mut locked) => {
                     *locked = db_clone;
-                    result
                 },
-                _ => Err(C3p0Error::InternalError {cause: "InMemoryTransaction must be Tx".to_owned()})?
-            }
-        } else {
-            result
-        }
+                _ => panic!("InMemoryTransaction must be Tx")
+            };
+            err
+        })
     }
 }
 
