@@ -2,14 +2,14 @@ use c3p0_common::json::model::IdType;
 use c3p0_common::*;
 use guardian::ArcMutexGuardian;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Default)]
 pub struct InMemoryC3p0Pool {
-    db: Arc<Mutex<HashMap<String, HashMap<IdType, serde_json::Value>>>>,
+    db: Arc<Mutex<HashMap<String, BTreeMap<IdType, serde_json::Value>>>>,
 }
 
 impl InMemoryC3p0Pool {
@@ -59,15 +59,15 @@ impl C3p0Pool for InMemoryC3p0Pool {
 }
 
 pub enum InMemoryConnection {
-    Conn(Arc<Mutex<HashMap<String, HashMap<IdType, serde_json::Value>>>>),
-    Tx(RefCell<ArcMutexGuardian<HashMap<String, HashMap<IdType, serde_json::Value>>>>),
+    Conn(Arc<Mutex<HashMap<String, BTreeMap<IdType, serde_json::Value>>>>),
+    Tx(RefCell<ArcMutexGuardian<HashMap<String, BTreeMap<IdType, serde_json::Value>>>>),
 }
 
 impl InMemoryConnection {
     pub fn read_db<
         T,
         E: From<C3p0Error>,
-        F: FnOnce(&HashMap<String, HashMap<IdType, serde_json::Value>>) -> Result<T, E>,
+        F: FnOnce(&HashMap<String, BTreeMap<IdType, serde_json::Value>>) -> Result<T, E>,
     >(
         &self,
         tx: F,
@@ -89,7 +89,7 @@ impl InMemoryConnection {
     pub fn write_db<
         T,
         E: From<C3p0Error>,
-        F: FnOnce(&mut HashMap<String, HashMap<IdType, serde_json::Value>>) -> Result<T, E>,
+        F: FnOnce(&mut HashMap<String, BTreeMap<IdType, serde_json::Value>>) -> Result<T, E>,
     >(
         &self,
         tx: F,

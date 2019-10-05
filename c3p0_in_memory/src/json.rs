@@ -6,7 +6,7 @@ use c3p0_common::json::{
     C3p0Json,
 };
 use c3p0_common::DefaultJsonCodec;
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use serde_json::Value;
 
 pub trait InMemoryC3p0JsonBuilder {
@@ -46,12 +46,12 @@ impl<DATA> InMemoryC3p0Json<DATA>
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
 {
 
-    fn get_table<'a>(&self, qualified_table_name: &str, db: &'a HashMap<String, HashMap<IdType, Value>>) -> Option<&'a HashMap<IdType, Value>> {
+    fn get_table<'a>(&self, qualified_table_name: &str, db: &'a HashMap<String, BTreeMap<IdType, Value>>) -> Option<&'a BTreeMap<IdType, Value>> {
         db.get(qualified_table_name)
     }
 
-    fn get_or_create_table<'a>(&self, qualified_table_name: &str, db: &'a mut HashMap<String, HashMap<IdType, Value>>) -> &'a mut HashMap<IdType, Value> {
-        db.entry(qualified_table_name.to_owned()).or_insert_with(|| HashMap::new())
+    fn get_or_create_table<'a>(&self, qualified_table_name: &str, db: &'a mut HashMap<String, BTreeMap<IdType, Value>>) -> &'a mut BTreeMap<IdType, Value> {
+        db.entry(qualified_table_name.to_owned()).or_insert_with(|| BTreeMap::new())
     }
 
 }
@@ -67,11 +67,17 @@ where
     }
 
     fn create_table_if_not_exists(&self, conn: &InMemoryConnection) -> Result<(), C3p0Error> {
-        Ok(())
+        conn.write_db(|db| {
+            self.get_or_create_table(&self.qualified_table_name, db);
+            Ok(())
+        })
     }
 
     fn drop_table_if_exists(&self, conn: &InMemoryConnection) -> Result<(), C3p0Error> {
-        Ok(())
+        conn.write_db(|db| {
+            db.remove(&self.qualified_table_name);
+            Ok(())
+        })
     }
 
     fn count_all(&self, conn: &InMemoryConnection) -> Result<i64, C3p0Error> {
@@ -91,16 +97,21 @@ where
     ) -> Result<bool, C3p0Error> {
         conn.read_db(|db| {
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
-                if let Some(value) = table.get(id.into()) {
-                    return Ok(true)
-                }
+                Ok(table.contains_key(id.into()))
+            } else {
+                Ok(false)
             }
-            Ok(false)
         })
     }
 
     fn fetch_all(&self, conn: &InMemoryConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        Ok(vec![])
+        conn.read_db(|db| {
+            if let Some(table) = self.get_table(&self.qualified_table_name, db) {
+                table.values().map(|value| Ok(serde_json::from_value(value.clone())?)).collect::<Result<Vec<_>, _>>()
+            } else {
+                Ok(vec![])
+            }
+        })
     }
 
     fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
@@ -324,6 +335,73 @@ mod test {
         assert_eq!(0, c3p0_2.count_all(&conn)?);
 
         Ok(())
+    }
+
+    #[test]
+    fn should_create_and_drop_table() -> Result<(), C3p0Error> {
+        // Arrange
+        let pool = InMemoryC3p0Pool::new();
+        let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
+
+        let conn = pool.connection()?;
+
+        // Act
+        assert!(c3p0_1.create_table_if_not_exists(&conn).is_ok());
+        assert!(c3p0_1.create_table_if_not_exists(&conn).is_ok());
+
+        assert!(c3p0_1.save(&conn, TestData::new("value1")).is_ok());
+
+        assert_eq!(1, c3p0_1.count_all(&conn)?);
+
+        assert!(c3p0_1.drop_table_if_exists(&conn).is_ok());
+
+        assert_eq!(0, c3p0_1.count_all(&conn)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_fetch_all() -> Result<(), C3p0Error> {
+        // Arrange
+        let pool = InMemoryC3p0Pool::new();
+        let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
+
+        // Act
+        let saved_model_0 = c3p0.save(&pool.connection()?, TestData::new("value1"))?;
+        let saved_model_1 = c3p0.save(&pool.connection()?, TestData::new("value2"))?;
+        let saved_model_2 = c3p0.save(&pool.connection()?, TestData::new("value2"))?;
+
+        let all = c3p0.fetch_all(&pool.connection()?)?;
+
+        // Assert
+        assert_eq!( 3, all.len() );
+
+        let fetched_model_0 = all.get(0).unwrap();
+        assert_eq!( saved_model_0.id, fetched_model_0.id );
+        assert_eq!( saved_model_0.version, fetched_model_0.version );
+        assert_eq!( saved_model_0.data.value, fetched_model_0.data.value );
+
+        let fetched_model_1 = all.get(1).unwrap();
+        assert_eq!( saved_model_1.id, fetched_model_1.id );
+        assert_eq!( saved_model_1.version, fetched_model_1.version );
+        assert_eq!( saved_model_1.data.value, fetched_model_1.data.value );
+
+        let fetched_model_2 = all.get(2).unwrap();
+        assert_eq!( saved_model_2.id, fetched_model_2.id );
+        assert_eq!( saved_model_2.version, fetched_model_2.version );
+        assert_eq!( saved_model_2.data.value, fetched_model_2.data.value );
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_update_with_optimistic_lock() -> Result<(), C3p0Error> {
+        unimplemented!()
+    }
+
+    #[test]
+    fn should_delete_with_optimistic_lock() -> Result<(), C3p0Error> {
+        unimplemented!()
     }
 
 }
