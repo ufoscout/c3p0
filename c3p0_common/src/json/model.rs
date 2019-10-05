@@ -40,8 +40,8 @@ impl<DATA> NewModel<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    pub fn new<M: Into<DATA>>(data: M) -> Self {
-        NewModel { version: 0, data: data.into() }
+    pub fn new(data: DATA) -> Self {
+        NewModel { version: 0, data }
     }
 }
 

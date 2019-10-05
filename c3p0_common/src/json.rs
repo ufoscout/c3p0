@@ -74,7 +74,7 @@ where
         id: ID,
     ) -> Result<u64, C3p0Error>;
 
-    fn save<M: Into<NewModel<DATA>>>(&self, conn: &Self::CONN, obj: M) -> Result<Model<DATA>, C3p0Error>;
+    fn save(&self, conn: &Self::CONN, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
     fn update(&self, conn: &Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 }
