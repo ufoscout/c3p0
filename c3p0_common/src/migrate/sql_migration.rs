@@ -89,5 +89,4 @@ mod test {
             migrations.get(1).unwrap()
         );
     }
-
 }

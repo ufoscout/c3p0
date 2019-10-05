@@ -3,16 +3,16 @@ use crate::mysql::{C3p0PoolMysql, MysqlConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::pool::Connection;
+use c3p0_common::pool::SqlConnection;
 
 pub use c3p0_common::migrate::*;
 
 pub trait C3p0MigrateBuilderMysql {
-    fn build(self) -> C3p0Migrate<C3p0PoolMysql, MysqlMigrator>;
+    fn build(self) -> C3p0Migrate<MysqlConnection, C3p0PoolMysql, MysqlMigrator>;
 }
 
-impl C3p0MigrateBuilderMysql for C3p0MigrateBuilder<C3p0PoolMysql> {
-    fn build(self) -> C3p0Migrate<C3p0PoolMysql, MysqlMigrator> {
+impl C3p0MigrateBuilderMysql for C3p0MigrateBuilder<MysqlConnection, C3p0PoolMysql> {
+    fn build(self) -> C3p0Migrate<MysqlConnection, C3p0PoolMysql, MysqlMigrator> {
         C3p0Migrate::new(
             self.table,
             self.schema,
@@ -27,7 +27,7 @@ impl C3p0MigrateBuilderMysql for C3p0MigrateBuilder<C3p0PoolMysql> {
 pub struct MysqlMigrator {}
 
 impl Migrator for MysqlMigrator {
-    type CONNECTION = MysqlConnection;
+    type CONN = MysqlConnection;
     type C3P0 = C3p0PoolMysql;
     type C3P0JSON = C3p0JsonMysql<MigrationData, DefaultJsonCodec>;
 

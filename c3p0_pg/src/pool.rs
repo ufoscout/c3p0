@@ -58,7 +58,7 @@ pub struct PgConnection {
     conn: PooledConnection<PostgresConnectionManager>,
 }
 
-impl Connection for PgConnection {
+impl SqlConnection for PgConnection {
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
         self.conn.batch_execute(sql).map_err(into_c3p0_error)
     }

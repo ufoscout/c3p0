@@ -8,7 +8,6 @@ fn should_commit_transaction() {
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
 
         let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
-
             assert!(conn
                 .execute(
                     &format!(
@@ -62,7 +61,6 @@ fn should_rollback_transaction() {
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
 
         let result: Result<(), C3p0Error> = c3p0.transaction(|conn| {
-
             assert!(conn
                 .batch_execute(&format!(
                     r"CREATE TABLE {} (
@@ -98,7 +96,6 @@ fn should_rollback_transaction() {
                 .execute(&format!(r"DROP TABLE IF EXISTS {}", table_name), &[])
                 .is_ok());
         }
-
     });
 }
 

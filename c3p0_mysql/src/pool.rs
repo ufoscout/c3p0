@@ -97,7 +97,7 @@ pub enum MysqlConnection {
     Tx(RefCell<rentals::SimpleMut>),
 }
 
-impl Connection for MysqlConnection {
+impl SqlConnection for MysqlConnection {
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {

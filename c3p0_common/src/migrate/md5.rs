@@ -22,5 +22,4 @@ mod test {
         println!("result is: [{:?}]", &md5_result_str);
         assert_eq!("5f759e6f82017c8cd17cd75f3c7d52a4", &md5_result_str);
     }
-
 }

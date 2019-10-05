@@ -1,7 +1,7 @@
 use crate::error::C3p0Error;
 
 pub trait C3p0Pool: Clone {
-    type CONN: Connection;
+    type CONN;
 
     fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
@@ -11,7 +11,7 @@ pub trait C3p0Pool: Clone {
     ) -> Result<T, E>;
 }
 
-pub trait Connection {
+pub trait SqlConnection {
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error>;
 
     /*

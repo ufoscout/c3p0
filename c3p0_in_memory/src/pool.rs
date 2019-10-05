@@ -109,14 +109,6 @@ impl InMemoryConnection {
     }
 }
 
-impl Connection for InMemoryConnection {
-    fn batch_execute(&self, _sql: &str) -> Result<(), C3p0Error> {
-        Err(C3p0Error::InternalError {
-            cause: "batch_execute is not implemented for InMemoryConnection".to_string(),
-        })
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;

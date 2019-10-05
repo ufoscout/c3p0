@@ -159,14 +159,16 @@ fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::Error>>
     let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
     let first_table_name = &format!("first_table_{}", rand_string(8));
 
-    let migrate = C3p0MigrateBuilder::new(c3p0.clone())
-        .with_table_name(migration_table_name)
-        .with_migrations(vec![Migration {
-            id: "first".to_owned(),
-            up: format!("create table {} (id int)", first_table_name),
-            down: "".to_owned(),
-        }])
-        .build();
+    let migrate = std::sync::Arc::new(
+        C3p0MigrateBuilder::new(c3p0.clone())
+            .with_table_name(migration_table_name)
+            .with_migrations(vec![Migration {
+                id: "first".to_owned(),
+                up: format!("create table {} (id int)", first_table_name),
+                down: "".to_owned(),
+            }])
+            .build(),
+    );
 
     let mut threads = vec![];
 

@@ -3,16 +3,16 @@ use crate::pool::{C3p0PoolPg, PgConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::pool::Connection;
+use c3p0_common::pool::SqlConnection;
 
 use c3p0_common::migrate::*;
 
 pub trait C3p0MigrateBuilderPg {
-    fn build(self) -> C3p0Migrate<C3p0PoolPg, PgMigrator>;
+    fn build(self) -> C3p0Migrate<PgConnection, C3p0PoolPg, PgMigrator>;
 }
 
-impl C3p0MigrateBuilderPg for C3p0MigrateBuilder<C3p0PoolPg> {
-    fn build(self) -> C3p0Migrate<C3p0PoolPg, PgMigrator> {
+impl C3p0MigrateBuilderPg for C3p0MigrateBuilder<PgConnection, C3p0PoolPg> {
+    fn build(self) -> C3p0Migrate<PgConnection, C3p0PoolPg, PgMigrator> {
         C3p0Migrate::new(
             self.table,
             self.schema,
@@ -27,7 +27,7 @@ impl C3p0MigrateBuilderPg for C3p0MigrateBuilder<C3p0PoolPg> {
 pub struct PgMigrator {}
 
 impl Migrator for PgMigrator {
-    type CONNECTION = PgConnection;
+    type CONN = PgConnection;
     type C3P0 = C3p0PoolPg;
     type C3P0JSON = C3p0JsonPg<MigrationData, DefaultJsonCodec>;
 

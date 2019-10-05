@@ -7,11 +7,11 @@ use c3p0_common::json::codec::DefaultJsonCodec;
 pub use c3p0_common::migrate::*;
 
 pub trait C3p0MigrateBuilderSqlite {
-    fn build(self) -> C3p0Migrate<C3p0PoolSqlite, SqliteMigrator>;
+    fn build(self) -> C3p0Migrate<SqliteConnection, C3p0PoolSqlite, SqliteMigrator>;
 }
 
-impl C3p0MigrateBuilderSqlite for C3p0MigrateBuilder<C3p0PoolSqlite> {
-    fn build(self) -> C3p0Migrate<C3p0PoolSqlite, SqliteMigrator> {
+impl C3p0MigrateBuilderSqlite for C3p0MigrateBuilder<SqliteConnection, C3p0PoolSqlite> {
+    fn build(self) -> C3p0Migrate<SqliteConnection, C3p0PoolSqlite, SqliteMigrator> {
         C3p0Migrate::new(
             self.table,
             self.schema,
@@ -26,7 +26,7 @@ impl C3p0MigrateBuilderSqlite for C3p0MigrateBuilder<C3p0PoolSqlite> {
 pub struct SqliteMigrator {}
 
 impl Migrator for SqliteMigrator {
-    type CONNECTION = SqliteConnection;
+    type CONN = SqliteConnection;
     type C3P0 = C3p0PoolSqlite;
     type C3P0JSON = C3p0JsonSqlite<MigrationData, DefaultJsonCodec>;
 

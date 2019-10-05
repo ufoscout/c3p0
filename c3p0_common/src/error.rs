@@ -29,7 +29,10 @@ pub enum C3p0Error {
     #[error(display = "FileSystemError: [{}]", message)]
     FileSystemError { message: String },
     #[error(display = "MigrationError: [{}]. Cause: [{}]", message, cause)]
-    MigrationError { message: String, cause: Box<dyn std::error::Error> },
+    MigrationError {
+        message: String,
+        cause: Box<dyn std::error::Error>,
+    },
 }
 
 impl From<serde_json::error::Error> for C3p0Error {

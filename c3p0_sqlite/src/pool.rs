@@ -95,7 +95,7 @@ pub enum SqliteConnection {
     Tx(RefCell<rentals::SimpleMut>),
 }
 
-impl Connection for SqliteConnection {
+impl SqlConnection for SqliteConnection {
     fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             SqliteConnection::Conn(conn) => conn.execute_batch(sql).map_err(into_c3p0_error),

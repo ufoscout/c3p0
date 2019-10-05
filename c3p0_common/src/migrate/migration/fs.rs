@@ -140,5 +140,4 @@ mod test {
             .down
             .contains("DROP TABLE TEST_TABLE;"));
     }
-
 }

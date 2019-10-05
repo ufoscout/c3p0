@@ -141,7 +141,6 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonMysql<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
@@ -187,7 +186,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0JsonMysql<DATA,
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type CONNECTION = MysqlConnection;
+    type CONN = MysqlConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec

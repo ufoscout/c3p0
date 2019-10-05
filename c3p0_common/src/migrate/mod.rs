@@ -4,7 +4,7 @@ use crate::json::model::{Model, NewModel};
 use crate::json::C3p0Json;
 use crate::migrate::migration::Migrations;
 use crate::migrate::sql_migration::{to_sql_migrations, SqlMigration};
-use crate::pool::{C3p0Pool, Connection};
+use crate::pool::{C3p0Pool, SqlConnection};
 use log::*;
 use serde_derive::{Deserialize, Serialize};
 
@@ -16,14 +16,14 @@ pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
 
 #[derive(Clone, Debug)]
-pub struct C3p0MigrateBuilder<C3P0: C3p0Pool> {
+pub struct C3p0MigrateBuilder<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> {
     pub table: String,
     pub schema: Option<String>,
     pub migrations: Vec<SqlMigration>,
     pub c3p0: C3P0,
 }
 
-impl<C3P0: C3p0Pool> C3p0MigrateBuilder<C3P0> {
+impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> C3p0MigrateBuilder<CONN, C3P0> {
     pub fn new(c3p0: C3P0) -> Self {
         C3p0MigrateBuilder {
             table: C3P0_MIGRATE_TABLE_DEFAULT.to_owned(),
@@ -36,12 +36,15 @@ impl<C3P0: C3p0Pool> C3p0MigrateBuilder<C3P0> {
     pub fn with_schema_name<T: Into<Option<String>>>(
         mut self,
         schema_name: T,
-    ) -> C3p0MigrateBuilder<C3P0> {
+    ) -> C3p0MigrateBuilder<CONN, C3P0> {
         self.schema = schema_name.into();
         self
     }
 
-    pub fn with_table_name<T: Into<String>>(mut self, table_name: T) -> C3p0MigrateBuilder<C3P0> {
+    pub fn with_table_name<T: Into<String>>(
+        mut self,
+        table_name: T,
+    ) -> C3p0MigrateBuilder<CONN, C3P0> {
         self.table = table_name.into();
         self
     }
@@ -49,7 +52,7 @@ impl<C3P0: C3p0Pool> C3p0MigrateBuilder<C3P0> {
     pub fn with_migrations<M: Into<Migrations>>(
         mut self,
         migrations: M,
-    ) -> C3p0MigrateBuilder<C3P0> {
+    ) -> C3p0MigrateBuilder<CONN, C3P0> {
         self.migrations = to_sql_migrations(migrations.into().migrations);
         self
     }
@@ -75,7 +78,11 @@ pub enum MigrationType {
 }
 
 #[derive(Clone)]
-pub struct C3p0Migrate<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> {
+pub struct C3p0Migrate<
+    CONN: SqlConnection,
+    C3P0: C3p0Pool<CONN = CONN>,
+    MIGRATOR: Migrator<CONN = CONN>,
+> {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
@@ -83,7 +90,9 @@ pub struct C3p0Migrate<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CON
     migrator: MIGRATOR,
 }
 
-impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3P0, MIGRATOR> {
+impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN = CONN>>
+    C3p0Migrate<CONN, C3P0, MIGRATOR>
+{
     pub fn new(
         table: String,
         schema: Option<String>,
@@ -107,7 +116,11 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
 
         // Pre Migration
         self.pre_migration(&c3p0_json)
-            .map_err(|err| C3p0Error::MigrationError {message: "C3p0Migrate - Failed to execute pre-migration DB preparation.".to_string(), cause: Box::new(err)})?;
+            .map_err(|err| C3p0Error::MigrationError {
+                message: "C3p0Migrate - Failed to execute pre-migration DB preparation."
+                    .to_string(),
+                cause: Box::new(err),
+            })?;
 
         // Start Migration
         self.c3p0
@@ -115,12 +128,15 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
                 self.migrator.lock_first_migration_row(&c3p0_json, conn)?;
                 Ok(self.start_migration(&c3p0_json, conn)?)
             })
-            .map_err(|err| C3p0Error::MigrationError {message: "C3p0Migrate - Failed to execute DB migration script.".to_string(), cause: err})
+            .map_err(|err| C3p0Error::MigrationError {
+                message: "C3p0Migrate - Failed to execute DB migration script.".to_string(),
+                cause: err,
+            })
     }
 
     pub fn get_migrations_history(
         &self,
-        conn: &MIGRATOR::CONNECTION,
+        conn: &MIGRATOR::CONN,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self
             .migrator
@@ -131,7 +147,7 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
     fn create_migration_zero(
         &self,
         c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &MIGRATOR::CONNECTION,
+        conn: &MIGRATOR::CONN,
     ) -> Result<(), C3p0Error> {
         let count = c3p0_json.count_all(&conn)?;
 
@@ -150,11 +166,7 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
         Ok(())
     }
 
-    fn pre_migration(
-        &self,
-        c3p0_json: &MIGRATOR::C3P0JSON,
-    ) -> Result<(), C3p0Error> {
-
+    fn pre_migration(&self, c3p0_json: &MIGRATOR::C3P0JSON) -> Result<(), C3p0Error> {
         {
             let conn = self.c3p0.connection()?;
             if let Err(err) = c3p0_json.create_table_if_not_exists(&conn) {
@@ -163,17 +175,16 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
         }
 
         // Start Migration
-        self.c3p0
-            .transaction(|conn| {
-                self.migrator.lock_table(&c3p0_json, conn)?;
-                Ok(self.create_migration_zero(&c3p0_json, conn)?)
-            })
+        self.c3p0.transaction(|conn| {
+            self.migrator.lock_table(&c3p0_json, conn)?;
+            Ok(self.create_migration_zero(&c3p0_json, conn)?)
+        })
     }
 
     fn start_migration(
         &self,
         c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &MIGRATOR::CONNECTION,
+        conn: &MIGRATOR::CONN,
     ) -> Result<(), C3p0Error> {
         let migration_history = self.fetch_migrations_history(c3p0_json, conn)?;
         let migration_history = self.clean_history(migration_history)?;
@@ -206,7 +217,13 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
             }
 
             conn.batch_execute(&migration.up.sql)
-                .map_err(|err| C3p0Error::MigrationError {message: format!("C3p0Migrate - Failed to execute migration with id [{}].", &migration.id), cause: Box::new(err)})?;
+                .map_err(|err| C3p0Error::MigrationError {
+                    message: format!(
+                        "C3p0Migrate - Failed to execute migration with id [{}].",
+                        &migration.id
+                    ),
+                    cause: Box::new(err),
+                })?;
 
             c3p0_json.save(
                 conn,
@@ -227,7 +244,7 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
     fn fetch_migrations_history(
         &self,
         c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &MIGRATOR::CONNECTION,
+        conn: &MIGRATOR::CONN,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         c3p0_json.fetch_all(conn)
     }
@@ -262,21 +279,17 @@ impl<C3P0: C3p0Pool, MIGRATOR: Migrator<CONNECTION = C3P0::CONN>> C3p0Migrate<C3
 }
 
 pub trait Migrator: Clone {
-    type CONNECTION: Connection;
-    type C3P0: C3p0Pool<CONN = Self::CONNECTION>;
-    type C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONNECTION = Self::CONNECTION>;
+    type CONN: SqlConnection;
+    type C3P0: C3p0Pool<CONN = Self::CONN>;
+    type C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN= Self::CONN>;
 
     fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0JSON;
 
-    fn lock_table(
-        &self,
-        c3p0_json: &Self::C3P0JSON,
-        conn: &Self::CONNECTION,
-    ) -> Result<(), C3p0Error>;
+    fn lock_table(&self, c3p0_json: &Self::C3P0JSON, conn: &Self::CONN) -> Result<(), C3p0Error>;
 
     fn lock_first_migration_row(
         &self,
         c3p0_json: &Self::C3P0JSON,
-        conn: &Self::CONNECTION,
+        conn: &Self::CONN,
     ) -> Result<(), C3p0Error>;
 }

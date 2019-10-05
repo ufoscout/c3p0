@@ -142,7 +142,6 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonSqlite<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
@@ -188,7 +187,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0JsonSqlite<DATA
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type CONNECTION = SqliteConnection;
+    type CONN = SqliteConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec

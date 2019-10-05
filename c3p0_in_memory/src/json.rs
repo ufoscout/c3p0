@@ -37,7 +37,7 @@ impl<DATA> C3p0Json<DATA, DefaultJsonCodec> for C3p0JsonInMemory<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type CONNECTION = InMemoryConnection;
+    type CONN = InMemoryConnection;
 
     fn codec(&self) -> &DefaultJsonCodec {
         &self.codec

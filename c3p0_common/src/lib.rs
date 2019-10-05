@@ -9,7 +9,7 @@ pub use json::{
     builder::C3p0JsonBuilder, codec::DefaultJsonCodec, codec::JsonCodec, model::Model,
     model::NewModel, C3p0Json,
 };
-pub use pool::{C3p0Pool, Connection};
+pub use pool::{C3p0Pool, SqlConnection};
 
 #[cfg(feature = "migrate")]
 pub mod migrate;
