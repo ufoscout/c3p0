@@ -7,27 +7,27 @@ use crate::sqlite::driver::{
     types::{FromSql, ToSql},
     Row,
 };
-use crate::sqlite::{C3p0PoolSqlite, SqliteConnection};
+use crate::sqlite::{SqliteC3p0Pool, SqliteConnection};
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
 
-pub trait C3p0JsonBuilderSqlite {
+pub trait SqliteC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0JsonSqlite<DATA, DefaultJsonCodec>;
+    ) -> SqliteC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> C3p0JsonSqlite<DATA, CODEC>;
+    ) -> SqliteC3p0Json<DATA, CODEC>;
 }
 
-impl C3p0JsonBuilderSqlite for C3p0JsonBuilder<C3p0PoolSqlite> {
+impl SqliteC3p0JsonBuilder for C3p0JsonBuilder<SqliteC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0JsonSqlite<DATA, DefaultJsonCodec> {
+    ) -> SqliteC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -37,13 +37,13 @@ impl C3p0JsonBuilderSqlite for C3p0JsonBuilder<C3p0PoolSqlite> {
     >(
         self,
         codec: CODEC,
-    ) -> C3p0JsonSqlite<DATA, CODEC> {
+    ) -> SqliteC3p0Json<DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        C3p0JsonSqlite {
+        SqliteC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: Queries {
@@ -128,7 +128,7 @@ impl C3p0JsonBuilderSqlite for C3p0JsonBuilder<C3p0PoolSqlite> {
 }
 
 #[derive(Clone)]
-pub struct C3p0JsonSqlite<DATA, CODEC: JsonCodec<DATA>>
+pub struct SqliteC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -138,7 +138,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonSqlite<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> SqliteC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -183,7 +183,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0JsonSqlite<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqliteC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

@@ -12,7 +12,7 @@ mod tests;
 pub fn new_connection(
     docker: &clients::Cli,
 ) -> (
-    C3p0PoolMysql,
+    MysqlC3p0Pool,
     Container<clients::Cli, images::generic::GenericImage>,
 ) {
     let mysql_version = "5.7.25";
@@ -38,7 +38,7 @@ pub fn new_connection(
 
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0PoolMysql::new(pool);
+    let pool = MysqlC3p0Pool::new(pool);
 
     (pool, node)
 }

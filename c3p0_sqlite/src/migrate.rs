@@ -1,17 +1,17 @@
-use crate::json::{C3p0JsonBuilderSqlite, C3p0JsonSqlite};
-use crate::sqlite::{C3p0PoolSqlite, SqliteConnection};
+use crate::json::{SqliteC3p0JsonBuilder, SqliteC3p0Json};
+use crate::sqlite::{SqliteC3p0Pool, SqliteConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
 
 pub use c3p0_common::migrate::*;
 
-pub trait C3p0MigrateBuilderSqlite {
-    fn build(self) -> C3p0Migrate<SqliteConnection, C3p0PoolSqlite, SqliteMigrator>;
+pub trait SqliteC3p0MigrateBuilder {
+    fn build(self) -> C3p0Migrate<SqliteConnection, SqliteC3p0Pool, SqliteMigrator>;
 }
 
-impl C3p0MigrateBuilderSqlite for C3p0MigrateBuilder<SqliteConnection, C3p0PoolSqlite> {
-    fn build(self) -> C3p0Migrate<SqliteConnection, C3p0PoolSqlite, SqliteMigrator> {
+impl SqliteC3p0MigrateBuilder for C3p0MigrateBuilder<SqliteConnection, SqliteC3p0Pool> {
+    fn build(self) -> C3p0Migrate<SqliteConnection, SqliteC3p0Pool, SqliteMigrator> {
         C3p0Migrate::new(
             self.table,
             self.schema,
@@ -27,22 +27,22 @@ pub struct SqliteMigrator {}
 
 impl Migrator for SqliteMigrator {
     type CONN = SqliteConnection;
-    type C3P0 = C3p0PoolSqlite;
-    type C3P0JSON = C3p0JsonSqlite<MigrationData, DefaultJsonCodec>;
+    type C3P0 = SqliteC3p0Pool;
+    type C3P0JSON = SqliteC3p0Json<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,
         table: String,
         schema: Option<String>,
-    ) -> C3p0JsonSqlite<MigrationData, DefaultJsonCodec> {
-        C3p0JsonBuilder::<C3p0PoolSqlite>::new(table)
+    ) -> SqliteC3p0Json<MigrationData, DefaultJsonCodec> {
+        C3p0JsonBuilder::<SqliteC3p0Pool>::new(table)
             .with_schema_name(schema)
             .build()
     }
 
     fn lock_table(
         &self,
-        _c3p0_json: &C3p0JsonSqlite<MigrationData, DefaultJsonCodec>,
+        _c3p0_json: &SqliteC3p0Json<MigrationData, DefaultJsonCodec>,
         _conn: &SqliteConnection,
     ) -> Result<(), C3p0Error> {
         Ok(())
@@ -50,7 +50,7 @@ impl Migrator for SqliteMigrator {
 
     fn lock_first_migration_row(
         &self,
-        c3p0_json: &C3p0JsonSqlite<MigrationData, DefaultJsonCodec>,
+        c3p0_json: &SqliteC3p0Json<MigrationData, DefaultJsonCodec>,
         conn: &SqliteConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(

@@ -1,5 +1,5 @@
-use crate::json::{C3p0JsonBuilderMysql, C3p0JsonMysql};
-use crate::mysql::{C3p0PoolMysql, MysqlConnection};
+use crate::json::{MysqlC3p0JsonBuilder, MysqlC3p0Json};
+use crate::mysql::{MysqlC3p0Pool, MysqlConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
@@ -7,12 +7,12 @@ use c3p0_common::pool::SqlConnection;
 
 pub use c3p0_common::migrate::*;
 
-pub trait C3p0MigrateBuilderMysql {
-    fn build(self) -> C3p0Migrate<MysqlConnection, C3p0PoolMysql, MysqlMigrator>;
+pub trait MysqlC3p0MigrateBuilder {
+    fn build(self) -> C3p0Migrate<MysqlConnection, MysqlC3p0Pool, MysqlMigrator>;
 }
 
-impl C3p0MigrateBuilderMysql for C3p0MigrateBuilder<MysqlConnection, C3p0PoolMysql> {
-    fn build(self) -> C3p0Migrate<MysqlConnection, C3p0PoolMysql, MysqlMigrator> {
+impl MysqlC3p0MigrateBuilder for C3p0MigrateBuilder<MysqlConnection, MysqlC3p0Pool> {
+    fn build(self) -> C3p0Migrate<MysqlConnection, MysqlC3p0Pool, MysqlMigrator> {
         C3p0Migrate::new(
             self.table,
             self.schema,
@@ -28,22 +28,22 @@ pub struct MysqlMigrator {}
 
 impl Migrator for MysqlMigrator {
     type CONN = MysqlConnection;
-    type C3P0 = C3p0PoolMysql;
-    type C3P0JSON = C3p0JsonMysql<MigrationData, DefaultJsonCodec>;
+    type C3P0 = MysqlC3p0Pool;
+    type C3P0JSON = MysqlC3p0Json<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,
         table: String,
         schema: Option<String>,
-    ) -> C3p0JsonMysql<MigrationData, DefaultJsonCodec> {
-        C3p0JsonBuilder::<C3p0PoolMysql>::new(table)
+    ) -> MysqlC3p0Json<MigrationData, DefaultJsonCodec> {
+        C3p0JsonBuilder::<MysqlC3p0Pool>::new(table)
             .with_schema_name(schema)
             .build()
     }
 
     fn lock_table(
         &self,
-        c3p0_json: &C3p0JsonMysql<MigrationData, DefaultJsonCodec>,
+        c3p0_json: &MysqlC3p0Json<MigrationData, DefaultJsonCodec>,
         conn: &MysqlConnection,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
@@ -54,7 +54,7 @@ impl Migrator for MysqlMigrator {
 
     fn lock_first_migration_row(
         &self,
-        c3p0_json: &C3p0JsonMysql<MigrationData, DefaultJsonCodec>,
+        c3p0_json: &MysqlC3p0Json<MigrationData, DefaultJsonCodec>,
         conn: &MysqlConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(

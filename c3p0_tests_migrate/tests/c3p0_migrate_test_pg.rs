@@ -10,7 +10,7 @@ mod tests;
 pub fn new_connection(
     docker: &clients::Cli,
 ) -> (
-    C3p0PoolPg,
+    PgC3p0Pool,
     Container<clients::Cli, images::postgres::Postgres>,
 ) {
     let node = docker.run(images::postgres::Postgres::default());
@@ -25,7 +25,7 @@ pub fn new_connection(
     .unwrap();
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0PoolPg::new(pool);
+    let pool = PgC3p0Pool::new(pool);
 
     (pool, node)
 }

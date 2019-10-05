@@ -7,23 +7,23 @@ use std::cell::RefCell;
 use std::ops::DerefMut;
 
 #[derive(Clone)]
-pub struct C3p0PoolMysql {
+pub struct MysqlC3p0Pool {
     pool: Pool<MysqlConnectionManager>,
 }
 
-impl C3p0PoolMysql {
+impl MysqlC3p0Pool {
     pub fn new(pool: Pool<MysqlConnectionManager>) -> Self {
-        C3p0PoolMysql { pool }
+        MysqlC3p0Pool { pool }
     }
 }
 
-impl Into<C3p0PoolMysql> for Pool<MysqlConnectionManager> {
-    fn into(self) -> C3p0PoolMysql {
-        C3p0PoolMysql::new(self)
+impl Into<MysqlC3p0Pool> for Pool<MysqlConnectionManager> {
+    fn into(self) -> MysqlC3p0Pool {
+        MysqlC3p0Pool::new(self)
     }
 }
 
-impl C3p0Pool for C3p0PoolMysql {
+impl C3p0Pool for MysqlC3p0Pool {
     type CONN = MysqlConnection;
 
     fn connection(&self) -> Result<MysqlConnection, C3p0Error> {

@@ -1,4 +1,4 @@
-use crate::pool::{C3p0PoolInMemory, InMemoryConnection};
+use crate::pool::{InMemoryC3p0Pool, InMemoryConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::{
@@ -7,17 +7,17 @@ use c3p0_common::json::{
 };
 use c3p0_common::DefaultJsonCodec;
 
-pub trait C3p0JsonBuilderInMemory {
+pub trait InMemoryC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0JsonInMemory<DATA>;
+    ) -> InMemoryC3p0Json<DATA>;
 }
 
-impl C3p0JsonBuilderInMemory for C3p0JsonBuilder<C3p0PoolInMemory> {
+impl InMemoryC3p0JsonBuilder for C3p0JsonBuilder<InMemoryC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0JsonInMemory<DATA> {
-        C3p0JsonInMemory {
+    ) -> InMemoryC3p0Json<DATA> {
+        InMemoryC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec: Default::default(),
         }
@@ -25,7 +25,7 @@ impl C3p0JsonBuilderInMemory for C3p0JsonBuilder<C3p0PoolInMemory> {
 }
 
 #[derive(Clone)]
-pub struct C3p0JsonInMemory<DATA>
+pub struct InMemoryC3p0Json<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -33,7 +33,7 @@ where
     codec: DefaultJsonCodec,
 }
 
-impl<DATA> C3p0Json<DATA, DefaultJsonCodec> for C3p0JsonInMemory<DATA>
+impl<DATA> C3p0Json<DATA, DefaultJsonCodec> for InMemoryC3p0Json<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

@@ -8,17 +8,17 @@ use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Default)]
-pub struct C3p0PoolInMemory {
+pub struct InMemoryC3p0Pool {
     db: Arc<Mutex<HashMap<String, HashMap<IdType, serde_json::Value>>>>,
 }
 
-impl C3p0PoolInMemory {
+impl InMemoryC3p0Pool {
     pub fn new() -> Self {
         Default::default()
     }
 }
 
-impl C3p0Pool for C3p0PoolInMemory {
+impl C3p0Pool for InMemoryC3p0Pool {
     type CONN = InMemoryConnection;
 
     fn connection(&self) -> Result<InMemoryConnection, C3p0Error> {
@@ -115,7 +115,7 @@ mod test {
 
     #[test]
     fn should_write_data_in_connection() -> Result<(), C3p0Error> {
-        let pool = C3p0PoolInMemory::new();
+        let pool = InMemoryC3p0Pool::new();
 
         {
             let conn = pool.connection()?;
@@ -152,7 +152,7 @@ mod test {
 
     #[test]
     fn should_commit_transaction() -> Result<(), C3p0Error> {
-        let pool = C3p0PoolInMemory::new();
+        let pool = InMemoryC3p0Pool::new();
 
         {
             let result: Result<(), C3p0Error> = pool.transaction(|tx| {
@@ -192,7 +192,7 @@ mod test {
 
     #[test]
     fn should_rollback_transaction() -> Result<(), C3p0Error> {
-        let pool = C3p0PoolInMemory::new();
+        let pool = InMemoryC3p0Pool::new();
 
         {
             let result: Result<(), C3p0Error> = pool.transaction(|tx| {

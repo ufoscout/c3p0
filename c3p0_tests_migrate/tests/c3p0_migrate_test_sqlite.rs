@@ -7,12 +7,12 @@ use testcontainers::*;
 
 mod tests;
 
-pub fn new_connection(_docker: &clients::Cli) -> (C3p0PoolSqlite, String) {
+pub fn new_connection(_docker: &clients::Cli) -> (SqliteC3p0Pool, String) {
     let manager = SqliteConnectionManager::memory();
 
     let pool = Pool::builder().build(manager).unwrap();
 
-    let pool = C3p0PoolSqlite::new(pool);
+    let pool = SqliteC3p0Pool::new(pool);
 
     (pool, "".to_owned())
 }

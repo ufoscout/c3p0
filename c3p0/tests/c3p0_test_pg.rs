@@ -10,7 +10,7 @@ use testcontainers::*;
 
 pub use c3p0::pg::driver::rows::Row;
 
-pub type C3p0Impl = C3p0PoolPg;
+pub type C3p0Impl = PgC3p0Pool;
 
 mod tests;
 
@@ -44,7 +44,7 @@ fn init() -> (
     .unwrap();
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0PoolPg::new(pool);
+    let pool = PgC3p0Pool::new(pool);
 
     (pool, node)
 }

@@ -8,7 +8,7 @@ use maybe_single::MaybeSingle;
 use serde_derive::{Deserialize, Serialize};
 
 pub use c3p0::sqlite::driver::Row;
-pub type C3p0Impl = C3p0PoolSqlite;
+pub type C3p0Impl = SqliteC3p0Pool;
 
 mod tests;
 
@@ -27,7 +27,7 @@ fn init() -> (C3p0Impl, String) {
 
     let pool = Pool::builder().build(manager).unwrap();
 
-    let pool = C3p0PoolSqlite::new(pool);
+    let pool = SqliteC3p0Pool::new(pool);
 
     (pool, "".to_owned())
 }

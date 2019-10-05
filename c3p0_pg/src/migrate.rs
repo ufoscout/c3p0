@@ -1,5 +1,5 @@
-use crate::json::{C3p0JsonBuilderPg, C3p0JsonPg};
-use crate::pool::{C3p0PoolPg, PgConnection};
+use crate::json::{PgC3p0JsonBuilder, PgC3p0Json};
+use crate::pool::{PgC3p0Pool, PgConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
@@ -7,12 +7,12 @@ use c3p0_common::pool::SqlConnection;
 
 use c3p0_common::migrate::*;
 
-pub trait C3p0MigrateBuilderPg {
-    fn build(self) -> C3p0Migrate<PgConnection, C3p0PoolPg, PgMigrator>;
+pub trait PgC3p0MigrateBuilder {
+    fn build(self) -> C3p0Migrate<PgConnection, PgC3p0Pool, PgMigrator>;
 }
 
-impl C3p0MigrateBuilderPg for C3p0MigrateBuilder<PgConnection, C3p0PoolPg> {
-    fn build(self) -> C3p0Migrate<PgConnection, C3p0PoolPg, PgMigrator> {
+impl PgC3p0MigrateBuilder for C3p0MigrateBuilder<PgConnection, PgC3p0Pool> {
+    fn build(self) -> C3p0Migrate<PgConnection, PgC3p0Pool, PgMigrator> {
         C3p0Migrate::new(
             self.table,
             self.schema,
@@ -28,22 +28,22 @@ pub struct PgMigrator {}
 
 impl Migrator for PgMigrator {
     type CONN = PgConnection;
-    type C3P0 = C3p0PoolPg;
-    type C3P0JSON = C3p0JsonPg<MigrationData, DefaultJsonCodec>;
+    type C3P0 = PgC3p0Pool;
+    type C3P0JSON = PgC3p0Json<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,
         table: String,
         schema: Option<String>,
-    ) -> C3p0JsonPg<MigrationData, DefaultJsonCodec> {
-        C3p0JsonBuilder::<C3p0PoolPg>::new(table)
+    ) -> PgC3p0Json<MigrationData, DefaultJsonCodec> {
+        C3p0JsonBuilder::<PgC3p0Pool>::new(table)
             .with_schema_name(schema)
             .build()
     }
 
     fn lock_table(
         &self,
-        c3p0_json: &C3p0JsonPg<MigrationData, DefaultJsonCodec>,
+        c3p0_json: &PgC3p0Json<MigrationData, DefaultJsonCodec>,
         conn: &PgConnection,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
@@ -54,7 +54,7 @@ impl Migrator for PgMigrator {
 
     fn lock_first_migration_row(
         &self,
-        c3p0_json: &C3p0JsonPg<MigrationData, DefaultJsonCodec>,
+        c3p0_json: &PgC3p0Json<MigrationData, DefaultJsonCodec>,
         conn: &PgConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(

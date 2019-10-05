@@ -7,23 +7,23 @@ use std::cell::RefCell;
 use c3p0_common::*;
 
 #[derive(Clone)]
-pub struct C3p0PoolSqlite {
+pub struct SqliteC3p0Pool {
     pool: Pool<SqliteConnectionManager>,
 }
 
-impl C3p0PoolSqlite {
+impl SqliteC3p0Pool {
     pub fn new(pool: Pool<SqliteConnectionManager>) -> Self {
-        C3p0PoolSqlite { pool }
+        SqliteC3p0Pool { pool }
     }
 }
 
-impl Into<C3p0PoolSqlite> for Pool<SqliteConnectionManager> {
-    fn into(self) -> C3p0PoolSqlite {
-        C3p0PoolSqlite::new(self)
+impl Into<SqliteC3p0Pool> for Pool<SqliteConnectionManager> {
+    fn into(self) -> SqliteC3p0Pool {
+        SqliteC3p0Pool::new(self)
     }
 }
 
-impl C3p0Pool for C3p0PoolSqlite {
+impl C3p0Pool for SqliteC3p0Pool {
     type CONN = SqliteConnection;
 
     fn connection(&self) -> Result<SqliteConnection, C3p0Error> {

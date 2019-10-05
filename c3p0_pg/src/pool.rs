@@ -6,23 +6,23 @@ use crate::pg::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
 use c3p0_common::*;
 
 #[derive(Clone)]
-pub struct C3p0PoolPg {
+pub struct PgC3p0Pool {
     pool: Pool<PostgresConnectionManager>,
 }
 
-impl C3p0PoolPg {
+impl PgC3p0Pool {
     pub fn new(pool: Pool<PostgresConnectionManager>) -> Self {
-        C3p0PoolPg { pool }
+        PgC3p0Pool { pool }
     }
 }
 
-impl Into<C3p0PoolPg> for Pool<PostgresConnectionManager> {
-    fn into(self) -> C3p0PoolPg {
-        C3p0PoolPg::new(self)
+impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager> {
+    fn into(self) -> PgC3p0Pool {
+        PgC3p0Pool::new(self)
     }
 }
 
-impl C3p0Pool for C3p0PoolPg {
+impl C3p0Pool for PgC3p0Pool {
     type CONN = PgConnection;
 
     fn connection(&self) -> Result<PgConnection, C3p0Error> {

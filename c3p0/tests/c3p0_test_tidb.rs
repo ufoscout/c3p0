@@ -11,7 +11,7 @@ use testcontainers::*;
 
 pub use c3p0::mysql::driver::Row;
 
-pub type C3p0Impl = C3p0PoolMysql;
+pub type C3p0Impl = MysqlC3p0Pool;
 
 mod tests;
 
@@ -52,7 +52,7 @@ fn init() -> (
 
     let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
 
-    let pool = C3p0PoolMysql::new(pool);
+    let pool = MysqlC3p0Pool::new(pool);
 
     (pool, node)
 }

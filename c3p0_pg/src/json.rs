@@ -3,7 +3,7 @@ use crate::pg::driver::{
     rows::Row,
     types::{FromSql, ToSql},
 };
-use crate::pool::{C3p0PoolPg, PgConnection};
+use crate::pool::{PgC3p0Pool, PgConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
@@ -13,23 +13,23 @@ use c3p0_common::json::{
     C3p0Json, Queries,
 };
 
-pub trait C3p0JsonBuilderPg {
+pub trait PgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0JsonPg<DATA, DefaultJsonCodec>;
+    ) -> PgC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> C3p0JsonPg<DATA, CODEC>;
+    ) -> PgC3p0Json<DATA, CODEC>;
 }
 
-impl C3p0JsonBuilderPg for C3p0JsonBuilder<C3p0PoolPg> {
+impl PgC3p0JsonBuilder for C3p0JsonBuilder<PgC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0JsonPg<DATA, DefaultJsonCodec> {
+    ) -> PgC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -39,13 +39,13 @@ impl C3p0JsonBuilderPg for C3p0JsonBuilder<C3p0PoolPg> {
     >(
         self,
         codec: CODEC,
-    ) -> C3p0JsonPg<DATA, CODEC> {
+    ) -> PgC3p0Json<DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        C3p0JsonPg {
+        PgC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: Queries {
@@ -136,7 +136,7 @@ impl C3p0JsonBuilderPg for C3p0JsonBuilder<C3p0PoolPg> {
 }
 
 #[derive(Clone)]
-pub struct C3p0JsonPg<DATA, CODEC: JsonCodec<DATA>>
+pub struct PgC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -146,7 +146,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonPg<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -191,7 +191,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0JsonPg<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for PgC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {

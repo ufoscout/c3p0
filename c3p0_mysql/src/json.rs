@@ -1,6 +1,6 @@
 use crate::mysql::driver::prelude::{FromValue, ToValue};
 use crate::mysql::driver::Row;
-use crate::mysql::{C3p0PoolMysql, MysqlConnection};
+use crate::mysql::{MysqlC3p0Pool, MysqlConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
@@ -10,23 +10,23 @@ use c3p0_common::json::{
     C3p0Json, Queries,
 };
 
-pub trait C3p0JsonBuilderMysql {
+pub trait MysqlC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0JsonMysql<DATA, DefaultJsonCodec>;
+    ) -> MysqlC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> C3p0JsonMysql<DATA, CODEC>;
+    ) -> MysqlC3p0Json<DATA, CODEC>;
 }
 
-impl C3p0JsonBuilderMysql for C3p0JsonBuilder<C3p0PoolMysql> {
+impl MysqlC3p0JsonBuilder for C3p0JsonBuilder<MysqlC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
-    ) -> C3p0JsonMysql<DATA, DefaultJsonCodec> {
+    ) -> MysqlC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -36,13 +36,13 @@ impl C3p0JsonBuilderMysql for C3p0JsonBuilder<C3p0PoolMysql> {
     >(
         self,
         codec: CODEC,
-    ) -> C3p0JsonMysql<DATA, CODEC> {
+    ) -> MysqlC3p0Json<DATA, CODEC> {
         let qualified_table_name = match &self.schema_name {
             Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
             None => self.table_name.clone(),
         };
 
-        C3p0JsonMysql {
+        MysqlC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: Queries {
@@ -127,7 +127,7 @@ impl C3p0JsonBuilderMysql for C3p0JsonBuilder<C3p0PoolMysql> {
 }
 
 #[derive(Clone)]
-pub struct C3p0JsonMysql<DATA, CODEC: JsonCodec<DATA>>
+pub struct MysqlC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -137,7 +137,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonMysql<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> MysqlC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
@@ -182,7 +182,7 @@ where
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for C3p0JsonMysql<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for MysqlC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
