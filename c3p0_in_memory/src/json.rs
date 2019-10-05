@@ -91,16 +91,17 @@ where
         Ok(0)
     }
 
-    fn save(
+    fn save<M: Into<NewModel<DATA>>>(
         &self,
         _conn: &InMemoryConnection,
-        obj: NewModel<DATA>,
+        obj: M,
     ) -> Result<Model<DATA>, C3p0Error> {
         let id = 0;
+        let new_model = obj.into();
         Ok(Model {
             id,
-            version: obj.version,
-            data: obj.data,
+            version: new_model.version,
+            data: new_model.data,
         })
     }
 
@@ -115,4 +116,58 @@ where
             data: obj.data,
         })
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use c3p0_common::{C3p0Error, C3p0JsonBuilder, C3p0Pool};
+    use crate::pool::InMemoryC3p0Pool;
+    use serde_derive::{Deserialize, Serialize};
+
+    #[derive(Clone, Serialize, Deserialize)]
+    struct TestData {
+        value: String
+    }
+
+    impl TestData{
+        fn new(value: &str) -> Self {
+            Self{
+                value: value.to_string()
+            }
+        }
+    }
+
+    #[test]
+    fn should_save_new_model() -> Result<(), C3p0Error> {
+        // Arrange
+        let pool = InMemoryC3p0Pool::new();
+        let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
+
+        // Act
+        let saved_model_1 = c3p0.save(&pool.connection()?, TestData::new("value1"))?;
+        let fetched_model_1 = c3p0.fetch_one_by_id(&pool.connection()?, &saved_model_1)?;
+
+        let saved_model_2 = c3p0.save(&pool.connection()?, TestData::new("value2"))?;
+        let fetched_model_2 = c3p0.fetch_one_by_id(&pool.connection()?, &saved_model_2.id)?;
+
+        // Assert
+        assert!( saved_model_2.id > saved_model_1.id );
+
+        assert_eq!( saved_model_1.data.value, "value1" );
+        let fetched_model_1 = fetched_model_1.unwrap();
+        assert_eq!( saved_model_1.id, fetched_model_1.id );
+        assert_eq!( saved_model_1.version, fetched_model_1.version );
+        assert_eq!( saved_model_1.data.value, fetched_model_1.data.value );
+
+        assert_eq!( saved_model_2.data.value, "value2" );
+        let fetched_model_2 = fetched_model_2.unwrap();
+        assert_eq!( saved_model_2.id, fetched_model_2.id );
+        assert_eq!( saved_model_2.version, fetched_model_2.version );
+        assert_eq!( saved_model_2.data.value, fetched_model_2.data.value );
+
+        Ok(())
+    }
+
+
 }
