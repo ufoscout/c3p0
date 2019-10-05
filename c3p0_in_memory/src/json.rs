@@ -48,18 +48,34 @@ where
     fn get_table<'a>(
         &self,
         qualified_table_name: &str,
-        db: &'a HashMap<String, BTreeMap<IdType, Value>>,
-    ) -> Option<&'a BTreeMap<IdType, Value>> {
+        db: &'a HashMap<String, BTreeMap<IdType, Model<Value>>>,
+    ) -> Option<&'a BTreeMap<IdType, Model<Value>>> {
         db.get(qualified_table_name)
     }
 
     fn get_or_create_table<'a>(
         &self,
         qualified_table_name: &str,
-        db: &'a mut HashMap<String, BTreeMap<IdType, Value>>,
-    ) -> &'a mut BTreeMap<IdType, Value> {
+        db: &'a mut HashMap<String, BTreeMap<IdType, Model<Value>>>,
+    ) -> &'a mut BTreeMap<IdType, Model<Value>> {
         db.entry(qualified_table_name.to_owned())
             .or_insert_with(|| BTreeMap::new())
+    }
+
+    fn to_value_model(&self, model: &Model<DATA>) -> Result<Model<Value>, C3p0Error> {
+        Ok(Model {
+            id: model.id,
+            version: model.version,
+            data: serde_json::to_value(&model.data)?,
+        })
+    }
+
+    fn to_data_model(&self, model: &Model<Value>) -> Result<Model<DATA>, C3p0Error> {
+        Ok(Model {
+            id: model.id,
+            version: model.version,
+            data: serde_json::from_value(model.data.clone())?,
+        })
     }
 }
 
@@ -116,7 +132,7 @@ where
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
                 table
                     .values()
-                    .map(|value| Ok(serde_json::from_value(value.clone())?))
+                    .map(|value| self.to_data_model(value))
                     .collect::<Result<Vec<_>, _>>()
             } else {
                 Ok(vec![])
@@ -132,7 +148,7 @@ where
         conn.read_db(|db| {
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
                 if let Some(value) = table.get(id.into()) {
-                    return Ok(serde_json::from_value(value.clone())?);
+                    return Ok(Some(self.to_data_model(value)?));
                 }
             }
             Ok(None)
@@ -146,8 +162,7 @@ where
             let mut good_version = false;
 
             if let Some(value) = table.get(&obj.id) {
-                let current_model: Model<DATA> = serde_json::from_value(value.clone())?;
-                good_version = current_model.version == obj.version;
+                good_version = value.version == obj.version;
             };
 
             if good_version {
@@ -198,7 +213,7 @@ where
                 version: obj.version,
                 data: obj.data,
             };
-            table.insert(id, serde_json::to_value(&model)?);
+            table.insert(id, self.to_value_model(&model)?);
             Ok(model)
         })
     }
@@ -214,8 +229,7 @@ where
             let mut good_version = false;
 
             if let Some(value) = table.get(&obj.id) {
-                let current_model: Model<DATA> = serde_json::from_value(value.clone())?;
-                good_version = current_model.version == obj.version;
+                good_version = value.version == obj.version;
             };
 
             if good_version {
@@ -224,7 +238,7 @@ where
                     version: obj.version + 1,
                     data: obj.data,
                 };
-                table.insert(updated_model.id, serde_json::to_value(&updated_model)?);
+                table.insert(updated_model.id, self.to_value_model(&updated_model)?);
                 return Ok(updated_model);
             }
 
