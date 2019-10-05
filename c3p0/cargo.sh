@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 declare -a features=(
+    "in_memory"
     "pg"
     "sqlite"
     "mysql"
@@ -14,7 +15,7 @@ do
     LINE_SEPARATOR='--------------------------------------------------------'
 
     echo $LINE_SEPARATOR
-    echo 'Run Cargo with args [' $@ '] and features [' $i ']'
+    echo 'C3p0 - Run Cargo with args [' $@ '] and features [' $i ']'
     echo $LINE_SEPARATOR
 
     cargo $@ --features $i

@@ -1,4 +1,4 @@
-use crate::json::{MysqlC3p0JsonBuilder, MysqlC3p0Json};
+use crate::json::{MysqlC3p0Json, MysqlC3p0JsonBuilder};
 use crate::mysql::{MysqlC3p0Pool, MysqlConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;

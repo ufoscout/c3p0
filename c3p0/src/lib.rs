@@ -1,3 +1,6 @@
+#[cfg(feature = "in_memory")]
+pub use c3p0_in_memory::*;
+
 #[cfg(feature = "mysql")]
 pub use c3p0_mysql::*;
 

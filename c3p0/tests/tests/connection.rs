@@ -1,4 +1,4 @@
-use crate::tests::util::rand_string;
+use crate::utils::*;
 use crate::*;
 
 #[test]

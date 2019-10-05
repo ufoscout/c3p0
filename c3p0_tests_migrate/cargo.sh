@@ -11,7 +11,7 @@ do
     LINE_SEPARATOR='--------------------------------------------------------'
 
     echo $LINE_SEPARATOR
-    echo 'Run Cargo with args [' $@ '] and features [' $i ']'
+    echo 'C3p0_tests_migrate - Run Cargo with args [' $@ '] and features [' $i ']'
     echo $LINE_SEPARATOR
 
     cargo $@ --features $i

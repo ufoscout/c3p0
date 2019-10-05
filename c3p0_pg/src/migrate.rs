@@ -1,4 +1,4 @@
-use crate::json::{PgC3p0JsonBuilder, PgC3p0Json};
+use crate::json::{PgC3p0Json, PgC3p0JsonBuilder};
 use crate::pool::{PgC3p0Pool, PgConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;

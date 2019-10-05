@@ -6,7 +6,6 @@ use c3p0::mysql::*;
 use c3p0::*;
 use lazy_static::lazy_static;
 use maybe_single::MaybeSingle;
-use serde_derive::{Deserialize, Serialize};
 use testcontainers::*;
 
 pub use c3p0::mysql::driver::Row;
@@ -14,12 +13,8 @@ pub use c3p0::mysql::driver::Row;
 pub type C3p0Impl = MysqlC3p0Pool;
 
 mod tests;
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub struct TestData {
-    pub first_name: String,
-    pub last_name: String,
-}
+mod tests_json;
+pub mod utils;
 
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();

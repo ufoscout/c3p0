@@ -281,7 +281,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
 pub trait Migrator: Clone {
     type CONN: SqlConnection;
     type C3P0: C3p0Pool<CONN = Self::CONN>;
-    type C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN= Self::CONN>;
+    type C3P0JSON: C3p0Json<MigrationData, DefaultJsonCodec, CONN = Self::CONN>;
 
     fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0JSON;
 

@@ -1,4 +1,4 @@
-use crate::json::{SqliteC3p0JsonBuilder, SqliteC3p0Json};
+use crate::json::{SqliteC3p0Json, SqliteC3p0JsonBuilder};
 use crate::sqlite::{SqliteC3p0Pool, SqliteConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
