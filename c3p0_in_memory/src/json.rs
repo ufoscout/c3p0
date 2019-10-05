@@ -140,7 +140,26 @@ where
     }
 
     fn delete(&self, conn: &InMemoryConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
-        Ok(0)
+        conn.write_db(|db| {
+            let table = self.get_or_create_table(&self.qualified_table_name, db);
+
+            let mut good_version = false;
+
+            if let Some(value) = table.get(&obj.id) {
+                let current_model: Model<DATA> = serde_json::from_value(value.clone())?;
+                good_version = current_model.version == obj.version;
+            };
+
+            if good_version {
+                table.remove(&obj.id);
+                return Ok(1);
+            }
+
+            Err(C3p0Error::OptimisticLockError{ message: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
+                                                                 &self.qualified_table_name, &obj.id, &obj.version
+            )})
+
+        })
     }
 
     fn delete_all(&self, conn: &InMemoryConnection) -> Result<u64, C3p0Error> {
