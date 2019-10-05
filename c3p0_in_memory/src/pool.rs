@@ -1,13 +1,15 @@
-use c3p0_common::*;
 use c3p0_common::json::model::IdType;
-use std::sync::{Arc, Mutex};
-use std::ops::{Deref};
-use chashmap::CHashMap;
+use c3p0_common::*;
 use guardian::ArcMutexGuardian;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::ops::Deref;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Default)]
 pub struct C3p0PoolInMemory {
-    db: Arc<Mutex<CHashMap<String, CHashMap<IdType, serde_json::Value>>>>
+    db: Arc<Mutex<HashMap<String, HashMap<IdType, serde_json::Value>>>>,
 }
 
 impl C3p0PoolInMemory {
@@ -27,55 +29,91 @@ impl C3p0Pool for C3p0PoolInMemory {
         &self,
         tx: F,
     ) -> Result<T, E> {
-
         let db_clone = {
-            let guard = self.db.lock().map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?;
+            let guard = self.db.lock().map_err(|err| C3p0Error::InternalError {
+                cause: format!("{}", err),
+            })?;
             guard.deref().clone()
         };
 
-        let locked_hashmap = ArcMutexGuardian::take(self.db.clone()).map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?;
+        let locked_hashmap =
+            RefCell::new(ArcMutexGuardian::take(self.db.clone()).map_err(|err| {
+                C3p0Error::InternalError {
+                    cause: format!("{}", err),
+                }
+            })?);
 
         let conn = InMemoryConnection::Tx(locked_hashmap);
 
         (tx)(&conn).map_err(|err| {
             match conn {
-                InMemoryConnection::Tx(mut locked) => {
-                    *locked = db_clone;
-                },
-                _ => panic!("InMemoryTransaction must be Tx")
+                InMemoryConnection::Tx(locked) => {
+                    let mut borrowed_lock = locked.borrow_mut();
+                    **borrowed_lock.deref_mut() = db_clone;
+                }
+                _ => panic!("InMemoryTransaction must be Tx"),
             };
             err
         })
     }
 }
 
-pub enum  InMemoryConnection {
-    Conn(Arc<Mutex<CHashMap<String, CHashMap<IdType, serde_json::Value>>>>),
-    Tx(ArcMutexGuardian<CHashMap<String, CHashMap<IdType, serde_json::Value>>>),
+pub enum InMemoryConnection {
+    Conn(Arc<Mutex<HashMap<String, HashMap<IdType, serde_json::Value>>>>),
+    Tx(RefCell<ArcMutexGuardian<HashMap<String, HashMap<IdType, serde_json::Value>>>>),
 }
 
 impl InMemoryConnection {
-
-    pub fn get_db<T, E: From<C3p0Error>, F: FnOnce(&CHashMap<String, CHashMap<IdType, serde_json::Value>>) -> Result<T, E>>
-        (&self, tx: F) -> Result<T, E> {
-
+    pub fn read_db<
+        T,
+        E: From<C3p0Error>,
+        F: FnOnce(&HashMap<String, HashMap<IdType, serde_json::Value>>) -> Result<T, E>,
+    >(
+        &self,
+        tx: F,
+    ) -> Result<T, E> {
         match self {
             InMemoryConnection::Conn(db) => {
-                let guard = db.lock().map_err(|err| C3p0Error::InternalError {cause: format!("{}", err)})?;
+                let guard = db.lock().map_err(|err| C3p0Error::InternalError {
+                    cause: format!("{}", err),
+                })?;
                 (tx)(&guard)
-            },
+            }
             InMemoryConnection::Tx(locked) => {
-                (tx)(&locked)
+                let borrowed_lock = locked.borrow();
+                (tx)(borrowed_lock.deref())
             }
         }
-
     }
 
+    pub fn write_db<
+        T,
+        E: From<C3p0Error>,
+        F: FnOnce(&mut HashMap<String, HashMap<IdType, serde_json::Value>>) -> Result<T, E>,
+    >(
+        &self,
+        tx: F,
+    ) -> Result<T, E> {
+        match self {
+            InMemoryConnection::Conn(db) => {
+                let mut guard = db.lock().map_err(|err| C3p0Error::InternalError {
+                    cause: format!("{}", err),
+                })?;
+                (tx)(&mut guard)
+            }
+            InMemoryConnection::Tx(locked) => {
+                let mut borrowed_lock = locked.borrow_mut();
+                (tx)(borrowed_lock.deref_mut())
+            }
+        }
+    }
 }
 
 impl Connection for InMemoryConnection {
     fn batch_execute(&self, _sql: &str) -> Result<(), C3p0Error> {
-        Err(C3p0Error::InternalError{cause: "batch_execute is not implemented for InMemoryConnection".to_string()})
+        Err(C3p0Error::InternalError {
+            cause: "batch_execute is not implemented for InMemoryConnection".to_string(),
+        })
     }
 }
 
@@ -89,7 +127,7 @@ mod test {
 
         {
             let conn = pool.connection()?;
-            let result: Result<(), C3p0Error> = conn.get_db(|db| {
+            let result: Result<(), C3p0Error> = conn.write_db(|db| {
                 db.insert("one".to_string(), Default::default());
                 Ok(())
             });
@@ -98,7 +136,7 @@ mod test {
 
         {
             let conn = pool.connection()?;
-            let result: Result<(), C3p0Error> = conn.get_db(|db| {
+            let result: Result<(), C3p0Error> = conn.write_db(|db| {
                 assert!(db.contains_key("one"));
                 db.insert("two".to_string(), Default::default());
                 db.remove("one");
@@ -109,7 +147,7 @@ mod test {
 
         {
             let conn = pool.connection()?;
-            let result: Result<(), C3p0Error> = conn.get_db(|db| {
+            let result: Result<(), C3p0Error> = conn.read_db(|db| {
                 assert!(!db.contains_key("one"));
                 assert!(db.contains_key("two"));
                 Ok(())
@@ -126,7 +164,7 @@ mod test {
 
         {
             let result: Result<(), C3p0Error> = pool.transaction(|tx| {
-                tx.get_db(|db| {
+                tx.write_db(|db| {
                     db.insert("one".to_string(), Default::default());
                     Ok(())
                 })
@@ -136,25 +174,23 @@ mod test {
 
         {
             let result: Result<(), C3p0Error> = pool.transaction(|tx| {
-                tx.get_db(|db| {
+                tx.write_db(|db| {
                     assert!(db.contains_key("one"));
                     db.insert("two".to_string(), Default::default());
                     db.remove("one");
                     Ok(())
                 })
-
             });
             assert!(result.is_ok())
         }
 
         {
             let result: Result<(), C3p0Error> = pool.transaction(|tx| {
-                tx.get_db(|db| {
+                tx.read_db(|db| {
                     assert!(!db.contains_key("one"));
                     assert!(db.contains_key("two"));
                     Ok(())
                 })
-
             });
             assert!(result.is_ok())
         }
@@ -168,7 +204,7 @@ mod test {
 
         {
             let result: Result<(), C3p0Error> = pool.transaction(|tx| {
-                tx.get_db(|db| {
+                tx.write_db(|db| {
                     db.insert("one".to_string(), Default::default());
                     Ok(())
                 })
@@ -178,28 +214,30 @@ mod test {
 
         {
             let result: Result<(), C3p0Error> = pool.transaction(|tx| {
-                tx.get_db(|db| {
+                tx.write_db(|db| {
                     assert!(db.contains_key("one"));
                     db.insert("two".to_string(), Default::default());
                     db.remove("one");
-                    Err(C3p0Error::InternalError {cause: "test error on purpose".to_string() })
+                    Err(C3p0Error::InternalError {
+                        cause: "test error on purpose".to_string(),
+                    })
                 })
-
             });
             match result {
-                Err(C3p0Error::InternalError {cause}) => assert_eq!("test error on purpose", cause),
-                _ => assert!(false)
+                Err(C3p0Error::InternalError { cause }) => {
+                    assert_eq!("test error on purpose", cause)
+                }
+                _ => assert!(false),
             }
         }
 
         {
             let result: Result<(), C3p0Error> = pool.transaction(|tx| {
-                tx.get_db(|db| {
+                tx.read_db(|db| {
                     assert!(db.contains_key("one"));
                     assert!(!db.contains_key("two"));
                     Ok(())
                 })
-
             });
             assert!(result.is_ok())
         }

@@ -8,24 +8,19 @@ use c3p0_common::json::{
 use c3p0_common::DefaultJsonCodec;
 
 pub trait C3p0JsonBuilderInMemory {
-
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
     ) -> C3p0JsonInMemory<DATA>;
-
 }
 
 impl C3p0JsonBuilderInMemory for C3p0JsonBuilder<C3p0PoolInMemory> {
-
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
         self,
     ) -> C3p0JsonInMemory<DATA> {
-
         C3p0JsonInMemory {
             phantom_data: std::marker::PhantomData,
             codec: Default::default(),
         }
-
     }
 }
 
@@ -96,7 +91,11 @@ where
         Ok(0)
     }
 
-    fn save(&self, _conn: &InMemoryConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(
+        &self,
+        _conn: &InMemoryConnection,
+        obj: NewModel<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         let id = 0;
         Ok(Model {
             id,
@@ -105,7 +104,11 @@ where
         })
     }
 
-    fn update(&self, _conn: &InMemoryConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(
+        &self,
+        _conn: &InMemoryConnection,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         Ok(Model {
             id: obj.id,
             version: obj.version + 1,
