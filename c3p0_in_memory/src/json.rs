@@ -6,8 +6,8 @@ use c3p0_common::json::{
     C3p0Json,
 };
 use c3p0_common::DefaultJsonCodec;
-use std::collections::{HashMap, BTreeMap};
 use serde_json::Value;
+use std::collections::{BTreeMap, HashMap};
 
 pub trait InMemoryC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
@@ -42,18 +42,25 @@ where
 }
 
 impl<DATA> InMemoryC3p0Json<DATA>
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-
-    fn get_table<'a>(&self, qualified_table_name: &str, db: &'a HashMap<String, BTreeMap<IdType, Value>>) -> Option<&'a BTreeMap<IdType, Value>> {
+    fn get_table<'a>(
+        &self,
+        qualified_table_name: &str,
+        db: &'a HashMap<String, BTreeMap<IdType, Value>>,
+    ) -> Option<&'a BTreeMap<IdType, Value>> {
         db.get(qualified_table_name)
     }
 
-    fn get_or_create_table<'a>(&self, qualified_table_name: &str, db: &'a mut HashMap<String, BTreeMap<IdType, Value>>) -> &'a mut BTreeMap<IdType, Value> {
-        db.entry(qualified_table_name.to_owned()).or_insert_with(|| BTreeMap::new())
+    fn get_or_create_table<'a>(
+        &self,
+        qualified_table_name: &str,
+        db: &'a mut HashMap<String, BTreeMap<IdType, Value>>,
+    ) -> &'a mut BTreeMap<IdType, Value> {
+        db.entry(qualified_table_name.to_owned())
+            .or_insert_with(|| BTreeMap::new())
     }
-
 }
 
 impl<DATA> C3p0Json<DATA, DefaultJsonCodec> for InMemoryC3p0Json<DATA>
@@ -83,7 +90,7 @@ where
     fn count_all(&self, conn: &InMemoryConnection) -> Result<i64, C3p0Error> {
         conn.read_db(|db| {
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
-               Ok(table.len() as IdType)
+                Ok(table.len() as IdType)
             } else {
                 Ok(0)
             }
@@ -107,7 +114,10 @@ where
     fn fetch_all(&self, conn: &InMemoryConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.read_db(|db| {
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
-                table.values().map(|value| Ok(serde_json::from_value(value.clone())?)).collect::<Result<Vec<_>, _>>()
+                table
+                    .values()
+                    .map(|value| Ok(serde_json::from_value(value.clone())?))
+                    .collect::<Result<Vec<_>, _>>()
             } else {
                 Ok(vec![])
             }
@@ -122,7 +132,7 @@ where
         conn.read_db(|db| {
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
                 if let Some(value) = table.get(id.into()) {
-                    return Ok(serde_json::from_value(value.clone())?)
+                    return Ok(serde_json::from_value(value.clone())?);
                 }
             }
             Ok(None)
@@ -147,15 +157,13 @@ where
         conn: &InMemoryConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
-
         conn.write_db(|db| {
             let table = self.get_or_create_table(&self.qualified_table_name, db);
             match table.remove(id.into()) {
                 Some(_) => Ok(1),
-                None => Ok(0)
+                None => Ok(0),
             }
         })
-
     }
 
     fn save(
@@ -163,7 +171,6 @@ where
         conn: &InMemoryConnection,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-
         conn.write_db(|db| {
             let table = self.get_or_create_table(&self.qualified_table_name, db);
             let id = table.len() as IdType;
@@ -175,7 +182,6 @@ where
             table.insert(id, serde_json::to_value(&model)?);
             Ok(model)
         })
-
     }
 
     fn update(
@@ -183,10 +189,30 @@ where
         conn: &InMemoryConnection,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        Ok(Model {
-            id: obj.id,
-            version: obj.version + 1,
-            data: obj.data,
+        conn.write_db(|db| {
+            let table = self.get_or_create_table(&self.qualified_table_name, db);
+
+            let mut good_version = false;
+
+            if let Some(value) = table.get(&obj.id) {
+                let current_model: Model<DATA> = serde_json::from_value(value.clone())?;
+                good_version = current_model.version == obj.version;
+            };
+
+            if good_version {
+                let updated_model = Model {
+                    id: obj.id,
+                    version: obj.version + 1,
+                    data: obj.data,
+                };
+                table.insert(updated_model.id, serde_json::to_value(&updated_model)?);
+                return Ok(updated_model);
+            }
+
+            Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                                                                        &self.qualified_table_name, &obj.id, &obj.version
+            )})
+
         })
     }
 }
@@ -194,19 +220,19 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use c3p0_common::{C3p0Error, C3p0JsonBuilder, C3p0Pool};
     use crate::pool::InMemoryC3p0Pool;
+    use c3p0_common::{C3p0Error, C3p0JsonBuilder, C3p0Pool};
     use serde_derive::{Deserialize, Serialize};
 
     #[derive(Clone, Serialize, Deserialize)]
     struct TestData {
-        value: String
+        value: String,
     }
 
-    impl TestData{
+    impl TestData {
         fn new(value: &str) -> Self {
-            Self{
-                value: value.to_string()
+            Self {
+                value: value.to_string(),
             }
         }
     }
@@ -227,23 +253,23 @@ mod test {
         let exist_model_2 = c3p0.exists_by_id(&pool.connection()?, &saved_model_2)?;
 
         // Assert
-        assert!( saved_model_2.id > saved_model_1.id );
+        assert!(saved_model_2.id > saved_model_1.id);
 
         assert!(exist_model_1);
-        assert_eq!( saved_model_1.data.value, "value1" );
+        assert_eq!(saved_model_1.data.value, "value1");
 
         let fetched_model_1 = fetched_model_1.unwrap();
-        assert_eq!( saved_model_1.id, fetched_model_1.id );
-        assert_eq!( saved_model_1.version, fetched_model_1.version );
-        assert_eq!( saved_model_1.data.value, fetched_model_1.data.value );
+        assert_eq!(saved_model_1.id, fetched_model_1.id);
+        assert_eq!(saved_model_1.version, fetched_model_1.version);
+        assert_eq!(saved_model_1.data.value, fetched_model_1.data.value);
 
-        assert_eq!( saved_model_2.data.value, "value2" );
+        assert_eq!(saved_model_2.data.value, "value2");
         assert!(exist_model_2);
 
         let fetched_model_2 = fetched_model_2.unwrap();
-        assert_eq!( saved_model_2.id, fetched_model_2.id );
-        assert_eq!( saved_model_2.version, fetched_model_2.version );
-        assert_eq!( saved_model_2.data.value, fetched_model_2.data.value );
+        assert_eq!(saved_model_2.id, fetched_model_2.id);
+        assert_eq!(saved_model_2.version, fetched_model_2.version);
+        assert_eq!(saved_model_2.data.value, fetched_model_2.data.value);
 
         Ok(())
     }
@@ -373,34 +399,94 @@ mod test {
         let all = c3p0.fetch_all(&pool.connection()?)?;
 
         // Assert
-        assert_eq!( 3, all.len() );
+        assert_eq!(3, all.len());
 
         let fetched_model_0 = all.get(0).unwrap();
-        assert_eq!( saved_model_0.id, fetched_model_0.id );
-        assert_eq!( saved_model_0.version, fetched_model_0.version );
-        assert_eq!( saved_model_0.data.value, fetched_model_0.data.value );
+        assert_eq!(saved_model_0.id, fetched_model_0.id);
+        assert_eq!(saved_model_0.version, fetched_model_0.version);
+        assert_eq!(saved_model_0.data.value, fetched_model_0.data.value);
 
         let fetched_model_1 = all.get(1).unwrap();
-        assert_eq!( saved_model_1.id, fetched_model_1.id );
-        assert_eq!( saved_model_1.version, fetched_model_1.version );
-        assert_eq!( saved_model_1.data.value, fetched_model_1.data.value );
+        assert_eq!(saved_model_1.id, fetched_model_1.id);
+        assert_eq!(saved_model_1.version, fetched_model_1.version);
+        assert_eq!(saved_model_1.data.value, fetched_model_1.data.value);
 
         let fetched_model_2 = all.get(2).unwrap();
-        assert_eq!( saved_model_2.id, fetched_model_2.id );
-        assert_eq!( saved_model_2.version, fetched_model_2.version );
-        assert_eq!( saved_model_2.data.value, fetched_model_2.data.value );
+        assert_eq!(saved_model_2.id, fetched_model_2.id);
+        assert_eq!(saved_model_2.version, fetched_model_2.version);
+        assert_eq!(saved_model_2.data.value, fetched_model_2.data.value);
 
         Ok(())
     }
 
     #[test]
     fn should_update_with_optimistic_lock() -> Result<(), C3p0Error> {
-        unimplemented!()
+        // Arrange
+        let pool = InMemoryC3p0Pool::new();
+        let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
+
+        // Act
+        let saved_model = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
+        let updated_model = c3p0.update(&pool.connection()?, saved_model.clone())?;
+        let fetched_model = c3p0
+            .fetch_one_by_id(&pool.connection()?, &saved_model)?
+            .unwrap();
+
+        let updated_result_1 = c3p0.update(&pool.connection()?, saved_model.clone());
+        let updated_result_2 = c3p0.update(&pool.connection()?, updated_model.clone());
+
+        // Assert
+        assert_eq!(saved_model.id, updated_model.id);
+        assert_eq!(saved_model.version + 1, updated_model.version);
+        assert_eq!(saved_model.data.value, updated_model.data.value);
+
+        assert_eq!(saved_model.id, fetched_model.id);
+        assert_eq!(fetched_model.version, updated_model.version);
+
+        assert!(updated_result_2.is_ok());
+
+        match updated_result_1 {
+            Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
+            _ => assert!(false),
+        }
+
+        Ok(())
     }
 
     #[test]
     fn should_delete_with_optimistic_lock() -> Result<(), C3p0Error> {
-        unimplemented!()
-    }
+        // Arrange
+        let pool = InMemoryC3p0Pool::new();
+        let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
+        // Act
+        let saved_model = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
+        let updated_model = c3p0.update(&pool.connection()?, saved_model.clone())?;
+        let fetched_model = c3p0
+            .fetch_one_by_id(&pool.connection()?, &saved_model)?
+            .unwrap();
+
+        let delete_result_1 = c3p0.delete(&pool.connection()?, &saved_model.clone());
+        assert!(c3p0.exists_by_id(&pool.connection()?, &saved_model)?);
+
+        let delete_result_2 = c3p0.delete(&pool.connection()?, &updated_model.clone());
+        assert!(!c3p0.exists_by_id(&pool.connection()?, &saved_model)?);
+
+        // Assert
+        assert_eq!(saved_model.id, updated_model.id);
+        assert_eq!(saved_model.version + 1, updated_model.version);
+        assert_eq!(saved_model.data.value, updated_model.data.value);
+
+        assert_eq!(saved_model.id, fetched_model.id);
+        assert_eq!(fetched_model.version, updated_model.version);
+
+        assert_eq!(1, delete_result_2.unwrap());
+
+        match delete_result_1 {
+            Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
+            _ => assert!(false),
+        }
+
+        Ok(())
+    }
 }
