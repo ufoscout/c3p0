@@ -113,6 +113,7 @@ impl SqliteC3p0JsonBuilder for C3p0JsonBuilder<SqliteC3p0Pool> {
                 ),
 
                 drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
+                drop_table_sql_query_cascade: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
 
                 lock_table_sql_query: None,
 
@@ -198,8 +199,13 @@ where
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &SqliteConnection) -> Result<(), C3p0Error> {
-        conn.execute(&self.queries.drop_table_sql_query, &[])?;
+    fn drop_table_if_exists(&self, conn: &SqliteConnection, cascade: bool) -> Result<(), C3p0Error> {
+        let query = if cascade {
+            &self.queries.drop_table_sql_query_cascade
+        } else {
+            &self.queries.drop_table_sql_query
+        };
+        conn.execute(query, &[])?;
         Ok(())
     }
 

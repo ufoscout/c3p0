@@ -32,6 +32,7 @@ pub struct Queries {
 
     pub create_table_sql_query: String,
     pub drop_table_sql_query: String,
+    pub drop_table_sql_query_cascade: String,
     pub lock_table_sql_query: Option<String>,
 }
 
@@ -46,7 +47,7 @@ where
 
     fn create_table_if_not_exists(&self, conn: &Self::CONN) -> Result<(), C3p0Error>;
 
-    fn drop_table_if_exists(&self, conn: &Self::CONN) -> Result<(), C3p0Error>;
+    fn drop_table_if_exists(&self, conn: &Self::CONN, cascade: bool) -> Result<(), C3p0Error>;
 
     fn count_all(&self, conn: &Self::CONN) -> Result<IdType, C3p0Error>;
 

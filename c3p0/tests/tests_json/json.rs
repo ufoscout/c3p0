@@ -14,7 +14,7 @@ fn should_create_and_drop_table() {
             last_name: "my_last_name".to_owned(),
         });
 
-        assert!(jpo.drop_table_if_exists(&conn).is_ok());
+        assert!(jpo.drop_table_if_exists(&conn, false).is_ok());
         assert!(jpo.save(&conn, model.clone()).is_err());
 
         println!("first {:?}", jpo.create_table_if_not_exists(&conn));
@@ -24,8 +24,8 @@ fn should_create_and_drop_table() {
 
         assert!(jpo.save(&conn, model.clone()).is_ok());
 
-        assert!(jpo.drop_table_if_exists(&conn).is_ok());
-        assert!(jpo.drop_table_if_exists(&conn).is_ok());
+        assert!(jpo.drop_table_if_exists(&conn, false).is_ok());
+        assert!(jpo.drop_table_if_exists(&conn, true).is_ok());
         assert!(jpo.save(&conn, model.clone()).is_err());
 
         println!("second {:?}", jpo.create_table_if_not_exists(&conn));
@@ -99,7 +99,7 @@ fn should_delete_all() {
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
         let jpo = C3p0JsonBuilder::new(table_name).build();
 
-        assert!(jpo.drop_table_if_exists(&conn).is_ok());
+        assert!(jpo.drop_table_if_exists(&conn, true).is_ok());
         assert!(jpo.create_table_if_not_exists(&conn).is_ok());
 
         let model = NewModel::new(TestData {

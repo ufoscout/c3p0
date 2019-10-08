@@ -96,7 +96,7 @@ where
         })
     }
 
-    fn drop_table_if_exists(&self, conn: &InMemoryConnection) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(&self, conn: &InMemoryConnection, _cascade: bool) -> Result<(), C3p0Error> {
         conn.write_db(|db| {
             db.remove(&self.qualified_table_name);
             Ok(())
@@ -411,7 +411,7 @@ mod test {
 
         assert_eq!(1, c3p0_1.count_all(&conn)?);
 
-        assert!(c3p0_1.drop_table_if_exists(&conn).is_ok());
+        assert!(c3p0_1.drop_table_if_exists(&conn, false).is_ok());
 
         assert_eq!(0, c3p0_1.count_all(&conn)?);
 
