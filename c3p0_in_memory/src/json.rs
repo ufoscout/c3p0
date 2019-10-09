@@ -96,17 +96,21 @@ where
         })
     }
 
-    fn drop_table_if_exists(&self, conn: &InMemoryConnection, _cascade: bool) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(
+        &self,
+        conn: &InMemoryConnection,
+        _cascade: bool,
+    ) -> Result<(), C3p0Error> {
         conn.write_db(|db| {
             db.remove(&self.qualified_table_name);
             Ok(())
         })
     }
 
-    fn count_all(&self, conn: &InMemoryConnection) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: &InMemoryConnection) -> Result<u64, C3p0Error> {
         conn.read_db(|db| {
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
-                Ok(table.len() as IdType)
+                Ok(table.len() as u64)
             } else {
                 Ok(0)
             }

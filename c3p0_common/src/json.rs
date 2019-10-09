@@ -49,7 +49,7 @@ where
 
     fn drop_table_if_exists(&self, conn: &Self::CONN, cascade: bool) -> Result<(), C3p0Error>;
 
-    fn count_all(&self, conn: &Self::CONN) -> Result<IdType, C3p0Error>;
+    fn count_all(&self, conn: &Self::CONN) -> Result<u64, C3p0Error>;
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,

@@ -112,7 +112,10 @@ impl MysqlC3p0JsonBuilder for C3p0JsonBuilder<MysqlC3p0Pool> {
                 ),
 
                 drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
-                drop_table_sql_query_cascade: format!("DROP TABLE IF EXISTS {} CASCADE", qualified_table_name),
+                drop_table_sql_query_cascade: format!(
+                    "DROP TABLE IF EXISTS {} CASCADE",
+                    qualified_table_name
+                ),
 
                 lock_table_sql_query: Some(format!("LOCK TABLES {} WRITE", qualified_table_name)),
 
@@ -208,7 +211,7 @@ where
         Ok(())
     }
 
-    fn count_all(&self, conn: &MysqlConnection) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: &MysqlConnection) -> Result<u64, C3p0Error> {
         conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
     }
 
