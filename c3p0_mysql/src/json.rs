@@ -305,7 +305,7 @@ where
 }
 
 fn get_or_error<T: FromValue>(row: &Row, index: usize) -> Result<T, C3p0Error> {
-    row.get(index).ok_or_else(|| C3p0Error::SqlError {
+    row.get(index).ok_or_else(|| C3p0Error::RowMapperError {
         cause: format!("Row contains no values for index {}", index),
     })
 }

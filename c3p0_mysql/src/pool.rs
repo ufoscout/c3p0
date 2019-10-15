@@ -305,7 +305,7 @@ fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error::Err
     let result = row
         .get_opt(0)
         .ok_or_else(|| C3p0Error::ResultNotFoundError)?;
-    Ok(result.map_err(|err| C3p0Error::SqlError {
+    Ok(result.map_err(|err| C3p0Error::RowMapperError {
         cause: format!("{}", err),
     })?)
 }

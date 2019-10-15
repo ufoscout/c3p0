@@ -310,7 +310,7 @@ where
 
 fn get_or_error<T: FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
     row.get_opt(index)
-        .ok_or_else(|| C3p0Error::SqlError {
+        .ok_or_else(|| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for index {}", index),
         })?
         .map_err(into_c3p0_error)
