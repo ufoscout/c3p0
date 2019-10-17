@@ -118,7 +118,10 @@ impl PgC3p0JsonBuilder for C3p0JsonBuilder<PgC3p0Pool> {
                 ),
 
                 drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
-                drop_table_sql_query_cascade: format!("DROP TABLE IF EXISTS {} CASCADE", qualified_table_name),
+                drop_table_sql_query_cascade: format!(
+                    "DROP TABLE IF EXISTS {} CASCADE",
+                    qualified_table_name
+                ),
 
                 lock_table_sql_query: Some(format!(
                     "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
@@ -217,8 +220,9 @@ where
         Ok(())
     }
 
-    fn count_all(&self, conn: &PgConnection) -> Result<i64, C3p0Error> {
+    fn count_all(&self, conn: &PgConnection) -> Result<u64, C3p0Error> {
         conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
+            .map(|val: i64| val as u64)
     }
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
