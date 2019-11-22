@@ -83,11 +83,11 @@ impl PgConnection {
         params: &[&dyn ToSql],
         mapper: F,
     ) -> Result<T, C3p0Error> {
-        self.fetch_one_option(sql, params, mapper)
+        self.fetch_one_optional(sql, params, mapper)
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
-    pub fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
+    pub fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&dyn ToSql],

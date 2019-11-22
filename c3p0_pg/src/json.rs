@@ -172,13 +172,26 @@ where
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub fn fetch_one_with_sql(
+    pub fn fetch_one_optional_with_sql(
         &self,
         conn: &PgConnection,
         sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        conn.fetch_one_option(sql, params, |row| self.to_model(row))
+        conn.fetch_one_optional(sql, params, |row| self.to_model(row))
+    }
+
+    /// Allows the execution of a custom sql query and returns the first entry in the result set.
+    /// For this to work, the sql query:
+    /// - must be a SELECT
+    /// - must declare the ID, VERSION and DATA fields in this exact order
+    pub fn fetch_one_with_sql(
+        &self,
+        conn: &PgConnection,
+        sql: &str,
+        params: &[&dyn ToSql],
+    ) -> Result<Model<DATA>, C3p0Error> {
+        conn.fetch_one(sql, params, |row| self.to_model(row))
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -239,12 +252,12 @@ where
         })
     }
 
-    fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
+    fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &PgConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        conn.fetch_one_option(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
+        conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
             self.to_model(row)
         })
     }

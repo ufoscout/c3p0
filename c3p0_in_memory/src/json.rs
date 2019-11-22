@@ -144,7 +144,7 @@ where
         })
     }
 
-    fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
+    fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &InMemoryConnection,
         id: ID,
@@ -282,11 +282,11 @@ mod test {
 
         // Act
         let saved_model_1 = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
-        let fetched_model_1 = c3p0.fetch_one_by_id(&pool.connection()?, &saved_model_1)?;
+        let fetched_model_1 = c3p0.fetch_one_optional_by_id(&pool.connection()?, &saved_model_1)?;
         let exist_model_1 = c3p0.exists_by_id(&pool.connection()?, &saved_model_1)?;
 
         let saved_model_2 = c3p0.save(&pool.connection()?, TestData::new("value2").into())?;
-        let fetched_model_2 = c3p0.fetch_one_by_id(&pool.connection()?, &saved_model_2.id)?;
+        let fetched_model_2 = c3p0.fetch_one_optional_by_id(&pool.connection()?, &saved_model_2.id)?;
         let exist_model_2 = c3p0.exists_by_id(&pool.connection()?, &saved_model_2)?;
 
         // Assert
@@ -466,7 +466,7 @@ mod test {
         let saved_model = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
         let updated_model = c3p0.update(&pool.connection()?, saved_model.clone())?;
         let fetched_model = c3p0
-            .fetch_one_by_id(&pool.connection()?, &saved_model)?
+            .fetch_one_optional_by_id(&pool.connection()?, &saved_model)?
             .unwrap();
 
         let updated_result_1 = c3p0.update(&pool.connection()?, saved_model.clone());
@@ -500,7 +500,7 @@ mod test {
         let saved_model = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
         let updated_model = c3p0.update(&pool.connection()?, saved_model.clone())?;
         let fetched_model = c3p0
-            .fetch_one_by_id(&pool.connection()?, &saved_model)?
+            .fetch_one_optional_by_id(&pool.connection()?, &saved_model)?
             .unwrap();
 
         let delete_result_1 = c3p0.delete(&pool.connection()?, &saved_model.clone());

@@ -59,11 +59,19 @@ where
 
     fn fetch_all(&self, conn: &Self::CONN) -> Result<Vec<Model<DATA>>, C3p0Error>;
 
-    fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
+    fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
         conn: &Self::CONN,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error>;
+
+    fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &Self::CONN,
+        id: ID,
+    ) -> Result<Model<DATA>, C3p0Error> {
+        self.fetch_one_optional_by_id(conn, id).and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+    }
 
     fn delete(&self, conn: &Self::CONN, obj: &Model<DATA>) -> Result<u64, C3p0Error>;
 

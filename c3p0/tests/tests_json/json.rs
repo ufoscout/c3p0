@@ -53,7 +53,7 @@ fn basic_crud() {
         let saved_model = jpo.save(&conn, model.clone()).unwrap();
         assert!(saved_model.id >= 0);
 
-        let found_model = jpo.fetch_one_by_id(&conn, &saved_model).unwrap().unwrap();
+        let found_model = jpo.fetch_one_optional_by_id(&conn, &saved_model).unwrap().unwrap();
         assert_eq!(saved_model.id, found_model.id);
         assert_eq!(saved_model.version, found_model.version);
         assert_eq!(saved_model.data.first_name, found_model.data.first_name);
@@ -111,9 +111,9 @@ fn should_delete_all() {
         jpo.save(&conn, model.clone()).unwrap();
         jpo.save(&conn, model.clone()).unwrap();
 
-        assert!(jpo.fetch_one_by_id(&conn, &model1.id).unwrap().is_some());
+        assert!(jpo.fetch_one_by_id(&conn, &model1.id).is_ok());
         assert_eq!(1, jpo.delete_by_id(&conn, &model1.id).unwrap());
-        assert!(jpo.fetch_one_by_id(&conn, &model1).unwrap().is_none());
+        assert!(jpo.fetch_one_by_id(&conn, &model1).is_err());
         assert_eq!(2, jpo.count_all(&conn).unwrap());
 
         assert_eq!(2, jpo.delete_all(&conn).unwrap());
@@ -207,7 +207,7 @@ fn should_update_and_increase_version() {
         assert_eq!("second_first_name", updated_model.data.first_name);
         assert_eq!("second_last_name", updated_model.data.last_name);
 
-        let found_model = jpo.fetch_one_by_id(&conn, &saved_model).unwrap().unwrap();
+        let found_model = jpo.fetch_one_by_id(&conn, &saved_model).unwrap();
         assert_eq!(found_model.id, updated_model.id);
         assert_eq!(found_model.version, updated_model.version);
         assert_eq!(found_model.data, updated_model.data);

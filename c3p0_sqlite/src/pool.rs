@@ -147,11 +147,11 @@ impl SqliteConnection {
         params: &[&dyn ToSql],
         mapper: F,
     ) -> Result<T, C3p0Error> {
-        self.fetch_one_option(sql, params, mapper)
+        self.fetch_one_optional(sql, params, mapper)
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
-    pub fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
+    pub fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&dyn ToSql],
@@ -159,12 +159,12 @@ impl SqliteConnection {
     ) -> Result<Option<T>, C3p0Error> {
         match self {
             SqliteConnection::Conn(conn) => {
-                fetch_one_option(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
+                fetch_one_optional(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
             }
             SqliteConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction.rent_mut(|tref| {
-                    fetch_one_option(
+                    fetch_one_optional(
                         tref.as_mut()
                             .unwrap()
                             .prepare(sql)
@@ -219,7 +219,7 @@ fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, Box<dyn std::error::Error
     Ok(result)
 }
 
-fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
+fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
     mut stmt: rusqlite::Statement,
     params: &[&dyn ToSql],
     mapper: F,

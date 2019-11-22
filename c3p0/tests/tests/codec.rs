@@ -97,7 +97,7 @@ fn should_upgrade_structs_on_load() {
             jpo_v1.fetch_all(&conn).unwrap().len()
         );
 
-        let user_v2_found = jpo_v2.fetch_one_by_id(&conn, &user_v1.id).unwrap();
+        let user_v2_found = jpo_v2.fetch_one_optional_by_id(&conn, &user_v1.id).unwrap();
         assert!(user_v2_found.is_some());
 
         let user_v2_found = user_v2_found.unwrap();

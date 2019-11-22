@@ -111,7 +111,7 @@ fn should_execute_and_fetch_option() {
         #[cfg(feature = "sqlite")]
         let mapper = |row: &Row| Ok(row.get(0)?);
 
-        let fetch_result = conn.fetch_one_option(
+        let fetch_result = conn.fetch_one_optional(
             &format!(r"SELECT * FROM {} WHERE name = 'one'", table_name),
             &[],
             mapper,
@@ -119,7 +119,7 @@ fn should_execute_and_fetch_option() {
         assert!(fetch_result.is_ok());
         assert_eq!(Some("one".to_owned()), fetch_result.unwrap());
 
-        let fetch_result = conn.fetch_one_option(
+        let fetch_result = conn.fetch_one_optional(
             &format!(r"SELECT * FROM {} WHERE name = 'two'", table_name),
             &[],
             mapper,

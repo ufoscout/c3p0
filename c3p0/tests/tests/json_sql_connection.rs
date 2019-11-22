@@ -18,7 +18,7 @@ fn should_fetch_by_sql() {
         let _model = jpo.save(&conn, model.clone()).unwrap();
 
         let one = jpo
-            .fetch_one_with_sql(
+            .fetch_one_optional_with_sql(
                 &conn,
                 &format!("select id, version, data from {}", table_name),
                 &[],

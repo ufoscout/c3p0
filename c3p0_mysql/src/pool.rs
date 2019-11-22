@@ -165,7 +165,7 @@ impl MysqlConnection {
         }
     }
 
-    pub fn fetch_one_option<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
+    pub fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &self,
         sql: &str,
         params: &[&dyn ToValue],
@@ -175,12 +175,12 @@ impl MysqlConnection {
             MysqlConnection::Conn(conn) => {
                 let mut conn_borrow = conn.borrow_mut();
                 let conn: &mut mysql_client::Conn = conn_borrow.deref_mut();
-                fetch_one_option(conn, sql, params, mapper)
+                fetch_one_optional(conn, sql, params, mapper)
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
                 transaction
-                    .rent_mut(|tref| fetch_one_option(tref.as_mut().unwrap(), sql, params, mapper))
+                    .rent_mut(|tref| fetch_one_optional(tref.as_mut().unwrap(), sql, params, mapper))
             }
         }
     }
@@ -251,11 +251,11 @@ fn fetch_one<C: GenericConnection, T, F: Fn(&Row) -> Result<T, Box<dyn std::erro
     params: &[&dyn ToValue],
     mapper: F,
 ) -> Result<T, C3p0Error> {
-    fetch_one_option(conn, sql, params, mapper)
+    fetch_one_optional(conn, sql, params, mapper)
         .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
 }
 
-fn fetch_one_option<
+fn fetch_one_optional<
     C: GenericConnection,
     T,
     F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>,
