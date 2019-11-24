@@ -3,6 +3,7 @@ pub mod json;
 
 pub mod pool;
 pub mod types;
+pub mod sql;
 
 pub use error::C3p0Error;
 pub use json::{
