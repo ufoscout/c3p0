@@ -162,12 +162,7 @@ where
 
     #[inline]
     pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-        self.to_model_by_index(row, 0, 1, 2)
-    }
-
-    #[inline]
-    pub fn to_model_by_index<IdIdx: RowIndex + Display, VersionIdx: RowIndex + Display, DataIdx: RowIndex + Display>(&self, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-        to_model_by_index(&self.codec, row, id_index, version_index, data_index)
+        to_model(&self.codec, row, 0, 1, 2)
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -328,7 +323,7 @@ where
 }
 
 #[inline]
-pub fn to_model_by_index<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>, IdIdx: RowIndex + Display, VersionIdx: RowIndex + Display, DataIdx: RowIndex + Display>(codec: &CODEC, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+pub fn to_model<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>, IdIdx: RowIndex + Display, VersionIdx: RowIndex + Display, DataIdx: RowIndex + Display>(codec: &CODEC, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
     let id = get_or_error(&row, id_index)?;
     let version = get_or_error(&row, version_index)?;
     let data = codec.from_value(get_or_error(&row, data_index)?)?;
