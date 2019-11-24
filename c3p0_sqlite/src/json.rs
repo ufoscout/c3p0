@@ -10,6 +10,7 @@ use crate::sqlite::driver::{
 use crate::sqlite::{SqliteC3p0Pool, SqliteConnection};
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
+use rusqlite::RowIndex;
 
 pub trait SqliteC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
@@ -150,13 +151,19 @@ where
         &self.queries
     }
 
+    #[inline]
     pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+        self.to_model_by_index(row, 0, 1, 2)
+    }
+
+    #[inline]
+    pub fn to_model_by_index<IdIdx: RowIndex, VersionIdx: RowIndex, DataIdx: RowIndex>(&self, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
-        let id = get_or_error(&row, 0)?;
-        let version = get_or_error(&row, 1)?;
-        let data = self.codec.from_value(get_or_error(&row, 2)?)?;
+        let id = get_or_error(&row, id_index)?;
+        let version = get_or_error(&row, version_index)?;
+        let data = self.codec.from_value(get_or_error(&row, data_index)?)?;
         Ok(Model { id, version, data })
     }
 
@@ -326,8 +333,8 @@ where
     }
 }
 
-fn get_or_error<T: FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
+fn get_or_error<I: RowIndex, T: FromSql>(row: &Row, index: I) -> Result<T, C3p0Error> {
     row.get(index).map_err(|err| C3p0Error::RowMapperError {
-        cause: format!("Row contains no values for index {}. Err: {}", index, err),
+        cause: format!("Row contains no values. Err: {}", err),
     })
 }

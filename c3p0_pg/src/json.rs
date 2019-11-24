@@ -12,6 +12,8 @@ use c3p0_common::json::{
     model::{IdType, Model, NewModel},
     C3p0Json, Queries,
 };
+use postgres::rows::RowIndex;
+use serde::export::fmt::Display;
 
 pub trait PgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
@@ -158,13 +160,22 @@ where
         &self.queries
     }
 
+    #[inline]
     pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
         //id: Some(row.get(self.id_field_name.as_str())),
         //version: row.get(self.version_field_name.as_str()),
         //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
-        let id = get_or_error(&row, 0)?;
-        let version = get_or_error(&row, 1)?;
-        let data = self.codec.from_value(get_or_error(&row, 2)?)?;
+        self.to_model_by_index(row, 0, 1, 2)
+    }
+
+    #[inline]
+    pub fn to_model_by_index<IdIdx: RowIndex + Display, VersionIdx: RowIndex + Display, DataIdx: RowIndex + Display>(&self, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+        //id: Some(row.get(self.id_field_name.as_str())),
+        //version: row.get(self.version_field_name.as_str()),
+        //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
+        let id = get_or_error(&row, id_index)?;
+        let version = get_or_error(&row, version_index)?;
+        let data = self.codec.from_value(get_or_error(&row, data_index)?)?;
         Ok(Model { id, version, data })
     }
 
@@ -325,8 +336,8 @@ where
     }
 }
 
-fn get_or_error<T: FromSql>(row: &Row, index: usize) -> Result<T, C3p0Error> {
-    row.get_opt(index)
+fn get_or_error<I: RowIndex + Display, T: FromSql>(row: &Row, index: I) -> Result<T, C3p0Error> {
+    row.get_opt(&index)
         .ok_or_else(|| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for index {}", index),
         })?
