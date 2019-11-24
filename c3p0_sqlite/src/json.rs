@@ -10,6 +10,7 @@ use crate::sqlite::driver::{
 use crate::sqlite::{SqliteC3p0Pool, SqliteConnection};
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
+use c3p0_common::sql::ForUpdate;
 use rusqlite::RowIndex;
 
 pub trait SqliteC3p0JsonBuilder {
@@ -244,6 +245,14 @@ where
         })
     }
 
+    fn fetch_all_for_update(
+        &self,
+        conn: &Self::CONN,
+        _for_update: &ForUpdate,
+    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        self.fetch_all(conn)
+    }
+
     fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &SqliteConnection,
@@ -252,6 +261,15 @@ where
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
             self.to_model(row)
         })
+    }
+
+    fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &Self::CONN,
+        id: ID,
+        _for_update: &ForUpdate,
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
+        self.fetch_one_optional_by_id(conn, id)
     }
 
     fn delete(&self, conn: &SqliteConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
@@ -323,7 +341,19 @@ where
 }
 
 #[inline]
-pub fn to_model<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>, IdIdx: RowIndex, VersionIdx: RowIndex, DataIdx: RowIndex>(codec: &CODEC, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+pub fn to_model<
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    CODEC: JsonCodec<DATA>,
+    IdIdx: RowIndex,
+    VersionIdx: RowIndex,
+    DataIdx: RowIndex,
+>(
+    codec: &CODEC,
+    row: &Row,
+    id_index: IdIdx,
+    version_index: VersionIdx,
+    data_index: DataIdx,
+) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
     //id: Some(row.get(self.id_field_name.as_str())),
     //version: row.get(self.version_field_name.as_str()),
     //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?

@@ -5,6 +5,7 @@ use c3p0_common::json::{
     model::{IdType, Model, NewModel},
     C3p0Json,
 };
+use c3p0_common::sql::ForUpdate;
 use c3p0_common::DefaultJsonCodec;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -144,6 +145,14 @@ where
         })
     }
 
+    fn fetch_all_for_update(
+        &self,
+        conn: &Self::CONN,
+        _for_update: &ForUpdate,
+    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        self.fetch_all(conn)
+    }
+
     fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &InMemoryConnection,
@@ -157,6 +166,15 @@ where
             }
             Ok(None)
         })
+    }
+
+    fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &Self::CONN,
+        id: ID,
+        _for_update: &ForUpdate,
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
+        self.fetch_one_optional_by_id(conn, id)
     }
 
     fn delete(&self, conn: &InMemoryConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
@@ -286,7 +304,8 @@ mod test {
         let exist_model_1 = c3p0.exists_by_id(&pool.connection()?, &saved_model_1)?;
 
         let saved_model_2 = c3p0.save(&pool.connection()?, TestData::new("value2").into())?;
-        let fetched_model_2 = c3p0.fetch_one_optional_by_id(&pool.connection()?, &saved_model_2.id)?;
+        let fetched_model_2 =
+            c3p0.fetch_one_optional_by_id(&pool.connection()?, &saved_model_2.id)?;
         let exist_model_2 = c3p0.exists_by_id(&pool.connection()?, &saved_model_2)?;
 
         // Assert

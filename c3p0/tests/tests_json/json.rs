@@ -53,7 +53,10 @@ fn basic_crud() {
         let saved_model = jpo.save(&conn, model.clone()).unwrap();
         assert!(saved_model.id >= 0);
 
-        let found_model = jpo.fetch_one_optional_by_id(&conn, &saved_model).unwrap().unwrap();
+        let found_model = jpo
+            .fetch_one_optional_by_id(&conn, &saved_model)
+            .unwrap()
+            .unwrap();
         assert_eq!(saved_model.id, found_model.id);
         assert_eq!(saved_model.version, found_model.version);
         assert_eq!(saved_model.data.first_name, found_model.data.first_name);
@@ -312,5 +315,57 @@ fn delete_should_return_optimistic_lock_exception() {
         };
 
         assert!(jpo.exists_by_id(&conn, &saved_model).unwrap());
+    });
+}
+
+#[test]
+fn json_should_perform_for_update_fetches() {
+    SINGLETON.get(|(pool, _)| {
+        let c3p0: C3p0Impl = pool.clone();
+        let table_name = format!("TEST_TABLE_{}", rand_string(8));
+        let jpo = C3p0JsonBuilder::new(table_name).build();
+
+        let model = NewModel::new(TestData {
+            first_name: "my_first_name".to_owned(),
+            last_name: "my_last_name".to_owned(),
+        });
+
+        let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
+            assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+            assert!(jpo.save(conn, model.clone()).is_ok());
+            assert!(jpo.save(conn, model.clone()).is_ok());
+            Ok(())
+        });
+        assert!(result.is_ok());
+
+        // fetch all ForUpdate::Default
+        let result: Result<_, C3p0Error> =
+            c3p0.transaction(|conn| jpo.fetch_all_for_update(&conn, &ForUpdate::Default));
+        assert!(result.is_ok());
+
+        #[cfg(not(feature = "mysql"))]
+        {
+            // fetch one ForUpdate::NoWait
+            let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
+                jpo.fetch_one_optional_by_id_for_update(&conn, &0, &ForUpdate::NoWait)
+            });
+            assert!(result.is_ok());
+
+            // fetch one ForUpdate::SkipLocked
+            let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
+                jpo.fetch_one_optional_by_id_for_update(&conn, &0, &ForUpdate::SkipLocked)
+            });
+            assert!(result.is_ok());
+        }
+
+        // fetch all ForUpdate::No
+        let result: Result<_, C3p0Error> =
+            c3p0.transaction(|conn| jpo.fetch_all_for_update(&conn, &ForUpdate::No));
+        assert!(result.is_ok());
+
+        {
+            let conn = c3p0.connection().unwrap();
+            assert!(jpo.drop_table_if_exists(&conn, true).is_ok());
+        }
     });
 }

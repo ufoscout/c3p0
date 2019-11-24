@@ -2,8 +2,8 @@ pub mod error;
 pub mod json;
 
 pub mod pool;
-pub mod types;
 pub mod sql;
+pub mod types;
 
 pub use error::C3p0Error;
 pub use json::{
@@ -11,6 +11,7 @@ pub use json::{
     model::NewModel, C3p0Json,
 };
 pub use pool::{C3p0Pool, SqlConnection};
+pub use sql::{ForUpdate, OrderBy};
 
 #[cfg(feature = "migrate")]
 pub mod migrate;

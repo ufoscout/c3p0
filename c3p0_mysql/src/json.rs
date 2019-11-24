@@ -9,6 +9,7 @@ use c3p0_common::json::{
     model::{IdType, Model, NewModel},
     C3p0Json, Queries,
 };
+use c3p0_common::sql::ForUpdate;
 use mysql_common::row::ColumnIndex;
 
 pub trait MysqlC3p0JsonBuilder {
@@ -238,6 +239,19 @@ where
         })
     }
 
+    fn fetch_all_for_update(
+        &self,
+        conn: &Self::CONN,
+        for_update: &ForUpdate,
+    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        let sql = format!(
+            "{}\n{}",
+            &self.queries.find_all_sql_query,
+            for_update.to_sql()
+        );
+        conn.fetch_all(&sql, &[], |row| self.to_model(row))
+    }
+
     fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
         conn: &MysqlConnection,
@@ -246,6 +260,20 @@ where
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
             self.to_model(row)
         })
+    }
+
+    fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
+        &'a self,
+        conn: &Self::CONN,
+        id: ID,
+        for_update: &ForUpdate,
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
+        let sql = format!(
+            "{}\n{}",
+            &self.queries.find_by_id_sql_query,
+            for_update.to_sql()
+        );
+        conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row))
     }
 
     fn delete(&self, conn: &MysqlConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
@@ -317,7 +345,19 @@ where
 }
 
 #[inline]
-pub fn to_model<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>, IdIdx: ColumnIndex, VersionIdx: ColumnIndex, DataIdx: ColumnIndex>(codec: &CODEC, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+pub fn to_model<
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    CODEC: JsonCodec<DATA>,
+    IdIdx: ColumnIndex,
+    VersionIdx: ColumnIndex,
+    DataIdx: ColumnIndex,
+>(
+    codec: &CODEC,
+    row: &Row,
+    id_index: IdIdx,
+    version_index: VersionIdx,
+    data_index: DataIdx,
+) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
     let id = get_or_error(&row, id_index)?;
     let version = get_or_error(&row, version_index)?;
     let data = codec.from_value(get_or_error(&row, data_index)?)?;

@@ -179,8 +179,9 @@ impl MysqlConnection {
             }
             MysqlConnection::Tx(tx) => {
                 let mut transaction = tx.borrow_mut();
-                transaction
-                    .rent_mut(|tref| fetch_one_optional(tref.as_mut().unwrap(), sql, params, mapper))
+                transaction.rent_mut(|tref| {
+                    fetch_one_optional(tref.as_mut().unwrap(), sql, params, mapper)
+                })
             }
         }
     }
