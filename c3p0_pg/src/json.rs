@@ -162,21 +162,12 @@ where
 
     #[inline]
     pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-        //id: Some(row.get(self.id_field_name.as_str())),
-        //version: row.get(self.version_field_name.as_str()),
-        //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
         self.to_model_by_index(row, 0, 1, 2)
     }
 
     #[inline]
     pub fn to_model_by_index<IdIdx: RowIndex + Display, VersionIdx: RowIndex + Display, DataIdx: RowIndex + Display>(&self, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-        //id: Some(row.get(self.id_field_name.as_str())),
-        //version: row.get(self.version_field_name.as_str()),
-        //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
-        let id = get_or_error(&row, id_index)?;
-        let version = get_or_error(&row, version_index)?;
-        let data = self.codec.from_value(get_or_error(&row, data_index)?)?;
-        Ok(Model { id, version, data })
+        to_model_by_index(&self.codec, row, id_index, version_index, data_index)
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -336,7 +327,16 @@ where
     }
 }
 
-fn get_or_error<I: RowIndex + Display, T: FromSql>(row: &Row, index: I) -> Result<T, C3p0Error> {
+#[inline]
+pub fn to_model_by_index<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>, IdIdx: RowIndex + Display, VersionIdx: RowIndex + Display, DataIdx: RowIndex + Display>(codec: &CODEC, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+    let id = get_or_error(&row, id_index)?;
+    let version = get_or_error(&row, version_index)?;
+    let data = codec.from_value(get_or_error(&row, data_index)?)?;
+    Ok(Model { id, version, data })
+}
+
+#[inline]
+pub fn get_or_error<I: RowIndex + Display, T: FromSql>(row: &Row, index: I) -> Result<T, C3p0Error> {
     row.get_opt(&index)
         .ok_or_else(|| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for index {}", index),

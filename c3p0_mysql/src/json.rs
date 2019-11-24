@@ -157,13 +157,7 @@ where
 
     #[inline]
     pub fn to_model_by_index<IdIdx: ColumnIndex, VersionIdx: ColumnIndex, DataIdx: ColumnIndex>(&self, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-        //id: Some(row.get(self.id_field_name.as_str())),
-        //version: row.get(self.version_field_name.as_str()),
-        //data: (conf.codec.from_value)(row.get(self.data_field_name.as_str()))?
-        let id = get_or_error(&row, id_index)?;
-        let version = get_or_error(&row, version_index)?;
-        let data = self.codec.from_value(get_or_error(&row, data_index)?)?;
-        Ok(Model { id, version, data })
+        to_model_by_index(&self.codec, row, id_index, version_index, data_index)
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -327,7 +321,16 @@ where
     }
 }
 
-fn get_or_error<I: ColumnIndex, T: FromValue>(row: &Row, index: I) -> Result<T, C3p0Error> {
+#[inline]
+pub fn to_model_by_index<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned, CODEC: JsonCodec<DATA>, IdIdx: ColumnIndex, VersionIdx: ColumnIndex, DataIdx: ColumnIndex>(codec: &CODEC, row: &Row, id_index: IdIdx, version_index: VersionIdx, data_index: DataIdx) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+    let id = get_or_error(&row, id_index)?;
+    let version = get_or_error(&row, version_index)?;
+    let data = codec.from_value(get_or_error(&row, data_index)?)?;
+    Ok(Model { id, version, data })
+}
+
+#[inline]
+pub fn get_or_error<I: ColumnIndex, T: FromValue>(row: &Row, index: I) -> Result<T, C3p0Error> {
     row.get(index).ok_or_else(|| C3p0Error::RowMapperError {
         cause: "Row contains no values".to_owned(),
     })
