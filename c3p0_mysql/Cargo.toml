@@ -13,10 +13,10 @@ keywords = ["mysql"]
 [dependencies]
 c3p0_common = { path = "../c3p0_common", version = "0.24.0" }
 log = "0.4"
-mysql_client = { package = "mysql",  version = "16.1"}
-mysql_common = "0.18"
+mysql_client = { package = "mysql",  version = "17"}
+mysql_common = "0.19"
 r2d2 = "0.8"
-r2d2_mysql = "16.0"
+r2d2_mysql = "17"
 rental = "0.5"
 serde = "1.0"
 
