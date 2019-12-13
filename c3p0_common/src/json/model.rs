@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 pub type IdType = i64;
 pub type VersionType = i32;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model<DATA>
 where
     DATA: Clone + serde::ser::Serialize,
@@ -35,21 +35,7 @@ where
     }
 }
 
-impl<DATA> std::fmt::Debug for Model<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + std::fmt::Debug,
-{
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            fmt,
-            "Model {{ id: {:?}, version: {:?}, data: {:?} }}",
-            self.id, self.version, self.data
-        )?;
-        Ok(())
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewModel<DATA>
 where
     DATA: Clone + serde::ser::Serialize,
@@ -65,20 +51,6 @@ where
 {
     pub fn new(data: DATA) -> Self {
         NewModel { version: 0, data }
-    }
-}
-
-impl<DATA> std::fmt::Debug for NewModel<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + std::fmt::Debug,
-{
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            fmt,
-            "NewModel {{ version: {:?}, data: {:?} }}",
-            self.version, self.data
-        )?;
-        Ok(())
     }
 }
 
