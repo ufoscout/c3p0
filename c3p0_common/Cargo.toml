@@ -17,6 +17,8 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 
+async-trait = { version = "0.1", optional = true }
+
 # for migrate
 include_dir = { version = "0.2", optional = true }
 md-5 = { version = "0.8", optional = true }
@@ -27,3 +29,4 @@ walkdir = { version = "2.2", optional = true }
 default = []
 
 migrate = ["include_dir", "md-5", "same-file", "walkdir"]
+async = ["async-trait"]
