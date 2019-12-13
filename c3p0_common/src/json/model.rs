@@ -26,6 +26,29 @@ where
     }
 }
 
+impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+{
+    fn into(self) -> &'a IdType {
+        &self.id
+    }
+}
+
+impl<DATA> std::fmt::Debug for Model<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + std::fmt::Debug,
+{
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            fmt,
+            "Model {{ id: {:?}, version: {:?}, data: {:?} }}",
+            self.id, self.version, self.data
+        )?;
+        Ok(())
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct NewModel<DATA>
 where
@@ -45,21 +68,35 @@ where
     }
 }
 
+impl<DATA> std::fmt::Debug for NewModel<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + std::fmt::Debug,
+{
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            fmt,
+            "NewModel {{ version: {:?}, data: {:?} }}",
+            self.version, self.data
+        )?;
+        Ok(())
+    }
+}
+
+impl<DATA> Default for NewModel<DATA>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Default,
+{
+    fn default() -> Self {
+        NewModel::new(DATA::default())
+    }
+}
+
 impl<DATA> From<DATA> for NewModel<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     fn from(data: DATA) -> Self {
         NewModel::new(data)
-    }
-}
-
-impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-{
-    fn into(self) -> &'a IdType {
-        &self.id
     }
 }
 
@@ -102,6 +139,28 @@ mod test {
         assert_eq!(model.version, deserialize.version);
         assert_eq!(model.data, deserialize.data);
         Ok(())
+    }
+
+    #[test]
+    fn model_should_impl_debug_if_data_is_debug() {
+        let model = Model {
+            id: 1,
+            version: 1,
+            data: SimpleData {
+                name: "test".to_owned(),
+            },
+        };
+
+        println!("Debug model: {:?}", model);
+    }
+
+    #[test]
+    fn new_model_should_impl_debug_if_data_is_debug() {
+        let model = NewModel::new(SimpleData {
+            name: "test".to_owned(),
+        });
+
+        println!("Debug model: {:?}", model);
     }
 
     #[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
