@@ -34,18 +34,19 @@ impl C3p0Pool for PgC3p0Pool {
             .map(|conn| PgConnection { conn })
     }
 
-    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&PgConnection) -> Result<T, E>>(
+    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut PgConnection) -> Result<T, E>>(
         &self,
         tx: F,
     ) -> Result<T, E> {
         let conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
             cause: format!("{}", err),
         })?;
-        let sql_executor = PgConnection { conn };
 
-        let transaction = sql_executor.conn.transaction().map_err(into_c3p0_error)?;
+        let transaction = conn.transaction().map_err(into_c3p0_error)?;
+        transaction.connection()
+        let mut sql_executor = PgConnection { conn };
 
-        (tx)(&sql_executor).and_then(move |result| {
+        (tx)(&mut sql_executor).and_then(move |result| {
             Ok(transaction
                 .commit()
                 .map_err(into_c3p0_error)
@@ -59,18 +60,18 @@ pub struct PgConnection {
 }
 
 impl SqlConnection for PgConnection {
-    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
+    fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         self.conn.batch_execute(sql).map_err(into_c3p0_error)
     }
 }
 
 impl PgConnection {
-    pub fn execute(&self, sql: &str, params: &[&dyn ToSql]) -> Result<u64, C3p0Error> {
+    pub fn execute(&mut self, sql: &str, params: &[&dyn ToSql]) -> Result<u64, C3p0Error> {
         self.conn.execute(sql, params).map_err(into_c3p0_error)
     }
 
     pub fn fetch_one_value<T: FromSql>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<T, C3p0Error> {
@@ -78,7 +79,7 @@ impl PgConnection {
     }
 
     pub fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
         mapper: F,
@@ -88,7 +89,7 @@ impl PgConnection {
     }
 
     pub fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
         mapper: F,
@@ -106,7 +107,7 @@ impl PgConnection {
     }
 
     pub fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
         mapper: F,
@@ -123,7 +124,7 @@ impl PgConnection {
     }
 
     pub fn fetch_all_values<T: FromSql>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<Vec<T>, C3p0Error> {

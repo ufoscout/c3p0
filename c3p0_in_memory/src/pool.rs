@@ -1,7 +1,6 @@
 use c3p0_common::json::model::IdType;
 use c3p0_common::*;
 use guardian::ArcMutexGuardian;
-use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
 use std::ops::DerefMut;
@@ -25,7 +24,7 @@ impl C3p0Pool for InMemoryC3p0Pool {
         Ok(InMemoryConnection::Conn(self.db.clone()))
     }
 
-    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&InMemoryConnection) -> Result<T, E>>(
+    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut InMemoryConnection) -> Result<T, E>>(
         &self,
         tx: F,
     ) -> Result<T, E> {
@@ -37,19 +36,18 @@ impl C3p0Pool for InMemoryC3p0Pool {
         };
 
         let locked_hashmap =
-            RefCell::new(ArcMutexGuardian::take(self.db.clone()).map_err(|err| {
+            ArcMutexGuardian::take(self.db.clone()).map_err(|err| {
                 C3p0Error::InternalError {
                     cause: format!("{}", err),
                 }
-            })?);
+            })?;
 
-        let conn = InMemoryConnection::Tx(locked_hashmap);
+        let mut conn = InMemoryConnection::Tx(locked_hashmap);
 
-        (tx)(&conn).map_err(|err| {
+        (tx)(&mut conn).map_err(|err| {
             match conn {
-                InMemoryConnection::Tx(locked) => {
-                    let mut borrowed_lock = locked.borrow_mut();
-                    **borrowed_lock.deref_mut() = db_clone;
+                InMemoryConnection::Tx(mut locked) => {
+                    *locked.deref_mut() = db_clone;
                 }
                 _ => panic!("InMemoryTransaction must be Tx"),
             };
@@ -60,7 +58,7 @@ impl C3p0Pool for InMemoryC3p0Pool {
 
 pub enum InMemoryConnection {
     Conn(Arc<Mutex<HashMap<String, BTreeMap<IdType, Model<serde_json::Value>>>>>),
-    Tx(RefCell<ArcMutexGuardian<HashMap<String, BTreeMap<IdType, Model<serde_json::Value>>>>>),
+    Tx(ArcMutexGuardian<HashMap<String, BTreeMap<IdType, Model<serde_json::Value>>>>),
 }
 
 impl InMemoryConnection {
@@ -69,7 +67,7 @@ impl InMemoryConnection {
         E: From<C3p0Error>,
         F: FnOnce(&HashMap<String, BTreeMap<IdType, Model<serde_json::Value>>>) -> Result<T, E>,
     >(
-        &self,
+        &mut self,
         tx: F,
     ) -> Result<T, E> {
         match self {
@@ -80,8 +78,7 @@ impl InMemoryConnection {
                 (tx)(&guard)
             }
             InMemoryConnection::Tx(locked) => {
-                let borrowed_lock = locked.borrow();
-                (tx)(borrowed_lock.deref())
+                (tx)(locked.deref())
             }
         }
     }
@@ -91,7 +88,7 @@ impl InMemoryConnection {
         E: From<C3p0Error>,
         F: FnOnce(&mut HashMap<String, BTreeMap<IdType, Model<serde_json::Value>>>) -> Result<T, E>,
     >(
-        &self,
+        &mut self,
         tx: F,
     ) -> Result<T, E> {
         match self {
@@ -102,8 +99,7 @@ impl InMemoryConnection {
                 (tx)(&mut guard)
             }
             InMemoryConnection::Tx(locked) => {
-                let mut borrowed_lock = locked.borrow_mut();
-                (tx)(borrowed_lock.deref_mut())
+                (tx)(locked.deref_mut())
             }
         }
     }
@@ -118,7 +114,7 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
 
         {
-            let conn = pool.connection()?;
+            let conn = &mut pool.connection()?;
             let result: Result<(), C3p0Error> = conn.write_db(|db| {
                 db.insert("one".to_string(), Default::default());
                 Ok(())
@@ -127,7 +123,7 @@ mod test {
         }
 
         {
-            let conn = pool.connection()?;
+            let conn = &mut pool.connection()?;
             let result: Result<(), C3p0Error> = conn.write_db(|db| {
                 assert!(db.contains_key("one"));
                 db.insert("two".to_string(), Default::default());
@@ -138,7 +134,7 @@ mod test {
         }
 
         {
-            let conn = pool.connection()?;
+            let conn = &mut pool.connection()?;
             let result: Result<(), C3p0Error> = conn.read_db(|db| {
                 assert!(!db.contains_key("one"));
                 assert!(db.contains_key("two"));

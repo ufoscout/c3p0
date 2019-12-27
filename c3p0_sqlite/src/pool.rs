@@ -2,7 +2,6 @@ use crate::error::into_c3p0_error;
 use crate::sqlite::driver::types::{FromSql, ToSql};
 use crate::sqlite::driver::Row;
 use crate::sqlite::r2d2::{Pool, PooledConnection, SqliteConnectionManager};
-use std::cell::RefCell;
 
 use c3p0_common::*;
 
@@ -35,7 +34,7 @@ impl C3p0Pool for SqliteC3p0Pool {
             .map(SqliteConnection::Conn)
     }
 
-    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&SqliteConnection) -> Result<T, E>>(
+    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut SqliteConnection) -> Result<T, E>>(
         &self,
         tx: F,
     ) -> Result<T, E> {
@@ -46,15 +45,14 @@ impl C3p0Pool for SqliteC3p0Pool {
         let transaction = new_simple_mut(conn)?;
 
         let result = {
-            let mut sql_executor = SqliteConnection::Tx(RefCell::new(transaction));
+            let mut sql_executor = SqliteConnection::Tx(transaction);
             let result = (tx)(&mut sql_executor)?;
             (result, sql_executor)
         };
 
         match result.1 {
-            SqliteConnection::Tx(tx) => {
-                let mut transaction = tx.borrow_mut();
-                transaction
+            SqliteConnection::Tx(mut tx) => {
+                tx
                     .rent_mut(|tref| {
                         let tref_some = tref.take();
                         tref_some.unwrap().commit()?;
@@ -92,16 +90,15 @@ rental! {
 
 pub enum SqliteConnection {
     Conn(PooledConnection<SqliteConnectionManager>),
-    Tx(RefCell<rentals::SimpleMut>),
+    Tx(rentals::SimpleMut),
 }
 
 impl SqlConnection for SqliteConnection {
-    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error> {
+    fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             SqliteConnection::Conn(conn) => conn.execute_batch(sql).map_err(into_c3p0_error),
             SqliteConnection::Tx(tx) => {
-                let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
+                tx.rent_mut(|tref| {
                     tref.as_mut()
                         .unwrap()
                         .execute_batch(sql)
@@ -114,15 +111,14 @@ impl SqlConnection for SqliteConnection {
 }
 
 impl SqliteConnection {
-    pub fn execute(&self, sql: &str, params: &[&dyn ToSql]) -> Result<u64, C3p0Error> {
+    pub fn execute(&mut self, sql: &str, params: &[&dyn ToSql]) -> Result<u64, C3p0Error> {
         match self {
             SqliteConnection::Conn(conn) => conn
                 .execute(sql, params)
                 .map_err(into_c3p0_error)
                 .map(|res| res as u64),
             SqliteConnection::Tx(tx) => {
-                let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
+                tx.rent_mut(|tref| {
                     tref.as_mut()
                         .unwrap()
                         .execute(sql, params)
@@ -134,7 +130,7 @@ impl SqliteConnection {
     }
 
     pub fn fetch_one_value<T: FromSql>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<T, C3p0Error> {
@@ -142,7 +138,7 @@ impl SqliteConnection {
     }
 
     pub fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
         mapper: F,
@@ -152,7 +148,7 @@ impl SqliteConnection {
     }
 
     pub fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
         mapper: F,
@@ -162,8 +158,7 @@ impl SqliteConnection {
                 fetch_one_optional(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
             }
             SqliteConnection::Tx(tx) => {
-                let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
+                tx.rent_mut(|tref| {
                     fetch_one_optional(
                         tref.as_mut()
                             .unwrap()
@@ -178,7 +173,7 @@ impl SqliteConnection {
     }
 
     pub fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
         mapper: F,
@@ -188,8 +183,7 @@ impl SqliteConnection {
                 fetch_all(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
             }
             SqliteConnection::Tx(tx) => {
-                let mut transaction = tx.borrow_mut();
-                transaction.rent_mut(|tref| {
+                tx.rent_mut(|tref| {
                     fetch_all(
                         tref.as_mut()
                             .unwrap()
@@ -204,7 +198,7 @@ impl SqliteConnection {
     }
 
     pub fn fetch_all_values<T: FromSql>(
-        &self,
+        &mut self,
         sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<Vec<T>, C3p0Error> {

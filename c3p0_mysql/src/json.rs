@@ -162,7 +162,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_one_optional_with_sql(
         &self,
-        conn: &MysqlConnection,
+        conn: &mut MysqlConnection,
         sql: &str,
         params: &[&dyn ToValue],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -175,7 +175,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_one_with_sql(
         &self,
-        conn: &MysqlConnection,
+        conn: &mut MysqlConnection,
         sql: &str,
         params: &[&dyn ToValue],
     ) -> Result<Model<DATA>, C3p0Error> {
@@ -188,7 +188,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_all_with_sql(
         &self,
-        conn: &MysqlConnection,
+        conn: &mut MysqlConnection,
         sql: &str,
         params: &[&dyn ToValue],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
@@ -206,12 +206,12 @@ where
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &MysqlConnection) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &mut MysqlConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.queries.create_table_sql_query, &[])?;
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &MysqlConnection, cascade: bool) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(&self, conn: &mut MysqlConnection, cascade: bool) -> Result<(), C3p0Error> {
         let query = if cascade {
             &self.queries.drop_table_sql_query_cascade
         } else {
@@ -221,19 +221,19 @@ where
         Ok(())
     }
 
-    fn count_all(&self, conn: &MysqlConnection) -> Result<u64, C3p0Error> {
+    fn count_all(&self, conn: &mut MysqlConnection) -> Result<u64, C3p0Error> {
         conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
     }
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &MysqlConnection,
+        conn: &mut MysqlConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn fetch_all(&self, conn: &MysqlConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn fetch_all(&self, conn: &mut MysqlConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         })
@@ -241,7 +241,7 @@ where
 
     fn fetch_all_for_update(
         &self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let sql = format!(
@@ -254,7 +254,7 @@ where
 
     fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &MysqlConnection,
+        conn: &mut MysqlConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
@@ -264,7 +264,7 @@ where
 
     fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -276,7 +276,7 @@ where
         conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row))
     }
 
-    fn delete(&self, conn: &MysqlConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &mut MysqlConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
         let result = conn.execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -288,19 +288,19 @@ where
         Ok(result)
     }
 
-    fn delete_all(&self, conn: &MysqlConnection) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &mut MysqlConnection) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_all_sql_query, &[])
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &MysqlConnection,
+        conn: &mut MysqlConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn save(&self, conn: &MysqlConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &mut MysqlConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
         {
             conn.execute(&self.queries.save_sql_query, &[&obj.version, &json_data])?;
@@ -315,7 +315,7 @@ where
         })
     }
 
-    fn update(&self, conn: &MysqlConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(&self, conn: &mut MysqlConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
