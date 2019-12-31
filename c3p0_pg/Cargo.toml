@@ -1,7 +1,7 @@
 [package]
 name = "c3p0_pg"
 license = "MIT"
-version = "0.25.0"
+version = "0.26.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2"
 edition = "2018"
@@ -11,7 +11,7 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["postgres", "pg"]
 
 [dependencies]
-c3p0_common = { path = "../c3p0_common", version = "0.25.0" }
+c3p0_common = { path = "../c3p0_common", version = "0.26.0" }
 log = "0.4"
 r2d2 = "0.8"
 rental = "0.5"
