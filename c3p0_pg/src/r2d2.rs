@@ -1,5 +1,5 @@
+use postgres::{Client, Config};
 use r2d2::ManageConnection;
-use postgres::{Config, Client};
 use tokio_postgres::Error;
 
 pub struct PostgresConnectionManager {
@@ -8,7 +8,10 @@ pub struct PostgresConnectionManager {
 }
 
 impl PostgresConnectionManager {
-    pub fn new(config: Config, tls_connector: Box<dyn Fn(&Config) -> Result<Client, Error> + Send + Sync>) -> PostgresConnectionManager {
+    pub fn new(
+        config: Config,
+        tls_connector: Box<dyn Fn(&Config) -> Result<Client, Error> + Send + Sync>,
+    ) -> PostgresConnectionManager {
         PostgresConnectionManager {
             config,
             tls_connector,
@@ -37,18 +40,14 @@ impl ManageConnection for PostgresConnectionManager {
 mod test {
 
     use super::*;
-    use tokio_postgres::NoTls;
+    use tokio_postgres::tls::NoTls;
 
     #[test]
     fn new_connection() {
-
         let tls = NoTls;
         let manager = PostgresConnectionManager::new(
             "host=localhost user=postgres".parse().unwrap(),
             Box::new(move |config| config.connect(tls.clone())),
         );
-
-        let _pool = r2d2::Pool::new(manager).unwrap();
     }
-
 }
