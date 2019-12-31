@@ -14,7 +14,7 @@ fn json_should_commit_transaction() {
         });
 
         let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
-            assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+            assert!(jpo.create_table_if_not_exists(conn).is_ok());
             assert!(jpo.save(conn, model.clone()).is_ok());
             assert!(jpo.save(conn, model.clone()).is_ok());
             assert!(jpo.save(conn, model.clone()).is_ok());
@@ -24,11 +24,11 @@ fn json_should_commit_transaction() {
         assert!(result.is_ok());
 
         {
-            let conn = c3p0.connection().unwrap();
-            let count = jpo.count_all(&conn).unwrap();
+            let conn = &mut c3p0.connection().unwrap();
+            let count = jpo.count_all(conn).unwrap();
             assert_eq!(3, count);
 
-            assert!(jpo.drop_table_if_exists(&conn, true).is_ok());
+            assert!(jpo.drop_table_if_exists(conn, true).is_ok());
         }
     });
 }
@@ -46,7 +46,7 @@ fn should_rollback_transaction() {
         });
 
         let result_create_table: Result<(), C3p0Error> = c3p0.transaction(|conn| {
-            assert!(jpo.create_table_if_not_exists(&conn).is_ok());
+            assert!(jpo.create_table_if_not_exists(conn).is_ok());
             Ok(())
         });
         assert!(result_create_table.is_ok());
@@ -61,11 +61,11 @@ fn should_rollback_transaction() {
         assert!(result.is_err());
 
         {
-            let conn = c3p0.connection().unwrap();
-            let count = jpo.count_all(&conn).unwrap();
+            let conn = &mut c3p0.connection().unwrap();
+            let count = jpo.count_all(conn).unwrap();
             assert_eq!(0, count);
 
-            assert!(jpo.drop_table_if_exists(&conn, true).is_ok());
+            assert!(jpo.drop_table_if_exists(conn, true).is_ok());
         }
     });
 }

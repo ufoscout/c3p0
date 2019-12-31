@@ -221,7 +221,11 @@ where
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &mut PgConnection, cascade: bool) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(
+        &self,
+        conn: &mut PgConnection,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
         let query = if cascade {
             &self.queries.drop_table_sql_query_cascade
         } else {

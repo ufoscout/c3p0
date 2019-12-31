@@ -41,7 +41,7 @@ fn should_commit_transaction() {
         assert!(result.is_ok());
 
         {
-            let conn = c3p0.connection().unwrap();
+            let conn = &mut c3p0.connection().unwrap();
             let count = conn
                 .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
                 .unwrap();
@@ -95,7 +95,7 @@ fn should_rollback_transaction() {
         assert!(result.is_err());
 
         {
-            let conn = c3p0.connection().unwrap();
+            let conn = &mut c3p0.connection().unwrap();
 
             let count = conn
                 .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])

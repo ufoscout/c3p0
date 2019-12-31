@@ -44,7 +44,7 @@ impl Migrator for PgMigrator {
     fn lock_table(
         &self,
         c3p0_json: &PgC3p0Json<MigrationData, DefaultJsonCodec>,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
             "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
@@ -55,7 +55,7 @@ impl Migrator for PgMigrator {
     fn lock_first_migration_row(
         &self,
         c3p0_json: &PgC3p0Json<MigrationData, DefaultJsonCodec>,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where {}->>'migration_id' = $1 FOR UPDATE"#,

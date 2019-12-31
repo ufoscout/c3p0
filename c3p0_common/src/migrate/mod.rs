@@ -136,7 +136,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
 
     pub fn get_migrations_history(
         &self,
-        conn: &MIGRATOR::CONN,
+        conn: &mut MIGRATOR::CONN,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self
             .migrator
@@ -147,9 +147,9 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
     fn create_migration_zero(
         &self,
         c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &MIGRATOR::CONN,
+        conn: &mut MIGRATOR::CONN,
     ) -> Result<(), C3p0Error> {
-        let count = c3p0_json.count_all(&conn)?;
+        let count = c3p0_json.count_all(conn)?;
 
         if count == 0 {
             let migration_zero = MigrationData {
@@ -160,7 +160,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
                 installed_on_epoch_ms: 0,
                 success: true,
             };
-            c3p0_json.save(&conn, migration_zero.into())?;
+            c3p0_json.save(conn, migration_zero.into())?;
         };
 
         Ok(())
@@ -168,8 +168,8 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
 
     fn pre_migration(&self, c3p0_json: &MIGRATOR::C3P0JSON) -> Result<(), C3p0Error> {
         {
-            let conn = self.c3p0.connection()?;
-            if let Err(err) = c3p0_json.create_table_if_not_exists(&conn) {
+            let conn = &mut self.c3p0.connection()?;
+            if let Err(err) = c3p0_json.create_table_if_not_exists(conn) {
                 warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
             };
         }
@@ -184,7 +184,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
     fn start_migration(
         &self,
         c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &MIGRATOR::CONN,
+        conn: &mut MIGRATOR::CONN,
     ) -> Result<(), C3p0Error> {
         let migration_history = self.fetch_migrations_history(c3p0_json, conn)?;
         let migration_history = self.clean_history(migration_history)?;
@@ -244,7 +244,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
     fn fetch_migrations_history(
         &self,
         c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &MIGRATOR::CONN,
+        conn: &mut MIGRATOR::CONN,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         c3p0_json.fetch_all(conn)
     }
@@ -285,11 +285,15 @@ pub trait Migrator: Clone {
 
     fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0JSON;
 
-    fn lock_table(&self, c3p0_json: &Self::C3P0JSON, conn: &Self::CONN) -> Result<(), C3p0Error>;
+    fn lock_table(
+        &self,
+        c3p0_json: &Self::C3P0JSON,
+        conn: &mut Self::CONN,
+    ) -> Result<(), C3p0Error>;
 
     fn lock_first_migration_row(
         &self,
         c3p0_json: &Self::C3P0JSON,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
     ) -> Result<(), C3p0Error>;
 }

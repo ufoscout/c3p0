@@ -15,7 +15,7 @@ fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<dy
 
     migrate.migrate()?;
 
-    let conn = node.0.connection().unwrap();
+    let conn = &mut node.0.connection().unwrap();
     assert!(conn
         .fetch_all_values::<i64>(
             &format!("select count(*) from {}", C3P0_MIGRATE_TABLE_DEFAULT),
@@ -44,7 +44,7 @@ fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), Box<dyn
 
     migrate.migrate()?;
 
-    let conn = node.0.connection().unwrap();
+    let conn = &mut node.0.connection().unwrap();
     assert!(conn
         .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
         .is_ok());
@@ -79,7 +79,7 @@ fn should_execute_migrations() -> Result<(), Box<dyn std::error::Error>> {
 
     migrate.migrate()?;
 
-    let conn = node.0.connection().unwrap();
+    let conn = &mut node.0.connection().unwrap();
 
     assert!(conn
         .fetch_all_values::<i64>(
@@ -94,7 +94,7 @@ fn should_execute_migrations() -> Result<(), Box<dyn std::error::Error>> {
         .fetch_all_values::<i64>(&format!("select count(*) from {}", second_table_name), &[])
         .is_ok());
 
-    let status = migrate.get_migrations_history(&conn).unwrap();
+    let status = migrate.get_migrations_history(conn).unwrap();
     assert_eq!(3, status.len());
     assert_eq!(
         "C3P0_INIT_MIGRATION",
@@ -126,7 +126,7 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<dyn std::error::
     migrate.migrate()?;
     migrate.migrate()?;
 
-    let conn = node.0.connection().unwrap();
+    let conn = &mut node.0.connection().unwrap();
 
     assert!(conn
         .fetch_all_values::<i64>(
@@ -138,7 +138,7 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<dyn std::error::
         .fetch_all_values::<i64>(&format!("select count(*) from {}", first_table_name), &[])
         .is_ok());
 
-    let status = migrate.get_migrations_history(&conn).unwrap();
+    let status = migrate.get_migrations_history(conn).unwrap();
     assert_eq!(2, status.len());
     assert_eq!(
         "C3P0_INIT_MIGRATION",
@@ -195,7 +195,7 @@ fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::Error>>
     }
 
     let status = migrate
-        .get_migrations_history(&c3p0.connection().unwrap())
+        .get_migrations_history(&mut c3p0.connection().unwrap())
         .unwrap();
     assert_eq!(2, status.len());
     assert_eq!(
@@ -220,14 +220,14 @@ fn should_read_migrations_from_files() -> Result<(), Box<dyn std::error::Error>>
     migrate.migrate()?;
     migrate.migrate()?;
 
-    let conn = node.0.connection().unwrap();
+    let conn = &mut node.0.connection().unwrap();
 
     assert_eq!(
         3,
         conn.fetch_one_value::<i64>(&format!("select count(*) from TEST_TABLE"), &[])?
     );
 
-    let status = migrate.get_migrations_history(&conn).unwrap();
+    let status = migrate.get_migrations_history(conn).unwrap();
     assert_eq!(3, status.len());
     assert_eq!("C3P0_INIT_MIGRATION", status[0].data.migration_id);
     assert_eq!("00010_create_test_data", status[1].data.migration_id);

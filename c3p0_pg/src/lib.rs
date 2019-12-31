@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate rental;
+
 mod error;
 //mod json;
 //mod pool;

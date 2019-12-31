@@ -11,14 +11,14 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["c3p0"]
 
 [dependencies]
-err-derive = "0.1"
+err-derive = "0.2"
 log = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 
 # for migrate
-include_dir = { version = "0.2", optional = true }
+include_dir = { version = "0.4", optional = true }
 md-5 = { version = "0.8", optional = true }
 same-file = { version = "1", optional = true }
 walkdir = { version = "2.2", optional = true }

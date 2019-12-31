@@ -211,7 +211,11 @@ where
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &mut MysqlConnection, cascade: bool) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(
+        &self,
+        conn: &mut MysqlConnection,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
         let query = if cascade {
             &self.queries.drop_table_sql_query_cascade
         } else {
@@ -300,7 +304,11 @@ where
         conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn save(&self, conn: &mut MysqlConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(
+        &self,
+        conn: &mut MysqlConnection,
+        obj: NewModel<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
         {
             conn.execute(&self.queries.save_sql_query, &[&obj.version, &json_data])?;
@@ -315,7 +323,11 @@ where
         })
     }
 
-    fn update(&self, conn: &mut MysqlConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(
+        &self,
+        conn: &mut MysqlConnection,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
