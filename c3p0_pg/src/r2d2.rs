@@ -1,6 +1,5 @@
 use r2d2::ManageConnection;
-use postgres::{Config, Socket, Client};
-use postgres::tls::MakeTlsConnect;
+use postgres::{Config, Client};
 use tokio_postgres::Error;
 
 pub struct PostgresConnectionManager {
