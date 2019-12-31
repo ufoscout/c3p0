@@ -98,7 +98,7 @@ where
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
-    fn delete(&self, conn: &mut Self::CONN, obj: &Model<DATA>) -> Result<u64, C3p0Error>;
+    fn delete(&self, conn: &mut Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
     fn delete_all(&self, conn: &mut Self::CONN) -> Result<u64, C3p0Error>;
 

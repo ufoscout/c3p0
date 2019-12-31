@@ -273,8 +273,11 @@ fn should_delete_based_on_id_and_version() {
 
         let saved_model = jpo.save(conn, model.clone()).unwrap();
 
-        let deleted = jpo.delete(conn, &saved_model).unwrap();
-        assert_eq!(1, deleted);
+        let deleted = jpo.delete(conn, saved_model.clone()).unwrap();
+        assert_eq!(saved_model.id, deleted.id);
+
+        assert!(jpo.delete(conn, saved_model.clone()).is_err());
+
         assert!(!jpo.exists_by_id(conn, &saved_model).unwrap());
     });
 }
@@ -297,7 +300,7 @@ fn delete_should_return_optimistic_lock_exception() {
         let saved_model = jpo.save(conn, model.clone()).unwrap();
         assert!(jpo.update(conn, saved_model.clone()).is_ok());
 
-        let expected_error = jpo.delete(conn, &saved_model);
+        let expected_error = jpo.delete(conn, saved_model.clone());
         assert!(expected_error.is_err());
 
         match expected_error {
