@@ -1,6 +1,5 @@
-use crate::error::into_c3p0_error;
 use crate::pg::driver::{
-    rows::Row,
+    row::{Row, RowIndex},
     types::{FromSql, ToSql},
 };
 use crate::pool::{PgC3p0Pool, PgConnection};
@@ -13,7 +12,6 @@ use c3p0_common::json::{
     C3p0Json, Queries,
 };
 use c3p0_common::sql::ForUpdate;
-use postgres::rows::RowIndex;
 use serde::export::fmt::Display;
 
 pub trait PgC3p0JsonBuilder {
@@ -174,7 +172,7 @@ where
         &self,
         conn: &mut PgConnection,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(sql, params, |row| self.to_model(row))
     }
@@ -187,7 +185,7 @@ where
         &self,
         conn: &mut PgConnection,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Model<DATA>, C3p0Error> {
         conn.fetch_one(sql, params, |row| self.to_model(row))
     }
@@ -200,7 +198,7 @@ where
         &self,
         conn: &mut PgConnection,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row))
     }
@@ -375,13 +373,12 @@ pub fn to_model<
 }
 
 #[inline]
-pub fn get_or_error<I: RowIndex + Display, T: FromSql>(
-    row: &Row,
+pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
+    row: &'a Row,
     index: I,
 ) -> Result<T, C3p0Error> {
-    row.get_opt(&index)
-        .ok_or_else(|| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for index {}", index),
-        })?
-        .map_err(into_c3p0_error)
+    row.try_get(&index)
+        .map_err(|err| C3p0Error::RowMapperError {
+            cause: format!("Row contains no values for index {}. Err: {}", index, err),
+        })
 }

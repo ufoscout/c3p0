@@ -1,12 +1,11 @@
 use crate::error::into_c3p0_error;
-use crate::pg::driver::rows::Row;
-use crate::pg::driver::types::{FromSql, ToSql};
-use crate::pg::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
-use std::ops::Deref;
+use crate::pg::driver::row::Row;
+use crate::pg::driver::types::{FromSqlOwned, ToSql};
+use crate::pg::r2d2::{Pool, PooledConnection};
 
+use crate::r2d2::PostgresConnectionManager;
 use c3p0_common::*;
-use postgres::transaction::Transaction;
-use postgres::Connection;
+use postgres::Transaction;
 
 #[derive(Clone)]
 pub struct PgC3p0Pool {
@@ -66,7 +65,6 @@ impl C3p0Pool for PgC3p0Pool {
         };
 
         Ok(result)
-
     }
 }
 
@@ -98,29 +96,31 @@ pub enum PgConnection {
 
 impl SqlConnection for PgConnection {
     fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        self.conn(|conn| conn.batch_execute(sql).map_err(into_c3p0_error))
+        match self {
+            PgConnection::Conn(conn) => conn.batch_execute(sql).map_err(into_c3p0_error),
+            PgConnection::Tx(tx) => tx.rent_mut(|tref| {
+                let conn = tref.as_mut().unwrap();
+                conn.batch_execute(sql).map_err(into_c3p0_error)
+            }),
+        }
     }
 }
 
 impl PgConnection {
-    #[inline]
-    fn conn<R, F: Fn(&Connection) -> R>(&mut self, consumer: F) -> R {
+    pub fn execute(&mut self, sql: &str, params: &[&(dyn ToSql + Sync)]) -> Result<u64, C3p0Error> {
         match self {
-            PgConnection::Conn(conn) => (consumer)(conn.deref()),
-            PgConnection::Tx(tx) => {
-                tx.rent_mut(|tref| (consumer)(tref.as_mut().unwrap().connection()))
-            }
+            PgConnection::Conn(conn) => conn.execute(sql, params).map_err(into_c3p0_error),
+            PgConnection::Tx(tx) => tx.rent_mut(|tref| {
+                let conn = tref.as_mut().unwrap();
+                conn.execute(sql, params).map_err(into_c3p0_error)
+            }),
         }
     }
 
-    pub fn execute(&mut self, sql: &str, params: &[&dyn ToSql]) -> Result<u64, C3p0Error> {
-        self.conn(|conn| conn.execute(sql, params).map_err(into_c3p0_error))
-    }
-
-    pub fn fetch_one_value<T: FromSql>(
+    pub fn fetch_one_value<T: FromSqlOwned>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<T, C3p0Error> {
         self.fetch_one(sql, params, to_value_mapper)
     }
@@ -128,7 +128,7 @@ impl PgConnection {
     pub fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
         mapper: F,
     ) -> Result<T, C3p0Error> {
         self.fetch_one_optional(sql, params, mapper)
@@ -138,54 +138,80 @@ impl PgConnection {
     pub fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
-        self.conn(|conn| {
-            let stmt = conn.prepare(sql).map_err(into_c3p0_error)?;
-            stmt.query(params)
-                .map_err(into_c3p0_error)?
-                .iter()
-                .next()
-                .map(|row| mapper(&row))
-                .transpose()
-                .map_err(|err| C3p0Error::RowMapperError {
-                    cause: format!("{}", err),
-                })
-        })
+        match self {
+            PgConnection::Conn(conn) => {
+                let stmt = conn.prepare(sql).map_err(into_c3p0_error)?;
+                conn.query(&stmt, params)
+                    .map_err(into_c3p0_error)?
+                    .iter()
+                    .next()
+                    .map(|row| mapper(&row))
+                    .transpose()
+                    .map_err(|err| C3p0Error::RowMapperError {
+                        cause: format!("{}", err),
+                    })
+            }
+            PgConnection::Tx(tx) => tx.rent_mut(|tref| {
+                let conn = tref.as_mut().unwrap();
+                let stmt = conn.prepare(sql).map_err(into_c3p0_error)?;
+                conn.query(&stmt, params)
+                    .map_err(into_c3p0_error)?
+                    .iter()
+                    .next()
+                    .map(|row| mapper(&row))
+                    .transpose()
+                    .map_err(|err| C3p0Error::RowMapperError {
+                        cause: format!("{}", err),
+                    })
+            }),
+        }
     }
 
     pub fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
-        self.conn(|conn| {
-            let stmt = conn.prepare(sql).map_err(into_c3p0_error)?;
-            stmt.query(params)
-                .map_err(into_c3p0_error)?
-                .iter()
-                .map(|row| mapper(&row))
-                .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
-                .map_err(|err| C3p0Error::RowMapperError {
-                    cause: format!("{}", err),
-                })
-        })
+        match self {
+            PgConnection::Conn(conn) => {
+                let stmt = conn.prepare(sql).map_err(into_c3p0_error)?;
+                conn.query(&stmt, params)
+                    .map_err(into_c3p0_error)?
+                    .iter()
+                    .map(|row| mapper(&row))
+                    .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
+                    .map_err(|err| C3p0Error::RowMapperError {
+                        cause: format!("{}", err),
+                    })
+            }
+            PgConnection::Tx(tx) => tx.rent_mut(|tref| {
+                let conn = tref.as_mut().unwrap();
+                let stmt = conn.prepare(sql).map_err(into_c3p0_error)?;
+                conn.query(&stmt, params)
+                    .map_err(into_c3p0_error)?
+                    .iter()
+                    .map(|row| mapper(&row))
+                    .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
+                    .map_err(|err| C3p0Error::RowMapperError {
+                        cause: format!("{}", err),
+                    })
+            }),
+        }
     }
 
-    pub fn fetch_all_values<T: FromSql>(
+    pub fn fetch_all_values<T: FromSqlOwned>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Vec<T>, C3p0Error> {
         self.fetch_all(sql, params, to_value_mapper)
     }
 }
 
-fn to_value_mapper<T: FromSql>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
-    let result = row
-        .get_opt(0)
-        .ok_or_else(|| C3p0Error::ResultNotFoundError)?;
-    Ok(result?)
+fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
+    Ok(row.try_get(0).map_err(|_| C3p0Error::ResultNotFoundError)?)
 }
