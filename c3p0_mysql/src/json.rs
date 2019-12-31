@@ -280,7 +280,7 @@ where
         conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row))
     }
 
-    fn delete(&self, conn: &mut MysqlConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &mut MysqlConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let result = conn.execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -289,7 +289,7 @@ where
             )});
         }
 
-        Ok(result)
+        Ok(obj)
     }
 
     fn delete_all(&self, conn: &mut MysqlConnection) -> Result<u64, C3p0Error> {

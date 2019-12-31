@@ -45,7 +45,7 @@ mod test {
     #[test]
     fn new_connection() {
         let tls = NoTls;
-        let manager = PostgresConnectionManager::new(
+        let _manager = PostgresConnectionManager::new(
             "host=localhost user=postgres".parse().unwrap(),
             Box::new(move |config| config.connect(tls.clone())),
         );
