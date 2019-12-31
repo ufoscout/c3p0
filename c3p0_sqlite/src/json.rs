@@ -296,7 +296,11 @@ where
         conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn save(&self, conn: &mut SqliteConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(
+        &self,
+        conn: &mut SqliteConnection,
+        obj: NewModel<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
         {
             conn.execute(&self.queries.save_sql_query, &[&obj.version, &json_data])?;
@@ -311,7 +315,11 @@ where
         })
     }
 
-    fn update(&self, conn: &mut SqliteConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(
+        &self,
+        conn: &mut SqliteConnection,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {

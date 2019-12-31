@@ -16,7 +16,7 @@ impl<C3P0: C3p0Pool> C3p0JsonBuilder<C3P0> {
         let table_name = table_name.into();
         C3p0JsonBuilder {
             phantom_c3p0_manager: std::marker::PhantomData,
-            table_name: table_name.clone(),
+            table_name,
             id_field_name: "id".to_owned(),
             version_field_name: "version".to_owned(),
             data_field_name: "data".to_owned(),

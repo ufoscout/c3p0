@@ -60,7 +60,7 @@ where
         db: &'a mut HashMap<String, BTreeMap<IdType, Model<Value>>>,
     ) -> &'a mut BTreeMap<IdType, Model<Value>> {
         db.entry(qualified_table_name.to_owned())
-            .or_insert_with(|| BTreeMap::new())
+            .or_insert_with(BTreeMap::new)
     }
 
     fn to_value_model(&self, model: &Model<DATA>) -> Result<Model<Value>, C3p0Error> {
@@ -300,7 +300,8 @@ mod test {
 
         // Act
         let saved_model_1 = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
-        let fetched_model_1 = c3p0.fetch_one_optional_by_id(&mut pool.connection()?, &saved_model_1)?;
+        let fetched_model_1 =
+            c3p0.fetch_one_optional_by_id(&mut pool.connection()?, &saved_model_1)?;
         let exist_model_1 = c3p0.exists_by_id(&mut pool.connection()?, &saved_model_1)?;
 
         let saved_model_2 = c3p0.save(&mut pool.connection()?, TestData::new("value2").into())?;
@@ -395,9 +396,15 @@ mod test {
         assert_eq!(0, c3p0_1.count_all(&mut conn)?);
         assert_eq!(0, c3p0_2.count_all(&mut conn)?);
 
-        assert!(c3p0_1.save(&mut conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_2.save(&mut conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_2.save(&mut conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_1
+            .save(&mut conn, TestData::new("value1").into())
+            .is_ok());
+        assert!(c3p0_2
+            .save(&mut conn, TestData::new("value1").into())
+            .is_ok());
+        assert!(c3p0_2
+            .save(&mut conn, TestData::new("value1").into())
+            .is_ok());
 
         let saved_on_2 = c3p0_2.save(&mut conn, TestData::new("value1").into())?;
 
@@ -430,7 +437,9 @@ mod test {
         assert!(c3p0_1.create_table_if_not_exists(&mut conn).is_ok());
         assert!(c3p0_1.create_table_if_not_exists(&mut conn).is_ok());
 
-        assert!(c3p0_1.save(&mut conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_1
+            .save(&mut conn, TestData::new("value1").into())
+            .is_ok());
 
         assert_eq!(1, c3p0_1.count_all(&mut conn)?);
 
