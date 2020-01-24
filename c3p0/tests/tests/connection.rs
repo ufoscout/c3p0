@@ -6,7 +6,7 @@ fn should_execute_and_fetch() {
     SINGLETON.get(|(pool, _)| {
         let c3p0: C3p0Impl = pool.clone();
 
-        let conn = c3p0.connection().unwrap();
+        let conn = &mut c3p0.connection().unwrap();
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
 
@@ -82,7 +82,7 @@ fn should_execute_and_fetch_option() {
     SINGLETON.get(|(pool, _)| {
         let c3p0: C3p0Impl = pool.clone();
 
-        let conn = c3p0.connection().unwrap();
+        let conn = &mut c3p0.connection().unwrap();
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
         assert!(conn
@@ -137,7 +137,7 @@ fn should_execute_and_fetch_option() {
 fn should_batch_execute() {
     SINGLETON.get(|(pool, _)| {
         let c3p0: C3p0Impl = pool.clone();
-        let conn = c3p0.connection().unwrap();
+        let conn = &mut c3p0.connection().unwrap();
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
 

@@ -43,7 +43,7 @@ impl Migrator for SqliteMigrator {
     fn lock_table(
         &self,
         _c3p0_json: &SqliteC3p0Json<MigrationData, DefaultJsonCodec>,
-        _conn: &SqliteConnection,
+        _conn: &mut SqliteConnection,
     ) -> Result<(), C3p0Error> {
         Ok(())
     }
@@ -51,7 +51,7 @@ impl Migrator for SqliteMigrator {
     fn lock_first_migration_row(
         &self,
         c3p0_json: &SqliteC3p0Json<MigrationData, DefaultJsonCodec>,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ?"#,

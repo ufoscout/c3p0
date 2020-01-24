@@ -163,7 +163,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_one_optional_with_sql(
         &self,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
         sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -176,7 +176,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_one_with_sql(
         &self,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
         sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<Model<DATA>, C3p0Error> {
@@ -189,7 +189,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_all_with_sql(
         &self,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
         sql: &str,
         params: &[&dyn ToSql],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
@@ -207,14 +207,14 @@ where
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &SqliteConnection) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &mut SqliteConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.queries.create_table_sql_query, &[])?;
         Ok(())
     }
 
     fn drop_table_if_exists(
         &self,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
         cascade: bool,
     ) -> Result<(), C3p0Error> {
         let query = if cascade {
@@ -226,20 +226,20 @@ where
         Ok(())
     }
 
-    fn count_all(&self, conn: &SqliteConnection) -> Result<u64, C3p0Error> {
+    fn count_all(&self, conn: &mut SqliteConnection) -> Result<u64, C3p0Error> {
         conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
             .map(|val: i64| val as u64)
     }
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn fetch_all(&self, conn: &SqliteConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn fetch_all(&self, conn: &mut SqliteConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         })
@@ -247,7 +247,7 @@ where
 
     fn fetch_all_for_update(
         &self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         self.fetch_all(conn)
@@ -255,7 +255,7 @@ where
 
     fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
@@ -265,14 +265,14 @@ where
 
     fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         id: ID,
         _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         self.fetch_one_optional_by_id(conn, id)
     }
 
-    fn delete(&self, conn: &SqliteConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &mut SqliteConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let result = conn.execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -281,22 +281,26 @@ where
             )});
         }
 
-        Ok(result)
+        Ok(obj)
     }
 
-    fn delete_all(&self, conn: &SqliteConnection) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &mut SqliteConnection) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_all_sql_query, &[])
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &SqliteConnection,
+        conn: &mut SqliteConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn save(&self, conn: &SqliteConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(
+        &self,
+        conn: &mut SqliteConnection,
+        obj: NewModel<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec.to_value(&obj.data)?;
         {
             conn.execute(&self.queries.save_sql_query, &[&obj.version, &json_data])?;
@@ -311,7 +315,11 @@ where
         })
     }
 
-    fn update(&self, conn: &SqliteConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(
+        &self,
+        conn: &mut SqliteConnection,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {

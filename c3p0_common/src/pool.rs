@@ -5,14 +5,14 @@ pub trait C3p0Pool: Clone {
 
     fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
-    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&Self::CONN) -> Result<T, E>>(
+    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut Self::CONN) -> Result<T, E>>(
         &self,
         tx: F,
     ) -> Result<T, E>;
 }
 
 pub trait SqlConnection {
-    fn batch_execute(&self, sql: &str) -> Result<(), C3p0Error>;
+    fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error>;
 
     /*
     fn execute(&self, sql: &str, params: &[& dyn ToSql]) -> Result<ExecuteResult, C3p0Error>;

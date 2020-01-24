@@ -74,7 +74,7 @@ impl JsonCodec<UserVersion2> for UserVersionCoded2 {
 #[test]
 fn should_upgrade_structs_on_load() {
     SINGLETON.get(|(pool, _)| {
-        let conn = pool.connection().unwrap();
+        let conn = &mut pool.connection().unwrap();
         let table_name = format!("USER_TABLE_{}", rand_string(8));
 
         let jpo_v1 = C3p0JsonBuilder::new(&table_name).build_with_codec(UserVersionCoded1 {});
@@ -86,18 +86,18 @@ fn should_upgrade_structs_on_load() {
             email: "user_v1_email@test.com".to_owned(),
         });
 
-        assert!(jpo_v1.create_table_if_not_exists(&conn).is_ok());
-        assert!(jpo_v1.delete_all(&conn).is_ok());
+        assert!(jpo_v1.create_table_if_not_exists(conn).is_ok());
+        assert!(jpo_v1.delete_all(conn).is_ok());
 
-        let user_v1 = jpo_v1.save(&conn, new_user_v1.clone()).unwrap();
+        let user_v1 = jpo_v1.save(conn, new_user_v1.clone()).unwrap();
         println!("user id is {}", user_v1.id);
-        println!("total users: {}", jpo_v1.count_all(&conn).unwrap());
+        println!("total users: {}", jpo_v1.count_all(conn).unwrap());
         println!(
             "select all users len: {}",
-            jpo_v1.fetch_all(&conn).unwrap().len()
+            jpo_v1.fetch_all(conn).unwrap().len()
         );
 
-        let user_v2_found = jpo_v2.fetch_one_optional_by_id(&conn, &user_v1.id).unwrap();
+        let user_v2_found = jpo_v2.fetch_one_optional_by_id(conn, &user_v1.id).unwrap();
         assert!(user_v2_found.is_some());
 
         let user_v2_found = user_v2_found.unwrap();

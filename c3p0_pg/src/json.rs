@@ -1,6 +1,5 @@
-use crate::error::into_c3p0_error;
 use crate::pg::driver::{
-    rows::Row,
+    row::{Row, RowIndex},
     types::{FromSql, ToSql},
 };
 use crate::pool::{PgC3p0Pool, PgConnection};
@@ -13,7 +12,6 @@ use c3p0_common::json::{
     C3p0Json, Queries,
 };
 use c3p0_common::sql::ForUpdate;
-use postgres::rows::RowIndex;
 use serde::export::fmt::Display;
 
 pub trait PgC3p0JsonBuilder {
@@ -172,9 +170,9 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_one_optional_with_sql(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(sql, params, |row| self.to_model(row))
     }
@@ -185,9 +183,9 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_one_with_sql(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Model<DATA>, C3p0Error> {
         conn.fetch_one(sql, params, |row| self.to_model(row))
     }
@@ -198,9 +196,9 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub fn fetch_all_with_sql(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row))
     }
@@ -216,12 +214,16 @@ where
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &PgConnection) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &mut PgConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.queries.create_table_sql_query, &[])?;
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &PgConnection, cascade: bool) -> Result<(), C3p0Error> {
+    fn drop_table_if_exists(
+        &self,
+        conn: &mut PgConnection,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
         let query = if cascade {
             &self.queries.drop_table_sql_query_cascade
         } else {
@@ -231,20 +233,20 @@ where
         Ok(())
     }
 
-    fn count_all(&self, conn: &PgConnection) -> Result<u64, C3p0Error> {
+    fn count_all(&self, conn: &mut PgConnection) -> Result<u64, C3p0Error> {
         conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
             .map(|val: i64| val as u64)
     }
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
     }
 
-    fn fetch_all(&self, conn: &PgConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn fetch_all(&self, conn: &mut PgConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         })
@@ -252,7 +254,7 @@ where
 
     fn fetch_all_for_update(
         &self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let sql = format!(
@@ -265,7 +267,7 @@ where
 
     fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
@@ -275,7 +277,7 @@ where
 
     fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -287,7 +289,7 @@ where
         conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row))
     }
 
-    fn delete(&self, conn: &PgConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &mut PgConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let result = conn.execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {
@@ -296,22 +298,22 @@ where
             )});
         }
 
-        Ok(result)
+        Ok(obj)
     }
 
-    fn delete_all(&self, conn: &PgConnection) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &mut PgConnection) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_all_sql_query, &[])
     }
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
     }
 
-    fn save(&self, conn: &PgConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn save(&self, conn: &mut PgConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
         let id = conn.fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &json_data])?;
         Ok(Model {
@@ -321,7 +323,7 @@ where
         })
     }
 
-    fn update(&self, conn: &PgConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn update(&self, conn: &mut PgConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
@@ -371,13 +373,12 @@ pub fn to_model<
 }
 
 #[inline]
-pub fn get_or_error<I: RowIndex + Display, T: FromSql>(
-    row: &Row,
+pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
+    row: &'a Row,
     index: I,
 ) -> Result<T, C3p0Error> {
-    row.get_opt(&index)
-        .ok_or_else(|| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for index {}", index),
-        })?
-        .map_err(into_c3p0_error)
+    row.try_get(&index)
+        .map_err(|err| C3p0Error::RowMapperError {
+            cause: format!("Row contains no values for index {}. Err: {}", index, err),
+        })
 }

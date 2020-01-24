@@ -44,7 +44,7 @@ impl Migrator for MysqlMigrator {
     fn lock_table(
         &self,
         c3p0_json: &MysqlC3p0Json<MigrationData, DefaultJsonCodec>,
-        conn: &MysqlConnection,
+        conn: &mut MysqlConnection,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
             "LOCK TABLES {} WRITE",
@@ -55,7 +55,7 @@ impl Migrator for MysqlMigrator {
     fn lock_first_migration_row(
         &self,
         c3p0_json: &MysqlC3p0Json<MigrationData, DefaultJsonCodec>,
-        conn: &MysqlConnection,
+        conn: &mut MysqlConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ? FOR UPDATE"#,

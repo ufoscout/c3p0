@@ -60,7 +60,7 @@ where
         db: &'a mut HashMap<String, BTreeMap<IdType, Model<Value>>>,
     ) -> &'a mut BTreeMap<IdType, Model<Value>> {
         db.entry(qualified_table_name.to_owned())
-            .or_insert_with(|| BTreeMap::new())
+            .or_insert_with(BTreeMap::new)
     }
 
     fn to_value_model(&self, model: &Model<DATA>) -> Result<Model<Value>, C3p0Error> {
@@ -90,7 +90,7 @@ where
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &InMemoryConnection) -> Result<(), C3p0Error> {
+    fn create_table_if_not_exists(&self, conn: &mut InMemoryConnection) -> Result<(), C3p0Error> {
         conn.write_db(|db| {
             self.get_or_create_table(&self.qualified_table_name, db);
             Ok(())
@@ -99,7 +99,7 @@ where
 
     fn drop_table_if_exists(
         &self,
-        conn: &InMemoryConnection,
+        conn: &mut InMemoryConnection,
         _cascade: bool,
     ) -> Result<(), C3p0Error> {
         conn.write_db(|db| {
@@ -108,7 +108,7 @@ where
         })
     }
 
-    fn count_all(&self, conn: &InMemoryConnection) -> Result<u64, C3p0Error> {
+    fn count_all(&self, conn: &mut InMemoryConnection) -> Result<u64, C3p0Error> {
         conn.read_db(|db| {
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
                 Ok(table.len() as u64)
@@ -120,7 +120,7 @@ where
 
     fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &InMemoryConnection,
+        conn: &mut InMemoryConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.read_db(|db| {
@@ -132,7 +132,7 @@ where
         })
     }
 
-    fn fetch_all(&self, conn: &InMemoryConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    fn fetch_all(&self, conn: &mut InMemoryConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.read_db(|db| {
             if let Some(table) = self.get_table(&self.qualified_table_name, db) {
                 table
@@ -147,7 +147,7 @@ where
 
     fn fetch_all_for_update(
         &self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         self.fetch_all(conn)
@@ -155,7 +155,7 @@ where
 
     fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &InMemoryConnection,
+        conn: &mut InMemoryConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.read_db(|db| {
@@ -170,14 +170,14 @@ where
 
     fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         id: ID,
         _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         self.fetch_one_optional_by_id(conn, id)
     }
 
-    fn delete(&self, conn: &InMemoryConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
+    fn delete(&self, conn: &mut InMemoryConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         conn.write_db(|db| {
             let table = self.get_or_create_table(&self.qualified_table_name, db);
 
@@ -189,7 +189,7 @@ where
 
             if good_version {
                 table.remove(&obj.id);
-                return Ok(1);
+                return Ok(obj);
             }
 
             Err(C3p0Error::OptimisticLockError{ message: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
@@ -199,7 +199,7 @@ where
         })
     }
 
-    fn delete_all(&self, conn: &InMemoryConnection) -> Result<u64, C3p0Error> {
+    fn delete_all(&self, conn: &mut InMemoryConnection) -> Result<u64, C3p0Error> {
         conn.write_db(|db| {
             let table = self.get_or_create_table(&self.qualified_table_name, db);
             let len = table.len();
@@ -210,7 +210,7 @@ where
 
     fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &InMemoryConnection,
+        conn: &mut InMemoryConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.write_db(|db| {
@@ -224,7 +224,7 @@ where
 
     fn save(
         &self,
-        conn: &InMemoryConnection,
+        conn: &mut InMemoryConnection,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         conn.write_db(|db| {
@@ -242,7 +242,7 @@ where
 
     fn update(
         &self,
-        conn: &InMemoryConnection,
+        conn: &mut InMemoryConnection,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         conn.write_db(|db| {
@@ -299,14 +299,15 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         // Act
-        let saved_model_1 = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
-        let fetched_model_1 = c3p0.fetch_one_optional_by_id(&pool.connection()?, &saved_model_1)?;
-        let exist_model_1 = c3p0.exists_by_id(&pool.connection()?, &saved_model_1)?;
+        let saved_model_1 = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
+        let fetched_model_1 =
+            c3p0.fetch_one_optional_by_id(&mut pool.connection()?, &saved_model_1)?;
+        let exist_model_1 = c3p0.exists_by_id(&mut pool.connection()?, &saved_model_1)?;
 
-        let saved_model_2 = c3p0.save(&pool.connection()?, TestData::new("value2").into())?;
+        let saved_model_2 = c3p0.save(&mut pool.connection()?, TestData::new("value2").into())?;
         let fetched_model_2 =
-            c3p0.fetch_one_optional_by_id(&pool.connection()?, &saved_model_2.id)?;
-        let exist_model_2 = c3p0.exists_by_id(&pool.connection()?, &saved_model_2)?;
+            c3p0.fetch_one_optional_by_id(&mut pool.connection()?, &saved_model_2.id)?;
+        let exist_model_2 = c3p0.exists_by_id(&mut pool.connection()?, &saved_model_2)?;
 
         // Assert
         assert!(saved_model_2.id > saved_model_1.id);
@@ -337,10 +338,10 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         // Act
-        let saved_model_1 = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
-        let exist_model_1 = c3p0.exists_by_id(&pool.connection()?, &saved_model_1)?;
+        let saved_model_1 = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
+        let exist_model_1 = c3p0.exists_by_id(&mut pool.connection()?, &saved_model_1)?;
 
-        let exist_model_2 = c3p0.exists_by_id(&pool.connection()?, &(saved_model_1.id + 1))?;
+        let exist_model_2 = c3p0.exists_by_id(&mut pool.connection()?, &(saved_model_1.id + 1))?;
 
         // Assert
         assert!(exist_model_1);
@@ -357,27 +358,27 @@ mod test {
         let c3p0_2a = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
         let c3p0_2b = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
 
-        let conn = pool.connection()?;
+        let conn = &mut pool.connection()?;
         // Act
 
-        assert_eq!(0, c3p0_1.count_all(&conn)?);
-        assert_eq!(0, c3p0_2a.count_all(&conn)?);
-        assert_eq!(0, c3p0_2b.count_all(&conn)?);
+        assert_eq!(0, c3p0_1.count_all(conn)?);
+        assert_eq!(0, c3p0_2a.count_all(conn)?);
+        assert_eq!(0, c3p0_2b.count_all(conn)?);
 
-        assert!(c3p0_1.save(&conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
 
-        assert_eq!(1, c3p0_1.count_all(&conn)?);
-        assert_eq!(0, c3p0_2a.count_all(&conn)?);
-        assert_eq!(0, c3p0_2b.count_all(&conn)?);
+        assert_eq!(1, c3p0_1.count_all(conn)?);
+        assert_eq!(0, c3p0_2a.count_all(conn)?);
+        assert_eq!(0, c3p0_2b.count_all(conn)?);
 
-        assert!(c3p0_1.save(&conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_1.save(&conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_2a.save(&conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_2b.save(&conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_2a.save(conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_2b.save(conn, TestData::new("value1").into()).is_ok());
 
-        assert_eq!(3, c3p0_1.count_all(&conn)?);
-        assert_eq!(2, c3p0_2a.count_all(&conn)?);
-        assert_eq!(2, c3p0_2b.count_all(&conn)?);
+        assert_eq!(3, c3p0_1.count_all(conn)?);
+        assert_eq!(2, c3p0_2a.count_all(conn)?);
+        assert_eq!(2, c3p0_2b.count_all(conn)?);
 
         Ok(())
     }
@@ -389,31 +390,37 @@ mod test {
         let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
         let c3p0_2 = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
 
-        let conn = pool.connection()?;
+        let mut conn = pool.connection()?;
         // Act
 
-        assert_eq!(0, c3p0_1.count_all(&conn)?);
-        assert_eq!(0, c3p0_2.count_all(&conn)?);
+        assert_eq!(0, c3p0_1.count_all(&mut conn)?);
+        assert_eq!(0, c3p0_2.count_all(&mut conn)?);
 
-        assert!(c3p0_1.save(&conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_2.save(&conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_2.save(&conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_1
+            .save(&mut conn, TestData::new("value1").into())
+            .is_ok());
+        assert!(c3p0_2
+            .save(&mut conn, TestData::new("value1").into())
+            .is_ok());
+        assert!(c3p0_2
+            .save(&mut conn, TestData::new("value1").into())
+            .is_ok());
 
-        let saved_on_2 = c3p0_2.save(&conn, TestData::new("value1").into())?;
+        let saved_on_2 = c3p0_2.save(&mut conn, TestData::new("value1").into())?;
 
-        assert_eq!(1, c3p0_1.count_all(&conn)?);
-        assert_eq!(3, c3p0_2.count_all(&conn)?);
+        assert_eq!(1, c3p0_1.count_all(&mut conn)?);
+        assert_eq!(3, c3p0_2.count_all(&mut conn)?);
 
-        assert_eq!(1, c3p0_2.delete_by_id(&conn, &saved_on_2.id)?);
+        assert_eq!(1, c3p0_2.delete_by_id(&mut conn, &saved_on_2.id)?);
 
-        assert!(!c3p0_2.exists_by_id(&conn, &saved_on_2.id)?);
-        assert_eq!(1, c3p0_1.count_all(&conn)?);
-        assert_eq!(2, c3p0_2.count_all(&conn)?);
+        assert!(!c3p0_2.exists_by_id(&mut conn, &saved_on_2.id)?);
+        assert_eq!(1, c3p0_1.count_all(&mut conn)?);
+        assert_eq!(2, c3p0_2.count_all(&mut conn)?);
 
-        assert_eq!(2, c3p0_2.delete_all(&conn)?);
+        assert_eq!(2, c3p0_2.delete_all(&mut conn)?);
 
-        assert_eq!(1, c3p0_1.count_all(&conn)?);
-        assert_eq!(0, c3p0_2.count_all(&conn)?);
+        assert_eq!(1, c3p0_1.count_all(&mut conn)?);
+        assert_eq!(0, c3p0_2.count_all(&mut conn)?);
 
         Ok(())
     }
@@ -424,19 +431,21 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
         let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        let conn = pool.connection()?;
+        let mut conn = pool.connection()?;
 
         // Act
-        assert!(c3p0_1.create_table_if_not_exists(&conn).is_ok());
-        assert!(c3p0_1.create_table_if_not_exists(&conn).is_ok());
+        assert!(c3p0_1.create_table_if_not_exists(&mut conn).is_ok());
+        assert!(c3p0_1.create_table_if_not_exists(&mut conn).is_ok());
 
-        assert!(c3p0_1.save(&conn, TestData::new("value1").into()).is_ok());
+        assert!(c3p0_1
+            .save(&mut conn, TestData::new("value1").into())
+            .is_ok());
 
-        assert_eq!(1, c3p0_1.count_all(&conn)?);
+        assert_eq!(1, c3p0_1.count_all(&mut conn)?);
 
-        assert!(c3p0_1.drop_table_if_exists(&conn, false).is_ok());
+        assert!(c3p0_1.drop_table_if_exists(&mut conn, false).is_ok());
 
-        assert_eq!(0, c3p0_1.count_all(&conn)?);
+        assert_eq!(0, c3p0_1.count_all(&mut conn)?);
 
         Ok(())
     }
@@ -448,11 +457,11 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         // Act
-        let saved_model_0 = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
-        let saved_model_1 = c3p0.save(&pool.connection()?, TestData::new("value2").into())?;
-        let saved_model_2 = c3p0.save(&pool.connection()?, TestData::new("value2").into())?;
+        let saved_model_0 = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
+        let saved_model_1 = c3p0.save(&mut pool.connection()?, TestData::new("value2").into())?;
+        let saved_model_2 = c3p0.save(&mut pool.connection()?, TestData::new("value2").into())?;
 
-        let all = c3p0.fetch_all(&pool.connection()?)?;
+        let all = c3p0.fetch_all(&mut pool.connection()?)?;
 
         // Assert
         assert_eq!(3, all.len());
@@ -482,14 +491,14 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         // Act
-        let saved_model = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
-        let updated_model = c3p0.update(&pool.connection()?, saved_model.clone())?;
+        let saved_model = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
+        let updated_model = c3p0.update(&mut pool.connection()?, saved_model.clone())?;
         let fetched_model = c3p0
-            .fetch_one_optional_by_id(&pool.connection()?, &saved_model)?
+            .fetch_one_optional_by_id(&mut pool.connection()?, &saved_model)?
             .unwrap();
 
-        let updated_result_1 = c3p0.update(&pool.connection()?, saved_model.clone());
-        let updated_result_2 = c3p0.update(&pool.connection()?, updated_model.clone());
+        let updated_result_1 = c3p0.update(&mut pool.connection()?, saved_model.clone());
+        let updated_result_2 = c3p0.update(&mut pool.connection()?, updated_model.clone());
 
         // Assert
         assert_eq!(saved_model.id, updated_model.id);
@@ -516,17 +525,17 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         // Act
-        let saved_model = c3p0.save(&pool.connection()?, TestData::new("value1").into())?;
-        let updated_model = c3p0.update(&pool.connection()?, saved_model.clone())?;
+        let saved_model = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
+        let updated_model = c3p0.update(&mut pool.connection()?, saved_model.clone())?;
         let fetched_model = c3p0
-            .fetch_one_optional_by_id(&pool.connection()?, &saved_model)?
+            .fetch_one_optional_by_id(&mut pool.connection()?, &saved_model)?
             .unwrap();
 
-        let delete_result_1 = c3p0.delete(&pool.connection()?, &saved_model.clone());
-        assert!(c3p0.exists_by_id(&pool.connection()?, &saved_model)?);
+        let delete_result_1 = c3p0.delete(&mut pool.connection()?, saved_model.clone());
+        assert!(c3p0.exists_by_id(&mut pool.connection()?, &saved_model)?);
 
-        let delete_result_2 = c3p0.delete(&pool.connection()?, &updated_model.clone());
-        assert!(!c3p0.exists_by_id(&pool.connection()?, &saved_model)?);
+        let delete_result_2 = c3p0.delete(&mut pool.connection()?, updated_model.clone());
+        assert!(!c3p0.exists_by_id(&mut pool.connection()?, &saved_model)?);
 
         // Assert
         assert_eq!(saved_model.id, updated_model.id);
@@ -536,7 +545,7 @@ mod test {
         assert_eq!(saved_model.id, fetched_model.id);
         assert_eq!(fetched_model.version, updated_model.version);
 
-        assert_eq!(1, delete_result_2.unwrap());
+        assert_eq!(updated_model.id, delete_result_2.unwrap().id);
 
         match delete_result_1 {
             Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
