@@ -11,11 +11,17 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["postgres", "pg"]
 
 [dependencies]
-c3p0_common = { path = "../c3p0_common", version = "0.25.0", features = ["async"] }
+c3p0_common = { path = "../c3p0_common", version = "0.41", features = ["async"] }
+async-trait = "0.1"
+futures = "0.3.1"
 log = "0.4"
-r2d2 = "0.8"
-postgres = { version = "0.15", features = ["with-serde_json"] }
-r2d2_postgres = "0.14"
+bb8 = "0.4"
+# bb8-postgres = "0.4"
+
+# required by custom bb8 connection manager
+tokio = { version = "0.2", features = ["rt-core"] }
+
+tokio-postgres = { version = "0.5", features = ["with-serde_json-1"] }
 serde = "1.0"
 
 [features]

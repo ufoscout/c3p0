@@ -1,7 +1,7 @@
 use crate::error::into_c3p0_error;
 use crate::pg::driver::rows::Row;
 use crate::pg::driver::types::{FromSql, ToSql};
-use crate::pg::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
+use crate::pg::bb8::{Pool, PooledConnection, PostgresConnectionManager};
 
 use c3p0_common::*;
 

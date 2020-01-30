@@ -1,19 +1,58 @@
+mod bb8;
 mod error;
-mod json;
-mod pool;
+//mod json;
+//mod pool;
 
 pub use c3p0_common::*;
 
 pub mod pg {
 
-    pub use crate::json::*;
-    pub use crate::pool::*;
+    pub use crate::bb8::*;
+  //  pub use crate::json::*;
+  ///  pub use crate::pool::*;
 
-    pub mod r2d2 {
-        pub use r2d2::*;
-        pub use r2d2_postgres::*;
+    pub mod bb8 {
+        pub use bb8::*;
+        //pub use bb8_postgres::*;
     }
     pub mod driver {
-        pub use postgres::*;
+        pub use tokio_postgres::*;
+    }
+}
+
+mod test {
+
+    use std::pin::Pin;
+    use futures::Stream;
+    use std::io;
+
+    async fn jump_around(
+        mut stream: Pin<&mut dyn Stream<Item = Result<u8, io::Error>>>,
+    ) -> Result<(), io::Error> {
+        use futures::stream::TryStreamExt; // for `try_for_each_concurrent`
+        const MAX_CONCURRENT_JUMPERS: usize = 100;
+
+        stream.try_for_each_concurrent(MAX_CONCURRENT_JUMPERS, |num| async move {
+            //jump_n_times(num).await?;
+            //report_n_jumps(num).await?;
+            Ok(())
+        }).await?;
+
+        Ok(())
+    }
+
+    use futures::future::{Future, LocalBoxFuture, FutureExt};
+
+    type Context = ();
+    type AsyncCb = Box<dyn for<'r> FnOnce(&'r Context)-> LocalBoxFuture<'r, ()>>;
+
+
+    fn normalize_async_cb<Fut: Future<Output=()>>(f: for<'r> fn(&'r Context) -> Fut ) -> AsyncCb
+//                                                  how to add 'r for Fut?  ^^^
+    {
+        let cb = move |ctx: &Context| {
+            f(ctx).boxed_local()
+        };
+        Box::new(cb)
     }
 }
