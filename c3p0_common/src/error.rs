@@ -28,7 +28,7 @@ pub enum C3p0Error {
     #[error(display = "ResultNotFoundError: Expected one result but found zero.")]
     ResultNotFoundError,
     #[error(display = "TransactionError: [{}]", cause)]
-    TransactionError { cause: Box<dyn std::error::Error> },
+    TransactionError { cause: Box<dyn std::error::Error + Send + Sync> },
     #[error(display = "CorruptedDbMigrationState: [{}]", message)]
     CorruptedDbMigrationState { message: String },
     #[error(display = "AlteredMigrationSql: [{}]", message)]
@@ -40,7 +40,7 @@ pub enum C3p0Error {
     #[error(display = "MigrationError: [{}]. Cause: [{}]", message, cause)]
     MigrationError {
         message: String,
-        cause: Box<dyn std::error::Error>,
+        cause: Box<C3p0Error>,
     },
 }
 
@@ -48,4 +48,17 @@ impl From<serde_json::error::Error> for C3p0Error {
     fn from(cause: serde_json::error::Error) -> Self {
         C3p0Error::JsonProcessingError { cause }
     }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+    use static_assertions::*;
+
+    #[test]
+    fn error_should_be_send_and_sync() {
+        assert_impl_all!(C3p0Error: Send, Sync);
+    }
+
 }

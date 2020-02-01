@@ -1,4 +1,4 @@
-use crate::pg::driver::{
+use crate::pg_async::driver::{
     row::{Row, RowIndex},
     types::{FromSql, ToSql},
 };
@@ -318,7 +318,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
         conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()]).await
     }
 
-    pub async fn save(&self, conn: &mut PgConnection<'_>, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    pub async fn save<'a>(&'a self, conn: &'a mut PgConnection<'a>, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
         let id = conn.fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &json_data]).await?;
         Ok(Model {

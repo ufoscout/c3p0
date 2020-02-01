@@ -5,7 +5,7 @@ mod pool;
 
 pub use c3p0_common::*;
 
-pub mod pg {
+pub mod pg_async {
 
     //  pub use crate::bb8::*;
     pub use crate::json::*;

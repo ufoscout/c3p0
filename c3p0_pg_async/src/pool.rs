@@ -1,7 +1,7 @@
 use crate::error::{bb8_into_c3p0_error, into_c3p0_error};
-use crate::pg::bb8::{Pool, PooledConnection, PostgresConnectionManager};
-use crate::pg::driver::row::Row;
-use crate::pg::driver::types::{FromSqlOwned, ToSql};
+use crate::pg_async::bb8::{Pool, PooledConnection, PostgresConnectionManager};
+use crate::pg_async::driver::row::Row;
+use crate::pg_async::driver::types::{FromSqlOwned, ToSql};
 
 use async_trait::async_trait;
 use c3p0_common::pool::{C3p0PoolAsync, SqlConnectionAsync};
@@ -29,7 +29,7 @@ impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager<NoTls>> {
 #[async_trait]
 impl<'a> C3p0PoolAsync for &'a PgC3p0Pool {
     type CONN = PgConnection<'a>;
-
+/*
     async fn connection(&self) -> Result<Self::CONN, C3p0Error> {
         self.pool
             .get()
@@ -39,7 +39,7 @@ impl<'a> C3p0PoolAsync for &'a PgC3p0Pool {
             })
             .map(|conn| PgConnection::Conn(conn))
     }
-
+*/
     async fn transaction<
         T: Send,
         E: From<C3p0Error>,
