@@ -1,8 +1,8 @@
 #![cfg(feature = "pg")]
 
+use c3p0_pg::pg::driver::tls::NoTls;
 use c3p0_pg::pg::r2d2::{Pool, PostgresConnectionManager};
 use c3p0_pg::pg::*;
-use c3p0_pg::pg::driver::tls::NoTls;
 use c3p0_pg::*;
 use testcontainers::*;
 
@@ -20,7 +20,9 @@ pub fn new_connection(
         format!(
             "postgres://postgres:postgres@127.0.0.1:{}/postgres",
             node.get_host_port(5432).unwrap()
-        ).parse().unwrap(),
+        )
+        .parse()
+        .unwrap(),
         Box::new(move |config| config.connect(NoTls)),
     );
 

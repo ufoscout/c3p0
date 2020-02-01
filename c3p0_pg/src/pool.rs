@@ -46,7 +46,8 @@ impl C3p0Pool for PgC3p0Pool {
 
         let (result, executor) = {
             // ToDo: To avoid this unsafe we need GAT
-            let transaction = unsafe { ::std::mem::transmute(conn.transaction().map_err(into_c3p0_error)?) };
+            let transaction =
+                unsafe { ::std::mem::transmute(conn.transaction().map_err(into_c3p0_error)?) };
             let mut sql_executor = PgConnection::Tx(transaction);
             let result = (tx)(&mut sql_executor)?;
             (result, sql_executor)
@@ -72,19 +73,16 @@ impl SqlConnection for PgConnection {
     fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             PgConnection::Conn(conn) => conn.batch_execute(sql).map_err(into_c3p0_error),
-            PgConnection::Tx(tx) =>
-                tx.batch_execute(sql).map_err(into_c3p0_error)
+            PgConnection::Tx(tx) => tx.batch_execute(sql).map_err(into_c3p0_error),
         }
     }
 }
 
 impl PgConnection {
-
     pub fn execute(&mut self, sql: &str, params: &[&(dyn ToSql + Sync)]) -> Result<u64, C3p0Error> {
         match self {
             PgConnection::Conn(conn) => conn.execute(sql, params).map_err(into_c3p0_error),
-            PgConnection::Tx(tx) =>
-                tx.execute(sql, params).map_err(into_c3p0_error)
+            PgConnection::Tx(tx) => tx.execute(sql, params).map_err(into_c3p0_error),
         }
     }
 
@@ -168,7 +166,7 @@ impl PgConnection {
                     .map_err(|err| C3p0Error::RowMapperError {
                         cause: format!("{}", err),
                     })
-            },
+            }
         }
     }
 
@@ -179,7 +177,6 @@ impl PgConnection {
     ) -> Result<Vec<T>, C3p0Error> {
         self.fetch_all(sql, params, to_value_mapper)
     }
-
 }
 
 fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {

@@ -177,7 +177,11 @@ where
         self.fetch_one_optional_by_id(conn, id)
     }
 
-    fn delete(&self, conn: &mut InMemoryConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn delete(
+        &self,
+        conn: &mut InMemoryConnection,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         conn.write_db(|db| {
             let table = self.get_or_create_table(&self.qualified_table_name, db);
 

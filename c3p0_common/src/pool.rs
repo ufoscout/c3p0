@@ -64,7 +64,12 @@ pub trait C3p0PoolAsync: Clone {
 
     async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
-    async fn transaction<T: Send, E: From<C3p0Error>, F: Send + Sync + FnOnce(&mut Self::CONN) -> Fut, Fut: Send + Sync + Future<Output = Result<T, E>>>(
+    async fn transaction<
+        T: Send,
+        E: From<C3p0Error>,
+        F: Send + Sync + FnOnce(&mut Self::CONN) -> Fut,
+        Fut: Send + Sync + Future<Output = Result<T, E>>,
+    >(
         &self,
         tx: F,
     ) -> Result<T, E>;
@@ -74,5 +79,4 @@ pub trait C3p0PoolAsync: Clone {
 #[async_trait]
 pub trait SqlConnectionAsync {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error>;
-
 }

@@ -119,9 +119,9 @@ use async_trait::async_trait;
 #[cfg(feature = "async")]
 #[async_trait]
 pub trait C3p0JsonAsync<DATA, CODEC>: Clone
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
-        CODEC: JsonCodec<DATA>,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    CODEC: JsonCodec<DATA>,
 {
     type CONN;
 
@@ -129,7 +129,8 @@ pub trait C3p0JsonAsync<DATA, CODEC>: Clone
 
     async fn create_table_if_not_exists(&self, conn: &Self::CONN) -> Result<(), C3p0Error>;
 
-    async fn drop_table_if_exists(&self, conn: &Self::CONN, cascade: bool) -> Result<(), C3p0Error>;
+    async fn drop_table_if_exists(&self, conn: &Self::CONN, cascade: bool)
+        -> Result<(), C3p0Error>;
 
     async fn count_all(&self, conn: &Self::CONN) -> Result<u64, C3p0Error>;
 

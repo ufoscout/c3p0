@@ -272,7 +272,11 @@ where
         self.fetch_one_optional_by_id(conn, id)
     }
 
-    fn delete(&self, conn: &mut SqliteConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    fn delete(
+        &self,
+        conn: &mut SqliteConnection,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         let result = conn.execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])?;
 
         if result == 0 {

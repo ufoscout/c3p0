@@ -62,11 +62,7 @@ pub enum InMemoryConnection {
 }
 
 impl InMemoryConnection {
-    pub fn read_db<
-        T,
-        E: From<C3p0Error>,
-        F: FnOnce(&Db) -> Result<T, E>,
-    >(
+    pub fn read_db<T, E: From<C3p0Error>, F: FnOnce(&Db) -> Result<T, E>>(
         &mut self,
         tx: F,
     ) -> Result<T, E> {
@@ -81,11 +77,7 @@ impl InMemoryConnection {
         }
     }
 
-    pub fn write_db<
-        T,
-        E: From<C3p0Error>,
-        F: FnOnce(&mut Db) -> Result<T, E>,
-    >(
+    pub fn write_db<T, E: From<C3p0Error>, F: FnOnce(&mut Db) -> Result<T, E>>(
         &mut self,
         tx: F,
     ) -> Result<T, E> {

@@ -38,26 +38,22 @@ impl C3p0Pool for SqliteC3p0Pool {
         &self,
         tx: F,
     ) -> Result<T, E> {
-        let conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
+        let mut conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
             cause: format!("{}", err),
         })?;
 
-        let transaction = new_simple_mut(conn)?;
-
         let (result, executor) = {
+            // ToDo: To avoid this unsafe we need GAT
+            let transaction =
+                unsafe { ::std::mem::transmute(conn.transaction().map_err(into_c3p0_error)?) };
             let mut sql_executor = SqliteConnection::Tx(transaction);
             let result = (tx)(&mut sql_executor)?;
             (result, sql_executor)
         };
 
         match executor {
-            SqliteConnection::Tx(mut tx) => {
-                tx.rent_mut(|tref| {
-                    let tref_some = tref.take();
-                    tref_some.unwrap().commit()?;
-                    Ok(())
-                })
-                .map_err(into_c3p0_error)?;
+            SqliteConnection::Tx(tx) => {
+                tx.commit().map_err(into_c3p0_error)?;
             }
             _ => panic!("It should have been a transaction"),
         };
@@ -66,45 +62,16 @@ impl C3p0Pool for SqliteC3p0Pool {
     }
 }
 
-fn new_simple_mut(
-    conn: PooledConnection<SqliteConnectionManager>,
-) -> Result<rentals::SimpleMut, C3p0Error> {
-    rentals::SimpleMut::try_new_or_drop(Box::new(conn), |c| {
-        let tx = c.transaction().map_err(into_c3p0_error)?;
-        Ok(Some(tx))
-    })
-}
-
-rental! {
-    mod rentals {
-        use super::*;
-
-        #[rental_mut]
-        pub struct SimpleMut {
-            conn: Box<PooledConnection<SqliteConnectionManager>>,
-            tx: Option<rusqlite::Transaction<'conn>>,
-        }
-    }
-}
-
 pub enum SqliteConnection {
     Conn(PooledConnection<SqliteConnectionManager>),
-    Tx(rentals::SimpleMut),
+    Tx(rusqlite::Transaction<'static>),
 }
 
 impl SqlConnection for SqliteConnection {
     fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             SqliteConnection::Conn(conn) => conn.execute_batch(sql).map_err(into_c3p0_error),
-            SqliteConnection::Tx(tx) => {
-                tx.rent_mut(|tref| {
-                    tref.as_mut()
-                        .unwrap()
-                        .execute_batch(sql)
-                        .map_err(into_c3p0_error)
-                })
-                //tx.borrow_mut().execute_batch(sql).map_err(into_c3p0_error)
-            }
+            SqliteConnection::Tx(tx) => tx.execute_batch(sql).map_err(into_c3p0_error),
         }
     }
 }
@@ -116,13 +83,10 @@ impl SqliteConnection {
                 .execute(sql, params)
                 .map_err(into_c3p0_error)
                 .map(|res| res as u64),
-            SqliteConnection::Tx(tx) => tx.rent_mut(|tref| {
-                tref.as_mut()
-                    .unwrap()
-                    .execute(sql, params)
-                    .map(|res| res as u64)
-                    .map_err(into_c3p0_error)
-            }),
+            SqliteConnection::Tx(tx) => tx
+                .execute(sql, params)
+                .map(|res| res as u64)
+                .map_err(into_c3p0_error),
         }
     }
 
@@ -154,16 +118,9 @@ impl SqliteConnection {
             SqliteConnection::Conn(conn) => {
                 fetch_one_optional(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
             }
-            SqliteConnection::Tx(tx) => tx.rent_mut(|tref| {
-                fetch_one_optional(
-                    tref.as_mut()
-                        .unwrap()
-                        .prepare(sql)
-                        .map_err(into_c3p0_error)?,
-                    params,
-                    mapper,
-                )
-            }),
+            SqliteConnection::Tx(tx) => {
+                fetch_one_optional(tx.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
+            }
         }
     }
 
@@ -177,16 +134,9 @@ impl SqliteConnection {
             SqliteConnection::Conn(conn) => {
                 fetch_all(conn.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
             }
-            SqliteConnection::Tx(tx) => tx.rent_mut(|tref| {
-                fetch_all(
-                    tref.as_mut()
-                        .unwrap()
-                        .prepare(sql)
-                        .map_err(into_c3p0_error)?,
-                    params,
-                    mapper,
-                )
-            }),
+            SqliteConnection::Tx(tx) => {
+                fetch_all(tx.prepare(sql).map_err(into_c3p0_error)?, params, mapper)
+            }
         }
     }
 

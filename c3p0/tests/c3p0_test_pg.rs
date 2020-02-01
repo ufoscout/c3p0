@@ -34,7 +34,9 @@ fn init() -> (
         format!(
             "postgres://postgres:postgres@127.0.0.1:{}/postgres",
             node.get_host_port(5432).unwrap()
-        ).parse().unwrap(),
+        )
+        .parse()
+        .unwrap(),
         Box::new(move |config| config.connect(NoTls)),
     );
 

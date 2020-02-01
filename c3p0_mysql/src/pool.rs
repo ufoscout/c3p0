@@ -44,9 +44,12 @@ impl C3p0Pool for MysqlC3p0Pool {
 
         let (result, executor) = {
             // ToDo: To avoid this unsafe we need GAT
-            let transaction = unsafe { ::std::mem::transmute(conn
-                .start_transaction(true, None, None)
-                .map_err(into_c3p0_error)? )};
+            let transaction = unsafe {
+                ::std::mem::transmute(
+                    conn.start_transaction(true, None, None)
+                        .map_err(into_c3p0_error)?,
+                )
+            };
             let mut sql_executor = MysqlConnection::Tx(transaction);
             let result = (tx)(&mut sql_executor)?;
             (result, sql_executor)
@@ -63,7 +66,6 @@ impl C3p0Pool for MysqlC3p0Pool {
     }
 }
 
-
 pub enum MysqlConnection {
     Conn(PooledConnection<MysqlConnectionManager>),
     Tx(mysql_client::Transaction<'static>),
@@ -76,9 +78,7 @@ impl SqlConnection for MysqlConnection {
                 let conn: &mut mysql_client::Conn = conn.deref_mut();
                 batch_execute(conn, sql)
             }
-            MysqlConnection::Tx(tx) => {
-                batch_execute(tx, sql)
-            }
+            MysqlConnection::Tx(tx) => batch_execute(tx, sql),
         }
     }
 }
@@ -90,9 +90,7 @@ impl MysqlConnection {
                 let conn: &mut mysql_client::Conn = conn.deref_mut();
                 execute(conn, sql, params)
             }
-            MysqlConnection::Tx(tx) => {
-                execute(tx, sql, params)
-            }
+            MysqlConnection::Tx(tx) => execute(tx, sql, params),
         }
     }
 
@@ -106,9 +104,7 @@ impl MysqlConnection {
                 let conn: &mut mysql_client::Conn = conn.deref_mut();
                 fetch_one_value(conn, sql, params)
             }
-            MysqlConnection::Tx(tx) => {
-                fetch_one_value(tx, sql, params)
-            }
+            MysqlConnection::Tx(tx) => fetch_one_value(tx, sql, params),
         }
     }
 
@@ -123,9 +119,7 @@ impl MysqlConnection {
                 let conn: &mut mysql_client::Conn = conn.deref_mut();
                 fetch_one(conn, sql, params, mapper)
             }
-            MysqlConnection::Tx(tx) => {
-                fetch_one(tx, sql, params, mapper)
-            }
+            MysqlConnection::Tx(tx) => fetch_one(tx, sql, params, mapper),
         }
     }
 
@@ -140,9 +134,7 @@ impl MysqlConnection {
                 let conn: &mut mysql_client::Conn = conn.deref_mut();
                 fetch_one_optional(conn, sql, params, mapper)
             }
-            MysqlConnection::Tx(tx) => {
-                fetch_one_optional(tx, sql, params, mapper)
-            }
+            MysqlConnection::Tx(tx) => fetch_one_optional(tx, sql, params, mapper),
         }
     }
 
@@ -157,9 +149,7 @@ impl MysqlConnection {
                 let conn: &mut mysql_client::Conn = conn.deref_mut();
                 fetch_all(conn, sql, params, mapper)
             }
-            MysqlConnection::Tx(tx) => {
-                fetch_all(tx, sql, params, mapper)
-            }
+            MysqlConnection::Tx(tx) => fetch_all(tx, sql, params, mapper),
         }
     }
 
@@ -173,9 +163,7 @@ impl MysqlConnection {
                 let conn: &mut mysql_client::Conn = conn.deref_mut();
                 fetch_all_values(conn, sql, params)
             }
-            MysqlConnection::Tx(tx) => {
-                fetch_all_values(tx, sql, params)
-            }
+            MysqlConnection::Tx(tx) => fetch_all_values(tx, sql, params),
         }
     }
 }
