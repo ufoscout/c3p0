@@ -13,7 +13,7 @@ use std::str::FromStr;
 pub struct PostgresConnectionManager
 {
     config: Config,
-    tls_connector: Box<dyn Fn(&Config) -> Result<Client, Error> + Send + Sync>,
+    tls_connector: Box<dyn Send + Sync + 'static + Fn(&Config) -> (dyn Future<Output = Result<Client, Error>> + 'static)>,
 }
 
 impl PostgresConnectionManager
@@ -21,7 +21,7 @@ impl PostgresConnectionManager
     /// Create a new `PostgresConnectionManager` with the specified `config`.
     pub fn new(
         config: Config,
-        tls_connector: Box<dyn Fn(&Config) -> Result<Client, Error> + Send + Sync>,
+        tls_connector: Box<dyn Send + Sync + 'static + Fn(&Config) -> (dyn Future<Output = Result<Client, Error>> + 'static)>,
     ) -> PostgresConnectionManager {
         PostgresConnectionManager {
             config,
@@ -32,7 +32,7 @@ impl PostgresConnectionManager
     /// Create a new `PostgresConnectionManager`, parsing the config from `params`.
     pub fn new_from_stringlike<T>(
         params: T,
-        tls_connector: Box<dyn Fn(&Config) -> Result<Client, Error> + Send + Sync>,
+        tls_connector: Box<dyn Send + Sync + 'static + Fn(&Config) -> (dyn Future<Output = Result<Client, Error>> + 'static)>,
     ) -> Result<PostgresConnectionManager, Error>
         where
             T: ToString,
@@ -44,24 +44,13 @@ impl PostgresConnectionManager
 }
 
 #[async_trait]
-pub trait ConnectionProvider: Send + Sync + 'static {
-
-    /// The connection type this manager deals with.
-    type Connection: Send + 'static;
-    /// The error type returned by `Connection`s.
-    type Error: fmt::Debug + Send + 'static;
-
-    /// Attempts to create a new connection.
-    async fn connect(&self) -> Result<Self::Connection, Self::Error>;
-}
-
-#[async_trait]
 impl bb8::ManageConnection for PostgresConnectionManager
 {
     type Connection = Client;
     type Error = Error;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
+        let val = (self.tls_connector)(&self.config);
         unimplemented!()
 
         /*
@@ -94,4 +83,44 @@ impl fmt::Debug for PostgresConnectionManager {
             .field("config", &self.config)
             .finish()
     }
+}
+
+struct MyStructOne;
+struct MyError;
+
+pub struct FutureWithFn {
+    one: MyStructOne,
+    func_one: Box<dyn Send + Sync + 'static + Fn(&MyStructOne) -> Box<dyn Future<Output = Result<(), MyError>> + 'static + Unpin>>,
+    func_two: Box<dyn Send + Sync + 'static + Fn(&MyStructOne) -> (dyn Future<Output = Result<(), MyError>> + 'static + Unpin)>,
+}
+
+impl FutureWithFn {
+
+    async fn call_one(&self) -> Result<(), MyError> {
+        (self.func_one)(&self.one).await;    // OK!
+        Ok(())
+    }
+
+    async fn call_two(&self) -> Result<(), MyError> {
+        (self.func_two)(&self.one).await;     // <-- ERROR: doesn't have a size known at compile-time
+                                              //            the trait `std::marker::Sized` is not implemented for `dyn core::future::future::Future<Output = std::result::Result<(), MyError>> + std::marker::Unpin`
+        Ok(())
+    }
+}
+
+fn use_it() {
+
+    let fut_with_fn = FutureWithFn {
+        one: MyStructOne{},
+        func_one: Box::new(|_config| async {  // <-- ERROR: expected struct `std::boxed::Box`, found opaque type
+                                                    // expected type `std::boxed::Box<dyn core::future::future::Future<Output = std::result::Result<(), MyError>> + std::marker::Unpin>`
+                                                    // found type `impl core::future::future::Future`
+
+            Ok(())
+        }),
+        func_two: Box::new(|_config| async { // <-- ERROR: doesn't have a size known at compile-time
+            Ok(())                              // <-- ERROR: expected trait core::future::future::Future, found opaque type
+        }),
+    };
+
 }

@@ -62,9 +62,9 @@ use std::future::Future;
 pub trait C3p0PoolAsync: Clone {
     type CONN;
 
-    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
+    //async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
-    async fn transaction<T, E: From<C3p0Error>, F: FnOnce(&Self::CONN) -> dyn Future<Output = Result<T, E>>>(
+    async fn transaction<T, E: From<C3p0Error>, F: Send + Sync + FnOnce(&Self::CONN) -> Fut, Fut: Send + Sync + Future<Output = Result<T, E>>>(
         &self,
         tx: F,
     ) -> Result<T, E>;

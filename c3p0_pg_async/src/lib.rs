@@ -1,25 +1,26 @@
-mod bb8;
+//mod bb8;
 mod error;
 //mod json;
-//mod pool;
+mod pool;
 
 pub use c3p0_common::*;
 
 pub mod pg {
 
-    pub use crate::bb8::*;
+  //  pub use crate::bb8::*;
   //  pub use crate::json::*;
   ///  pub use crate::pool::*;
 
     pub mod bb8 {
         pub use bb8::*;
-        //pub use bb8_postgres::*;
+        pub use bb8_postgres::*;
     }
     pub mod driver {
         pub use tokio_postgres::*;
     }
 }
 
+#[cfg(test)]
 mod test {
 
     use std::pin::Pin;
@@ -41,18 +42,4 @@ mod test {
         Ok(())
     }
 
-    use futures::future::{Future, LocalBoxFuture, FutureExt};
-
-    type Context = ();
-    type AsyncCb = Box<dyn for<'r> FnOnce(&'r Context)-> LocalBoxFuture<'r, ()>>;
-
-
-    fn normalize_async_cb<Fut: Future<Output=()>>(f: for<'r> fn(&'r Context) -> Fut ) -> AsyncCb
-//                                                  how to add 'r for Fut?  ^^^
-    {
-        let cb = move |ctx: &Context| {
-            f(ctx).boxed_local()
-        };
-        Box::new(cb)
-    }
 }
