@@ -113,11 +113,11 @@ where
     fn update(&self, conn: &mut Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 }
 
-#[cfg(feature = "async")]
-use async_trait::async_trait;
+// #[cfg(feature = "async")]
+// use async_trait::async_trait;
 
 #[cfg(feature = "async")]
-#[async_trait]
+// #[async_trait]
 pub trait C3p0JsonAsync<DATA, CODEC>: Clone
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
@@ -127,6 +127,9 @@ where
 
     fn codec(&self) -> &CODEC;
 
+    // ToDo: this does not work due to a bug in rustc.
+    // See: https://github.com/rust-lang/rust/issues/63033
+    /*
     async fn create_table_if_not_exists(&self, conn: &Self::CONN) -> Result<(), C3p0Error>;
 
     async fn drop_table_if_exists(&self, conn: &Self::CONN, cascade: bool)
@@ -187,4 +190,6 @@ where
     async fn save(&self, conn: &Self::CONN, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
     async fn update(&self, conn: &Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
+
+    */
 }

@@ -1,8 +1,7 @@
-use crate::pool::C3p0Pool;
 use crate::types::OptString;
 
 #[derive(Clone)]
-pub struct C3p0JsonBuilder<C3P0: C3p0Pool> {
+pub struct C3p0JsonBuilder<C3P0> {
     phantom_c3p0_manager: std::marker::PhantomData<C3P0>,
     pub id_field_name: String,
     pub version_field_name: String,
@@ -11,7 +10,7 @@ pub struct C3p0JsonBuilder<C3P0: C3p0Pool> {
     pub schema_name: Option<String>,
 }
 
-impl<C3P0: C3p0Pool> C3p0JsonBuilder<C3P0> {
+impl<C3P0> C3p0JsonBuilder<C3P0> {
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
         C3p0JsonBuilder {
