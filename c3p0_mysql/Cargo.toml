@@ -17,7 +17,6 @@ mysql_client = { package = "mysql",  version = "17"}
 mysql_common = "0.19"
 r2d2 = "0.8"
 r2d2_mysql = "17"
-rental = "0.5"
 serde = "1.0"
 
 [features]
