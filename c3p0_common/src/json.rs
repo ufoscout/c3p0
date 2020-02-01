@@ -125,7 +125,7 @@ where
 {
     type CONN;
 
-    async fn codec(&self) -> &CODEC;
+    fn codec(&self) -> &CODEC;
 
     async fn create_table_if_not_exists(&self, conn: &Self::CONN) -> Result<(), C3p0Error>;
 

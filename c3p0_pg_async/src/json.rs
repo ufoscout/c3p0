@@ -1,20 +1,15 @@
-use crate::error::into_c3p0_error;
 use crate::pg::driver::{
-    rows::Row,
+    row::{Row, RowIndex},
     types::{FromSql, ToSql},
 };
 use crate::pool::{PgC3p0Pool, PgConnection};
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::{
-    codec::JsonCodec,
-    model::{IdType, Model, NewModel},
-    C3p0Json, Queries,
-};
+use c3p0_common::json::{codec::JsonCodec, model::{IdType, Model, NewModel}, C3p0Json, Queries, C3p0JsonAsync};
 use c3p0_common::sql::ForUpdate;
-use postgres::rows::RowIndex;
 use serde::export::fmt::Display;
+use async_trait::async_trait;
 
 pub trait PgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
@@ -144,8 +139,8 @@ impl PgC3p0JsonBuilder for C3p0JsonBuilder<PgC3p0Pool> {
 
 #[derive(Clone)]
 pub struct PgC3p0Json<DATA, CODEC: JsonCodec<DATA>>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     phantom_data: std::marker::PhantomData<DATA>,
 
@@ -154,8 +149,8 @@ where
 }
 
 impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
@@ -170,89 +165,95 @@ where
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub fn fetch_one_optional_with_sql(
+    pub async fn fetch_one_optional_with_sql(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection<'_>,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        conn.fetch_one_optional(sql, params, |row| self.to_model(row))
+        conn.fetch_one_optional(sql, params, |row| self.to_model(row)).await
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub fn fetch_one_with_sql(
+    pub async fn fetch_one_with_sql(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection<'_>,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Model<DATA>, C3p0Error> {
-        conn.fetch_one(sql, params, |row| self.to_model(row))
+        conn.fetch_one(sql, params, |row| self.to_model(row)).await
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub fn fetch_all_with_sql(
+    pub async fn fetch_all_with_sql(
         &self,
-        conn: &PgConnection,
+        conn: &mut PgConnection<'_>,
         sql: &str,
-        params: &[&dyn ToSql],
+        params: &[&(dyn ToSql + Sync)],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        conn.fetch_all(sql, params, |row| self.to_model(row))
+        conn.fetch_all(sql, params, |row| self.to_model(row)).await
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for PgC3p0Json<DATA, CODEC>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+#[async_trait]
+impl<'c, DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for &'c PgC3p0Json<DATA, CODEC>
+    where
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type CONN = PgConnection;
+    type CONN = PgConnection<'c>;
 
     fn codec(&self) -> &CODEC {
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &PgConnection) -> Result<(), C3p0Error> {
-        conn.execute(&self.queries.create_table_sql_query, &[])?;
+    async fn create_table_if_not_exists(&self, conn: &mut Self::CONN) -> Result<(), C3p0Error> {
+        conn.execute(&self.queries.create_table_sql_query, &[]).await?;
         Ok(())
     }
 
-    fn drop_table_if_exists(&self, conn: &PgConnection, cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists(
+        &self,
+        conn: &mut Self::CONN,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
         let query = if cascade {
             &self.queries.drop_table_sql_query_cascade
         } else {
             &self.queries.drop_table_sql_query
         };
-        conn.execute(query, &[])?;
+        conn.execute(query, &[]).await?;
         Ok(())
     }
 
-    fn count_all(&self, conn: &PgConnection) -> Result<u64, C3p0Error> {
+    async fn count_all(&self, conn: &mut Self::CONN) -> Result<u64, C3p0Error> {
         conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
+            .await
             .map(|val: i64| val as u64)
     }
 
-    fn exists_by_id<'a, ID: Into<&'a IdType>>(
+    async fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &PgConnection,
+        conn: &mut Self::CONN,
         id: ID,
     ) -> Result<bool, C3p0Error> {
-        conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
+        conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()]).await
     }
 
-    fn fetch_all(&self, conn: &PgConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    async fn fetch_all(&self, conn: &mut Self::CONN) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
-        })
+        }).await
     }
 
-    fn fetch_all_for_update(
+    async fn fetch_all_for_update(
         &self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let sql = format!(
@@ -260,22 +261,22 @@ where
             &self.queries.find_all_sql_query,
             for_update.to_sql()
         );
-        conn.fetch_all(&sql, &[], |row| self.to_model(row))
+        conn.fetch_all(&sql, &[], |row| self.to_model(row)).await
     }
 
-    fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &PgConnection,
+        conn: &mut Self::CONN,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
             self.to_model(row)
-        })
+        }).await
     }
 
-    fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &Self::CONN,
+        conn: &mut Self::CONN,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -284,11 +285,11 @@ where
             &self.queries.find_by_id_sql_query,
             for_update.to_sql()
         );
-        conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row))
+        conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row)).await
     }
 
-    fn delete(&self, conn: &PgConnection, obj: &Model<DATA>) -> Result<u64, C3p0Error> {
-        let result = conn.execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])?;
+    async fn delete(&self, conn: &mut Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        let result = conn.execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version]).await?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
@@ -296,24 +297,24 @@ where
             )});
         }
 
-        Ok(result)
+        Ok(obj)
     }
 
-    fn delete_all(&self, conn: &PgConnection) -> Result<u64, C3p0Error> {
-        conn.execute(&self.queries.delete_all_sql_query, &[])
+    async fn delete_all(&self, conn: &mut Self::CONN) -> Result<u64, C3p0Error> {
+        conn.execute(&self.queries.delete_all_sql_query, &[]).await
     }
 
-    fn delete_by_id<'a, ID: Into<&'a IdType>>(
+    async fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &PgConnection,
+        conn: &mut Self::CONN,
         id: ID,
     ) -> Result<u64, C3p0Error> {
-        conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
+        conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()]).await
     }
 
-    fn save(&self, conn: &PgConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    async fn save(&self, conn: &mut Self::CONN, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
-        let id = conn.fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &json_data])?;
+        let id = conn.fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &json_data]).await?;
         Ok(Model {
             id,
             version: obj.version,
@@ -321,7 +322,7 @@ where
         })
     }
 
-    fn update(&self, conn: &PgConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    async fn update(&self, conn: &mut Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
@@ -338,7 +339,7 @@ where
                 &updated_model.id,
                 &obj.version,
             ],
-        )?;
+        ).await?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
@@ -371,13 +372,12 @@ pub fn to_model<
 }
 
 #[inline]
-pub fn get_or_error<I: RowIndex + Display, T: FromSql>(
-    row: &Row,
+pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
+    row: &'a Row,
     index: I,
 ) -> Result<T, C3p0Error> {
-    row.get_opt(&index)
-        .ok_or_else(|| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for index {}", index),
-        })?
-        .map_err(into_c3p0_error)
+    row.try_get(&index)
+        .map_err(|err| C3p0Error::RowMapperError {
+            cause: format!("Row contains no values for index {}. Err: {}", index, err),
+        })
 }
