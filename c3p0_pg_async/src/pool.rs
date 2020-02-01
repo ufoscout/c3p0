@@ -47,11 +47,9 @@ impl <'a> C3p0PoolAsync for &'a PgC3p0Pool {
 
         let mut conn = self.pool.get().await.map_err(bb8_into_c3p0_error)?;
 
-        //let transaction = conn.transaction().await.map_err(into_c3p0_error)?;
-
-        // ToDo: To avoid this unsafe we need GAT
 
         let (result, executor) = {
+            // ToDo: To avoid this unsafe we need GAT
             let transaction = unsafe { ::std::mem::transmute(conn.transaction().await.map_err(into_c3p0_error)?) };
             let mut transaction = PgConnection::Tx(transaction);
             ( (tx)(&mut transaction).await?, transaction)

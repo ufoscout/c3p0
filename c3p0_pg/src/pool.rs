@@ -40,26 +40,21 @@ impl C3p0Pool for PgC3p0Pool {
         &self,
         tx: F,
     ) -> Result<T, E> {
-        let conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
+        let mut conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
             cause: format!("{}", err),
         })?;
 
-        let transaction = new_simple_mut(conn)?;
-
         let (result, executor) = {
+            // ToDo: To avoid this unsafe we need GAT
+            let transaction = unsafe { ::std::mem::transmute(conn.transaction().map_err(into_c3p0_error)?) };
             let mut sql_executor = PgConnection::Tx(transaction);
             let result = (tx)(&mut sql_executor)?;
             (result, sql_executor)
         };
 
         match executor {
-            PgConnection::Tx(mut tx) => {
-                tx.rent_mut(|tref| {
-                    let tref_some = tref.take();
-                    tref_some.unwrap().commit()?;
-                    Ok(())
-                })
-                .map_err(into_c3p0_error)?;
+            PgConnection::Tx(tx) => {
+                tx.commit().map_err(into_c3p0_error)?;
             }
             _ => panic!("It should have been a transaction"),
         };
@@ -68,52 +63,28 @@ impl C3p0Pool for PgC3p0Pool {
     }
 }
 
-fn new_simple_mut(
-    conn: PooledConnection<PostgresConnectionManager>,
-) -> Result<rentals::SimpleMut, C3p0Error> {
-    rentals::SimpleMut::try_new_or_drop(Box::new(conn), |c| {
-        let tx = c.transaction().map_err(into_c3p0_error)?;
-        Ok(Some(tx))
-    })
-}
-
-rental! {
-    mod rentals {
-        use super::*;
-
-        #[rental_mut]
-        pub struct SimpleMut {
-            conn: Box<PooledConnection<PostgresConnectionManager>>,
-            tx: Option<Transaction<'conn>>,
-        }
-    }
-}
-
 pub enum PgConnection {
     Conn(PooledConnection<PostgresConnectionManager>),
-    Tx(rentals::SimpleMut),
+    Tx(Transaction<'static>),
 }
 
 impl SqlConnection for PgConnection {
     fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             PgConnection::Conn(conn) => conn.batch_execute(sql).map_err(into_c3p0_error),
-            PgConnection::Tx(tx) => tx.rent_mut(|tref| {
-                let conn = tref.as_mut().unwrap();
-                conn.batch_execute(sql).map_err(into_c3p0_error)
-            }),
+            PgConnection::Tx(tx) =>
+                tx.batch_execute(sql).map_err(into_c3p0_error)
         }
     }
 }
 
 impl PgConnection {
+
     pub fn execute(&mut self, sql: &str, params: &[&(dyn ToSql + Sync)]) -> Result<u64, C3p0Error> {
         match self {
             PgConnection::Conn(conn) => conn.execute(sql, params).map_err(into_c3p0_error),
-            PgConnection::Tx(tx) => tx.rent_mut(|tref| {
-                let conn = tref.as_mut().unwrap();
-                conn.execute(sql, params).map_err(into_c3p0_error)
-            }),
+            PgConnection::Tx(tx) =>
+                tx.execute(sql, params).map_err(into_c3p0_error)
         }
     }
 
@@ -154,10 +125,9 @@ impl PgConnection {
                         cause: format!("{}", err),
                     })
             }
-            PgConnection::Tx(tx) => tx.rent_mut(|tref| {
-                let conn = tref.as_mut().unwrap();
-                let stmt = conn.prepare(sql).map_err(into_c3p0_error)?;
-                conn.query(&stmt, params)
+            PgConnection::Tx(tx) => {
+                let stmt = tx.prepare(sql).map_err(into_c3p0_error)?;
+                tx.query(&stmt, params)
                     .map_err(into_c3p0_error)?
                     .iter()
                     .next()
@@ -166,7 +136,7 @@ impl PgConnection {
                     .map_err(|err| C3p0Error::RowMapperError {
                         cause: format!("{}", err),
                     })
-            }),
+            }
         }
     }
 
@@ -188,10 +158,9 @@ impl PgConnection {
                         cause: format!("{}", err),
                     })
             }
-            PgConnection::Tx(tx) => tx.rent_mut(|tref| {
-                let conn = tref.as_mut().unwrap();
-                let stmt = conn.prepare(sql).map_err(into_c3p0_error)?;
-                conn.query(&stmt, params)
+            PgConnection::Tx(tx) => {
+                let stmt = tx.prepare(sql).map_err(into_c3p0_error)?;
+                tx.query(&stmt, params)
                     .map_err(into_c3p0_error)?
                     .iter()
                     .map(|row| mapper(&row))
@@ -199,7 +168,7 @@ impl PgConnection {
                     .map_err(|err| C3p0Error::RowMapperError {
                         cause: format!("{}", err),
                     })
-            }),
+            },
         }
     }
 
@@ -210,6 +179,7 @@ impl PgConnection {
     ) -> Result<Vec<T>, C3p0Error> {
         self.fetch_all(sql, params, to_value_mapper)
     }
+
 }
 
 fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
