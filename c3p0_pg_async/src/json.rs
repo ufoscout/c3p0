@@ -166,7 +166,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_optional_with_sql(
         &self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -179,7 +179,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_with_sql(
         &self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Model<DATA>, C3p0Error> {
@@ -192,7 +192,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_all_with_sql(
         &self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
@@ -201,7 +201,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 
     pub async fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id(conn, id).await
@@ -210,7 +210,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 
     pub async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {
@@ -218,14 +218,14 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
-    pub async fn create_table_if_not_exists(&self, conn: &mut PgConnection<'_>) -> Result<(), C3p0Error> {
+    pub async fn create_table_if_not_exists(&self, conn: &mut PgConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.queries.create_table_sql_query, &[]).await?;
         Ok(())
     }
 
     pub async fn drop_table_if_exists(
         &self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         cascade: bool,
     ) -> Result<(), C3p0Error> {
         let query = if cascade {
@@ -237,7 +237,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
         Ok(())
     }
 
-    pub async fn count_all(&self, conn: &mut PgConnection<'_>) -> Result<u64, C3p0Error> {
+    pub async fn count_all(&self, conn: &mut PgConnection) -> Result<u64, C3p0Error> {
         conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
             .await
             .map(|val: i64| val as u64)
@@ -245,13 +245,13 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 
     pub async fn exists_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()]).await
     }
 
-    pub async fn fetch_all(&self, conn: &mut PgConnection<'_>) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    pub async fn fetch_all(&self, conn: &mut PgConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         }).await
@@ -259,7 +259,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 
     pub async fn fetch_all_for_update(
         &self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let sql = format!(
@@ -272,7 +272,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 
     pub async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
@@ -282,7 +282,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 
     pub async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -294,7 +294,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
         conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row)).await
     }
 
-    pub async fn delete(&self, conn: &mut PgConnection<'_>, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    pub async fn delete(&self, conn: &mut PgConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let result = conn.execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version]).await?;
 
         if result == 0 {
@@ -306,19 +306,19 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
         Ok(obj)
     }
 
-    pub async fn delete_all(&self, conn: &mut PgConnection<'_>) -> Result<u64, C3p0Error> {
+    pub async fn delete_all(&self, conn: &mut PgConnection) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_all_sql_query, &[]).await
     }
 
     pub async fn delete_by_id<'a, ID: Into<&'a IdType>>(
         &self,
-        conn: &mut PgConnection<'_>,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()]).await
     }
 
-    pub async fn save<'a>(&'a self, conn: &'a mut PgConnection<'a>, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    pub async fn save(&self, conn: &mut PgConnection, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
         let id = conn.fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &json_data]).await?;
         Ok(Model {
@@ -328,7 +328,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
         })
     }
 
-    pub async fn update(&self, conn: &mut PgConnection<'_>, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    pub async fn update(&self, conn: &mut PgConnection, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
 
         let updated_model = Model {
@@ -358,11 +358,11 @@ impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 }
 
 // #[async_trait]
-impl<'c, DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for &'c PgC3p0Json<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for PgC3p0Json<DATA, CODEC>
     where
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
 {
-    type CONN = PgConnection<'c>;
+    type CONN = PgConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec

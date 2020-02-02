@@ -1,5 +1,6 @@
 use crate::utils::*;
 use crate::*;
+use futures::future::FutureExt;
 
 #[test]
 fn json_should_commit_transaction() {
@@ -15,16 +16,17 @@ fn json_should_commit_transaction() {
                 last_name: "my_last_name".to_owned(),
             });
 
-            let result: Result<(), C3p0Error> = c3p0.transaction(|conn| async {
+            let model_clone = model.clone();
+            let result: Result<(), C3p0Error> = c3p0.transaction(|conn| async move {
 
                 /*
                 assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
                 assert!(jpo.save(conn, model.clone()).await.is_ok());
                 assert!(jpo.save(conn, model.clone()).await.is_ok());
-                assert!(jpo.save(conn, model.clone()).await.is_ok());
                 */
+                assert!(jpo.save(conn, model_clone.clone()).await.is_ok());
                 Ok(())
-            }).await;
+            }.boxed()).await;
 
             assert!(result.is_ok());
 

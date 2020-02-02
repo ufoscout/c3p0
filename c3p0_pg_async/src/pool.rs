@@ -8,6 +8,7 @@ use c3p0_common::pool::{C3p0PoolAsync, SqlConnectionAsync};
 use c3p0_common::*;
 use futures::Future;
 use tokio_postgres::{NoTls, Transaction};
+use std::pin::Pin;
 
 #[derive(Clone)]
 pub struct PgC3p0Pool {
@@ -27,8 +28,8 @@ impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager<NoTls>> {
 }
 
 #[async_trait]
-impl<'a> C3p0PoolAsync for &'a PgC3p0Pool {
-    type CONN = PgConnection<'a>;
+impl C3p0PoolAsync for PgC3p0Pool {
+    type CONN = PgConnection;
 /*
     async fn connection(&self) -> Result<Self::CONN, C3p0Error> {
         self.pool
@@ -43,24 +44,29 @@ impl<'a> C3p0PoolAsync for &'a PgC3p0Pool {
     async fn transaction<
         T: Send,
         E: From<C3p0Error>,
-        F: Send + Sync + FnOnce(&mut Self::CONN) -> Fut,
-        Fut: Send + Sync + Future<Output = Result<T, E>>,
+        F: Send + FnOnce(&mut Self::CONN) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + '_>>,
     >(
         &self,
         tx: F,
     ) -> Result<T, E> {
         let mut conn = self.pool.get().await.map_err(bb8_into_c3p0_error)?;
 
-        let (result, executor) = {
-            // ToDo: To avoid this unsafe we need GAT
             let transaction = unsafe {
                 ::std::mem::transmute(conn.transaction().await.map_err(into_c3p0_error)?)
             };
             let mut transaction = PgConnection::Tx(transaction);
-            ((tx)(&mut transaction).await?, transaction)
-        };
 
-        match executor {
+            let result = {
+                let transaction_ref = &mut transaction;
+                (tx)(transaction_ref).await?
+            };
+        /*
+        let (result, transaction) = {
+            // ToDo: To avoid this unsafe we need GAT
+            (result, transaction)
+        };
+*/
+        match transaction {
             PgConnection::Tx(tx) => {
                 tx.commit().await.map_err(into_c3p0_error)?;
             }
@@ -71,13 +77,13 @@ impl<'a> C3p0PoolAsync for &'a PgC3p0Pool {
     }
 }
 
-pub enum PgConnection<'a> {
-    Conn(PooledConnection<'a, PostgresConnectionManager<NoTls>>),
-    Tx(Transaction<'a>),
+pub enum PgConnection {
+    Conn(PooledConnection<'static, PostgresConnectionManager<NoTls>>),
+    Tx(Transaction<'static>),
 }
 
 #[async_trait]
-impl<'a> SqlConnectionAsync for &'a PgConnection<'a> {
+impl SqlConnectionAsync for PgConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             PgConnection::Conn(conn) => conn.batch_execute(sql).await.map_err(into_c3p0_error),
@@ -86,7 +92,7 @@ impl<'a> SqlConnectionAsync for &'a PgConnection<'a> {
     }
 }
 
-impl <'a> PgConnection<'a> {
+impl PgConnection {
     pub async fn execute(&mut self, sql: &str, params: &[&(dyn ToSql + Sync)]) -> Result<u64, C3p0Error> {
         match self {
             PgConnection::Conn(conn) => conn.execute(sql, params).await.map_err(into_c3p0_error),

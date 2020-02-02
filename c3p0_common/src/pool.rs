@@ -56,6 +56,7 @@ pub trait SqlConnection {
 use async_trait::async_trait;
 #[cfg(feature = "async")]
 use std::future::Future;
+use std::pin::Pin;
 
 #[cfg(feature = "async")]
 #[async_trait]
@@ -66,13 +67,13 @@ pub trait C3p0PoolAsync: Clone {
 
     async fn transaction<
         T: Send + Sync,
-        E: Send + Sync + From<C3p0Error>,
-        F: Send + Sync + FnOnce(&mut Self::CONN) -> Fut,
-        Fut: Send + Sync + Future<Output = Result<T, E>>,
+        E: From<C3p0Error>,
+        F: Send + FnOnce(&mut Self::CONN) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + '_>>,
     >(
         &self,
         tx: F,
-    ) -> Result<T, E>;
+    )
+        -> Result<T, E>;
 }
 
 #[cfg(feature = "async")]

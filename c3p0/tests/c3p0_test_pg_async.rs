@@ -57,3 +57,16 @@ pub fn test<F: Future<Output = Result<(), C3p0Error>>>(callback: fn(C3p0Impl) ->
         block_on(callback(clone)).unwrap();
     });
 }
+
+/*
+pub fn call_async<'a, 'b: 'a, F: 'a + Future<Output = Result<(), ()>>>(callback: fn(&'b str) -> F) {
+}
+
+#[test]
+fn should_call_async() {
+    call_async(|value| async {
+        let value_ref = value;
+        Ok(())
+    })
+}
+*/
