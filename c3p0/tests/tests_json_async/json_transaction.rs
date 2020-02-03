@@ -4,8 +4,7 @@ use futures::future::FutureExt;
 
 #[tokio::test]
 async fn json_should_commit_transaction() {
-    let data = data(false).await;
-    let c3p0 = &data.0;
+    let c3p0 = &data(false).await.0;
 
     let table_name = format!("TEST_TABLE_{}", rand_string(8));
     let jpo = C3p0JsonBuilder::new(table_name).build::<TestData>();
