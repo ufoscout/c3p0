@@ -4,13 +4,13 @@ use c3p0::pg_async::bb8::{Pool, PostgresConnectionManager};
 use c3p0::pg_async::*;
 use c3p0::*;
 use lazy_static::lazy_static;
-use maybe_single::MaybeSingle;
+use maybe_single_async::nio::MaybeSingleAsync;
 use testcontainers::*;
 
 pub use c3p0::pg_async::driver::row::Row;
 pub use c3p0::pg_async::driver::tls::NoTls;
-use futures::executor::block_on;
-use futures::Future;
+use futures::FutureExt;
+use maybe_single_async::nio::Data;
 
 pub type C3p0Impl = PgC3p0Pool;
 
@@ -19,18 +19,17 @@ mod tests_json_async;
 
 pub mod utils;
 
+pub type MaybeType = (
+    C3p0Impl,
+    Container<'static, clients::Cli, images::postgres::Postgres>
+);
+
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
-    pub static ref SINGLETON: MaybeSingle<(
-        C3p0Impl,
-        Container<'static, clients::Cli, images::postgres::Postgres>
-    )> = MaybeSingle::new(|| init());
+    pub static ref SINGLETON: MaybeSingleAsync<MaybeType> = MaybeSingleAsync::new(|| init().boxed());
 }
 
-fn init() -> (
-    C3p0Impl,
-    Container<'static, clients::Cli, images::postgres::Postgres>,
-) {
+async fn init() -> MaybeType {
     let node = DOCKER.run(images::postgres::Postgres::default());
 
     let manager = PostgresConnectionManager::new(
@@ -44,29 +43,12 @@ fn init() -> (
     );
 
 
-    let pool = block_on(Pool::builder().min_idle(Some(10)).build(manager)).unwrap();
-
+    let pool = Pool::builder().min_idle(Some(10)).build(manager).await.unwrap();
     let pool = PgC3p0Pool::new(pool);
 
     (pool, node)
 }
 
-pub fn test<F: Future<Output = Result<(), C3p0Error>>>(callback: fn(C3p0Impl) -> F) {
-    SINGLETON.get(|(c3p0, _)| {
-        let clone: C3p0Impl = c3p0.clone();
-        block_on(callback(clone)).unwrap();
-    });
+pub async fn data(serial: bool) -> Data<'static, MaybeType>{
+    SINGLETON.data(serial).await
 }
-
-/*
-pub fn call_async<'a, 'b: 'a, F: 'a + Future<Output = Result<(), ()>>>(callback: fn(&'b str) -> F) {
-}
-
-#[test]
-fn should_call_async() {
-    call_async(|value| async {
-        let value_ref = value;
-        Ok(())
-    })
-}
-*/
