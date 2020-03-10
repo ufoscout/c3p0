@@ -25,7 +25,7 @@ pub enum C3p0Error {
     ResultNotFoundError,
     #[error("TransactionError: [{cause}]")]
     TransactionError { cause: Box<dyn std::error::Error> },
-    #[error(display = "CorruptedDbMigrationState: [{message}]", message)]
+    #[error("CorruptedDbMigrationState: [{message}]", message)]
     CorruptedDbMigrationState { message: String },
     #[error("AlteredMigrationSql: [{message}]")]
     AlteredMigrationSql { message: String },
