@@ -1,43 +1,39 @@
-use err_derive::Error;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum C3p0Error {
-    #[error(display = "InternalError: [{}]", cause)]
+    #[error("InternalError: [{cause}]")]
     InternalError { cause: String },
     #[error(
-        display = "DbError. DB: {}. DB specific error code: [{:?}]. Msg: {}",
-        db,
-        code,
-        cause
-    )]
+        "DbError. DB: {db}. DB specific error code: [{code:?}]. Msg: {cause}")]
     DbError {
         db: &'static str,
         cause: String,
         code: Option<String>,
     },
-    #[error(display = "RowMapperError: [{}]", cause)]
+    #[error("RowMapperError: [{cause}]")]
     RowMapperError { cause: String },
-    #[error(display = "OptimisticLockError: [{}]", message)]
+    #[error("OptimisticLockError: [{message}]")]
     OptimisticLockError { message: String },
-    #[error(display = "JsonProcessingError: [{}]", cause)]
+    #[error("JsonProcessingError: [{cause}]")]
     JsonProcessingError { cause: serde_json::error::Error },
-    #[error(display = "IteratorError: [{}]", message)]
+    #[error("IteratorError: [{message}]")]
     IteratorError { message: String },
-    #[error(display = "PoolError: [{}]", cause)]
+    #[error("PoolError: [{cause}]")]
     PoolError { cause: String },
-    #[error(display = "ResultNotFoundError: Expected one result but found zero.")]
+    #[error("ResultNotFoundError: Expected one result but found zero.")]
     ResultNotFoundError,
-    #[error(display = "TransactionError: [{}]", cause)]
+    #[error("TransactionError: [{cause}]")]
     TransactionError { cause: Box<dyn std::error::Error + Send + Sync> },
-    #[error(display = "CorruptedDbMigrationState: [{}]", message)]
+    #[error("CorruptedDbMigrationState: [{message}]")]
     CorruptedDbMigrationState { message: String },
-    #[error(display = "AlteredMigrationSql: [{}]", message)]
+    #[error("AlteredMigrationSql: [{message}]")]
     AlteredMigrationSql { message: String },
-    #[error(display = "WrongMigrationSet: [{}]", message)]
+    #[error("WrongMigrationSet: [{message}]")]
     WrongMigrationSet { message: String },
-    #[error(display = "FileSystemError: [{}]", message)]
+    #[error("FileSystemError: [{message}]")]
     FileSystemError { message: String },
-    #[error(display = "MigrationError: [{}]. Cause: [{}]", message, cause)]
+    #[error("MigrationError: [{message}]. Cause: [{cause}]")]
     MigrationError {
         message: String,
         cause: Box<C3p0Error>,

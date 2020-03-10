@@ -72,13 +72,13 @@ fn should_rollback_transaction() {
 
 #[test]
 fn transaction_should_return_internal_error() {
-    use err_derive::Error;
+    use thiserror::Error;
 
     #[derive(Error, Debug, PartialEq)]
     pub enum CustomError {
-        #[error(display = "InnerError")]
+        #[error("InnerError")]
         InnerError,
-        #[error(display = "C3p0Error")]
+        #[error("C3p0Error")]
         C3p0Error,
     }
 
