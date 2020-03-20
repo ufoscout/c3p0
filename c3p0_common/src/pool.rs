@@ -56,6 +56,7 @@ pub trait SqlConnection {
 use async_trait::async_trait;
 #[cfg(feature = "async")]
 use std::future::Future;
+#[cfg(feature = "async")]
 use std::pin::Pin;
 
 #[cfg(feature = "async")]
