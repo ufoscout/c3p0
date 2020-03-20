@@ -2,6 +2,7 @@
 
 declare -a features=(
     "pg"
+    "pg_015"
     "sqlite"
     "mysql"
 )

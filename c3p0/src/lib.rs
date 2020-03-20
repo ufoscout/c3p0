@@ -7,6 +7,9 @@ pub use c3p0_mysql::*;
 #[cfg(feature = "pg")]
 pub use c3p0_pg::*;
 
+#[cfg(feature = "pg_015")]
+pub use c3p0_pg_015::*;
+
 #[cfg(feature = "pg_async")]
 pub use c3p0_pg_async::*;
 

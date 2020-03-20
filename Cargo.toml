@@ -3,6 +3,7 @@
 members = [
     "c3p0_common",
     "c3p0_in_memory",
+    "c3p0_pg_015",
     "c3p0_pg",
     "c3p0_pg_async",
     "c3p0_mysql",

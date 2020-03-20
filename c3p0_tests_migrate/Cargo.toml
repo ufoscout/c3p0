@@ -19,6 +19,9 @@ c3p0_mysql = { path = "../c3p0_mysql", version = "0.41.0", optional = true, feat
 # pg feature
 c3p0_pg = { path = "../c3p0_pg", version = "0.41.0", optional = true, features = ['migrate'] }
 
+# pg_015 feature
+c3p0_pg_015 = { path = "../c3p0_pg_015", version = "0.41.0", optional = true, features = ['migrate'] }
+
 # sqlite feature
 c3p0_sqlite = { path = "../c3p0_sqlite", version = "0.41.0", optional = true, features = ['migrate'] }
 
@@ -33,4 +36,5 @@ default = []
 
 mysql = ["c3p0_mysql"]
 pg = ["c3p0_pg"]
+pg_015 = ["c3p0_pg_015"]
 sqlite = ["c3p0_sqlite"]

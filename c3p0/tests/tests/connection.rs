@@ -28,7 +28,7 @@ fn should_execute_and_fetch() {
                 .unwrap()
         );
 
-        #[cfg(feature = "pg")]
+        #[cfg(any(feature = "pg", feature = "pg_015"))]
         let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
         #[cfg(any(feature = "mysql", feature = "sqlite"))]
         let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
@@ -41,7 +41,7 @@ fn should_execute_and_fetch() {
                 .unwrap()
         );
 
-        #[cfg(feature = "pg")]
+        #[cfg(any(feature = "pg", feature = "pg_015"))]
         let mapper = |row: &Row| {
             let value: String = row.get(0);
             Ok(value)
@@ -97,14 +97,14 @@ fn should_execute_and_fetch_option() {
             )
             .is_ok());
 
-        #[cfg(feature = "pg")]
+        #[cfg(any(feature = "pg", feature = "pg_015"))]
         let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
         #[cfg(any(feature = "mysql", feature = "sqlite"))]
         let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
 
-        #[cfg(feature = "pg")]
+        #[cfg(any(feature = "pg", feature = "pg_015"))]
         let mapper = |row: &Row| Ok(row.get(0));
         #[cfg(feature = "mysql")]
         let mapper = |row: &Row| Ok(row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?);
