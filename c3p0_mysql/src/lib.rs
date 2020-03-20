@@ -1,6 +1,7 @@
 mod error;
 mod json;
 mod pool;
+mod r2d2;
 
 #[cfg(feature = "migrate")]
 mod migrate;
@@ -17,7 +18,7 @@ pub mod mysql {
 
     pub mod r2d2 {
         pub use r2d2::*;
-        pub use r2d2_mysql::*;
+        pub use crate::r2d2::*;
     }
 
     pub mod driver {
