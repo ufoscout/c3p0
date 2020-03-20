@@ -11,7 +11,7 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["postgres", "pg"]
 
 [dependencies]
-c3p0_common = { path = "../c3p0_common", version = "0.41", features = ["async"] }
+c3p0_common = { path = "../c3p0_common", version = "0.42.0", features = ["async"] }
 async-trait = "0.1"
 futures = "0.3.1"
 log = "0.4"
