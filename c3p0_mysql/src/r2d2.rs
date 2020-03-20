@@ -1,5 +1,6 @@
 use mysql_client::error::Error;
 use mysql_client::{Conn, Opts, OptsBuilder};
+use mysql_client::prelude::{Queryable};
 use std::result::Result;
 use r2d2;
 
@@ -25,7 +26,7 @@ impl r2d2::ManageConnection for MysqlConnectionManager {
     }
 
     fn is_valid(&self, conn: &mut Conn) -> Result<(), Error> {
-        conn.query("SELECT version()").map(|_| ())
+        conn.query_drop("SELECT version()")
     }
 
     fn has_broken(&self, conn: &mut Conn) -> bool {

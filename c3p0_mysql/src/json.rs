@@ -1,4 +1,4 @@
-use crate::mysql::driver::prelude::{FromValue, ToValue};
+use crate::mysql::driver::prelude::{ColumnIndex, FromValue, ToValue};
 use crate::mysql::driver::Row;
 use crate::mysql::{MysqlC3p0Pool, MysqlConnection};
 use c3p0_common::error::C3p0Error;
@@ -10,7 +10,6 @@ use c3p0_common::json::{
     C3p0Json, Queries,
 };
 use c3p0_common::sql::ForUpdate;
-use mysql_common::row::ColumnIndex;
 
 pub trait MysqlC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
