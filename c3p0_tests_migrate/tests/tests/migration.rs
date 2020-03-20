@@ -235,3 +235,39 @@ fn should_read_migrations_from_files() -> Result<(), Box<dyn std::error::Error>>
 
     Ok(())
 }
+
+use c3p0_common::migrate::include_dir::*;
+use std::convert::TryInto;
+
+const MIGRATIONS: Dir = include_dir!("./tests/migrations_00");
+
+#[test]
+fn should_read_embedded_migrations() -> Result<(), Box<dyn std::error::Error>> {
+    let docker = clients::Cli::default();
+    let node = new_connection(&docker);
+    let c3p0 = node.0.clone();
+
+    let migrations: Migrations = (&MIGRATIONS).try_into().unwrap();
+
+    let migrate = C3p0MigrateBuilder::new(c3p0.clone())
+        .with_migrations(migrations)
+        .build();
+
+    migrate.migrate()?;
+    migrate.migrate()?;
+
+    let conn = &mut node.0.connection().unwrap();
+
+    assert_eq!(
+        3,
+        conn.fetch_one_value::<i64>(&format!("select count(*) from TEST_TABLE"), &[])?
+    );
+
+    let status = migrate.get_migrations_history(conn).unwrap();
+    assert_eq!(3, status.len());
+    assert_eq!("C3P0_INIT_MIGRATION", status[0].data.migration_id);
+    assert_eq!("00010_create_test_data", status[1].data.migration_id);
+    assert_eq!("00011_insert_test_data", status[2].data.migration_id);
+
+    Ok(())
+}

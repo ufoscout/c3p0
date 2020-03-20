@@ -15,6 +15,10 @@ mod sql_migration;
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
 
+pub mod include_dir {
+    pub use include_dir::*;
+}
+
 #[derive(Clone, Debug)]
 pub struct C3p0MigrateBuilder<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> {
     pub table: String,
