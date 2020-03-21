@@ -7,8 +7,8 @@ use async_trait::async_trait;
 use c3p0_common::pool::{C3p0PoolAsync, SqlConnectionAsync};
 use c3p0_common::*;
 use futures::Future;
-use tokio_postgres::{NoTls, Transaction};
 use std::pin::Pin;
+use tokio_postgres::{NoTls, Transaction};
 
 #[derive(Clone)]
 pub struct PgC3p0Pool {
@@ -30,17 +30,17 @@ impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager<NoTls>> {
 #[async_trait]
 impl C3p0PoolAsync for PgC3p0Pool {
     type CONN = PgConnection;
-/*
-    async fn connection(&self) -> Result<Self::CONN, C3p0Error> {
-        self.pool
-            .get()
-            .await
-            .map_err(|err| C3p0Error::PoolError {
-                cause: format!("{}", err),
-            })
-            .map(|conn| PgConnection::Conn(conn))
-    }
-*/
+    /*
+        async fn connection(&self) -> Result<Self::CONN, C3p0Error> {
+            self.pool
+                .get()
+                .await
+                .map_err(|err| C3p0Error::PoolError {
+                    cause: format!("{}", err),
+                })
+                .map(|conn| PgConnection::Conn(conn))
+        }
+    */
     async fn transaction<
         T: Send,
         E: From<C3p0Error>,
@@ -51,21 +51,20 @@ impl C3p0PoolAsync for PgC3p0Pool {
     ) -> Result<T, E> {
         let mut conn = self.pool.get().await.map_err(bb8_into_c3p0_error)?;
 
-            let transaction = unsafe {
-                ::std::mem::transmute(conn.transaction().await.map_err(into_c3p0_error)?)
-            };
-            let mut transaction = PgConnection::Tx(transaction);
+        let transaction =
+            unsafe { ::std::mem::transmute(conn.transaction().await.map_err(into_c3p0_error)?) };
+        let mut transaction = PgConnection::Tx(transaction);
 
-            let result = {
-                let transaction_ref = &mut transaction;
-                (tx)(transaction_ref).await?
-            };
-        /*
-        let (result, transaction) = {
-            // ToDo: To avoid this unsafe we need GAT
-            (result, transaction)
+        let result = {
+            let transaction_ref = &mut transaction;
+            (tx)(transaction_ref).await?
         };
-*/
+        /*
+                let (result, transaction) = {
+                    // ToDo: To avoid this unsafe we need GAT
+                    (result, transaction)
+                };
+        */
         match transaction {
             PgConnection::Tx(tx) => {
                 tx.commit().await.map_err(into_c3p0_error)?;
@@ -93,7 +92,11 @@ impl SqlConnectionAsync for PgConnection {
 }
 
 impl PgConnection {
-    pub async fn execute(&mut self, sql: &str, params: &[&(dyn ToSql + Sync)]) -> Result<u64, C3p0Error> {
+    pub async fn execute(
+        &mut self,
+        sql: &str,
+        params: &[&(dyn ToSql + Sync)],
+    ) -> Result<u64, C3p0Error> {
         match self {
             PgConnection::Conn(conn) => conn.execute(sql, params).await.map_err(into_c3p0_error),
             PgConnection::Tx(tx) => tx.execute(sql, params).await.map_err(into_c3p0_error),
@@ -114,7 +117,8 @@ impl PgConnection {
         params: &[&(dyn ToSql + Sync)],
         mapper: F,
     ) -> Result<T, C3p0Error> {
-        self.fetch_one_optional(sql, params, mapper).await
+        self.fetch_one_optional(sql, params, mapper)
+            .await
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
@@ -174,9 +178,7 @@ impl PgConnection {
                     })
             }
             PgConnection::Tx(tx) => {
-                let stmt = tx.prepare(sql)
-                    .await
-                    .map_err(into_c3p0_error)?;
+                let stmt = tx.prepare(sql).await.map_err(into_c3p0_error)?;
                 tx.query(&stmt, params)
                     .await
                     .map_err(into_c3p0_error)?

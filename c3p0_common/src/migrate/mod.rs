@@ -1,7 +1,7 @@
 use crate::error::C3p0Error;
 use crate::json::codec::DefaultJsonCodec;
 use crate::json::model::{Model, NewModel};
-use crate::json::{C3p0Json};
+use crate::json::C3p0Json;
 use crate::migrate::migration::Migrations;
 use crate::migrate::sql_migration::{to_sql_migrations, SqlMigration};
 use crate::pool::{C3p0Pool, SqlConnection};
@@ -9,11 +9,11 @@ use log::*;
 use serde_derive::{Deserialize, Serialize};
 
 #[cfg(feature = "async")]
+use crate::json::C3p0JsonAsync;
+#[cfg(feature = "async")]
+use crate::pool::{C3p0PoolAsync, SqlConnectionAsync};
+#[cfg(feature = "async")]
 use async_trait::async_trait;
-#[cfg(feature = "async")]
-use crate::pool::{SqlConnectionAsync, C3p0PoolAsync};
-#[cfg(feature = "async")]
-use crate::json::{C3p0JsonAsync};
 
 mod md5;
 pub mod migration;
@@ -196,7 +196,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
             let migration = &self.migrations[i];
 
             if check_if_migration_already_applied(&migration_history, &migration, i)? {
-                continue
+                continue;
             }
 
             conn.batch_execute(&migration.up.sql)
@@ -231,7 +231,6 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         c3p0_json.fetch_all(conn)
     }
-
 }
 
 pub trait Migrator: Clone {
@@ -290,8 +289,11 @@ pub struct C3p0MigrateAsync<
 }
 
 #[cfg(feature = "async")]
-impl<CONN: SqlConnectionAsync, C3P0: C3p0PoolAsync<CONN = CONN>, MIGRATOR: MigratorAsync<CONN = CONN>>
-C3p0MigrateAsync<CONN, C3P0, MIGRATOR>
+impl<
+        CONN: SqlConnectionAsync,
+        C3P0: C3p0PoolAsync<CONN = CONN>,
+        MIGRATOR: MigratorAsync<CONN = CONN>,
+    > C3p0MigrateAsync<CONN, C3P0, MIGRATOR>
 {
     pub fn new(
         table: String,
@@ -387,29 +389,32 @@ C3p0MigrateAsync<CONN, C3P0, MIGRATOR>
             let migration = &self.migrations[i];
 
             if check_if_migration_already_applied(&migration_history, &migration, i)? {
-                continue
+                continue;
             }
 
-            conn.batch_execute(&migration.up.sql).await
-                .map_err(|err| C3p0Error::MigrationError {
+            conn.batch_execute(&migration.up.sql).await.map_err(|err| {
+                C3p0Error::MigrationError {
                     message: format!(
                         "C3p0Migrate - Failed to execute migration with id [{}].",
                         &migration.id
                     ),
                     cause: Box::new(err),
-                })?;
+                }
+            })?;
 
-            c3p0_json.save(
-                conn,
-                NewModel::new(MigrationData {
-                    success: true,
-                    md5_checksum: migration.up.md5.clone(),
-                    migration_id: migration.id.clone(),
-                    migration_type: MigrationType::UP,
-                    execution_time_ms: 0,
-                    installed_on_epoch_ms: 0,
-                }),
-            ).await?;
+            c3p0_json
+                .save(
+                    conn,
+                    NewModel::new(MigrationData {
+                        success: true,
+                        md5_checksum: migration.up.md5.clone(),
+                        migration_id: migration.id.clone(),
+                        migration_type: MigrationType::UP,
+                        execution_time_ms: 0,
+                        installed_on_epoch_ms: 0,
+                    }),
+                )
+                .await?;
         }
 
         Ok(())
@@ -422,13 +427,9 @@ C3p0MigrateAsync<CONN, C3P0, MIGRATOR>
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         c3p0_json.fetch_all(conn).await
     }
-
 }
 
-
-fn clean_history(
-    migrations: Vec<MigrationModel>,
-) -> Result<Vec<MigrationModel>, C3p0Error> {
+fn clean_history(migrations: Vec<MigrationModel>) -> Result<Vec<MigrationModel>, C3p0Error> {
     let mut result = vec![];
 
     for migration in migrations {
@@ -454,12 +455,20 @@ fn clean_history(
 }
 
 /// Returns whether the migration was already applied
-fn check_if_migration_already_applied(migration_history: &[MigrationModel], sql_migration: &SqlMigration, check_index: usize) -> Result<bool, C3p0Error> {
+fn check_if_migration_already_applied(
+    migration_history: &[MigrationModel],
+    sql_migration: &SqlMigration,
+    check_index: usize,
+) -> Result<bool, C3p0Error> {
     if migration_history.len() > check_index {
         let applied_migration = &migration_history[check_index];
 
         if applied_migration.data.migration_id.eq(&sql_migration.id) {
-            if applied_migration.data.md5_checksum.eq(&sql_migration.up.md5) {
+            if applied_migration
+                .data
+                .md5_checksum
+                .eq(&sql_migration.up.md5)
+            {
                 return Ok(true);
             }
             return Err(C3p0Error::AlteredMigrationSql {

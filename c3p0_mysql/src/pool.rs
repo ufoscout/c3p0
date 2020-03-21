@@ -1,6 +1,6 @@
 use crate::error::into_c3p0_error;
 use crate::mysql::driver::prelude::{FromValue, Queryable, ToValue};
-use crate::mysql::driver::{TxOpts, Row};
+use crate::mysql::driver::{Row, TxOpts};
 use crate::mysql::r2d2::{MysqlConnectionManager, Pool, PooledConnection};
 use c3p0_common::*;
 use std::ops::DerefMut;
@@ -200,11 +200,7 @@ fn fetch_one<C: Queryable, T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error
         .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
 }
 
-fn fetch_one_optional<
-    C: Queryable,
-    T,
-    F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>,
->(
+fn fetch_one_optional<C: Queryable, T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
     conn: &mut C,
     sql: &str,
     params: &[&dyn ToValue],

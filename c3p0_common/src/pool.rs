@@ -64,7 +64,7 @@ use std::pin::Pin;
 pub trait C3p0PoolAsync: Clone {
     type CONN;
 
-//    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
+    //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
     async fn transaction<
         T: Send + Sync,
@@ -73,8 +73,7 @@ pub trait C3p0PoolAsync: Clone {
     >(
         &self,
         tx: F,
-    )
-        -> Result<T, E>;
+    ) -> Result<T, E>;
 }
 
 #[cfg(feature = "async")]

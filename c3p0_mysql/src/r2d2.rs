@@ -1,8 +1,8 @@
 use mysql_client::error::Error;
+use mysql_client::prelude::Queryable;
 use mysql_client::{Conn, Opts, OptsBuilder};
-use mysql_client::prelude::{Queryable};
-use std::result::Result;
 use r2d2;
+use std::result::Result;
 
 #[derive(Clone, Debug)]
 pub struct MysqlConnectionManager {

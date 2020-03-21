@@ -4,8 +4,7 @@ use thiserror::Error;
 pub enum C3p0Error {
     #[error("InternalError: [{cause}]")]
     InternalError { cause: String },
-    #[error(
-        "DbError. DB: {db}. DB specific error code: [{code:?}]. Msg: {cause}")]
+    #[error("DbError. DB: {db}. DB specific error code: [{code:?}]. Msg: {cause}")]
     DbError {
         db: &'static str,
         cause: String,
@@ -24,7 +23,9 @@ pub enum C3p0Error {
     #[error("ResultNotFoundError: Expected one result but found zero.")]
     ResultNotFoundError,
     #[error("TransactionError: [{cause}]")]
-    TransactionError { cause: Box<dyn std::error::Error + Send + Sync> },
+    TransactionError {
+        cause: Box<dyn std::error::Error + Send + Sync>,
+    },
     #[error("CorruptedDbMigrationState: [{message}]")]
     CorruptedDbMigrationState { message: String },
     #[error("AlteredMigrationSql: [{message}]")]
@@ -56,5 +57,4 @@ mod test {
     fn error_should_be_send_and_sync() {
         assert_impl_all!(C3p0Error: Send, Sync);
     }
-
 }

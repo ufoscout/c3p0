@@ -66,7 +66,6 @@ impl C3p0Pool for PgC3p0Pool {
         };
 
         Ok(result)
-
     }
 }
 

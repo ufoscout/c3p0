@@ -17,62 +17,72 @@ async fn json_should_commit_transaction() {
     let model_clone = model.clone();
 
     let jpo_clone = jpo.clone();
-    let result: Result<(), C3p0Error> = c3p0.transaction(|conn| async move {
-        assert!(jpo_clone.create_table_if_not_exists(conn).await.is_ok());
-        assert!(jpo_clone.save(conn, model.clone()).await.is_ok());
-        assert!(jpo_clone.save(conn, model.clone()).await.is_ok());
-        assert!(jpo_clone.save(conn, model_clone.clone()).await.is_ok());
-        Ok(())
-    }.boxed()).await;
+    let result: Result<(), C3p0Error> = c3p0
+        .transaction(|conn| {
+            async move {
+                assert!(jpo_clone.create_table_if_not_exists(conn).await.is_ok());
+                assert!(jpo_clone.save(conn, model.clone()).await.is_ok());
+                assert!(jpo_clone.save(conn, model.clone()).await.is_ok());
+                assert!(jpo_clone.save(conn, model_clone.clone()).await.is_ok());
+                Ok(())
+            }
+            .boxed()
+        })
+        .await;
 
     assert!(result.is_ok());
 
-    c3p0.transaction::<_, C3p0Error, _>(|conn| async move {
-        let count = jpo.count_all(conn).await.unwrap();
-        assert_eq!(3, count);
-
-        assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
-        Ok(())
-    }.boxed()).await.unwrap();
-
-    /*
-    test(|pool| async move {
-        {
-            let c3p0 = &pool;
-
-            let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::new(table_name).build::<TestData>();
-
-            let model = NewModel::new(TestData {
-                first_name: "my_first_name".to_owned(),
-                last_name: "my_last_name".to_owned(),
-            });
-
-            let model_clone = model.clone();
-            /*
-            let result: Result<(), C3p0Error> = c3p0.transaction(|conn| async move {
-                assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
-                assert!(jpo.save(conn, model.clone()).await.is_ok());
-                assert!(jpo.save(conn, model.clone()).await.is_ok());
-                assert!(jpo.save(conn, model_clone.clone()).await.is_ok());
-                Ok(())
-            }.boxed()).await;
-
-            assert!(result.is_ok());
-            */
-        }
-*/
-/*
-        {
-            let conn = &mut c3p0.connection().await.unwrap();
+    c3p0.transaction::<_, C3p0Error, _>(|conn| {
+        async move {
             let count = jpo.count_all(conn).await.unwrap();
             assert_eq!(3, count);
 
             assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
+            Ok(())
         }
-*/
-//        Ok(())
-//    });
+        .boxed()
+    })
+    .await
+    .unwrap();
+
+    /*
+        test(|pool| async move {
+            {
+                let c3p0 = &pool;
+
+                let table_name = format!("TEST_TABLE_{}", rand_string(8));
+                let jpo = C3p0JsonBuilder::new(table_name).build::<TestData>();
+
+                let model = NewModel::new(TestData {
+                    first_name: "my_first_name".to_owned(),
+                    last_name: "my_last_name".to_owned(),
+                });
+
+                let model_clone = model.clone();
+                /*
+                let result: Result<(), C3p0Error> = c3p0.transaction(|conn| async move {
+                    assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
+                    assert!(jpo.save(conn, model.clone()).await.is_ok());
+                    assert!(jpo.save(conn, model.clone()).await.is_ok());
+                    assert!(jpo.save(conn, model_clone.clone()).await.is_ok());
+                    Ok(())
+                }.boxed()).await;
+
+                assert!(result.is_ok());
+                */
+            }
+    */
+    /*
+            {
+                let conn = &mut c3p0.connection().await.unwrap();
+                let count = jpo.count_all(conn).await.unwrap();
+                assert_eq!(3, count);
+
+                assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
+            }
+    */
+    //        Ok(())
+    //    });
 }
 
 /*

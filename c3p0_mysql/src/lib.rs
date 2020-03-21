@@ -17,8 +17,8 @@ pub mod mysql {
     pub use crate::migrate::*;
 
     pub mod r2d2 {
-        pub use r2d2::*;
         pub use crate::r2d2::*;
+        pub use r2d2::*;
     }
 
     pub mod driver {
