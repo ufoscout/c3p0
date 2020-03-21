@@ -236,10 +236,7 @@ fn should_read_migrations_from_files() -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 }
 
-use c3p0_common::migrate::include_dir::*;
-use std::convert::TryInto;
-
-const MIGRATIONS: Dir = include_dir!("./tests/migrations_00");
+const MIGRATIONS: include_dir::Dir = include_dir::include_dir!("./tests/migrations_00");
 
 #[test]
 fn should_read_embedded_migrations() -> Result<(), Box<dyn std::error::Error>> {
@@ -247,10 +244,8 @@ fn should_read_embedded_migrations() -> Result<(), Box<dyn std::error::Error>> {
     let node = new_connection(&docker);
     let c3p0 = node.0.clone();
 
-    let migrations: Migrations = (&MIGRATIONS).try_into().unwrap();
-
     let migrate = C3p0MigrateBuilder::new(c3p0.clone())
-        .with_migrations(migrations)
+        .with_migrations(from_embed(&MIGRATIONS).unwrap())
         .build();
 
     migrate.migrate()?;
