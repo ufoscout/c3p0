@@ -3,8 +3,6 @@ mod error;
 mod json;
 mod pool;
 
-pub use c3p0_common::*;
-
 pub mod pg_async {
 
     //  pub use crate::bb8::*;

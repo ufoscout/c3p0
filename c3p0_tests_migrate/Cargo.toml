@@ -12,16 +12,16 @@ keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
 
 [dependencies]
 # mysql feature
-c3p0_mysql = { path = "../c3p0_mysql", version = "0.42.1", optional = true, features = ['migrate']}
+c3p0_mysql = { path = "../c3p0", package = "c3p0", version = "0.42.1", optional = true, features = ['mysql_migrate']}
 
 # pg feature
-c3p0_pg = { path = "../c3p0_pg", version = "0.42.1", optional = true, features = ['migrate'] }
+c3p0_pg = { path = "../c3p0", package = "c3p0", version = "0.42.1", optional = true, features = ['pg_migrate'] }
 
 # pg_015 feature
-c3p0_pg_015 = { path = "../c3p0_pg_015", version = "0.42.1", optional = true, features = ['migrate'] }
+c3p0_pg_015 = { path = "../c3p0", package = "c3p0", version = "0.42.1", optional = true, features = ['pg_015_migrate'] }
 
 # sqlite feature
-c3p0_sqlite = { path = "../c3p0_sqlite", version = "0.42.1", optional = true, features = ['migrate'] }
+c3p0_sqlite = { path = "../c3p0", package = "c3p0", version = "0.42.1", optional = true, features = ['sqlite_migrate'] }
 
 [dev-dependencies]
 lazy_static = "1.3"

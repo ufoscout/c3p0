@@ -11,6 +11,8 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
 
 [dependencies]
+c3p0_common = { path = "../c3p0_common", version = "0.42.1" }
+
 # mysql feature
 c3p0_in_memory = { path = "../c3p0_in_memory", version = "0.42.1", optional = true }
 

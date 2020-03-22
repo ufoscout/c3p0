@@ -5,8 +5,6 @@ mod pool;
 #[cfg(feature = "migrate")]
 mod migrate;
 
-pub use c3p0_common::*;
-
 pub mod sqlite {
 
     pub use crate::json::*;

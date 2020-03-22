@@ -21,5 +21,3 @@ pub use json::C3p0JsonAsync;
 
 #[cfg(feature = "migrate")]
 pub mod migrate;
-#[cfg(feature = "migrate")]
-pub use migrate::{migration::*, *};

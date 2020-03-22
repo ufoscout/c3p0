@@ -6,8 +6,6 @@ mod r2d2;
 #[cfg(feature = "migrate")]
 mod migrate;
 
-pub use c3p0_common::*;
-
 pub mod mysql {
 
     pub use crate::json::*;

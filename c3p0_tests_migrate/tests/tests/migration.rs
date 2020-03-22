@@ -2,6 +2,7 @@ use testcontainers::clients;
 
 use crate::tests::util::rand_string;
 use crate::*;
+use crate::migrate::*;
 
 #[test]
 fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), Box<dyn std::error::Error>>
