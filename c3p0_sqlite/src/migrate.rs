@@ -4,7 +4,7 @@ use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
 
-pub use c3p0_common::migrate::*;
+use c3p0_common::migrate::*;
 
 pub trait SqliteC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<SqliteConnection, SqliteC3p0Pool, SqliteMigrator>;

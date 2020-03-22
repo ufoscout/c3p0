@@ -1,7 +1,7 @@
 [package]
 name = "c3p0_sqlite"
 license = "MIT"
-version = "0.43.0"
+version = "0.43.1"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2"
 edition = "2018"
@@ -11,7 +11,7 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["sqlite"]
 
 [dependencies]
-c3p0_common = { path = "../c3p0_common", version = "0.43.0" }
+c3p0_common = { path = "../c3p0_common", version = "0.43.1" }
 log = "0.4"
 r2d2 = "0.8"
 r2d2_sqlite = "0.14.0"

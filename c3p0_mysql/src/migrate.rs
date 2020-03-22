@@ -5,7 +5,7 @@ use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
 use c3p0_common::pool::SqlConnection;
 
-pub use c3p0_common::migrate::*;
+use c3p0_common::migrate::*;
 
 pub trait MysqlC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<MysqlConnection, MysqlC3p0Pool, MysqlMigrator>;

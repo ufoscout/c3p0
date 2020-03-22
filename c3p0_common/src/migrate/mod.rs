@@ -2,7 +2,6 @@ use crate::error::C3p0Error;
 use crate::json::codec::DefaultJsonCodec;
 use crate::json::model::{Model, NewModel};
 use crate::json::C3p0Json;
-use crate::migrate::migration::Migrations;
 use crate::migrate::sql_migration::{to_sql_migrations, SqlMigration};
 use crate::pool::{C3p0Pool, SqlConnection};
 use log::*;
@@ -23,7 +22,7 @@ pub mod include_dir {
     pub use include_dir::*;
 }
 
-pub use migration::*;
+pub use migration::{Migrations, Migration, from_embed, from_fs};
 
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
