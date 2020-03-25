@@ -4,13 +4,12 @@ use c3p0::pg_async::bb8::{Pool, PostgresConnectionManager};
 use c3p0::pg_async::*;
 use c3p0::*;
 use lazy_static::lazy_static;
-use maybe_single_async::nio::MaybeSingleAsync;
+use maybe_single::nio::{Data, MaybeSingleAsync};
 use testcontainers::*;
 
 pub use c3p0::pg_async::driver::row::Row;
 pub use c3p0::pg_async::driver::tls::NoTls;
 use futures::FutureExt;
-use maybe_single_async::nio::Data;
 
 pub type C3p0Impl = PgC3p0Pool;
 
@@ -19,16 +18,16 @@ mod tests_json_async;
 
 pub mod utils;
 
-pub type MaybeType = (
-    C3p0Impl,
-    Container<'static, clients::Cli, images::generic::GenericImage>,
-);
-
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
     pub static ref SINGLETON: MaybeSingleAsync<MaybeType> =
         MaybeSingleAsync::new(|| init().boxed());
 }
+
+pub type MaybeType = (
+    C3p0Impl,
+    Container<'static, clients::Cli, images::generic::GenericImage>,
+);
 
 async fn init() -> MaybeType {
     let node = DOCKER.run(

@@ -4,7 +4,7 @@ use c3p0::pg::r2d2::{Pool, PostgresConnectionManager};
 use c3p0::pg::*;
 use c3p0::*;
 use lazy_static::lazy_static;
-use maybe_single::MaybeSingle;
+use maybe_single::{Data, MaybeSingle};
 use testcontainers::*;
 
 pub use c3p0::pg::driver::row::Row;
@@ -18,16 +18,15 @@ pub mod utils;
 
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
-    pub static ref SINGLETON: MaybeSingle<(
-        C3p0Impl,
-        Container<'static, clients::Cli, images::generic::GenericImage>
-    )> = MaybeSingle::new(|| init());
+    pub static ref SINGLETON: MaybeSingle<MaybeType> = MaybeSingle::new(|| init());
 }
 
-fn init() -> (
+pub type MaybeType = (
     C3p0Impl,
     Container<'static, clients::Cli, images::generic::GenericImage>,
-) {
+);
+
+fn init() -> MaybeType {
     let node = DOCKER.run(
         images::generic::GenericImage::new("postgres:11-alpine")
             .with_wait_for(images::generic::WaitFor::message_on_stderr(
@@ -53,4 +52,8 @@ fn init() -> (
     let pool = PgC3p0Pool::new(pool);
 
     (pool, node)
+}
+
+pub fn data(serial: bool) -> Data<'static, MaybeType> {
+    SINGLETON.data(serial)
 }

@@ -5,7 +5,7 @@ use c3p0::mysql::r2d2::{MysqlConnectionManager, Pool};
 use c3p0::mysql::*;
 use c3p0::*;
 use lazy_static::lazy_static;
-use maybe_single::MaybeSingle;
+use maybe_single::{Data, MaybeSingle};
 use testcontainers::*;
 
 pub use c3p0::mysql::driver::Row;
@@ -18,16 +18,15 @@ pub mod utils;
 
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();
-    pub static ref SINGLETON: MaybeSingle<(
-        C3p0Impl,
-        Container<'static, clients::Cli, images::generic::GenericImage>
-    )> = MaybeSingle::new(|| init());
+    pub static ref SINGLETON: MaybeSingle<MaybeType> = MaybeSingle::new(|| init());
 }
 
-fn init() -> (
+pub type MaybeType = (
     C3p0Impl,
     Container<'static, clients::Cli, images::generic::GenericImage>,
-) {
+);
+
+fn init() -> MaybeType {
     let mysql_version = "5.7.25";
     let mysql_image = images::generic::GenericImage::new(format!("mysql:{}", mysql_version))
         .with_wait_for(images::generic::WaitFor::message_on_stderr(
@@ -54,4 +53,8 @@ fn init() -> (
     let pool = MysqlC3p0Pool::new(pool);
 
     (pool, node)
+}
+
+pub fn data(serial: bool) -> Data<'static, MaybeType> {
+    SINGLETON.data(serial)
 }
