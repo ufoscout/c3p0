@@ -26,18 +26,12 @@ lazy_static! {
 
 pub type MaybeType = (
     C3p0Impl,
-    Container<'static, clients::Cli, images::generic::GenericImage>,
+    Container<'static, clients::Cli, images::postgres::Postgres>,
 );
 
 async fn init() -> MaybeType {
     let node = DOCKER.run(
-        images::generic::GenericImage::new("postgres:11-alpine")
-            .with_wait_for(images::generic::WaitFor::message_on_stderr(
-                "database system is ready to accept connections",
-            ))
-            .with_env_var("POSTGRES_DB", "postgres")
-            .with_env_var("POSTGRES_USER", "postgres")
-            .with_env_var("POSTGRES_PASSWORD", "postgres"),
+        images::postgres::Postgres::default(),
     );
 
     let manager = PostgresConnectionManager::new(
