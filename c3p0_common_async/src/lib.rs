@@ -13,6 +13,12 @@ pub use json::{
 pub use pool::{C3p0Pool, SqlConnection};
 pub use sql::{ForUpdate, OrderBy};
 
+#[cfg(feature = "async")]
+pub use pool::{C3p0PoolAsync, SqlConnectionAsync};
+
+#[cfg(feature = "async")]
+pub use json::C3p0JsonAsync;
+
 #[cfg(feature = "migrate")]
 pub mod migrate;
 #[cfg(feature = "migrate")]
