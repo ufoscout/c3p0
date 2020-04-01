@@ -30,9 +30,7 @@ pub type MaybeType = (
 );
 
 async fn init() -> MaybeType {
-    let node = DOCKER.run(
-        images::postgres::Postgres::default(),
-    );
+    let node = DOCKER.run(images::postgres::Postgres::default());
 
     let manager = PostgresConnectionManager::new(
         format!(

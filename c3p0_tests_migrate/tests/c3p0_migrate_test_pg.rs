@@ -14,9 +14,7 @@ pub fn new_connection(
     PgC3p0Pool,
     Container<clients::Cli, images::postgres::Postgres>,
 ) {
-    let node = docker.run(
-        images::postgres::Postgres::default(),
-    );
+    let node = docker.run(images::postgres::Postgres::default());
     let manager = PostgresConnectionManager::new(
         format!(
             "postgres://postgres:postgres@127.0.0.1:{}/postgres",

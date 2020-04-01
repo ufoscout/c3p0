@@ -9,9 +9,10 @@ use c3p0_common::json::codec::DefaultJsonCodec;
 use c3p0_common::json::{
     codec::JsonCodec,
     model::{IdType, Model, NewModel},
-    C3p0JsonAsync, Queries,
+    Queries,
 };
 use c3p0_common::sql::ForUpdate;
+use c3p0_common_async::C3p0JsonAsync;
 use serde::export::fmt::Display;
 
 pub trait PgC3p0JsonBuilder {

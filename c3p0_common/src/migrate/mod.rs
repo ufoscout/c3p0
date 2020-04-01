@@ -15,11 +15,10 @@ pub mod include_dir {
     pub use include_dir::*;
 }
 
-pub use migration::{Migrations, Migration, from_embed, from_fs};
+pub use migration::{from_embed, from_fs, Migration, Migrations};
 
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
-
 
 #[derive(Clone, Debug)]
 pub struct C3p0MigrateBuilder<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> {

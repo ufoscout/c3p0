@@ -1,5 +1,8 @@
 pub use c3p0_common::*;
 
+#[cfg(any(feature = "pg_async"))]
+pub use c3p0_common_async::*;
+
 #[cfg(feature = "in_memory")]
 pub use c3p0_in_memory::*;
 

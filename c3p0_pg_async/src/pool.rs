@@ -4,8 +4,8 @@ use crate::pg_async::driver::row::Row;
 use crate::pg_async::driver::types::{FromSqlOwned, ToSql};
 
 use async_trait::async_trait;
-use c3p0_common::pool::{C3p0PoolAsync, SqlConnectionAsync};
 use c3p0_common::*;
+use c3p0_common_async::pool::{C3p0PoolAsync, SqlConnectionAsync};
 use futures::Future;
 use std::pin::Pin;
 use tokio_postgres::{NoTls, Transaction};
