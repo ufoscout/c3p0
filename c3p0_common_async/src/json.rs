@@ -61,7 +61,7 @@ where
         for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error>;
 
-    async fn delete(&self, conn: &mut Self::CONN, obj: &Model<DATA>) -> Result<u64, C3p0Error>;
+    async fn delete(&self, conn: &mut Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
     async fn delete_all(&self, conn: &mut Self::CONN) -> Result<u64, C3p0Error>;
 

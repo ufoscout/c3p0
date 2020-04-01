@@ -29,17 +29,7 @@ impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager<NoTls>> {
 #[async_trait(?Send)]
 impl C3p0PoolAsync for PgC3p0Pool {
     type CONN = PgConnection;
-    /*
-        async fn connection(&self) -> Result<Self::CONN, C3p0Error> {
-            self.pool
-                .get()
-                .await
-                .map_err(|err| C3p0Error::PoolError {
-                    cause: format!("{}", err),
-                })
-                .map(|conn| PgConnection::Conn(conn))
-        }
-    */
+
     async fn transaction<
         T,
         E: From<C3p0Error>,
@@ -54,6 +44,7 @@ impl C3p0PoolAsync for PgC3p0Pool {
         let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
 
         let result = {
+            // ToDo: To avoid this unsafe we need GAT
             let transaction = PgConnection::Tx( unsafe { ::std::mem::transmute(&native_transaction) } ) ;
             (tx)(transaction).await?
         };
