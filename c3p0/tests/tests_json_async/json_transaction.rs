@@ -1,6 +1,5 @@
 use crate::utils::*;
 use crate::*;
-use futures::future::FutureExt;
 
 #[tokio::test]
 async fn json_should_commit_transaction() {

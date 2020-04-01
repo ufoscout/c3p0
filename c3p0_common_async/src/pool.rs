@@ -3,7 +3,7 @@ use c3p0_common::error::C3p0Error;
 use async_trait::async_trait;
 use std::future::Future;
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait C3p0PoolAsync: Clone {
     type CONN;
 
@@ -20,7 +20,7 @@ pub trait C3p0PoolAsync: Clone {
     ) -> Result<T, E>;
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait SqlConnectionAsync {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error>;
 }

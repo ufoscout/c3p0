@@ -26,7 +26,7 @@ impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager<NoTls>> {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl C3p0PoolAsync for PgC3p0Pool {
     type CONN = PgConnection;
     /*
@@ -69,7 +69,7 @@ pub enum PgConnection {
     Tx(&'static Transaction<'static>),
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl SqlConnectionAsync for PgConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {

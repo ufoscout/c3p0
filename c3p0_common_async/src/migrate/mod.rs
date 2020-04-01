@@ -1,10 +1,9 @@
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::model::{Model, NewModel};
+use c3p0_common::json::model::{NewModel};
 use c3p0_common::json::C3p0Json;
 use c3p0_common::migrate::sql_migration::{to_sql_migrations, SqlMigration};
 use log::*;
-use serde_derive::{Deserialize, Serialize};
 
 use crate::json::C3p0JsonAsync;
 use crate::pool::{C3p0PoolAsync, SqlConnectionAsync};
@@ -54,11 +53,11 @@ impl<CONN: SqlConnectionAsync, C3P0: C3p0PoolAsync<CONN = CONN>> C3p0AsyncMigrat
     }
 }
 
-#[async_trait]
-pub trait MigratorAsync: Clone {
+#[async_trait(?Send)]
+pub trait MigratorAsync: Clone + Send {
     type CONN: SqlConnectionAsync;
     type C3P0: C3p0PoolAsync<CONN = Self::CONN>;
-    type C3P0JSON: C3p0JsonAsync<MigrationDataAsync, DefaultJsonCodec, CONN = Self::CONN>;
+    type C3P0JSON: C3p0JsonAsync<MigrationData, DefaultJsonCodec, CONN = Self::CONN>;
 
     fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0JSON;
 
@@ -90,7 +89,7 @@ pub struct C3p0MigrateAsync<
 impl<
         CONN: SqlConnectionAsync,
         C3P0: C3p0PoolAsync<CONN = CONN>,
-        MIGRATOR: MigratorAsync<CONN = CONN>,
+        MIGRATOR: MigratorAsync<CONN = CONN> + Sync,
     > C3p0MigrateAsync<CONN, C3P0, MIGRATOR>
 {
     pub fn new(
@@ -124,10 +123,13 @@ impl<
             })?;
 
         // Start Migration
+        let c3p0_json_clone = c3p0_json.clone();
+        let migrator_ref = self.migrator.clone();
         self.c3p0
-            .transaction(|mut conn| {
-                self.migrator.lock_first_migration_row(&c3p0_json, &mut conn)?;
-                Ok(self.start_migration(&c3p0_json, &mut conn)?)
+            .transaction(|mut conn| async move {
+                let conn = &mut conn;
+                migrator_ref.lock_first_migration_row(&c3p0_json_clone, conn).await?;
+                Ok(self.start_migration(&c3p0_json_clone, conn).await?)
             })
             .await
             .map_err(|err| C3p0Error::MigrationError {
@@ -143,7 +145,7 @@ impl<
         let c3p0_json = self
             .migrator
             .build_cp30_json(self.table.clone(), self.schema.clone());
-        c3p0_json.fetch_all(conn)
+        c3p0_json.fetch_all(conn).await
     }
 
     async fn create_migration_zero(
@@ -162,17 +164,19 @@ impl<
 
     async fn pre_migration(&self, c3p0_json: &MIGRATOR::C3P0JSON) -> Result<(), C3p0Error> {
         {
-            let conn = &mut self.c3p0.connection().await?;
-            if let Err(err) = c3p0_json.create_table_if_not_exists(conn).await {
+            let result = self.c3p0.transaction(|mut conn| async move {
+                c3p0_json.create_table_if_not_exists(&mut conn).await
+            }).await;
+            if let Err(err) = result {
                 warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
             };
         }
 
         // Start Migration
-        self.c3p0.transaction(|mut conn| async {
-            self.migrator.lock_table(&c3p0_json, &mut conn).await?;
-            Ok(self.create_migration_zero(&c3p0_json, &mut conn).await?)
-        })
+        self.c3p0.transaction(|mut conn| async move {
+            self.migrator.lock_table(c3p0_json, &mut conn).await?;
+            Ok(self.create_migration_zero(c3p0_json, &mut conn).await?)
+        }).await
     }
 
     async fn start_migration(

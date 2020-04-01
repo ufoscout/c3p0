@@ -14,6 +14,7 @@ use c3p0_common::json::{
 use c3p0_common::sql::ForUpdate;
 use c3p0_common_async::C3p0JsonAsync;
 use serde::export::fmt::Display;
+use async_trait::async_trait;
 
 pub trait PgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
@@ -392,7 +393,7 @@ where
     }
 }
 
-// #[async_trait]
+#[async_trait(?Send)]
 impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for PgC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
