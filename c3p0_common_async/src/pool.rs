@@ -2,7 +2,6 @@ use c3p0_common::error::C3p0Error;
 
 use async_trait::async_trait;
 use std::future::Future;
-use std::pin::Pin;
 
 #[async_trait]
 pub trait C3p0PoolAsync: Clone {
@@ -11,9 +10,10 @@ pub trait C3p0PoolAsync: Clone {
     //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
     async fn transaction<
-        T: Send + Sync,
+        T: Send,
         E: From<C3p0Error>,
-        F: Send + FnOnce(&mut Self::CONN) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + '_>>,
+        F: Send + FnOnce(Self::CONN) -> Fut,
+        Fut: Send + Future<Output = Result<T, E>>
     >(
         &self,
         tx: F,

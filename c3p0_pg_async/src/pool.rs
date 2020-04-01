@@ -7,7 +7,6 @@ use async_trait::async_trait;
 use c3p0_common::*;
 use c3p0_common_async::pool::{C3p0PoolAsync, SqlConnectionAsync};
 use futures::Future;
-use std::pin::Pin;
 use tokio_postgres::{NoTls, Transaction};
 
 #[derive(Clone)]
@@ -44,33 +43,22 @@ impl C3p0PoolAsync for PgC3p0Pool {
     async fn transaction<
         T: Send,
         E: From<C3p0Error>,
-        F: Send + FnOnce(&mut Self::CONN) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + '_>>,
+        F: Send + FnOnce(Self::CONN) -> Fut,
+        Fut: Send + Future<Output = Result<T, E>>
     >(
         &self,
         tx: F,
     ) -> Result<T, E> {
         let mut conn = self.pool.get().await.map_err(bb8_into_c3p0_error)?;
 
-        let transaction =
-            unsafe { ::std::mem::transmute(conn.transaction().await.map_err(into_c3p0_error)?) };
-        let mut transaction = PgConnection::Tx(transaction);
+        let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
 
         let result = {
-            let transaction_ref = &mut transaction;
-            (tx)(transaction_ref).await?
+            let transaction = PgConnection::Tx( unsafe { ::std::mem::transmute(&native_transaction) } ) ;
+            (tx)(transaction).await?
         };
-        /*
-                let (result, transaction) = {
-                    // ToDo: To avoid this unsafe we need GAT
-                    (result, transaction)
-                };
-        */
-        match transaction {
-            PgConnection::Tx(tx) => {
-                tx.commit().await.map_err(into_c3p0_error)?;
-            }
-            _ => panic!("It should have been a transaction"),
-        };
+
+        native_transaction.commit().await.map_err(into_c3p0_error)?;
 
         Ok(result)
     }
@@ -78,7 +66,7 @@ impl C3p0PoolAsync for PgC3p0Pool {
 
 pub enum PgConnection {
     Conn(PooledConnection<'static, PostgresConnectionManager<NoTls>>),
-    Tx(Transaction<'static>),
+    Tx(&'static Transaction<'static>),
 }
 
 #[async_trait]
