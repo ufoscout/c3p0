@@ -7,9 +7,9 @@ use crate::pool::{C3p0Pool, SqlConnection};
 use log::*;
 use serde_derive::{Deserialize, Serialize};
 
-mod md5;
+pub mod md5;
 pub mod migration;
-mod sql_migration;
+pub mod sql_migration;
 
 pub mod include_dir {
     pub use include_dir::*;
@@ -247,7 +247,7 @@ pub trait Migrator: Clone {
     ) -> Result<(), C3p0Error>;
 }
 
-fn clean_history(migrations: Vec<MigrationModel>) -> Result<Vec<MigrationModel>, C3p0Error> {
+pub fn clean_history(migrations: Vec<MigrationModel>) -> Result<Vec<MigrationModel>, C3p0Error> {
     let mut result = vec![];
 
     for migration in migrations {
@@ -273,7 +273,7 @@ fn clean_history(migrations: Vec<MigrationModel>) -> Result<Vec<MigrationModel>,
 }
 
 /// Returns whether the migration was already applied
-fn check_if_migration_already_applied(
+pub fn check_if_migration_already_applied(
     migration_history: &[MigrationModel],
     sql_migration: &SqlMigration,
     check_index: usize,
@@ -308,7 +308,7 @@ fn check_if_migration_already_applied(
     Ok(false)
 }
 
-fn build_migration_zero() -> MigrationData {
+pub fn build_migration_zero() -> MigrationData {
     MigrationData {
         md5_checksum: "".to_owned(),
         migration_id: C3P0_INIT_MIGRATION_ID.to_owned(),
