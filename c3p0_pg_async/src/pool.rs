@@ -41,10 +41,10 @@ impl C3p0PoolAsync for PgC3p0Pool {
         }
     */
     async fn transaction<
-        T: Send,
+        T,
         E: From<C3p0Error>,
-        F: Send + FnOnce(Self::CONN) -> Fut,
-        Fut: Send + Future<Output = Result<T, E>>
+        F: FnOnce(Self::CONN) -> Fut,
+        Fut: Future<Output = Result<T, E>>
     >(
         &self,
         tx: F,

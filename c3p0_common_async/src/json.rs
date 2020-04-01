@@ -1,5 +1,7 @@
 use c3p0_common::json::codec::JsonCodec;
 use async_trait::async_trait;
+use c3p0_common::{C3p0Error, Model, NewModel, ForUpdate};
+use c3p0_common::json::model::IdType;
 
 #[async_trait(?Send)]
 pub trait C3p0JsonAsync<DATA, CODEC>: Clone
@@ -11,7 +13,7 @@ where
 
     fn codec(&self) -> &CODEC;
 
-    /*
+
     async fn create_table_if_not_exists(&self, conn: &mut Self::CONN) -> Result<(), C3p0Error>;
 
     async fn drop_table_if_exists(&self, conn: &mut Self::CONN, cascade: bool)
@@ -72,6 +74,6 @@ where
     async fn save(&self, conn: &mut Self::CONN, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
 
     async fn update(&self, conn: &mut Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
-*/
+
 
 }

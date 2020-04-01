@@ -1,7 +1,6 @@
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::codec::DefaultJsonCodec;
 use c3p0_common::json::model::{NewModel};
-use c3p0_common::json::C3p0Json;
 use c3p0_common::migrate::sql_migration::{to_sql_migrations, SqlMigration};
 use log::*;
 
@@ -123,13 +122,11 @@ impl<
             })?;
 
         // Start Migration
-        let c3p0_json_clone = c3p0_json.clone();
-        let migrator_ref = self.migrator.clone();
         self.c3p0
             .transaction(|mut conn| async move {
                 let conn = &mut conn;
-                migrator_ref.lock_first_migration_row(&c3p0_json_clone, conn).await?;
-                Ok(self.start_migration(&c3p0_json_clone, conn).await?)
+                self.migrator.lock_first_migration_row(&c3p0_json, conn).await?;
+                Ok(self.start_migration(&c3p0_json, conn).await?)
             })
             .await
             .map_err(|err| C3p0Error::MigrationError {

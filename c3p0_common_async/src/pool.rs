@@ -10,10 +10,10 @@ pub trait C3p0PoolAsync: Clone {
     //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
     async fn transaction<
-        T: Send,
+        T,
         E: From<C3p0Error>,
-        F: Send + FnOnce(Self::CONN) -> Fut,
-        Fut: Send + Future<Output = Result<T, E>>
+        F: FnOnce(Self::CONN) -> Fut,
+        Fut: Future<Output = Result<T, E>>
     >(
         &self,
         tx: F,
