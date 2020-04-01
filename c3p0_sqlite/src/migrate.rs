@@ -10,7 +10,7 @@ pub trait SqliteC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<SqliteConnection, SqliteC3p0Pool, SqliteMigrator>;
 }
 
-impl SqliteC3p0MigrateBuilder for C3p0MigrateBuilder<SqliteConnection, SqliteC3p0Pool> {
+impl SqliteC3p0MigrateBuilder for C3p0MigrateBuilder<SqliteC3p0Pool> {
     fn build(self) -> C3p0Migrate<SqliteConnection, SqliteC3p0Pool, SqliteMigrator> {
         C3p0Migrate::new(
             self.table,

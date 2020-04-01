@@ -11,7 +11,7 @@ pub use c3p0::pg_async::driver::row::Row;
 pub use c3p0::pg_async::driver::tls::NoTls;
 use futures::FutureExt;
 
-pub type C3p0Impl = PgC3p0Pool;
+pub type C3p0Impl = PgC3p0PoolAsync;
 
 //mod tests;
 mod tests_json_async;
@@ -47,7 +47,7 @@ async fn init() -> MaybeType {
         .build(manager)
         .await
         .unwrap();
-    let pool = PgC3p0Pool::new(pool);
+    let pool = PgC3p0PoolAsync::new(pool);
 
     (pool, node)
 }

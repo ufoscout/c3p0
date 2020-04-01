@@ -11,7 +11,7 @@ pub trait MysqlC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<MysqlConnection, MysqlC3p0Pool, MysqlMigrator>;
 }
 
-impl MysqlC3p0MigrateBuilder for C3p0MigrateBuilder<MysqlConnection, MysqlC3p0Pool> {
+impl MysqlC3p0MigrateBuilder for C3p0MigrateBuilder<MysqlC3p0Pool> {
     fn build(self) -> C3p0Migrate<MysqlConnection, MysqlC3p0Pool, MysqlMigrator> {
         C3p0Migrate::new(
             self.table,

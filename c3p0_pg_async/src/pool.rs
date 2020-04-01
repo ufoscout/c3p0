@@ -10,25 +10,25 @@ use futures::Future;
 use tokio_postgres::{NoTls, Transaction};
 
 #[derive(Clone)]
-pub struct PgC3p0Pool {
+pub struct PgC3p0PoolAsync {
     pool: Pool<PostgresConnectionManager<NoTls>>,
 }
 
-impl PgC3p0Pool {
+impl PgC3p0PoolAsync {
     pub fn new(pool: Pool<PostgresConnectionManager<NoTls>>) -> Self {
-        PgC3p0Pool { pool }
+        PgC3p0PoolAsync { pool }
     }
 }
 
-impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager<NoTls>> {
-    fn into(self) -> PgC3p0Pool {
-        PgC3p0Pool::new(self)
+impl Into<PgC3p0PoolAsync> for Pool<PostgresConnectionManager<NoTls>> {
+    fn into(self) -> PgC3p0PoolAsync {
+        PgC3p0PoolAsync::new(self)
     }
 }
 
 #[async_trait(?Send)]
-impl C3p0PoolAsync for PgC3p0Pool {
-    type CONN = PgConnection;
+impl C3p0PoolAsync for PgC3p0PoolAsync {
+    type CONN = PgConnectionAsync;
 
     async fn transaction<
         T,
@@ -45,7 +45,7 @@ impl C3p0PoolAsync for PgC3p0Pool {
 
         let result = {
             // ToDo: To avoid this unsafe we need GAT
-            let transaction = PgConnection::Tx( unsafe { ::std::mem::transmute(&native_transaction) } ) ;
+            let transaction = PgConnectionAsync::Tx( unsafe { ::std::mem::transmute(&native_transaction) } ) ;
             (tx)(transaction).await?
         };
 
@@ -55,30 +55,30 @@ impl C3p0PoolAsync for PgC3p0Pool {
     }
 }
 
-pub enum PgConnection {
+pub enum PgConnectionAsync {
     Conn(PooledConnection<'static, PostgresConnectionManager<NoTls>>),
     Tx(&'static Transaction<'static>),
 }
 
 #[async_trait(?Send)]
-impl SqlConnectionAsync for PgConnection {
+impl SqlConnectionAsync for PgConnectionAsync {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
-            PgConnection::Conn(conn) => conn.batch_execute(sql).await.map_err(into_c3p0_error),
-            PgConnection::Tx(tx) => tx.batch_execute(sql).await.map_err(into_c3p0_error),
+            PgConnectionAsync::Conn(conn) => conn.batch_execute(sql).await.map_err(into_c3p0_error),
+            PgConnectionAsync::Tx(tx) => tx.batch_execute(sql).await.map_err(into_c3p0_error),
         }
     }
 }
 
-impl PgConnection {
+impl PgConnectionAsync {
     pub async fn execute(
         &mut self,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<u64, C3p0Error> {
         match self {
-            PgConnection::Conn(conn) => conn.execute(sql, params).await.map_err(into_c3p0_error),
-            PgConnection::Tx(tx) => tx.execute(sql, params).await.map_err(into_c3p0_error),
+            PgConnectionAsync::Conn(conn) => conn.execute(sql, params).await.map_err(into_c3p0_error),
+            PgConnectionAsync::Tx(tx) => tx.execute(sql, params).await.map_err(into_c3p0_error),
         }
     }
 
@@ -108,7 +108,7 @@ impl PgConnection {
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
         match self {
-            PgConnection::Conn(conn) => {
+            PgConnectionAsync::Conn(conn) => {
                 let stmt = conn.prepare(sql).await.map_err(into_c3p0_error)?;
                 conn.query(&stmt, params)
                     .await
@@ -121,7 +121,7 @@ impl PgConnection {
                         cause: format!("{}", err),
                     })
             }
-            PgConnection::Tx(tx) => {
+            PgConnectionAsync::Tx(tx) => {
                 let stmt = tx.prepare(sql).await.map_err(into_c3p0_error)?;
                 tx.query(&stmt, params)
                     .await
@@ -144,7 +144,7 @@ impl PgConnection {
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
-            PgConnection::Conn(conn) => {
+            PgConnectionAsync::Conn(conn) => {
                 let stmt = conn.prepare(sql).await.map_err(into_c3p0_error)?;
                 conn.query(&stmt, params)
                     .await
@@ -156,7 +156,7 @@ impl PgConnection {
                         cause: format!("{}", err),
                     })
             }
-            PgConnection::Tx(tx) => {
+            PgConnectionAsync::Tx(tx) => {
                 let stmt = tx.prepare(sql).await.map_err(into_c3p0_error)?;
                 tx.query(&stmt, params)
                     .await

@@ -21,14 +21,14 @@ pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
 
 #[derive(Clone, Debug)]
-pub struct C3p0MigrateBuilder<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> {
+pub struct C3p0MigrateBuilder<C3P0> {
     pub table: String,
     pub schema: Option<String>,
     pub migrations: Vec<SqlMigration>,
     pub c3p0: C3P0,
 }
 
-impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> C3p0MigrateBuilder<CONN, C3P0> {
+impl<C3P0> C3p0MigrateBuilder<C3P0> {
     pub fn new(c3p0: C3P0) -> Self {
         C3p0MigrateBuilder {
             table: C3P0_MIGRATE_TABLE_DEFAULT.to_owned(),
@@ -41,7 +41,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> C3p0MigrateBuilder<CONN, 
     pub fn with_schema_name<T: Into<Option<String>>>(
         mut self,
         schema_name: T,
-    ) -> C3p0MigrateBuilder<CONN, C3P0> {
+    ) -> C3p0MigrateBuilder<C3P0> {
         self.schema = schema_name.into();
         self
     }
@@ -49,7 +49,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> C3p0MigrateBuilder<CONN, 
     pub fn with_table_name<T: Into<String>>(
         mut self,
         table_name: T,
-    ) -> C3p0MigrateBuilder<CONN, C3P0> {
+    ) -> C3p0MigrateBuilder<C3P0> {
         self.table = table_name.into();
         self
     }
@@ -57,7 +57,7 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>> C3p0MigrateBuilder<CONN, 
     pub fn with_migrations<M: Into<Migrations>>(
         mut self,
         migrations: M,
-    ) -> C3p0MigrateBuilder<CONN, C3P0> {
+    ) -> C3p0MigrateBuilder<C3P0> {
         self.migrations = to_sql_migrations(migrations.into().migrations);
         self
     }

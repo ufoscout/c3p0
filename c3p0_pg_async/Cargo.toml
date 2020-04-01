@@ -28,3 +28,5 @@ serde = "1.0"
 [features]
 default = []
 
+migrate = ["c3p0_common/migrate", "c3p0_common_async/migrate"]
+
