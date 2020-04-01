@@ -61,6 +61,7 @@ pg_015 = ["c3p0_pg_015"]
 pg_015_migrate = ["pg_015", "c3p0_pg_015/migrate"]
 
 pg_async = ["c3p0_pg_async", "c3p0_common_async"]
+pg_async_migrate = ["pg_async", "c3p0_pg_async/migrate"]
 
 sqlite = ["c3p0_sqlite"]
 sqlite_migrate = ["sqlite", "c3p0_sqlite/migrate"]

@@ -9,11 +9,11 @@ use c3p0_common_async::{MigratorAsync, SqlConnectionAsync, C3p0MigrateAsync};
 use async_trait::async_trait;
 use c3p0_common::{C3p0MigrateBuilder, MigrationData, C3P0_INIT_MIGRATION_ID};
 
-pub trait PgC3p0MigrateBuilder {
+pub trait PgC3p0AsyncMigrateBuilder {
     fn build(self) -> C3p0MigrateAsync<PgConnectionAsync, PgC3p0PoolAsync, PgMigratorAsync>;
 }
 
-impl PgC3p0MigrateBuilder for C3p0MigrateBuilder<PgC3p0PoolAsync> {
+impl PgC3p0AsyncMigrateBuilder for C3p0MigrateBuilder<PgC3p0PoolAsync> {
     fn build(self) -> C3p0MigrateAsync<PgConnectionAsync, PgC3p0PoolAsync, PgMigratorAsync> {
         C3p0MigrateAsync::new(
             self.table,
