@@ -18,29 +18,25 @@ async fn json_should_commit_transaction() {
 
     let jpo_ref = &jpo;
     let result: Result<(), C3p0Error> = c3p0
-        .transaction(|mut conn| {
-            async move {
-                let conn = &mut conn;
-                assert!(jpo_ref.create_table_if_not_exists(conn).await.is_ok());
-                assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
-                assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
-                assert!(jpo_ref.save(conn, model_clone.clone()).await.is_ok());
-                Ok(())
-            }
+        .transaction(|mut conn| async move {
+            let conn = &mut conn;
+            assert!(jpo_ref.create_table_if_not_exists(conn).await.is_ok());
+            assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
+            assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
+            assert!(jpo_ref.save(conn, model_clone.clone()).await.is_ok());
+            Ok(())
         })
         .await;
 
     assert!(result.is_ok());
 
-    c3p0.transaction::<_, C3p0Error, _, _>(|mut conn| {
-        async move {
-            let conn = &mut conn;
-            let count = jpo.count_all(conn).await.unwrap();
-            assert_eq!(3, count);
+    c3p0.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
+        let conn = &mut conn;
+        let count = jpo.count_all(conn).await.unwrap();
+        assert_eq!(3, count);
 
-            assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
-            Ok(())
-        }
+        assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
+        Ok(())
     })
     .await
     .unwrap();
