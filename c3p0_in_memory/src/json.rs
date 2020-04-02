@@ -302,37 +302,37 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        // Act
-        let saved_model_1 = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
-        let fetched_model_1 =
-            c3p0.fetch_one_optional_by_id(&mut pool.connection()?, &saved_model_1)?;
-        let exist_model_1 = c3p0.exists_by_id(&mut pool.connection()?, &saved_model_1)?;
+        pool.transaction(|conn| {
+            // Act
+            let saved_model_1 = c3p0.save(conn, TestData::new("value1").into())?;
+            let fetched_model_1 = c3p0.fetch_one_optional_by_id(conn, &saved_model_1)?;
+            let exist_model_1 = c3p0.exists_by_id(conn, &saved_model_1)?;
 
-        let saved_model_2 = c3p0.save(&mut pool.connection()?, TestData::new("value2").into())?;
-        let fetched_model_2 =
-            c3p0.fetch_one_optional_by_id(&mut pool.connection()?, &saved_model_2.id)?;
-        let exist_model_2 = c3p0.exists_by_id(&mut pool.connection()?, &saved_model_2)?;
+            let saved_model_2 = c3p0.save(conn, TestData::new("value2").into())?;
+            let fetched_model_2 = c3p0.fetch_one_optional_by_id(conn, &saved_model_2.id)?;
+            let exist_model_2 = c3p0.exists_by_id(conn, &saved_model_2)?;
 
-        // Assert
-        assert!(saved_model_2.id > saved_model_1.id);
+            // Assert
+            assert!(saved_model_2.id > saved_model_1.id);
 
-        assert!(exist_model_1);
-        assert_eq!(saved_model_1.data.value, "value1");
+            assert!(exist_model_1);
+            assert_eq!(saved_model_1.data.value, "value1");
 
-        let fetched_model_1 = fetched_model_1.unwrap();
-        assert_eq!(saved_model_1.id, fetched_model_1.id);
-        assert_eq!(saved_model_1.version, fetched_model_1.version);
-        assert_eq!(saved_model_1.data.value, fetched_model_1.data.value);
+            let fetched_model_1 = fetched_model_1.unwrap();
+            assert_eq!(saved_model_1.id, fetched_model_1.id);
+            assert_eq!(saved_model_1.version, fetched_model_1.version);
+            assert_eq!(saved_model_1.data.value, fetched_model_1.data.value);
 
-        assert_eq!(saved_model_2.data.value, "value2");
-        assert!(exist_model_2);
+            assert_eq!(saved_model_2.data.value, "value2");
+            assert!(exist_model_2);
 
-        let fetched_model_2 = fetched_model_2.unwrap();
-        assert_eq!(saved_model_2.id, fetched_model_2.id);
-        assert_eq!(saved_model_2.version, fetched_model_2.version);
-        assert_eq!(saved_model_2.data.value, fetched_model_2.data.value);
+            let fetched_model_2 = fetched_model_2.unwrap();
+            assert_eq!(saved_model_2.id, fetched_model_2.id);
+            assert_eq!(saved_model_2.version, fetched_model_2.version);
+            assert_eq!(saved_model_2.data.value, fetched_model_2.data.value);
 
-        Ok(())
+            Ok(())
+        })
     }
 
     #[test]
@@ -341,17 +341,19 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        // Act
-        let saved_model_1 = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
-        let exist_model_1 = c3p0.exists_by_id(&mut pool.connection()?, &saved_model_1)?;
+        pool.transaction(|conn| {
+            // Act
+            let saved_model_1 = c3p0.save(conn, TestData::new("value1").into())?;
+            let exist_model_1 = c3p0.exists_by_id(conn, &saved_model_1)?;
 
-        let exist_model_2 = c3p0.exists_by_id(&mut pool.connection()?, &(saved_model_1.id + 1))?;
+            let exist_model_2 = c3p0.exists_by_id(conn, &(saved_model_1.id + 1))?;
 
-        // Assert
-        assert!(exist_model_1);
-        assert!(!exist_model_2);
+            // Assert
+            assert!(exist_model_1);
+            assert!(!exist_model_2);
 
-        Ok(())
+            Ok(())
+        })
     }
 
     #[test]
@@ -362,29 +364,29 @@ mod test {
         let c3p0_2a = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
         let c3p0_2b = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
 
-        let conn = &mut pool.connection()?;
-        // Act
+        pool.transaction(|conn| {
+            // Act
+            assert_eq!(0, c3p0_1.count_all(conn)?);
+            assert_eq!(0, c3p0_2a.count_all(conn)?);
+            assert_eq!(0, c3p0_2b.count_all(conn)?);
 
-        assert_eq!(0, c3p0_1.count_all(conn)?);
-        assert_eq!(0, c3p0_2a.count_all(conn)?);
-        assert_eq!(0, c3p0_2b.count_all(conn)?);
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
 
-        assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
+            assert_eq!(1, c3p0_1.count_all(conn)?);
+            assert_eq!(0, c3p0_2a.count_all(conn)?);
+            assert_eq!(0, c3p0_2b.count_all(conn)?);
 
-        assert_eq!(1, c3p0_1.count_all(conn)?);
-        assert_eq!(0, c3p0_2a.count_all(conn)?);
-        assert_eq!(0, c3p0_2b.count_all(conn)?);
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_2a.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_2b.save(conn, TestData::new("value1").into()).is_ok());
 
-        assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_2a.save(conn, TestData::new("value1").into()).is_ok());
-        assert!(c3p0_2b.save(conn, TestData::new("value1").into()).is_ok());
+            assert_eq!(3, c3p0_1.count_all(conn)?);
+            assert_eq!(2, c3p0_2a.count_all(conn)?);
+            assert_eq!(2, c3p0_2b.count_all(conn)?);
 
-        assert_eq!(3, c3p0_1.count_all(conn)?);
-        assert_eq!(2, c3p0_2a.count_all(conn)?);
-        assert_eq!(2, c3p0_2b.count_all(conn)?);
-
-        Ok(())
+            Ok(())
+        })
     }
 
     #[test]
@@ -394,39 +396,33 @@ mod test {
         let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
         let c3p0_2 = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
 
-        let mut conn = pool.connection()?;
         // Act
+        pool.transaction(|conn| {
+            assert_eq!(0, c3p0_1.count_all(conn)?);
+            assert_eq!(0, c3p0_2.count_all(conn)?);
 
-        assert_eq!(0, c3p0_1.count_all(&mut conn)?);
-        assert_eq!(0, c3p0_2.count_all(&mut conn)?);
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_2.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_2.save(conn, TestData::new("value1").into()).is_ok());
 
-        assert!(c3p0_1
-            .save(&mut conn, TestData::new("value1").into())
-            .is_ok());
-        assert!(c3p0_2
-            .save(&mut conn, TestData::new("value1").into())
-            .is_ok());
-        assert!(c3p0_2
-            .save(&mut conn, TestData::new("value1").into())
-            .is_ok());
+            let saved_on_2 = c3p0_2.save(conn, TestData::new("value1").into())?;
 
-        let saved_on_2 = c3p0_2.save(&mut conn, TestData::new("value1").into())?;
+            assert_eq!(1, c3p0_1.count_all(conn)?);
+            assert_eq!(3, c3p0_2.count_all(conn)?);
 
-        assert_eq!(1, c3p0_1.count_all(&mut conn)?);
-        assert_eq!(3, c3p0_2.count_all(&mut conn)?);
+            assert_eq!(1, c3p0_2.delete_by_id(conn, &saved_on_2.id)?);
 
-        assert_eq!(1, c3p0_2.delete_by_id(&mut conn, &saved_on_2.id)?);
+            assert!(!c3p0_2.exists_by_id(conn, &saved_on_2.id)?);
+            assert_eq!(1, c3p0_1.count_all(conn)?);
+            assert_eq!(2, c3p0_2.count_all(conn)?);
 
-        assert!(!c3p0_2.exists_by_id(&mut conn, &saved_on_2.id)?);
-        assert_eq!(1, c3p0_1.count_all(&mut conn)?);
-        assert_eq!(2, c3p0_2.count_all(&mut conn)?);
+            assert_eq!(2, c3p0_2.delete_all(conn)?);
 
-        assert_eq!(2, c3p0_2.delete_all(&mut conn)?);
+            assert_eq!(1, c3p0_1.count_all(conn)?);
+            assert_eq!(0, c3p0_2.count_all(conn)?);
 
-        assert_eq!(1, c3p0_1.count_all(&mut conn)?);
-        assert_eq!(0, c3p0_2.count_all(&mut conn)?);
-
-        Ok(())
+            Ok(())
+        })
     }
 
     #[test]
@@ -435,23 +431,21 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
         let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        let mut conn = pool.connection()?;
+        pool.transaction(|conn| {
+            // Act
+            assert!(c3p0_1.create_table_if_not_exists(conn).is_ok());
+            assert!(c3p0_1.create_table_if_not_exists(conn).is_ok());
 
-        // Act
-        assert!(c3p0_1.create_table_if_not_exists(&mut conn).is_ok());
-        assert!(c3p0_1.create_table_if_not_exists(&mut conn).is_ok());
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
 
-        assert!(c3p0_1
-            .save(&mut conn, TestData::new("value1").into())
-            .is_ok());
+            assert_eq!(1, c3p0_1.count_all(conn)?);
 
-        assert_eq!(1, c3p0_1.count_all(&mut conn)?);
+            assert!(c3p0_1.drop_table_if_exists(conn, false).is_ok());
 
-        assert!(c3p0_1.drop_table_if_exists(&mut conn, false).is_ok());
+            assert_eq!(0, c3p0_1.count_all(conn)?);
 
-        assert_eq!(0, c3p0_1.count_all(&mut conn)?);
-
-        Ok(())
+            Ok(())
+        })
     }
 
     #[test]
@@ -460,32 +454,34 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        // Act
-        let saved_model_0 = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
-        let saved_model_1 = c3p0.save(&mut pool.connection()?, TestData::new("value2").into())?;
-        let saved_model_2 = c3p0.save(&mut pool.connection()?, TestData::new("value2").into())?;
+        pool.transaction(|conn| {
+            // Act
+            let saved_model_0 = c3p0.save(conn, TestData::new("value1").into())?;
+            let saved_model_1 = c3p0.save(conn, TestData::new("value2").into())?;
+            let saved_model_2 = c3p0.save(conn, TestData::new("value2").into())?;
 
-        let all = c3p0.fetch_all(&mut pool.connection()?)?;
+            let all = c3p0.fetch_all(conn)?;
 
-        // Assert
-        assert_eq!(3, all.len());
+            // Assert
+            assert_eq!(3, all.len());
 
-        let fetched_model_0 = all.get(0).unwrap();
-        assert_eq!(saved_model_0.id, fetched_model_0.id);
-        assert_eq!(saved_model_0.version, fetched_model_0.version);
-        assert_eq!(saved_model_0.data.value, fetched_model_0.data.value);
+            let fetched_model_0 = all.get(0).unwrap();
+            assert_eq!(saved_model_0.id, fetched_model_0.id);
+            assert_eq!(saved_model_0.version, fetched_model_0.version);
+            assert_eq!(saved_model_0.data.value, fetched_model_0.data.value);
 
-        let fetched_model_1 = all.get(1).unwrap();
-        assert_eq!(saved_model_1.id, fetched_model_1.id);
-        assert_eq!(saved_model_1.version, fetched_model_1.version);
-        assert_eq!(saved_model_1.data.value, fetched_model_1.data.value);
+            let fetched_model_1 = all.get(1).unwrap();
+            assert_eq!(saved_model_1.id, fetched_model_1.id);
+            assert_eq!(saved_model_1.version, fetched_model_1.version);
+            assert_eq!(saved_model_1.data.value, fetched_model_1.data.value);
 
-        let fetched_model_2 = all.get(2).unwrap();
-        assert_eq!(saved_model_2.id, fetched_model_2.id);
-        assert_eq!(saved_model_2.version, fetched_model_2.version);
-        assert_eq!(saved_model_2.data.value, fetched_model_2.data.value);
+            let fetched_model_2 = all.get(2).unwrap();
+            assert_eq!(saved_model_2.id, fetched_model_2.id);
+            assert_eq!(saved_model_2.version, fetched_model_2.version);
+            assert_eq!(saved_model_2.data.value, fetched_model_2.data.value);
 
-        Ok(())
+            Ok(())
+        })
     }
 
     #[test]
@@ -494,32 +490,32 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        // Act
-        let saved_model = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
-        let updated_model = c3p0.update(&mut pool.connection()?, saved_model.clone())?;
-        let fetched_model = c3p0
-            .fetch_one_optional_by_id(&mut pool.connection()?, &saved_model)?
-            .unwrap();
+        pool.transaction(|conn| {
+            // Act
+            let saved_model = c3p0.save(conn, TestData::new("value1").into())?;
+            let updated_model = c3p0.update(conn, saved_model.clone())?;
+            let fetched_model = c3p0.fetch_one_optional_by_id(conn, &saved_model)?.unwrap();
 
-        let updated_result_1 = c3p0.update(&mut pool.connection()?, saved_model.clone());
-        let updated_result_2 = c3p0.update(&mut pool.connection()?, updated_model.clone());
+            let updated_result_1 = c3p0.update(conn, saved_model.clone());
+            let updated_result_2 = c3p0.update(conn, updated_model.clone());
 
-        // Assert
-        assert_eq!(saved_model.id, updated_model.id);
-        assert_eq!(saved_model.version + 1, updated_model.version);
-        assert_eq!(saved_model.data.value, updated_model.data.value);
+            // Assert
+            assert_eq!(saved_model.id, updated_model.id);
+            assert_eq!(saved_model.version + 1, updated_model.version);
+            assert_eq!(saved_model.data.value, updated_model.data.value);
 
-        assert_eq!(saved_model.id, fetched_model.id);
-        assert_eq!(fetched_model.version, updated_model.version);
+            assert_eq!(saved_model.id, fetched_model.id);
+            assert_eq!(fetched_model.version, updated_model.version);
 
-        assert!(updated_result_2.is_ok());
+            assert!(updated_result_2.is_ok());
 
-        match updated_result_1 {
-            Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
-            _ => assert!(false),
-        }
+            match updated_result_1 {
+                Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
+                _ => assert!(false),
+            }
 
-        Ok(())
+            Ok(())
+        })
     }
 
     #[test]
@@ -528,34 +524,34 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        // Act
-        let saved_model = c3p0.save(&mut pool.connection()?, TestData::new("value1").into())?;
-        let updated_model = c3p0.update(&mut pool.connection()?, saved_model.clone())?;
-        let fetched_model = c3p0
-            .fetch_one_optional_by_id(&mut pool.connection()?, &saved_model)?
-            .unwrap();
+        pool.transaction(|conn| {
+            // Act
+            let saved_model = c3p0.save(conn, TestData::new("value1").into())?;
+            let updated_model = c3p0.update(conn, saved_model.clone())?;
+            let fetched_model = c3p0.fetch_one_optional_by_id(conn, &saved_model)?.unwrap();
 
-        let delete_result_1 = c3p0.delete(&mut pool.connection()?, saved_model.clone());
-        assert!(c3p0.exists_by_id(&mut pool.connection()?, &saved_model)?);
+            let delete_result_1 = c3p0.delete(conn, saved_model.clone());
+            assert!(c3p0.exists_by_id(conn, &saved_model)?);
 
-        let delete_result_2 = c3p0.delete(&mut pool.connection()?, updated_model.clone());
-        assert!(!c3p0.exists_by_id(&mut pool.connection()?, &saved_model)?);
+            let delete_result_2 = c3p0.delete(conn, updated_model.clone());
+            assert!(!c3p0.exists_by_id(conn, &saved_model)?);
 
-        // Assert
-        assert_eq!(saved_model.id, updated_model.id);
-        assert_eq!(saved_model.version + 1, updated_model.version);
-        assert_eq!(saved_model.data.value, updated_model.data.value);
+            // Assert
+            assert_eq!(saved_model.id, updated_model.id);
+            assert_eq!(saved_model.version + 1, updated_model.version);
+            assert_eq!(saved_model.data.value, updated_model.data.value);
 
-        assert_eq!(saved_model.id, fetched_model.id);
-        assert_eq!(fetched_model.version, updated_model.version);
+            assert_eq!(saved_model.id, fetched_model.id);
+            assert_eq!(fetched_model.version, updated_model.version);
 
-        assert_eq!(updated_model.id, delete_result_2.unwrap().id);
+            assert_eq!(updated_model.id, delete_result_2.unwrap().id);
 
-        match delete_result_1 {
-            Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
-            _ => assert!(false),
-        }
+            match delete_result_1 {
+                Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
+                _ => assert!(false),
+            }
 
-        Ok(())
+            Ok(())
+        })
     }
 }

@@ -46,10 +46,7 @@ impl<C3P0> C3p0MigrateBuilder<C3P0> {
         self
     }
 
-    pub fn with_table_name<T: Into<String>>(
-        mut self,
-        table_name: T,
-    ) -> C3p0MigrateBuilder<C3P0> {
+    pub fn with_table_name<T: Into<String>>(mut self, table_name: T) -> C3p0MigrateBuilder<C3P0> {
         self.table = table_name.into();
         self
     }
@@ -165,8 +162,10 @@ impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN =
 
     fn pre_migration(&self, c3p0_json: &MIGRATOR::C3P0JSON) -> Result<(), C3p0Error> {
         {
-            let conn = &mut self.c3p0.connection()?;
-            if let Err(err) = c3p0_json.create_table_if_not_exists(conn) {
+            let result = self
+                .c3p0
+                .transaction(|conn| c3p0_json.create_table_if_not_exists(conn));
+            if let Err(err) = result {
                 warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
             };
         }

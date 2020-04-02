@@ -2,168 +2,167 @@ use crate::utils::*;
 use crate::*;
 
 #[test]
-fn should_execute_and_fetch() {
+fn should_execute_and_fetch() -> Result<(), Box<dyn std::error::Error>> {
     let data = data(false);
     let pool = &data.0;
-    let c3p0: C3p0Impl = pool.clone();
 
-    let conn = &mut c3p0.connection().unwrap();
+    pool.transaction(|conn| {
+        let table_name = format!("TEST_TABLE_{}", rand_string(8));
 
-    let table_name = format!("TEST_TABLE_{}", rand_string(8));
-
-    assert!(conn
-        .execute(
-            &format!(
-                r"CREATE TABLE {} (
+        assert!(conn
+            .execute(
+                &format!(
+                    r"CREATE TABLE {} (
                              name varchar(255)
                           )",
-                table_name
-            ),
-            &[]
-        )
-        .is_ok());
+                    table_name
+                ),
+                &[]
+            )
+            .is_ok());
 
-    assert_eq!(
-        0,
-        conn.fetch_one_value::<i64>(&format!("SELECT COUNT(*) FROM {}", table_name), &[])
-            .unwrap()
-    );
+        assert_eq!(
+            0,
+            conn.fetch_one_value::<i64>(&format!("SELECT COUNT(*) FROM {}", table_name), &[])
+                .unwrap()
+        );
 
-    #[cfg(any(feature = "pg", feature = "pg_015"))]
-    let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
-    #[cfg(any(feature = "mysql", feature = "sqlite"))]
-    let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
+        #[cfg(any(feature = "pg", feature = "pg_015"))]
+        let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
+        #[cfg(any(feature = "mysql", feature = "sqlite"))]
+        let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
 
-    assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
+        assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
 
-    assert_eq!(
-        1,
-        conn.fetch_one_value::<i64>(&format!("SELECT COUNT(*) FROM {}", table_name), &[])
-            .unwrap()
-    );
+        assert_eq!(
+            1,
+            conn.fetch_one_value::<i64>(&format!("SELECT COUNT(*) FROM {}", table_name), &[])
+                .unwrap()
+        );
 
-    #[cfg(any(feature = "pg", feature = "pg_015"))]
-    let mapper = |row: &Row| {
-        let value: String = row.get(0);
-        Ok(value)
-    };
-    #[cfg(feature = "mysql")]
-    let mapper = |row: &Row| {
-        let value: String = row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?;
-        Ok(value)
-    };
-    #[cfg(feature = "sqlite")]
-    let mapper = |row: &Row| {
-        let value: String = row.get(0)?;
-        Ok(value)
-    };
-    let fetch_result_1 = conn.fetch_one(
-        &format!(r"SELECT * FROM {} WHERE name = 'one'", table_name),
-        &[],
-        mapper,
-    );
-    assert!(fetch_result_1.is_ok());
-    assert_eq!("one".to_owned(), fetch_result_1.unwrap());
+        #[cfg(any(feature = "pg", feature = "pg_015"))]
+        let mapper = |row: &Row| {
+            let value: String = row.get(0);
+            Ok(value)
+        };
+        #[cfg(feature = "mysql")]
+        let mapper = |row: &Row| {
+            let value: String = row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?;
+            Ok(value)
+        };
+        #[cfg(feature = "sqlite")]
+        let mapper = |row: &Row| {
+            let value: String = row.get(0)?;
+            Ok(value)
+        };
+        let fetch_result_1 = conn.fetch_one(
+            &format!(r"SELECT * FROM {} WHERE name = 'one'", table_name),
+            &[],
+            mapper,
+        );
+        assert!(fetch_result_1.is_ok());
+        assert_eq!("one".to_owned(), fetch_result_1.unwrap());
 
-    let fetch_result_2 = conn.fetch_one(
-        &format!(r"SELECT * FROM {} WHERE name = 'two'", table_name),
-        &[],
-        mapper,
-    );
-    assert!(fetch_result_2.is_err());
+        let fetch_result_2 = conn.fetch_one(
+            &format!(r"SELECT * FROM {} WHERE name = 'two'", table_name),
+            &[],
+            mapper,
+        );
+        assert!(fetch_result_2.is_err());
 
-    assert!(conn
-        .execute(&format!(r"DROP TABLE {}", table_name), &[])
-        .is_ok());
+        assert!(conn
+            .execute(&format!(r"DROP TABLE {}", table_name), &[])
+            .is_ok());
+        Ok(())
+    })
 }
 
 #[test]
-fn should_execute_and_fetch_option() {
+fn should_execute_and_fetch_option() -> Result<(), Box<dyn std::error::Error>> {
     let data = data(false);
     let pool = &data.0;
-    let c3p0: C3p0Impl = pool.clone();
 
-    let conn = &mut c3p0.connection().unwrap();
-
-    let table_name = format!("TEST_TABLE_{}", rand_string(8));
-    assert!(conn
-        .execute(
-            &format!(
-                r"CREATE TABLE {} (
+    pool.transaction(|conn| {
+        let table_name = format!("TEST_TABLE_{}", rand_string(8));
+        assert!(conn
+            .execute(
+                &format!(
+                    r"CREATE TABLE {} (
                              name varchar(255)
                           )",
-                table_name
-            ),
-            &[]
-        )
-        .is_ok());
+                    table_name
+                ),
+                &[]
+            )
+            .is_ok());
 
-    #[cfg(any(feature = "pg", feature = "pg_015"))]
-    let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
-    #[cfg(any(feature = "mysql", feature = "sqlite"))]
-    let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
+        #[cfg(any(feature = "pg", feature = "pg_015"))]
+        let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
+        #[cfg(any(feature = "mysql", feature = "sqlite"))]
+        let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
 
-    assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
+        assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
 
-    #[cfg(any(feature = "pg", feature = "pg_015"))]
-    let mapper = |row: &Row| Ok(row.get(0));
-    #[cfg(feature = "mysql")]
-    let mapper = |row: &Row| Ok(row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?);
-    #[cfg(feature = "sqlite")]
-    let mapper = |row: &Row| Ok(row.get(0)?);
+        #[cfg(any(feature = "pg", feature = "pg_015"))]
+        let mapper = |row: &Row| Ok(row.get(0));
+        #[cfg(feature = "mysql")]
+        let mapper = |row: &Row| Ok(row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?);
+        #[cfg(feature = "sqlite")]
+        let mapper = |row: &Row| Ok(row.get(0)?);
 
-    let fetch_result = conn.fetch_one_optional(
-        &format!(r"SELECT * FROM {} WHERE name = 'one'", table_name),
-        &[],
-        mapper,
-    );
-    assert!(fetch_result.is_ok());
-    assert_eq!(Some("one".to_owned()), fetch_result.unwrap());
+        let fetch_result = conn.fetch_one_optional(
+            &format!(r"SELECT * FROM {} WHERE name = 'one'", table_name),
+            &[],
+            mapper,
+        );
+        assert!(fetch_result.is_ok());
+        assert_eq!(Some("one".to_owned()), fetch_result.unwrap());
 
-    let fetch_result = conn.fetch_one_optional(
-        &format!(r"SELECT * FROM {} WHERE name = 'two'", table_name),
-        &[],
-        mapper,
-    );
-    assert!(fetch_result.is_ok());
-    assert_eq!(None, fetch_result.unwrap());
+        let fetch_result = conn.fetch_one_optional(
+            &format!(r"SELECT * FROM {} WHERE name = 'two'", table_name),
+            &[],
+            mapper,
+        );
+        assert!(fetch_result.is_ok());
+        assert_eq!(None, fetch_result.unwrap());
 
-    assert!(conn
-        .execute(&format!(r"DROP TABLE {}", table_name), &[])
-        .is_ok());
+        assert!(conn
+            .execute(&format!(r"DROP TABLE {}", table_name), &[])
+            .is_ok());
+        Ok(())
+    })
 }
 
 #[test]
-fn should_batch_execute() {
+fn should_batch_execute() -> Result<(), Box<dyn std::error::Error>> {
     let data = data(false);
     let pool = &data.0;
-    let c3p0: C3p0Impl = pool.clone();
-    let conn = &mut c3p0.connection().unwrap();
+    pool.transaction(|conn| {
+        let table_name = format!("TEST_TABLE_{}", rand_string(8));
 
-    let table_name = format!("TEST_TABLE_{}", rand_string(8));
-
-    let insert = &format!(
-        r"
+        let insert = &format!(
+            r"
                 CREATE TABLE {} ( name varchar(255) );
                 INSERT INTO {} (name) VALUES ('new-name-1');
                 INSERT INTO {} (name) VALUES ('new-name-2');
                 DROP TABLE {};
         ",
-        table_name, table_name, table_name, table_name
-    );
+            table_name, table_name, table_name, table_name
+        );
 
-    assert!(conn.batch_execute(insert).is_ok());
+        assert!(conn.batch_execute(insert).is_ok());
+        Ok(())
+    })
 }
 
 #[test]
-fn should_fetch_values() {
+fn should_fetch_values() -> Result<(), Box<dyn std::error::Error>> {
     let data = data(false);
     let pool = &data.0;
-    let c3p0: C3p0Impl = pool.clone();
 
     let table_name = &format!("TEST_TABLE_{}", rand_string(8));
 
-    let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
+    let result: Result<_, C3p0Error> = pool.transaction(|conn| {
         assert!(conn
             .batch_execute(&format!(
                 "CREATE TABLE {} ( name varchar(255) )",
@@ -221,5 +220,7 @@ fn should_fetch_values() {
         Ok(())
     });
 
-    assert!(result.is_ok())
+    assert!(result.is_ok());
+
+    Ok(())
 }

@@ -28,15 +28,6 @@ impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager> {
 impl C3p0Pool for PgC3p0Pool {
     type CONN = PgConnection;
 
-    fn connection(&self) -> Result<PgConnection, C3p0Error> {
-        self.pool
-            .get()
-            .map_err(|err| C3p0Error::PoolError {
-                cause: format!("{}", err),
-            })
-            .map(PgConnection::Conn)
-    }
-
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut PgConnection) -> Result<T, E>>(
         &self,
         tx: F,

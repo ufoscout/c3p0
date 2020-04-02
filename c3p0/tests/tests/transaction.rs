@@ -42,15 +42,18 @@ fn should_commit_transaction() {
     assert!(result.is_ok());
 
     {
-        let conn = &mut c3p0.connection().unwrap();
-        let count = conn
-            .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
-            .unwrap();
-        assert_eq!(3, count);
+        pool.transaction::<_, C3p0Error, _>(|conn| {
+            let count = conn
+                .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
+                .unwrap();
+            assert_eq!(3, count);
 
-        assert!(conn
-            .execute(&format!(r"DROP TABLE {}", table_name), &[])
-            .is_ok());
+            assert!(conn
+                .execute(&format!(r"DROP TABLE {}", table_name), &[])
+                .is_ok());
+            Ok(())
+        })
+        .unwrap();
     }
 }
 
@@ -96,16 +99,18 @@ fn should_rollback_transaction() {
     assert!(result.is_err());
 
     {
-        let conn = &mut c3p0.connection().unwrap();
+        pool.transaction::<_, C3p0Error, _>(|conn| {
+            let count = conn
+                .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
+                .unwrap();
+            assert_eq!(0, count);
 
-        let count = conn
-            .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
-            .unwrap();
-        assert_eq!(0, count);
-
-        assert!(conn
-            .execute(&format!(r"DROP TABLE IF EXISTS {}", table_name), &[])
-            .is_ok());
+            assert!(conn
+                .execute(&format!(r"DROP TABLE IF EXISTS {}", table_name), &[])
+                .is_ok());
+            Ok(())
+        })
+        .unwrap();
     }
 }
 

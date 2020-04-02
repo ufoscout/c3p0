@@ -1,56 +1,16 @@
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::model::{NewModel};
-use c3p0_common::migrate::sql_migration::{to_sql_migrations, SqlMigration};
+use c3p0_common::json::model::NewModel;
+use c3p0_common::migrate::sql_migration::SqlMigration;
 use log::*;
 
 use crate::json::C3p0JsonAsync;
 use crate::pool::{C3p0PoolAsync, SqlConnectionAsync};
 use async_trait::async_trait;
-use c3p0_common::{Migrations, C3P0_MIGRATE_TABLE_DEFAULT, MigrationModel, build_migration_zero, clean_history, check_if_migration_already_applied, MigrationData, MigrationType};
-
-#[derive(Clone, Debug)]
-pub struct C3p0AsyncMigrateBuilder<CONN: SqlConnectionAsync, C3P0: C3p0PoolAsync<CONN = CONN>> {
-    pub table: String,
-    pub schema: Option<String>,
-    pub migrations: Vec<SqlMigration>,
-    pub c3p0: C3P0,
-}
-
-impl<CONN: SqlConnectionAsync, C3P0: C3p0PoolAsync<CONN = CONN>> C3p0AsyncMigrateBuilder<CONN, C3P0> {
-    pub fn new(c3p0: C3P0) -> Self {
-        C3p0AsyncMigrateBuilder {
-            table: C3P0_MIGRATE_TABLE_DEFAULT.to_owned(),
-            schema: None,
-            migrations: vec![],
-            c3p0,
-        }
-    }
-
-    pub fn with_schema_name<T: Into<Option<String>>>(
-        mut self,
-        schema_name: T,
-    ) -> C3p0AsyncMigrateBuilder<CONN, C3P0> {
-        self.schema = schema_name.into();
-        self
-    }
-
-    pub fn with_table_name<T: Into<String>>(
-        mut self,
-        table_name: T,
-    ) -> C3p0AsyncMigrateBuilder<CONN, C3P0> {
-        self.table = table_name.into();
-        self
-    }
-
-    pub fn with_migrations<M: Into<Migrations>>(
-        mut self,
-        migrations: M,
-    ) -> C3p0AsyncMigrateBuilder<CONN, C3P0> {
-        self.migrations = to_sql_migrations(migrations.into().migrations);
-        self
-    }
-}
+use c3p0_common::{
+    build_migration_zero, check_if_migration_already_applied, clean_history, MigrationData,
+    MigrationModel, MigrationType,
+};
 
 #[async_trait(?Send)]
 pub trait MigratorAsync: Clone + Send {
@@ -125,7 +85,9 @@ impl<
         self.c3p0
             .transaction(|mut conn| async move {
                 let conn = &mut conn;
-                self.migrator.lock_first_migration_row(&c3p0_json, conn).await?;
+                self.migrator
+                    .lock_first_migration_row(&c3p0_json, conn)
+                    .await?;
                 Ok(self.start_migration(&c3p0_json, conn).await?)
             })
             .await
@@ -161,19 +123,24 @@ impl<
 
     async fn pre_migration(&self, c3p0_json: &MIGRATOR::C3P0JSON) -> Result<(), C3p0Error> {
         {
-            let result = self.c3p0.transaction(|mut conn| async move {
-                c3p0_json.create_table_if_not_exists(&mut conn).await
-            }).await;
+            let result = self
+                .c3p0
+                .transaction(|mut conn| async move {
+                    c3p0_json.create_table_if_not_exists(&mut conn).await
+                })
+                .await;
             if let Err(err) = result {
                 warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
             };
         }
 
         // Start Migration
-        self.c3p0.transaction(|mut conn| async move {
-            self.migrator.lock_table(c3p0_json, &mut conn).await?;
-            Ok(self.create_migration_zero(c3p0_json, &mut conn).await?)
-        }).await
+        self.c3p0
+            .transaction(|mut conn| async move {
+                self.migrator.lock_table(c3p0_json, &mut conn).await?;
+                Ok(self.create_migration_zero(c3p0_json, &mut conn).await?)
+            })
+            .await
     }
 
     async fn start_migration(

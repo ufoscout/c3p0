@@ -1,7 +1,7 @@
-use c3p0_common::json::codec::JsonCodec;
 use async_trait::async_trait;
-use c3p0_common::{C3p0Error, Model, NewModel, ForUpdate};
+use c3p0_common::json::codec::JsonCodec;
 use c3p0_common::json::model::IdType;
+use c3p0_common::{C3p0Error, ForUpdate, Model, NewModel};
 
 #[async_trait(?Send)]
 pub trait C3p0JsonAsync<DATA, CODEC>: Clone
@@ -13,11 +13,13 @@ where
 
     fn codec(&self) -> &CODEC;
 
-
     async fn create_table_if_not_exists(&self, conn: &mut Self::CONN) -> Result<(), C3p0Error>;
 
-    async fn drop_table_if_exists(&self, conn: &mut Self::CONN, cascade: bool)
-        -> Result<(), C3p0Error>;
+    async fn drop_table_if_exists(
+        &self,
+        conn: &mut Self::CONN,
+        cascade: bool,
+    ) -> Result<(), C3p0Error>;
 
     async fn count_all(&self, conn: &mut Self::CONN) -> Result<u64, C3p0Error>;
 
@@ -61,7 +63,11 @@ where
         for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error>;
 
-    async fn delete(&self, conn: &mut Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
+    async fn delete(
+        &self,
+        conn: &mut Self::CONN,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error>;
 
     async fn delete_all(&self, conn: &mut Self::CONN) -> Result<u64, C3p0Error>;
 
@@ -71,9 +77,15 @@ where
         id: ID,
     ) -> Result<u64, C3p0Error>;
 
-    async fn save(&self, conn: &mut Self::CONN, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error>;
+    async fn save(
+        &self,
+        conn: &mut Self::CONN,
+        obj: NewModel<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error>;
 
-    async fn update(&self, conn: &mut Self::CONN, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error>;
-
-
+    async fn update(
+        &self,
+        conn: &mut Self::CONN,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error>;
 }

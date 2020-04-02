@@ -13,7 +13,7 @@ pub trait C3p0PoolAsync: Clone {
         T,
         E: From<C3p0Error>,
         F: FnOnce(Self::CONN) -> Fut,
-        Fut: Future<Output = Result<T, E>>
+        Fut: Future<Output = Result<T, E>>,
     >(
         &self,
         tx: F,

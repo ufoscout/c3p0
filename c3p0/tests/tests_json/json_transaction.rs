@@ -25,11 +25,14 @@ fn json_should_commit_transaction() {
     assert!(result.is_ok());
 
     {
-        let conn = &mut c3p0.connection().unwrap();
-        let count = jpo.count_all(conn).unwrap();
-        assert_eq!(3, count);
+        pool.transaction::<_, C3p0Error, _>(|conn| {
+            let count = jpo.count_all(conn).unwrap();
+            assert_eq!(3, count);
 
-        assert!(jpo.drop_table_if_exists(conn, true).is_ok());
+            assert!(jpo.drop_table_if_exists(conn, true).is_ok());
+            Ok(())
+        })
+        .unwrap();
     }
 }
 
@@ -62,11 +65,14 @@ fn should_rollback_transaction() {
     assert!(result.is_err());
 
     {
-        let conn = &mut c3p0.connection().unwrap();
-        let count = jpo.count_all(conn).unwrap();
-        assert_eq!(0, count);
+        pool.transaction::<_, C3p0Error, _>(|conn| {
+            let count = jpo.count_all(conn).unwrap();
+            assert_eq!(0, count);
 
-        assert!(jpo.drop_table_if_exists(conn, true).is_ok());
+            assert!(jpo.drop_table_if_exists(conn, true).is_ok());
+            Ok(())
+        })
+        .unwrap();
     }
 }
 

@@ -27,15 +27,6 @@ impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager> {
 impl C3p0Pool for PgC3p0Pool {
     type CONN = PgConnection;
 
-    fn connection(&self) -> Result<PgConnection, C3p0Error> {
-        self.pool
-            .get()
-            .map_err(|err| C3p0Error::PoolError {
-                cause: format!("{}", err),
-            })
-            .map(PgConnection::Conn)
-    }
-
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut PgConnection) -> Result<T, E>>(
         &self,
         tx: F,
@@ -46,21 +37,31 @@ impl C3p0Pool for PgC3p0Pool {
 
         let (result, executor) = {
             // ToDo: To avoid this unsafe we need GAT
-            let transaction =
-                unsafe { ::std::mem::transmute(conn.transaction().map_err(into_c3p0_error)?) };
+            let transaction = unsafe {
+                ::std::mem::transmute(
+                    conn.build_transaction()
+                        .deferrable(true)
+                        .start()
+                        .map_err(into_c3p0_error)?,
+                )
+            };
             let mut sql_executor = PgConnection::Tx(transaction);
-            let result = (tx)(&mut sql_executor)?;
+            let result = (tx)(&mut sql_executor);
             (result, sql_executor)
         };
 
         match executor {
             PgConnection::Tx(tx) => {
-                tx.commit().map_err(into_c3p0_error)?;
+                if result.is_ok() {
+                    tx.commit().map_err(into_c3p0_error)?;
+                } else {
+                    tx.rollback().map_err(into_c3p0_error)?;
+                }
             }
             _ => panic!("It should have been a transaction"),
         };
 
-        Ok(result)
+        Ok(result?)
     }
 }
 

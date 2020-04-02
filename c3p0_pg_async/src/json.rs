@@ -3,6 +3,7 @@ use crate::pg_async::driver::{
     types::{FromSql, ToSql},
 };
 use crate::pool::{PgC3p0PoolAsync, PgConnectionAsync};
+use async_trait::async_trait;
 use c3p0_common::error::C3p0Error;
 use c3p0_common::json::builder::C3p0JsonBuilder;
 use c3p0_common::json::codec::DefaultJsonCodec;
@@ -14,7 +15,6 @@ use c3p0_common::json::{
 use c3p0_common::sql::ForUpdate;
 use c3p0_common_async::C3p0JsonAsync;
 use serde::export::fmt::Display;
-use async_trait::async_trait;
 
 pub trait PgC3p0JsonAsyncBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
@@ -205,7 +205,6 @@ where
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row)).await
     }
-
 }
 
 #[async_trait(?Send)]
@@ -261,7 +260,7 @@ where
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         })
-            .await
+        .await
     }
 
     async fn fetch_all_for_update(
@@ -285,7 +284,7 @@ where
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
             self.to_model(row)
         })
-            .await
+        .await
     }
 
     async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(

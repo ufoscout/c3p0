@@ -25,15 +25,6 @@ impl Into<SqliteC3p0Pool> for Pool<SqliteConnectionManager> {
 impl C3p0Pool for SqliteC3p0Pool {
     type CONN = SqliteConnection;
 
-    fn connection(&self) -> Result<SqliteConnection, C3p0Error> {
-        self.pool
-            .get()
-            .map_err(|err| C3p0Error::PoolError {
-                cause: format!("{}", err),
-            })
-            .map(SqliteConnection::Conn)
-    }
-
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut SqliteConnection) -> Result<T, E>>(
         &self,
         tx: F,

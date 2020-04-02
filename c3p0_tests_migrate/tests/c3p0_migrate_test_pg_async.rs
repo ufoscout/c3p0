@@ -1,7 +1,7 @@
 #![cfg(feature = "pg_async")]
 
-use c3p0_pg_async::pg_async::driver::tls::NoTls;
 use c3p0_pg_async::pg_async::bb8::{Pool, PostgresConnectionManager};
+use c3p0_pg_async::pg_async::driver::tls::NoTls;
 use c3p0_pg_async::pg_async::*;
 use c3p0_pg_async::*;
 use testcontainers::*;

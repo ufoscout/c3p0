@@ -22,10 +22,6 @@ impl InMemoryC3p0Pool {
 impl C3p0Pool for InMemoryC3p0Pool {
     type CONN = InMemoryConnection;
 
-    fn connection(&self) -> Result<InMemoryConnection, C3p0Error> {
-        Ok(InMemoryConnection::Conn(self.db.clone()))
-    }
-
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut InMemoryConnection) -> Result<T, E>>(
         &self,
         tx: F,
@@ -102,31 +98,34 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
 
         {
-            let conn = &mut pool.connection()?;
-            let result: Result<(), C3p0Error> = conn.write_db(|db| {
-                db.insert("one".to_string(), Default::default());
-                Ok(())
+            let result: Result<(), C3p0Error> = pool.transaction(|conn| {
+                conn.write_db(|db| {
+                    db.insert("one".to_string(), Default::default());
+                    Ok(())
+                })
             });
             assert!(result.is_ok())
         }
 
         {
-            let conn = &mut pool.connection()?;
-            let result: Result<(), C3p0Error> = conn.write_db(|db| {
-                assert!(db.contains_key("one"));
-                db.insert("two".to_string(), Default::default());
-                db.remove("one");
-                Ok(())
+            let result: Result<(), C3p0Error> = pool.transaction(|conn| {
+                conn.write_db(|db| {
+                    assert!(db.contains_key("one"));
+                    db.insert("two".to_string(), Default::default());
+                    db.remove("one");
+                    Ok(())
+                })
             });
             assert!(result.is_ok())
         }
 
         {
-            let conn = &mut pool.connection()?;
-            let result: Result<(), C3p0Error> = conn.read_db(|db| {
-                assert!(!db.contains_key("one"));
-                assert!(db.contains_key("two"));
-                Ok(())
+            let result: Result<(), C3p0Error> = pool.transaction(|conn| {
+                conn.read_db(|db| {
+                    assert!(!db.contains_key("one"));
+                    assert!(db.contains_key("two"));
+                    Ok(())
+                })
             });
             assert!(result.is_ok())
         }

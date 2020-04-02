@@ -25,15 +25,6 @@ impl Into<MysqlC3p0Pool> for Pool<MysqlConnectionManager> {
 impl C3p0Pool for MysqlC3p0Pool {
     type CONN = MysqlConnection;
 
-    fn connection(&self) -> Result<MysqlConnection, C3p0Error> {
-        self.pool
-            .get()
-            .map_err(|err| C3p0Error::PoolError {
-                cause: format!("{}", err),
-            })
-            .map(MysqlConnection::Conn)
-    }
-
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut MysqlConnection) -> Result<T, E>>(
         &self,
         tx: F,

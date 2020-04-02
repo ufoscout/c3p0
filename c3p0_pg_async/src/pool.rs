@@ -34,7 +34,7 @@ impl C3p0PoolAsync for PgC3p0PoolAsync {
         T,
         E: From<C3p0Error>,
         F: FnOnce(Self::CONN) -> Fut,
-        Fut: Future<Output = Result<T, E>>
+        Fut: Future<Output = Result<T, E>>,
     >(
         &self,
         tx: F,
@@ -45,7 +45,8 @@ impl C3p0PoolAsync for PgC3p0PoolAsync {
 
         let result = {
             // ToDo: To avoid this unsafe we need GAT
-            let transaction = PgConnectionAsync::Tx( unsafe { ::std::mem::transmute(&native_transaction) } ) ;
+            let transaction =
+                PgConnectionAsync::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
             (tx)(transaction).await?
         };
 
@@ -77,7 +78,9 @@ impl PgConnectionAsync {
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<u64, C3p0Error> {
         match self {
-            PgConnectionAsync::Conn(conn) => conn.execute(sql, params).await.map_err(into_c3p0_error),
+            PgConnectionAsync::Conn(conn) => {
+                conn.execute(sql, params).await.map_err(into_c3p0_error)
+            }
             PgConnectionAsync::Tx(tx) => tx.execute(sql, params).await.map_err(into_c3p0_error),
         }
     }
