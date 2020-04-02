@@ -5,7 +5,7 @@ use crate::*;
 
 #[tokio::test]
 async fn should_create_the_c3p0_migrate_table_with_default_name(
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 
@@ -37,7 +37,7 @@ async fn should_create_the_c3p0_migrate_table_with_default_name(
 
 #[tokio::test]
 async fn should_create_the_c3p0_migrate_table_with_custom_name(
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 
@@ -63,7 +63,7 @@ async fn should_create_the_c3p0_migrate_table_with_custom_name(
 }
 
 #[tokio::test]
-async fn should_execute_migrations() -> Result<(), Box<dyn std::error::Error>> {
+async fn should_execute_migrations() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 
@@ -126,7 +126,7 @@ async fn should_execute_migrations() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[tokio::test]
-async fn should_not_execute_same_migrations_twice() -> Result<(), Box<dyn std::error::Error>> {
+async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 
@@ -176,7 +176,7 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), Box<dyn std::e
 /*
 #[cfg(any(feature = "pg_async"))]
 #[tokio::test]
-async fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::Error>> {
+async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
     let c3p0 = node.0.clone();
@@ -239,7 +239,7 @@ async fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::E
 */
 
 #[tokio::test]
-async fn should_read_migrations_from_files() -> Result<(), Box<dyn std::error::Error>> {
+async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
     let c3p0 = node.0.clone();
@@ -275,7 +275,7 @@ async fn should_read_migrations_from_files() -> Result<(), Box<dyn std::error::E
 const MIGRATIONS: include_dir::Dir = include_dir::include_dir!("./tests/migrations_00");
 
 #[tokio::test]
-async fn should_read_embedded_migrations() -> Result<(), Box<dyn std::error::Error>> {
+async fn should_read_embedded_migrations() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
     let c3p0 = node.0.clone();

@@ -19,7 +19,7 @@ pub trait PgC3p0JsonBuilder {
         self,
     ) -> PgC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
         CODEC: JsonCodec<DATA>,
     >(
         self,
@@ -35,7 +35,7 @@ impl PgC3p0JsonBuilder for C3p0JsonBuilder<PgC3p0Pool> {
     }
 
     fn build_with_codec<
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
         CODEC: JsonCodec<DATA>,
     >(
         self,
@@ -143,7 +143,7 @@ impl PgC3p0JsonBuilder for C3p0JsonBuilder<PgC3p0Pool> {
 #[derive(Clone)]
 pub struct PgC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     phantom_data: std::marker::PhantomData<DATA>,
 
@@ -153,7 +153,7 @@ where
 
 impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
@@ -206,7 +206,7 @@ where
 
 impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for PgC3p0Json<DATA, CODEC>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     type CONN = PgConnection;
 
@@ -354,7 +354,7 @@ where
 
 #[inline]
 pub fn to_model<
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     CODEC: JsonCodec<DATA>,
     IdIdx: RowIndex + Display,
     VersionIdx: RowIndex + Display,

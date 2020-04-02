@@ -12,8 +12,8 @@ use c3p0_common::{
     MigrationModel, MigrationType,
 };
 
-#[async_trait(?Send)]
-pub trait MigratorAsync: Clone + Send {
+#[async_trait]
+pub trait MigratorAsync: Clone + Send + Sync {
     type CONN: SqlConnectionAsync;
     type C3P0: C3p0PoolAsync<CONN = Self::CONN>;
     type C3P0JSON: C3p0JsonAsync<MigrationData, DefaultJsonCodec, CONN = Self::CONN>;

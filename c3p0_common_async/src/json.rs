@@ -2,14 +2,15 @@ use async_trait::async_trait;
 use c3p0_common::json::codec::JsonCodec;
 use c3p0_common::json::model::IdType;
 use c3p0_common::{C3p0Error, ForUpdate, Model, NewModel};
+use crate::SqlConnectionAsync;
 
-#[async_trait(?Send)]
-pub trait C3p0JsonAsync<DATA, CODEC>: Clone
+#[async_trait]
+pub trait C3p0JsonAsync<DATA, CODEC>: Clone + Send + Sync
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     CODEC: JsonCodec<DATA>,
 {
-    type CONN;
+    type CONN: SqlConnectionAsync;
 
     fn codec(&self) -> &CODEC;
 
@@ -23,7 +24,7 @@ where
 
     async fn count_all(&self, conn: &mut Self::CONN) -> Result<u64, C3p0Error>;
 
-    async fn exists_by_id<'a, ID: Into<&'a IdType>>(
+    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut Self::CONN,
         id: ID,
@@ -37,26 +38,26 @@ where
         for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error>;
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut Self::CONN,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error>;
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut Self::CONN,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error>;
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut Self::CONN,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error>;
 
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut Self::CONN,
         id: ID,
@@ -71,7 +72,7 @@ where
 
     async fn delete_all(&self, conn: &mut Self::CONN) -> Result<u64, C3p0Error>;
 
-    async fn delete_by_id<'a, ID: Into<&'a IdType>>(
+    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut Self::CONN,
         id: ID,

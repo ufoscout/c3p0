@@ -6,7 +6,7 @@ pub type VersionType = i32;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model<DATA>
 where
-    DATA: Clone + serde::ser::Serialize,
+    DATA: Clone + serde::ser::Serialize + Send,
 {
     pub id: IdType,
     pub version: VersionType,
@@ -16,7 +16,7 @@ where
 
 impl<DATA> Model<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     pub fn into_new(self) -> NewModel<DATA> {
         NewModel {
@@ -28,7 +28,7 @@ where
 
 impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     fn into(self) -> &'a IdType {
         &self.id
@@ -47,7 +47,7 @@ where
 
 impl<DATA> NewModel<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     pub fn new(data: DATA) -> Self {
         NewModel { version: 0, data }
@@ -56,7 +56,7 @@ where
 
 impl<DATA> Default for NewModel<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Default,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Default,
 {
     fn default() -> Self {
         NewModel::new(DATA::default())
@@ -65,7 +65,7 @@ where
 
 impl<DATA> From<DATA> for NewModel<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     fn from(data: DATA) -> Self {
         NewModel::new(data)

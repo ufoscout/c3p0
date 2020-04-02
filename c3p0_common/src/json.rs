@@ -39,7 +39,7 @@ pub struct Queries {
 
 pub trait C3p0Json<DATA, CODEC>: Clone
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     CODEC: JsonCodec<DATA>,
 {
     type CONN;

@@ -35,7 +35,7 @@ impl InMemoryC3p0JsonBuilder for C3p0JsonBuilder<InMemoryC3p0Pool> {
 #[derive(Clone)]
 pub struct InMemoryC3p0Json<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     qualified_table_name: String,
     phantom_data: std::marker::PhantomData<DATA>,
@@ -44,7 +44,7 @@ where
 
 impl<DATA> InMemoryC3p0Json<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     fn get_table<'a>(
         &self,
@@ -82,7 +82,7 @@ where
 
 impl<DATA> C3p0Json<DATA, DefaultJsonCodec> for InMemoryC3p0Json<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     type CONN = InMemoryConnection;
 

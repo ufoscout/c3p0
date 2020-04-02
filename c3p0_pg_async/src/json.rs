@@ -17,11 +17,11 @@ use c3p0_common_async::C3p0JsonAsync;
 use serde::export::fmt::Display;
 
 pub trait PgC3p0JsonAsyncBuilder {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> PgC3p0JsonAsync<DATA, DefaultJsonCodec>;
     fn build_with_codec<
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
@@ -30,14 +30,14 @@ pub trait PgC3p0JsonAsyncBuilder {
 }
 
 impl PgC3p0JsonAsyncBuilder for C3p0JsonBuilder<PgC3p0PoolAsync> {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> PgC3p0JsonAsync<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
     fn build_with_codec<
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
@@ -145,7 +145,7 @@ impl PgC3p0JsonAsyncBuilder for C3p0JsonBuilder<PgC3p0PoolAsync> {
 #[derive(Clone)]
 pub struct PgC3p0JsonAsync<DATA, CODEC: JsonCodec<DATA>>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     phantom_data: std::marker::PhantomData<DATA>,
 
@@ -155,7 +155,7 @@ where
 
 impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0JsonAsync<DATA, CODEC>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
@@ -207,10 +207,10 @@ where
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for PgC3p0JsonAsync<DATA, CODEC>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     type CONN = PgConnectionAsync;
 
@@ -247,7 +247,7 @@ where
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id<'a, ID: Into<&'a IdType>>(
+    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut PgConnectionAsync,
         id: ID,
@@ -276,7 +276,7 @@ where
         conn.fetch_all(&sql, &[], |row| self.to_model(row)).await
     }
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut PgConnectionAsync,
         id: ID,
@@ -287,7 +287,7 @@ where
         .await
     }
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut PgConnectionAsync,
         id: ID,
@@ -302,7 +302,7 @@ where
             .await
     }
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut PgConnectionAsync,
         id: ID,
@@ -312,7 +312,7 @@ where
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut PgConnectionAsync,
         id: ID,
@@ -345,7 +345,7 @@ where
         conn.execute(&self.queries.delete_all_sql_query, &[]).await
     }
 
-    async fn delete_by_id<'a, ID: Into<&'a IdType>>(
+    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut PgConnectionAsync,
         id: ID,
@@ -407,7 +407,7 @@ where
 
 #[inline]
 pub fn to_model<
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
     CODEC: JsonCodec<DATA>,
     IdIdx: RowIndex + Display,
     VersionIdx: RowIndex + Display,
