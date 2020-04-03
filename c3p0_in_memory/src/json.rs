@@ -11,13 +11,13 @@ use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 
 pub trait InMemoryC3p0JsonBuilder {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
         self,
     ) -> InMemoryC3p0Json<DATA>;
 }
 
 impl InMemoryC3p0JsonBuilder for C3p0JsonBuilder<InMemoryC3p0Pool> {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
         self,
     ) -> InMemoryC3p0Json<DATA> {
         let qualified_table_name = match &self.schema_name {

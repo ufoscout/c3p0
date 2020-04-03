@@ -32,6 +32,8 @@ impl C3p0Pool for PgC3p0Pool {
         tx: F,
     ) -> Result<T, E> {
         let mut conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
+            db: "postgres",
+            pool: "r2d2",
             cause: format!("{}", err),
         })?;
 

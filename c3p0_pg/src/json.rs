@@ -15,7 +15,7 @@ use c3p0_common::sql::ForUpdate;
 use serde::export::fmt::Display;
 
 pub trait PgC3p0JsonBuilder {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
         self,
     ) -> PgC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
@@ -28,7 +28,7 @@ pub trait PgC3p0JsonBuilder {
 }
 
 impl PgC3p0JsonBuilder for C3p0JsonBuilder<PgC3p0Pool> {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
         self,
     ) -> PgC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})

@@ -12,7 +12,7 @@ use c3p0_common::json::{
 use c3p0_common::sql::ForUpdate;
 
 pub trait MysqlC3p0JsonBuilder {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
         self,
     ) -> MysqlC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
@@ -25,7 +25,7 @@ pub trait MysqlC3p0JsonBuilder {
 }
 
 impl MysqlC3p0JsonBuilder for C3p0JsonBuilder<MysqlC3p0Pool> {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
         self,
     ) -> MysqlC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})

@@ -18,8 +18,11 @@ pub enum C3p0Error {
     JsonProcessingError { cause: serde_json::error::Error },
     #[error("IteratorError: [{message}]")]
     IteratorError { message: String },
-    #[error("PoolError: [{cause}]")]
-    PoolError { cause: String },
+    #[error("PoolError: pool [{pool}] for [{db}] returned error: [{cause}]")]
+    PoolError {
+        db: &'static str,
+        pool: &'static str,
+        cause: String },
     #[error("ResultNotFoundError: Expected one result but found zero.")]
     ResultNotFoundError,
     #[error("TransactionError: [{cause}]")]

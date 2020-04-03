@@ -30,6 +30,8 @@ impl C3p0Pool for SqliteC3p0Pool {
         tx: F,
     ) -> Result<T, E> {
         let mut conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
+            db: "sqlite",
+            pool: "r2d2",
             cause: format!("{}", err),
         })?;
 

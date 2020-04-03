@@ -30,6 +30,8 @@ impl C3p0Pool for MysqlC3p0Pool {
         tx: F,
     ) -> Result<T, E> {
         let mut conn = self.pool.get().map_err(|err| C3p0Error::PoolError {
+            db: "mysql",
+            pool: "r2d2",
             cause: format!("{}", err),
         })?;
 

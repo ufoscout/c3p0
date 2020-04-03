@@ -14,7 +14,7 @@ use c3p0_common::sql::ForUpdate;
 use rusqlite::RowIndex;
 
 pub trait SqliteC3p0JsonBuilder {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
         self,
     ) -> SqliteC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
@@ -27,7 +27,7 @@ pub trait SqliteC3p0JsonBuilder {
 }
 
 impl SqliteC3p0JsonBuilder for C3p0JsonBuilder<SqliteC3p0Pool> {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
         self,
     ) -> SqliteC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})

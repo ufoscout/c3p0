@@ -1,6 +1,6 @@
 #![cfg(feature = "pg_async")]
 
-use c3p0::pg_async::bb8::{Pool, PostgresConnectionManager};
+use c3p0::pg_async::deadpool;
 use c3p0::pg_async::*;
 use c3p0::*;
 use lazy_static::lazy_static;
@@ -10,6 +10,7 @@ use testcontainers::*;
 pub use c3p0::pg_async::driver::row::Row;
 pub use c3p0::pg_async::driver::tls::NoTls;
 use futures::FutureExt;
+use std::time::Duration;
 
 pub type C3p0Impl = PgC3p0PoolAsync;
 
@@ -32,22 +33,19 @@ pub type MaybeType = (
 async fn init() -> MaybeType {
     let node = DOCKER.run(images::postgres::Postgres::default());
 
-    let manager = PostgresConnectionManager::new(
-        format!(
-            "postgres://postgres:postgres@127.0.0.1:{}/postgres",
-            node.get_host_port(5432).unwrap()
-        )
-        .parse()
-        .unwrap(),
-        NoTls,
-    );
+    let mut config = deadpool::postgres::Config::default();
+    config.user = Some("postgres".to_owned());
+    config.password = Some("postgres".to_owned());
+    config.dbname = Some("postgres".to_owned());
+    config.host = Some(format!("127.0.0.1"));
+    config.port = Some(node.get_host_port(5432).unwrap());
+    let mut pool_config = deadpool::managed::PoolConfig::default();
+    pool_config.timeouts.create = Some(Duration::from_secs(5));
+    pool_config.timeouts.recycle = Some(Duration::from_secs(5));
+    pool_config.timeouts.wait = Some(Duration::from_secs(5));
+    config.pool = Some(pool_config);
 
-    let pool = Pool::builder()
-        .min_idle(Some(10))
-        .build(manager)
-        .await
-        .unwrap();
-    let pool = PgC3p0PoolAsync::new(pool);
+    let pool = PgC3p0PoolAsync::new(config.create_pool(NoTls).unwrap());
 
     (pool, node)
 }

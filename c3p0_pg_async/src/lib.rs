@@ -15,11 +15,15 @@ pub mod pg_async {
     #[cfg(feature = "migrate")]
     pub use crate::migrate::*;
 
-    pub mod bb8 {
-        pub use bb8::*;
-        pub use bb8_postgres::*;
+    pub mod deadpool {
+        pub use deadpool::*;
+        pub mod postgres {
+            pub use deadpool_postgres::*;
+        }
     }
+
     pub mod driver {
         pub use tokio_postgres::*;
     }
+
 }
