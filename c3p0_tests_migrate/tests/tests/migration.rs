@@ -151,7 +151,7 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<dyn std::error::
     })
 }
 
-#[cfg(any(feature = "pg", feature = "pg_015"))]
+#[cfg(any(feature = "pg"))]
 #[test]
 fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::Error>> {
     let docker = clients::Cli::default();

@@ -17,9 +17,6 @@ c3p0_mysql = { path = "../c3p0", package = "c3p0", version = "0.45.0", optional 
 # pg feature
 c3p0_pg = { path = "../c3p0", package = "c3p0", version = "0.45.0", optional = true, features = ['pg_migrate'] }
 
-# pg_015 feature
-c3p0_pg_015 = { path = "../c3p0", package = "c3p0", version = "0.45.0", optional = true, features = ['pg_015_migrate'] }
-
 # pg_async feature
 c3p0_pg_async = { path = "../c3p0", package = "c3p0", version = "0.45.0", optional = true, features = ['pg_async_migrate'] }
 
@@ -38,5 +35,4 @@ default = []
 mysql = ["c3p0_mysql"]
 pg = ["c3p0_pg"]
 pg_async = ["c3p0_pg_async"]
-pg_015 = ["c3p0_pg_015"]
 sqlite = ["c3p0_sqlite"]
