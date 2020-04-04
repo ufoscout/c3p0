@@ -31,8 +31,8 @@ addons:
 
   
 script:
-  - cargo install --debug cargo-make
-  - cargo make --no-workspace test_all
+  - cargo test
+  - cargo test --all-features
 
 #after_success: |
 #  wget https://github.com/SimonKagstrom/kcov/archive/master.tar.gz &&
