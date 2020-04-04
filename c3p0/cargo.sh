@@ -3,7 +3,6 @@
 declare -a features=(
     "in_memory"
     "pg"
-    "pg_async"
     "sqlite"
     "mysql"
     "pg_migrate"
