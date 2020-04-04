@@ -1,13 +1,12 @@
-use crate::error::{deadpool_into_c3p0_error, into_c3p0_error};
-use crate::pg_async::deadpool::postgres::Pool;
-use crate::pg_async::driver::row::Row;
-use crate::pg_async::driver::types::{FromSqlOwned, ToSql};
+use crate::nio::*;
+use crate::nio::deadpool::postgres::Pool;
+use crate::nio::tokio_postgres::Transaction;
+use crate::nio::tokio_postgres::row::Row;
+use crate::nio::tokio_postgres::types::{FromSqlOwned, ToSql};
 
 use async_trait::async_trait;
 use c3p0_common::*;
-use c3p0_common_async::pool::{C3p0PoolAsync, SqlConnectionAsync};
 use futures::Future;
-use tokio_postgres::Transaction;
 
 pub enum PgC3p0ConnectionManager{
     DeadPool

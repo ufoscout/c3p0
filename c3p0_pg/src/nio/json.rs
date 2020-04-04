@@ -1,20 +1,12 @@
-use crate::pg_async::driver::{
+use crate::nio::tokio_postgres::{
     row::{Row, RowIndex},
     types::{FromSql, ToSql},
 };
-use crate::pool::{PgC3p0PoolAsync, PgConnectionAsync};
+use crate::nio::*;
 use async_trait::async_trait;
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::builder::C3p0JsonBuilder;
-use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::{
-    codec::JsonCodec,
-    model::{IdType, Model, NewModel},
-    Queries,
-};
-use c3p0_common::sql::ForUpdate;
-use c3p0_common_async::C3p0JsonAsync;
+use c3p0_common::*;
 use serde::export::fmt::Display;
+use c3p0_common::json::Queries;
 
 pub trait PgC3p0JsonAsyncBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(

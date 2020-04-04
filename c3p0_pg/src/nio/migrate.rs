@@ -1,13 +1,7 @@
-use crate::json::{PgC3p0JsonAsync, PgC3p0JsonAsyncBuilder};
-use crate::pool::{PgC3p0PoolAsync, PgConnectionAsync};
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::builder::C3p0JsonBuilder;
-use c3p0_common::json::codec::DefaultJsonCodec;
-
-use c3p0_common_async::{C3p0MigrateAsync, MigratorAsync, SqlConnectionAsync};
+use crate::nio::*;
+use c3p0_common::*;
 
 use async_trait::async_trait;
-use c3p0_common::{C3p0MigrateBuilder, MigrationData, C3P0_INIT_MIGRATION_ID};
 
 pub trait PgC3p0AsyncMigrateBuilder {
     fn build(self) -> C3p0MigrateAsync<PgConnectionAsync, PgC3p0PoolAsync, PgMigratorAsync>;
