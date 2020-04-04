@@ -1,7 +1,7 @@
-use crate::blocking::*;
+use crate::blocking::r2d2::{Pool, PooledConnection, SqliteConnectionManager};
 use crate::blocking::rusqlite::types::{FromSql, ToSql};
 use crate::blocking::rusqlite::Row;
-use crate::blocking::r2d2::{Pool, PooledConnection, SqliteConnectionManager};
+use crate::blocking::*;
 
 use c3p0_common::blocking::*;
 

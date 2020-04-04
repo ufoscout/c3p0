@@ -1,9 +1,9 @@
-use c3p0_common::{JsonCodec, Model, C3p0Error, C3p0JsonBuilder};
+use c3p0_common::json::Queries;
+use c3p0_common::{C3p0Error, C3p0JsonBuilder, JsonCodec, Model};
 use core::fmt::Display;
-use tokio_postgres::Row;
 use tokio_postgres::row::RowIndex;
 use tokio_postgres::types::{FromSql, FromSqlOwned};
-use c3p0_common::json::Queries;
+use tokio_postgres::Row;
 
 pub fn into_c3p0_error(error: tokio_postgres::Error) -> C3p0Error {
     C3p0Error::DbError {
@@ -49,7 +49,6 @@ pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
 }
 
 pub fn build_pg_queries<C3P0>(json_builder: C3p0JsonBuilder<C3P0>) -> Queries {
-
     let qualified_table_name = match &json_builder.schema_name {
         Some(schema_name) => format!(r#"{}."{}""#, schema_name, json_builder.table_name),
         None => json_builder.table_name.clone(),

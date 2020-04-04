@@ -22,7 +22,8 @@ pub enum C3p0Error {
     PoolError {
         db: &'static str,
         pool: &'static str,
-        cause: String },
+        cause: String,
+    },
     #[error("ResultNotFoundError: Expected one result but found zero.")]
     ResultNotFoundError,
     #[error("TransactionError: [{cause}]")]

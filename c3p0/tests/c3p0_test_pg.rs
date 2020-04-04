@@ -1,7 +1,7 @@
 #![cfg(feature = "pg")]
 
-pub use c3p0::pg::tokio_postgres::{row::Row, NoTls};
 use c3p0::pg::deadpool;
+pub use c3p0::pg::tokio_postgres::{row::Row, NoTls};
 use c3p0::pg::*;
 use c3p0::*;
 use lazy_static::lazy_static;
@@ -58,5 +58,4 @@ pub mod db_specific {
     pub fn db_type() -> utils::DbType {
         utils::DbType::Pg
     }
-
 }

@@ -1,12 +1,12 @@
-use crate::json::model::{Model, IdType, NewModel};
 use crate::error::C3p0Error;
 use crate::json::codec::JsonCodec;
+use crate::json::model::{IdType, Model, NewModel};
 use crate::sql::ForUpdate;
 
 pub trait C3p0Json<DATA, CODEC>: Clone
-    where
-        DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-        CODEC: JsonCodec<DATA>,
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    CODEC: JsonCodec<DATA>,
 {
     type CONN;
 

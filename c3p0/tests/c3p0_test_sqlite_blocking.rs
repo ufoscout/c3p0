@@ -1,9 +1,9 @@
 #![cfg(feature = "sqlite_blocking")]
 
-pub use c3p0::sqlite::blocking::rusqlite::Row;
-use c3p0::sqlite::blocking::r2d2::{Pool, SqliteConnectionManager};
-use c3p0::sqlite::blocking::*;
 use c3p0::blocking::*;
+use c3p0::sqlite::blocking::r2d2::{Pool, SqliteConnectionManager};
+pub use c3p0::sqlite::blocking::rusqlite::Row;
+use c3p0::sqlite::blocking::*;
 use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
 
@@ -33,7 +33,6 @@ pub fn data(serial: bool) -> Data<'static, MaybeType> {
     SINGLETON.data(serial)
 }
 
-
 pub mod db_specific {
 
     use super::*;
@@ -49,5 +48,4 @@ pub mod db_specific {
     pub fn build_insert_query(table_name: &str) -> String {
         format!(r"INSERT INTO {} (name) VALUES (?)", table_name)
     }
-
 }

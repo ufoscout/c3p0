@@ -1,6 +1,6 @@
+pub mod error;
 mod json;
 mod pool;
-pub mod error;
 
 pub use error::*;
 pub use json::*;

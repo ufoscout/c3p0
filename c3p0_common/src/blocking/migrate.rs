@@ -2,7 +2,7 @@ use crate::blocking::*;
 use log::*;
 
 use crate::migrate::sql_migration::SqlMigration;
-use crate::migrate::{build_migration_zero, clean_history, check_if_migration_already_applied};
+use crate::migrate::{build_migration_zero, check_if_migration_already_applied, clean_history};
 
 #[derive(Clone)]
 pub struct C3p0Migrate<
@@ -18,7 +18,7 @@ pub struct C3p0Migrate<
 }
 
 impl<CONN: SqlConnection, C3P0: C3p0Pool<CONN = CONN>, MIGRATOR: Migrator<CONN = CONN>>
-C3p0Migrate<CONN, C3P0, MIGRATOR>
+    C3p0Migrate<CONN, C3P0, MIGRATOR>
 {
     pub fn new(
         table: String,

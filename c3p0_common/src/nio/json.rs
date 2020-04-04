@@ -1,9 +1,9 @@
-use async_trait::async_trait;
+use crate::error::C3p0Error;
 use crate::json::codec::JsonCodec;
 use crate::json::model::{IdType, Model, NewModel};
 use crate::nio::pool::SqlConnectionAsync;
-use crate::error::C3p0Error;
 use crate::sql::ForUpdate;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait C3p0JsonAsync<DATA, CODEC>: Clone + Send + Sync

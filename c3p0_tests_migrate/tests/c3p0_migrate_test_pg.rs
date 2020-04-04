@@ -1,11 +1,11 @@
 #![cfg(feature = "pg")]
 
-use c3p0::pg::tokio_postgres::NoTls;
 use c3p0::pg::deadpool;
+use c3p0::pg::tokio_postgres::NoTls;
 pub use c3p0::pg::*;
 pub use c3p0::*;
-use testcontainers::*;
 use std::time::Duration;
+use testcontainers::*;
 
 mod tests;
 pub mod utils;

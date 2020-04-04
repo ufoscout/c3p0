@@ -1,9 +1,9 @@
 use crate::*;
 use log::*;
 
-use async_trait::async_trait;
 use crate::migrate::sql_migration::SqlMigration;
-use crate::migrate::{build_migration_zero, clean_history, check_if_migration_already_applied};
+use crate::migrate::{build_migration_zero, check_if_migration_already_applied, clean_history};
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait MigratorAsync: Clone + Send + Sync {

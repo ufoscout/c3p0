@@ -1,9 +1,9 @@
 #![cfg(feature = "mysql_blocking")]
 
+use c3p0::blocking::*;
 pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
 use c3p0::mysql::blocking::*;
-use c3p0::blocking::*;
 use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
 use testcontainers::*;
@@ -72,5 +72,4 @@ pub mod db_specific {
     pub fn build_insert_query(table_name: &str) -> String {
         format!(r"INSERT INTO {} (name) VALUES (?)", table_name)
     }
-
 }

@@ -1,7 +1,4 @@
-use crate::blocking::postgres::{
-    row::{Row},
-    types::{ToSql},
-};
+use crate::blocking::postgres::{row::Row, types::ToSql};
 use crate::blocking::*;
 use c3p0_common::blocking::*;
 use c3p0_common::json::Queries;

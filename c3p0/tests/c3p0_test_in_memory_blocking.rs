@@ -1,7 +1,7 @@
 #![cfg(feature = "in_memory_blocking")]
 
-use c3p0::in_memory::blocking::*;
 use c3p0::blocking::*;
+use c3p0::in_memory::blocking::*;
 use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
 
@@ -26,7 +26,6 @@ pub fn data(serial: bool) -> Data<'static, MaybeType> {
     SINGLETON.data(serial)
 }
 
-
 pub mod db_specific {
 
     use super::*;
@@ -34,5 +33,4 @@ pub mod db_specific {
     pub fn db_type() -> utils::DbType {
         utils::DbType::InMemory
     }
-
 }

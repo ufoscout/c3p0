@@ -1,6 +1,6 @@
+mod error;
 mod json;
 mod pool;
-mod error;
 
 pub use crate::common::*;
 pub use error::*;

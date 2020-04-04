@@ -1,9 +1,9 @@
 #![cfg(feature = "pg_blocking")]
 
+use c3p0::blocking::*;
 pub use c3p0::pg::blocking::postgres::{row::Row, NoTls};
 use c3p0::pg::blocking::r2d2::{Pool, PostgresConnectionManager};
 use c3p0::pg::blocking::*;
-use c3p0::blocking::*;
 use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
 use testcontainers::*;
@@ -64,5 +64,4 @@ pub mod db_specific {
     pub fn build_insert_query(table_name: &str) -> String {
         format!(r"INSERT INTO {} (name) VALUES ($1)", table_name)
     }
-
 }

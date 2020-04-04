@@ -2,11 +2,10 @@ use c3p0_common::blocking::*;
 
 use crate::blocking::rusqlite::{
     types::{FromSql, ToSql},
-    Row, RowIndex
+    Row, RowIndex,
 };
 use crate::blocking::{SqliteC3p0Pool, SqliteConnection};
 use c3p0_common::json::Queries;
-
 
 pub trait SqliteC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(

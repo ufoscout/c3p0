@@ -27,7 +27,6 @@ fn should_execute_and_fetch() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap()
         );
 
-
         let insert = &db_specific::build_insert_query(&table_name);
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());

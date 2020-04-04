@@ -1,20 +1,18 @@
-use crate::nio::*;
 use crate::nio::deadpool::postgres::Pool;
-use crate::nio::tokio_postgres::Transaction;
 use crate::nio::tokio_postgres::row::Row;
 use crate::nio::tokio_postgres::types::{FromSqlOwned, ToSql};
+use crate::nio::tokio_postgres::Transaction;
+use crate::nio::*;
 
 use async_trait::async_trait;
 use c3p0_common::*;
 use futures::Future;
 
-pub enum PgC3p0ConnectionManager{
-    DeadPool
+pub enum PgC3p0ConnectionManager {
+    DeadPool,
 }
 
-impl PgC3p0ConnectionManager {
-
-}
+impl PgC3p0ConnectionManager {}
 
 #[derive(Clone)]
 pub struct PgC3p0PoolAsync {
@@ -51,12 +49,10 @@ impl C3p0PoolAsync for PgC3p0PoolAsync {
         let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-            let transaction =
-                PgConnectionAsync::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
+        let transaction =
+            PgConnectionAsync::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
 
-        let result = {
-            (tx)(transaction).await?
-        };
+        let result = { (tx)(transaction).await? };
 
         native_transaction.commit().await.map_err(into_c3p0_error)?;
 
@@ -160,5 +156,3 @@ impl PgConnectionAsync {
         self.fetch_all(sql, params, to_value_mapper).await
     }
 }
-
-

@@ -1,11 +1,8 @@
-use crate::nio::tokio_postgres::{
-    row::{Row},
-    types::{ToSql},
-};
+use crate::nio::tokio_postgres::{row::Row, types::ToSql};
 use crate::nio::*;
 use async_trait::async_trait;
-use c3p0_common::*;
 use c3p0_common::json::Queries;
+use c3p0_common::*;
 
 pub trait PgC3p0JsonAsyncBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(

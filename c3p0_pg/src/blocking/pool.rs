@@ -1,8 +1,8 @@
-use crate::blocking::*;
 use crate::blocking::postgres::row::Row;
 use crate::blocking::postgres::types::{FromSqlOwned, ToSql};
 use crate::blocking::postgres::Transaction;
 use crate::blocking::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
+use crate::blocking::*;
 use c3p0_common::blocking::*;
 
 #[derive(Clone)]

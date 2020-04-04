@@ -4,8 +4,7 @@ use crate::utils::rand_string;
 use crate::*;
 
 #[tokio::test]
-async fn should_create_the_c3p0_migrate_table_with_default_name(
-) -> Result<(), C3p0Error> {
+async fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 
@@ -36,8 +35,7 @@ async fn should_create_the_c3p0_migrate_table_with_default_name(
 }
 
 #[tokio::test]
-async fn should_create_the_c3p0_migrate_table_with_custom_name(
-) -> Result<(), C3p0Error> {
+async fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 

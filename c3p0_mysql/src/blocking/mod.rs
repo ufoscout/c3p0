@@ -1,7 +1,7 @@
+pub mod error;
 mod json;
 mod pool;
 pub mod r2d2;
-pub mod error;
 
 pub use error::*;
 pub use json::*;

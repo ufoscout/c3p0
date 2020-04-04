@@ -1,9 +1,9 @@
 #![cfg(feature = "pg_blocking")]
 
+pub use c3p0::blocking::*;
 use c3p0::pg::blocking::postgres::NoTls;
 use c3p0::pg::blocking::r2d2::{Pool, PostgresConnectionManager};
 pub use c3p0::pg::blocking::*;
-pub use c3p0::blocking::*;
 use testcontainers::*;
 
 mod tests_blocking;

@@ -1,9 +1,9 @@
 #![cfg(feature = "mysql_blocking")]
 
+pub use c3p0::blocking::*;
 use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
 pub use c3p0::mysql::blocking::*;
-pub use c3p0::blocking::*;
 use testcontainers::*;
 
 mod tests_blocking;

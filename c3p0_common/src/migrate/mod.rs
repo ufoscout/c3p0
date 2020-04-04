@@ -1,5 +1,5 @@
 use crate::error::C3p0Error;
-use crate::json::model::{Model};
+use crate::json::model::Model;
 use crate::migrate::sql_migration::{to_sql_migrations, SqlMigration};
 use serde_derive::{Deserialize, Serialize};
 
