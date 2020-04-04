@@ -22,4 +22,5 @@ serde = "1.0"
 [features]
 default = []
 
+blocking = ["c3p0_common/blocking"]
 migrate = ["c3p0_common/migrate"]

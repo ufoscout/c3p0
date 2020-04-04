@@ -1,5 +1,4 @@
-use c3p0_common::json::model::IdType;
-use c3p0_common::*;
+use c3p0_common::blocking::*;
 use guardian::ArcMutexGuardian;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;

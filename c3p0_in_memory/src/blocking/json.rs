@@ -271,9 +271,8 @@ where
 
 #[cfg(test)]
 mod test {
+
     use super::*;
-    use crate::pool::InMemoryC3p0Pool;
-    use c3p0_common::{C3p0Error, C3p0JsonBuilder, C3p0Pool};
     use serde_derive::{Deserialize, Serialize};
 
     #[derive(Clone, Serialize, Deserialize)]
