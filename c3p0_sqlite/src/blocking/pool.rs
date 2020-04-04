@@ -1,9 +1,9 @@
-use crate::error::into_c3p0_error;
-use crate::sqlite::driver::types::{FromSql, ToSql};
-use crate::sqlite::driver::Row;
-use crate::sqlite::r2d2::{Pool, PooledConnection, SqliteConnectionManager};
+use crate::blocking::*;
+use crate::blocking::rusqlite::types::{FromSql, ToSql};
+use crate::blocking::rusqlite::Row;
+use crate::blocking::r2d2::{Pool, PooledConnection, SqliteConnectionManager};
 
-use c3p0_common::*;
+use c3p0_common::blocking::*;
 
 #[derive(Clone)]
 pub struct SqliteC3p0Pool {

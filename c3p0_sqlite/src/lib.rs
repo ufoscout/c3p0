@@ -1,24 +1,2 @@
-mod error;
-mod json;
-mod pool;
-
-#[cfg(feature = "migrate")]
-mod migrate;
-
-pub mod sqlite {
-
-    pub use crate::json::*;
-    pub use crate::pool::*;
-
-    #[cfg(feature = "migrate")]
-    pub use crate::migrate::*;
-
-    pub mod r2d2 {
-        pub use r2d2::*;
-        pub use r2d2_sqlite::*;
-    }
-
-    pub mod driver {
-        pub use rusqlite::*;
-    }
-}
+#[cfg(feature = "blocking")]
+pub mod blocking;

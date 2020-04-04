@@ -1,17 +1,12 @@
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::{
-    codec::JsonCodec, model::IdType, model::Model, model::NewModel, C3p0Json, Queries,
-};
+use c3p0_common::blocking::*;
 
-use crate::sqlite::driver::{
+use crate::blocking::rusqlite::{
     types::{FromSql, ToSql},
-    Row,
+    Row, RowIndex
 };
-use crate::sqlite::{SqliteC3p0Pool, SqliteConnection};
-use c3p0_common::json::builder::C3p0JsonBuilder;
-use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::sql::ForUpdate;
-use rusqlite::RowIndex;
+use crate::blocking::{SqliteC3p0Pool, SqliteConnection};
+use c3p0_common::json::Queries;
+
 
 pub trait SqliteC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(

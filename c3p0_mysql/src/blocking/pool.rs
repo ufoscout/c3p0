@@ -1,4 +1,4 @@
-use crate::error::into_c3p0_error;
+use crate::blocking::error::into_c3p0_error;
 use crate::blocking::mysql::prelude::{FromValue, Queryable, ToValue};
 use crate::blocking::mysql::{Row, TxOpts};
 use crate::blocking::r2d2::{MysqlConnectionManager, Pool, PooledConnection};

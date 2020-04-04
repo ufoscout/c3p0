@@ -1,10 +1,5 @@
-use crate::json::{SqliteC3p0Json, SqliteC3p0JsonBuilder};
-use crate::sqlite::{SqliteC3p0Pool, SqliteConnection};
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::builder::C3p0JsonBuilder;
-use c3p0_common::json::codec::DefaultJsonCodec;
-
-use c3p0_common::migrate::*;
+use crate::blocking::*;
+use c3p0_common::blocking::*;
 
 pub trait SqliteC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<SqliteConnection, SqliteC3p0Pool, SqliteMigrator>;
