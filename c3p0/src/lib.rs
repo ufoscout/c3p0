@@ -1,13 +1,21 @@
 pub use c3p0_common::*;
 
-#[cfg(feature = "in_memory")]
-pub use c3p0_in_memory::*;
+#[cfg(any(feature = "in_memory_blocking"))]
+pub mod in_memory {
+    pub use c3p0_in_memory::*;
+}
 
-#[cfg(feature = "mysql")]
-pub use c3p0_mysql::*;
+#[cfg(any(feature = "mysql_blocking"))]
+pub mod mysql {
+    pub use c3p0_mysql::*;
+}
 
-#[cfg(feature = "pg")]
-pub use c3p0_pg::*;
+#[cfg(any(feature = "pg", feature = "pg_blocking"))]
+pub mod pg {
+    pub use c3p0_pg::*;
+}
 
-#[cfg(feature = "sqlite")]
-pub use c3p0_sqlite::*;
+#[cfg(any(feature = "sqlite_blocking"))]
+pub mod sqlite {
+    pub use c3p0_sqlite::*;
+}

@@ -40,16 +40,18 @@ tokio = { version = "0.2", features = ["full"] }
 [features]
 default = []
 
-in_memory = ["c3p0_in_memory"]
+in_memory_blocking = ["c3p0_in_memory/blocking"]
 
-mysql = ["c3p0_mysql"]
-mysql_migrate = ["mysql", "c3p0_mysql/migrate"]
+mysql_blocking = ["c3p0_mysql/blocking"]
+mysql_blocking_migrate = ["mysql_blocking", "c3p0_mysql/migrate"]
 
-pg = ["c3p0_pg"]
+pg = ["c3p0_pg/async"]
 pg_migrate = ["pg", "c3p0_pg/migrate"]
+pg_blocking = ["c3p0_pg/blocking"]
+pg_blocking_migrate = ["pg_blocking", "c3p0_pg/migrate"]
 
-sqlite = ["c3p0_sqlite"]
-sqlite_migrate = ["sqlite", "c3p0_sqlite/migrate"]
+sqlite_blocking = ["c3p0_sqlite/blocking"]
+sqlite_blocking_migrate = ["sqlite_blocking", "c3p0_sqlite/migrate"]
 
 #tidb = ["mysql"]
 #tidb_migrate = ["mysql_migrate"]
