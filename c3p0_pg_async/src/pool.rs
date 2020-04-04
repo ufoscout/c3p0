@@ -51,11 +51,11 @@ impl C3p0PoolAsync for PgC3p0PoolAsync {
 
         let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
 
+        // ToDo: To avoid this unsafe we need GAT
             let transaction =
                 PgConnectionAsync::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
 
         let result = {
-            // ToDo: To avoid this unsafe we need GAT
             (tx)(transaction).await?
         };
 
