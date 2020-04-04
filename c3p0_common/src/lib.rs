@@ -1,19 +1,31 @@
 pub mod error;
 pub mod json;
-
-pub mod pool;
 pub mod sql;
 pub mod types;
 
-pub use error::C3p0Error;
-pub use json::{
-    builder::C3p0JsonBuilder, codec::DefaultJsonCodec, codec::JsonCodec, model::Model,
-    model::NewModel, C3p0Json,
-};
-pub use pool::{C3p0Pool, SqlConnection};
-pub use sql::{ForUpdate, OrderBy};
+#[cfg(feature = "migrate")]
+mod migrate;
 
-#[cfg(feature = "migrate")]
-pub mod migrate;
-#[cfg(feature = "migrate")]
-pub use migrate::{migration::*, *};
+mod common {
+    pub use crate::error::C3p0Error;
+    pub use crate::json::{
+        builder::C3p0JsonBuilder, codec::DefaultJsonCodec, codec::JsonCodec, model::Model,
+        model::NewModel
+    };
+    pub use crate::sql::{ForUpdate, OrderBy};
+
+    #[cfg(feature = "migrate")]
+    pub use crate::migrate::{
+        C3P0_INIT_MIGRATION_ID, C3p0MigrateBuilder, C3P0_MIGRATE_TABLE_DEFAULT, from_embed, from_fs, Migrations, Migration,
+        MigrationData, MigrationModel, MigrationType
+    };
+
+}
+
+
+mod nio;
+pub use nio::*;
+
+#[cfg(feature = "blocking")]
+pub mod blocking;
+

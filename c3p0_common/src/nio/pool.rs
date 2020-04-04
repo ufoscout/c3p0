@@ -1,4 +1,4 @@
-use c3p0_common::error::C3p0Error;
+use crate::error::C3p0Error;
 
 use async_trait::async_trait;
 use std::future::Future;

@@ -1,7 +1,7 @@
 [package]
 name = "c3p0_common"
 license = "MIT"
-version = "0.44.0"
+version = "0.45.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2"
 edition = "2018"
@@ -11,6 +11,7 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["c3p0"]
 
 [dependencies]
+async-trait = "0.1"
 log = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
@@ -29,4 +30,5 @@ static_assertions = "1"
 [features]
 default = []
 
+blocking = []
 migrate = ["include_dir", "md-5", "same-file", "walkdir"]

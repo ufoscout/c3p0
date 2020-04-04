@@ -1,16 +1,9 @@
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::model::NewModel;
-use c3p0_common::migrate::sql_migration::SqlMigration;
+use crate::*;
 use log::*;
 
-use crate::json::C3p0JsonAsync;
-use crate::pool::{C3p0PoolAsync, SqlConnectionAsync};
 use async_trait::async_trait;
-use c3p0_common::{
-    build_migration_zero, check_if_migration_already_applied, clean_history, MigrationData,
-    MigrationModel, MigrationType,
-};
+use crate::migrate::sql_migration::SqlMigration;
+use crate::migrate::{build_migration_zero, clean_history, check_if_migration_already_applied};
 
 #[async_trait]
 pub trait MigratorAsync: Clone + Send + Sync {

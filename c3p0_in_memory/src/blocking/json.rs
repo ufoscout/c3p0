@@ -1,12 +1,5 @@
-use crate::pool::{InMemoryC3p0Pool, InMemoryConnection};
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::builder::C3p0JsonBuilder;
-use c3p0_common::json::{
-    model::{IdType, Model, NewModel},
-    C3p0Json,
-};
-use c3p0_common::sql::ForUpdate;
-use c3p0_common::DefaultJsonCodec;
+use crate::blocking::pool::{InMemoryC3p0Pool, InMemoryConnection};
+use c3p0_common::blocking::*;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 
