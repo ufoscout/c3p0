@@ -25,12 +25,12 @@ pub type MaybeType = (
 );
 
 fn init() -> MaybeType {
-    let mysql_version = "v3.0.3";
-    let mysql_image = images::generic::GenericImage::new(format!("pingcap/tidb:{}", mysql_version))
+    let tidb_version = "v3.0.3";
+    let tidb_image = images::generic::GenericImage::new(format!("pingcap/tidb:{}", tidb_version))
         .with_wait_for(images::generic::WaitFor::message_on_stdout(
             r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#,
         ));
-    let node = DOCKER.run(mysql_image);
+    let node = DOCKER.run(tidb_image);
 
     let db_url = format!(
         "mysql://root@127.0.0.1:{}/mysql",
@@ -57,6 +57,10 @@ pub fn data(serial: bool) -> Data<'static, MaybeType> {
 pub mod db_specific {
 
     use super::*;
+
+    pub fn db_type() -> utils::DbType {
+        utils::DbType::TiDB
+    }
 
     pub fn row_to_string(row: &Row) -> Result<String, Box<dyn std::error::Error>> {
         Ok(row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?)

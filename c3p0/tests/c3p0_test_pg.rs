@@ -1,4 +1,4 @@
-#![cfg(feature = "pg_async")]
+#![cfg(feature = "pg")]
 
 pub use c3p0::pg::tokio_postgres::{row::Row, NoTls};
 use c3p0::pg::deadpool;
@@ -49,4 +49,14 @@ async fn init() -> MaybeType {
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
     SINGLETON.data(serial).await
+}
+
+pub mod db_specific {
+
+    use super::*;
+
+    pub fn db_type() -> utils::DbType {
+        utils::DbType::Pg
+    }
+
 }

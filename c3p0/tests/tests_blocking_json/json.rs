@@ -2,8 +2,13 @@ use crate::utils::*;
 use crate::*;
 
 #[test]
-#[cfg(not(feature = "in_memory"))]
+#[cfg(not(feature = "in_memory_blocking"))]
 fn should_create_and_drop_table() -> Result<(), Box<dyn std::error::Error>> {
+
+    if db_specific::db_type() == DbType::InMemory {
+        return Ok(())
+    }
+
     let data = data(false);
     let pool = &data.0;
 
@@ -397,8 +402,8 @@ fn json_should_perform_for_update_fetches() -> Result<(), Box<dyn std::error::Er
         c3p0.transaction(|conn| jpo.fetch_all_for_update(conn, &ForUpdate::Default));
     assert!(result.is_ok());
 
-    #[cfg(not(feature = "mysql"))]
-    {
+    if db_specific::db_type() != DbType::MySql &&
+        db_specific::db_type() != DbType::TiDB {
         // fetch one ForUpdate::NoWait
         let result: Result<_, C3p0Error> = c3p0.transaction(|conn| {
             jpo.fetch_one_optional_by_id_for_update(conn, &0, &ForUpdate::NoWait)
