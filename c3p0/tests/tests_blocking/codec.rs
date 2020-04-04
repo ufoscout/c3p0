@@ -1,4 +1,4 @@
-use c3p0::*;
+use c3p0::blocking::*;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;

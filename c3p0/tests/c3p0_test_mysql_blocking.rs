@@ -1,20 +1,18 @@
-#![cfg(feature = "mysql")]
+#![cfg(feature = "mysql_blocking")]
 
-use c3p0::mysql::driver::{Opts, OptsBuilder};
-use c3p0::mysql::r2d2::{MysqlConnectionManager, Pool};
-use c3p0::mysql::*;
-use c3p0::*;
+pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
+use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
+use c3p0::mysql::blocking::*;
+use c3p0::blocking::*;
 use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
 use testcontainers::*;
 
-pub use c3p0::mysql::driver::Row;
-
 pub type C3p0Impl = MysqlC3p0Pool;
 
-mod tests;
-mod tests_json;
-pub mod utils;
+mod tests_blocking;
+mod tests_blocking_json;
+mod utils;
 
 lazy_static! {
     static ref DOCKER: clients::Cli = clients::Cli::default();

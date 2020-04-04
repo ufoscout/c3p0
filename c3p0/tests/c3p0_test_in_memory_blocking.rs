@@ -1,14 +1,14 @@
 #![cfg(feature = "in_memory")]
 
-use c3p0::in_memory::*;
-use c3p0::*;
+use c3p0::in_memory::blocking::*;
+use c3p0::blocking::*;
 use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
 
 pub type C3p0Impl = InMemoryC3p0Pool;
 
-mod tests_json;
-pub mod utils;
+mod tests_blocking_json;
+mod utils;
 
 pub type MaybeType = (C3p0Impl, String);
 

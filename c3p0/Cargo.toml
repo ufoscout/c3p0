@@ -52,8 +52,3 @@ pg_blocking_migrate = ["pg_blocking", "c3p0_pg/migrate"]
 
 sqlite_blocking = ["c3p0_sqlite/blocking"]
 sqlite_blocking_migrate = ["sqlite_blocking", "c3p0_sqlite/migrate"]
-
-#tidb = ["mysql"]
-#tidb_migrate = ["mysql_migrate"]
-
-#migrate = ["c3p0_migrate"]
