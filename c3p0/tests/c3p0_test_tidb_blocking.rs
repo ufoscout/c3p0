@@ -52,3 +52,18 @@ fn init() -> MaybeType {
 pub fn data(serial: bool) -> Data<'static, MaybeType> {
     SINGLETON.data(serial)
 }
+
+
+pub mod db_specific {
+
+    use super::*;
+
+    pub fn row_to_string(row: &Row) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?)
+    }
+
+    pub fn build_insert_query(table_name: &str) -> String {
+        format!(r"INSERT INTO {} (name) VALUES (?)", table_name)
+    }
+
+}

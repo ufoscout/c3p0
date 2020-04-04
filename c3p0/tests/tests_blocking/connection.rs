@@ -27,10 +27,8 @@ fn should_execute_and_fetch() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap()
         );
 
-        #[cfg(any(feature = "pg_blocking"))]
-        let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
-        #[cfg(any(feature = "mysql_blocking", feature = "sqlite_blocking"))]
-        let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
+
+        let insert = &db_specific::build_insert_query(&table_name);
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
 
@@ -40,21 +38,6 @@ fn should_execute_and_fetch() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap()
         );
 
-        #[cfg(any(feature = "pg_blocking"))]
-        let mapper = |row: &Row| {
-            let value: String = row.get(0);
-            Ok(value)
-        };
-        #[cfg(feature = "mysql_blocking")]
-        let mapper = |row: &Row| {
-            let value: String = row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?;
-            Ok(value)
-        };
-        #[cfg(feature = "sqlite_blocking")]
-        let mapper = |row: &Row| {
-            let value: String = row.get(0)?;
-            Ok(value)
-        };
         let fetch_result_1 = conn.fetch_one(
             &format!(r"SELECT * FROM {} WHERE name = 'one'", table_name),
             &[],
@@ -66,7 +49,7 @@ fn should_execute_and_fetch() -> Result<(), Box<dyn std::error::Error>> {
         let fetch_result_2 = conn.fetch_one(
             &format!(r"SELECT * FROM {} WHERE name = 'two'", table_name),
             &[],
-            mapper,
+            db_specific::row_to_string,
         );
         assert!(fetch_result_2.is_err());
 
@@ -96,24 +79,14 @@ fn should_execute_and_fetch_option() -> Result<(), Box<dyn std::error::Error>> {
             )
             .is_ok());
 
-        #[cfg(any(feature = "pg_blocking"))]
-        let insert = &format!(r"INSERT INTO {} (name) VALUES ($1)", table_name);
-        #[cfg(any(feature = "mysql_blocking", feature = "sqlite_blocking"))]
-        let insert = &format!(r"INSERT INTO {} (name) VALUES (?)", table_name);
+        let insert = &db_specific::build_insert_query(&table_name);
 
         assert_eq!(1, conn.execute(insert, &[&"one"]).unwrap());
-
-        #[cfg(any(feature = "pg_blocking"))]
-        let mapper = |row: &Row| Ok(row.get(0));
-        #[cfg(feature = "mysql_blocking")]
-        let mapper = |row: &Row| Ok(row.get(0).ok_or_else(|| C3p0Error::ResultNotFoundError)?);
-        #[cfg(feature = "sqlite_blocking")]
-        let mapper = |row: &Row| Ok(row.get(0)?);
 
         let fetch_result = conn.fetch_one_optional(
             &format!(r"SELECT * FROM {} WHERE name = 'one'", table_name),
             &[],
-            mapper,
+            db_specific::row_to_string,
         );
         assert!(fetch_result.is_ok());
         assert_eq!(Some("one".to_owned()), fetch_result.unwrap());
@@ -121,7 +94,7 @@ fn should_execute_and_fetch_option() -> Result<(), Box<dyn std::error::Error>> {
         let fetch_result = conn.fetch_one_optional(
             &format!(r"SELECT * FROM {} WHERE name = 'two'", table_name),
             &[],
-            mapper,
+            db_specific::row_to_string,
         );
         assert!(fetch_result.is_ok());
         assert_eq!(None, fetch_result.unwrap());

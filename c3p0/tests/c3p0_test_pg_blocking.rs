@@ -52,7 +52,7 @@ pub mod db_specific {
 
     use super::*;
 
-    pub fn row_to_string(row: &Row) -> Result<String, C3p0Error>  {
+    pub fn row_to_string(row: &Row) -> Result<String, Box<dyn std::error::Error>> {
         let value: String = row.get(0);
         Ok(value)
     }
