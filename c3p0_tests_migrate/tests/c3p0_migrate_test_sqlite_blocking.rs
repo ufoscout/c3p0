@@ -1,8 +1,8 @@
 #![cfg(feature = "sqlite_blocking")]
 
-use c3p0_sqlite::sqlite::r2d2::{Pool, SqliteConnectionManager};
-use c3p0_sqlite::sqlite::*;
-use c3p0_sqlite::*;
+use c3p0::sqlite::blocking::r2d2::{Pool, SqliteConnectionManager};
+pub use c3p0::sqlite::blocking::*;
+pub use c3p0::blocking::*;
 use testcontainers::*;
 
 mod tests_blocking;

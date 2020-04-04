@@ -1,6 +1,6 @@
 use testcontainers::clients;
 
-use crate::tests_async::util::rand_string;
+use crate::utils::rand_string;
 use crate::*;
 
 #[tokio::test]
@@ -41,7 +41,7 @@ async fn should_create_the_c3p0_migrate_table_with_custom_name(
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 
-    let custom_name = &format!("c3p0_custom_name_{}", utils::rand_string(8));
+    let custom_name = &format!("c3p0_custom_name_{}", rand_string(8));
 
     let migrate = C3p0MigrateBuilder::new(node.0.clone())
         .with_table_name(custom_name)
@@ -67,9 +67,9 @@ async fn should_execute_migrations() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 
-    let migration_table_name = &format!("c3p0_custom_name_{}", utils::rand_string(8));
-    let first_table_name = &format!("first_table_{}", utils::rand_string(8));
-    let second_table_name = &format!("second_table_{}", utils::rand_string(8));
+    let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
+    let first_table_name = &format!("first_table_{}", rand_string(8));
+    let second_table_name = &format!("second_table_{}", rand_string(8));
 
     let migrate = C3p0MigrateBuilder::new(node.0.clone())
         .with_table_name(migration_table_name)
@@ -130,8 +130,8 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
 
-    let migration_table_name = &format!("c3p0_custom_name_{}", utils::rand_string(8));
-    let first_table_name = &format!("first_table_{}", utils::rand_string(8));
+    let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
+    let first_table_name = &format!("first_table_{}", rand_string(8));
 
     let migrate = C3p0MigrateBuilder::new(node.0.clone())
         .with_table_name(migration_table_name)
