@@ -1,8 +1,8 @@
 use crate::error::into_c3p0_error;
-use crate::mysql::driver::prelude::{FromValue, Queryable, ToValue};
-use crate::mysql::driver::{Row, TxOpts};
-use crate::mysql::r2d2::{MysqlConnectionManager, Pool, PooledConnection};
-use c3p0_common::*;
+use crate::blocking::mysql::prelude::{FromValue, Queryable, ToValue};
+use crate::blocking::mysql::{Row, TxOpts};
+use crate::blocking::r2d2::{MysqlConnectionManager, Pool, PooledConnection};
+use c3p0_common::blocking::*;
 use std::ops::DerefMut;
 
 #[derive(Clone)]
@@ -61,14 +61,14 @@ impl C3p0Pool for MysqlC3p0Pool {
 
 pub enum MysqlConnection {
     Conn(PooledConnection<MysqlConnectionManager>),
-    Tx(mysql_client::Transaction<'static>),
+    Tx(mysql_driver_blocking::Transaction<'static>),
 }
 
 impl SqlConnection for MysqlConnection {
     fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
-                let conn: &mut mysql_client::Conn = conn.deref_mut();
+                let conn: &mut mysql_driver_blocking::Conn = conn.deref_mut();
                 batch_execute(conn, sql)
             }
             MysqlConnection::Tx(tx) => batch_execute(tx, sql),
@@ -80,7 +80,7 @@ impl MysqlConnection {
     pub fn execute(&mut self, sql: &str, params: &[&dyn ToValue]) -> Result<u64, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
-                let conn: &mut mysql_client::Conn = conn.deref_mut();
+                let conn: &mut mysql_driver_blocking::Conn = conn.deref_mut();
                 execute(conn, sql, params)
             }
             MysqlConnection::Tx(tx) => execute(tx, sql, params),
@@ -94,7 +94,7 @@ impl MysqlConnection {
     ) -> Result<T, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
-                let conn: &mut mysql_client::Conn = conn.deref_mut();
+                let conn: &mut mysql_driver_blocking::Conn = conn.deref_mut();
                 fetch_one_value(conn, sql, params)
             }
             MysqlConnection::Tx(tx) => fetch_one_value(tx, sql, params),
@@ -109,7 +109,7 @@ impl MysqlConnection {
     ) -> Result<T, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
-                let conn: &mut mysql_client::Conn = conn.deref_mut();
+                let conn: &mut mysql_driver_blocking::Conn = conn.deref_mut();
                 fetch_one(conn, sql, params, mapper)
             }
             MysqlConnection::Tx(tx) => fetch_one(tx, sql, params, mapper),
@@ -124,7 +124,7 @@ impl MysqlConnection {
     ) -> Result<Option<T>, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
-                let conn: &mut mysql_client::Conn = conn.deref_mut();
+                let conn: &mut mysql_driver_blocking::Conn = conn.deref_mut();
                 fetch_one_optional(conn, sql, params, mapper)
             }
             MysqlConnection::Tx(tx) => fetch_one_optional(tx, sql, params, mapper),
@@ -139,7 +139,7 @@ impl MysqlConnection {
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
-                let conn: &mut mysql_client::Conn = conn.deref_mut();
+                let conn: &mut mysql_driver_blocking::Conn = conn.deref_mut();
                 fetch_all(conn, sql, params, mapper)
             }
             MysqlConnection::Tx(tx) => fetch_all(tx, sql, params, mapper),
@@ -153,7 +153,7 @@ impl MysqlConnection {
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
             MysqlConnection::Conn(conn) => {
-                let conn: &mut mysql_client::Conn = conn.deref_mut();
+                let conn: &mut mysql_driver_blocking::Conn = conn.deref_mut();
                 fetch_all_values(conn, sql, params)
             }
             MysqlConnection::Tx(tx) => fetch_all_values(tx, sql, params),

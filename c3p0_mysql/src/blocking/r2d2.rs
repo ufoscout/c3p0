@@ -1,8 +1,9 @@
-use mysql_client::error::Error;
-use mysql_client::prelude::Queryable;
-use mysql_client::{Conn, Opts, OptsBuilder};
-use r2d2;
+use crate::blocking::mysql::error::Error;
+use crate::blocking::mysql::prelude::Queryable;
+use crate::blocking::mysql::{Conn, Opts, OptsBuilder};
 use std::result::Result;
+
+pub use r2d2::*;
 
 #[derive(Clone, Debug)]
 pub struct MysqlConnectionManager {

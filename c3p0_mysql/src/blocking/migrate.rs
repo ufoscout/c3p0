@@ -1,11 +1,5 @@
-use crate::json::{MysqlC3p0Json, MysqlC3p0JsonBuilder};
-use crate::mysql::{MysqlC3p0Pool, MysqlConnection};
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::builder::C3p0JsonBuilder;
-use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::pool::SqlConnection;
-
-use c3p0_common::migrate::*;
+use crate::blocking::*;
+use c3p0_common::blocking::*;
 
 pub trait MysqlC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<MysqlConnection, MysqlC3p0Pool, MysqlMigrator>;

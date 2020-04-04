@@ -1,5 +1,5 @@
 use c3p0_common::error::C3p0Error;
-use mysql_client::error::Error;
+use mysql_driver_blocking::error::Error;
 
 pub fn into_c3p0_error(error: Error) -> C3p0Error {
     let code = match &error {
