@@ -1,11 +1,5 @@
-use crate::json::{PgC3p0Json, PgC3p0JsonBuilder};
-use crate::pool::{PgC3p0Pool, PgConnection};
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::builder::C3p0JsonBuilder;
-use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::pool::SqlConnection;
-
-use c3p0_common::migrate::*;
+use crate::blocking::*;
+use c3p0_common::blocking::*;
 
 pub trait PgC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<PgConnection, PgC3p0Pool, PgMigrator>;

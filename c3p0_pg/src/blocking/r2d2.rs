@@ -1,6 +1,7 @@
 use postgres::{Client, Config};
-use r2d2::ManageConnection;
 use tokio_postgres::Error;
+
+pub use r2d2::*;
 
 pub struct PostgresConnectionManager {
     config: Config,

@@ -13,12 +13,14 @@ keywords = ["mysql"]
 [dependencies]
 c3p0_common = { path = "../c3p0_common", version = "0.45.0" }
 log = "0.4"
-mysql_driver_blocking = { package = "mysql",  version = "18"}
-r2d2 = "0.8"
 serde = "1.0"
+
+# feature 'blocking'
+mysql_driver_blocking = { package = "mysql", version = "18", optional = true}
+r2d2 = { version = "0.8.8", optional = true}
 
 [features]
 default = []
 
-blocking = ["c3p0_common/blocking"]
+blocking = ["c3p0_common/blocking", "mysql_driver_blocking", "r2d2"]
 migrate = ["c3p0_common/migrate"]

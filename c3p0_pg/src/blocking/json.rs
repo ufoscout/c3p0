@@ -1,17 +1,10 @@
-use crate::pg::driver::{
+use crate::blocking::postgres::{
     row::{Row, RowIndex},
     types::{FromSql, ToSql},
 };
-use crate::pool::{PgC3p0Pool, PgConnection};
-use c3p0_common::error::C3p0Error;
-use c3p0_common::json::builder::C3p0JsonBuilder;
-use c3p0_common::json::codec::DefaultJsonCodec;
-use c3p0_common::json::{
-    codec::JsonCodec,
-    model::{IdType, Model, NewModel},
-    C3p0Json, Queries,
-};
-use c3p0_common::sql::ForUpdate;
+use crate::blocking::{PgC3p0Pool, PgConnection};
+use c3p0_common::blocking::*;
+use c3p0_common::json::Queries;
 use serde::export::fmt::Display;
 
 pub trait PgC3p0JsonBuilder {

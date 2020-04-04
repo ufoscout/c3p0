@@ -1,11 +1,9 @@
 use crate::error::into_c3p0_error;
-use crate::pg::driver::row::Row;
-use crate::pg::driver::types::{FromSqlOwned, ToSql};
-use crate::pg::r2d2::{Pool, PooledConnection};
-
-use crate::r2d2::PostgresConnectionManager;
-use c3p0_common::*;
-use postgres::Transaction;
+use crate::blocking::postgres::row::Row;
+use crate::blocking::postgres::types::{FromSqlOwned, ToSql};
+use crate::blocking::postgres::Transaction;
+use crate::blocking::r2d2::{Pool, PooledConnection, PostgresConnectionManager};
+use c3p0_common::blocking::*;
 
 #[derive(Clone)]
 pub struct PgC3p0Pool {

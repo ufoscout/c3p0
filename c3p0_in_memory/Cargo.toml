@@ -12,9 +12,11 @@ keywords = []
 
 [dependencies]
 c3p0_common = { path = "../c3p0_common", version = "0.45.0" }
-guardian = "1"
 serde = "1.0"
 serde_json = "1.0"
+
+# feature 'blocking'
+guardian = { version = "1", optional = true}
 
 [dev-dependencies]
 serde_derive = "1.0"
@@ -22,4 +24,4 @@ serde_derive = "1.0"
 [features]
 default = []
 
-blocking = ["c3p0_common/blocking"]
+blocking = ["c3p0_common/blocking", "guardian"]
