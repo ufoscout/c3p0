@@ -1,11 +1,10 @@
 use crate::blocking::postgres::{
-    row::{Row, RowIndex},
-    types::{FromSql, ToSql},
+    row::{Row},
+    types::{ToSql},
 };
-use crate::blocking::{PgC3p0Pool, PgConnection};
+use crate::blocking::*;
 use c3p0_common::blocking::*;
 use c3p0_common::json::Queries;
-use serde::export::fmt::Display;
 
 pub trait PgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
@@ -34,101 +33,10 @@ impl PgC3p0JsonBuilder for C3p0JsonBuilder<PgC3p0Pool> {
         self,
         codec: CODEC,
     ) -> PgC3p0Json<DATA, CODEC> {
-        let qualified_table_name = match &self.schema_name {
-            Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
-            None => self.table_name.clone(),
-        };
-
         PgC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
-            queries: Queries {
-                count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
-
-                exists_by_id_sql_query: format!(
-                    "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = $1)",
-                    qualified_table_name, self.id_field_name,
-                ),
-
-                find_all_sql_query: format!(
-                    "SELECT {}, {}, {} FROM {} ORDER BY {} ASC",
-                    self.id_field_name,
-                    self.version_field_name,
-                    self.data_field_name,
-                    qualified_table_name,
-                    self.id_field_name,
-                ),
-
-                find_by_id_sql_query: format!(
-                    "SELECT {}, {}, {} FROM {} WHERE {} = $1 LIMIT 1",
-                    self.id_field_name,
-                    self.version_field_name,
-                    self.data_field_name,
-                    qualified_table_name,
-                    self.id_field_name,
-                ),
-
-                delete_sql_query: format!(
-                    "DELETE FROM {} WHERE {} = $1 AND {} = $2",
-                    qualified_table_name, self.id_field_name, self.version_field_name,
-                ),
-
-                delete_all_sql_query: format!("DELETE FROM {}", qualified_table_name,),
-
-                delete_by_id_sql_query: format!(
-                    "DELETE FROM {} WHERE {} = $1",
-                    qualified_table_name, self.id_field_name,
-                ),
-
-                save_sql_query: format!(
-                    "INSERT INTO {} ({}, {}) VALUES ($1, $2) RETURNING {}",
-                    qualified_table_name,
-                    self.version_field_name,
-                    self.data_field_name,
-                    self.id_field_name
-                ),
-
-                update_sql_query: format!(
-                    "UPDATE {} SET {} = $1, {} = $2 WHERE {} = $3 AND {} = $4",
-                    qualified_table_name,
-                    self.version_field_name,
-                    self.data_field_name,
-                    self.id_field_name,
-                    self.version_field_name,
-                ),
-
-                create_table_sql_query: format!(
-                    r#"
-                CREATE TABLE IF NOT EXISTS {} (
-                    {} bigserial primary key,
-                    {} int not null,
-                    {} JSONB
-                )
-                "#,
-                    qualified_table_name,
-                    self.id_field_name,
-                    self.version_field_name,
-                    self.data_field_name
-                ),
-
-                drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
-                drop_table_sql_query_cascade: format!(
-                    "DROP TABLE IF EXISTS {} CASCADE",
-                    qualified_table_name
-                ),
-
-                lock_table_sql_query: Some(format!(
-                    "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
-                    qualified_table_name
-                )),
-
-                qualified_table_name,
-                table_name: self.table_name,
-                id_field_name: self.id_field_name,
-                version_field_name: self.version_field_name,
-                data_field_name: self.data_field_name,
-                schema_name: self.schema_name,
-            },
+            queries: build_pg_queries(self),
         }
     }
 }
@@ -343,35 +251,4 @@ where
 
         Ok(updated_model)
     }
-}
-
-#[inline]
-pub fn to_model<
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-    CODEC: JsonCodec<DATA>,
-    IdIdx: RowIndex + Display,
-    VersionIdx: RowIndex + Display,
-    DataIdx: RowIndex + Display,
->(
-    codec: &CODEC,
-    row: &Row,
-    id_index: IdIdx,
-    version_index: VersionIdx,
-    data_index: DataIdx,
-) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-    let id = get_or_error(&row, id_index)?;
-    let version = get_or_error(&row, version_index)?;
-    let data = codec.from_value(get_or_error(&row, data_index)?)?;
-    Ok(Model { id, version, data })
-}
-
-#[inline]
-pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
-    row: &'a Row,
-    index: I,
-) -> Result<T, C3p0Error> {
-    row.try_get(&index)
-        .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for index {}. Err: {}", index, err),
-        })
 }

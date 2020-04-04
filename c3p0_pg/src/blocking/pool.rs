@@ -1,4 +1,4 @@
-use crate::error::into_c3p0_error;
+use crate::blocking::*;
 use crate::blocking::postgres::row::Row;
 use crate::blocking::postgres::types::{FromSqlOwned, ToSql};
 use crate::blocking::postgres::Transaction;
@@ -178,8 +178,4 @@ impl PgConnection {
     ) -> Result<Vec<T>, C3p0Error> {
         self.fetch_all(sql, params, to_value_mapper)
     }
-}
-
-fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
-    Ok(row.try_get(0).map_err(|_| C3p0Error::ResultNotFoundError)?)
 }

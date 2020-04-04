@@ -22,6 +22,8 @@ mod common {
 
 }
 
+pub use crate::common::*;
+
 #[cfg(feature = "async")]
 mod nio;
 #[cfg(feature = "async")]

@@ -1,4 +1,4 @@
-pub mod error;
+pub mod common;
 
 #[cfg(feature = "async")]
 mod nio;
