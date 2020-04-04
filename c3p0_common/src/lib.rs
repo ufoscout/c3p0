@@ -17,7 +17,7 @@ mod common {
     #[cfg(feature = "migrate")]
     pub use crate::migrate::{
         C3P0_INIT_MIGRATION_ID, C3p0MigrateBuilder, C3P0_MIGRATE_TABLE_DEFAULT, from_embed, from_fs, Migrations, Migration,
-        MigrationData, MigrationModel, MigrationType
+        MigrationData, MigrationModel, MigrationType, include_dir
     };
 
 }

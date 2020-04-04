@@ -1,33 +1,36 @@
 #![cfg(feature = "pg")]
 
-use c3p0_pg::pg::driver::tls::NoTls;
-use c3p0_pg::pg::r2d2::{Pool, PostgresConnectionManager};
-use c3p0_pg::pg::*;
-use c3p0_pg::*;
+use c3p0_pg_async::pg_async::deadpool;
+use c3p0_pg_async::pg_async::driver::NoTls;
+use c3p0_pg_async::pg_async::*;
+use c3p0_pg_async::*;
 use testcontainers::*;
+use std::time::Duration;
 
 mod tests;
+pub mod utils;
 
-pub fn new_connection(
+pub async fn new_connection(
     docker: &clients::Cli,
 ) -> (
-    PgC3p0Pool,
-    Container<clients::Cli, images::postgres::Postgres>,
+    PgC3p0PoolAsync,
+    Container<'_, clients::Cli, images::postgres::Postgres>,
 ) {
     let node = docker.run(images::postgres::Postgres::default());
-    let manager = PostgresConnectionManager::new(
-        format!(
-            "postgres://postgres:postgres@127.0.0.1:{}/postgres",
-            node.get_host_port(5432).unwrap()
-        )
-        .parse()
-        .unwrap(),
-        Box::new(move |config| config.connect(NoTls)),
-    );
 
-    let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
+    let mut config = deadpool::postgres::Config::default();
+    config.user = Some("postgres".to_owned());
+    config.password = Some("postgres".to_owned());
+    config.dbname = Some("postgres".to_owned());
+    config.host = Some(format!("127.0.0.1"));
+    config.port = Some(node.get_host_port(5432).unwrap());
+    let mut pool_config = deadpool::managed::PoolConfig::default();
+    pool_config.timeouts.create = Some(Duration::from_secs(5));
+    pool_config.timeouts.recycle = Some(Duration::from_secs(5));
+    pool_config.timeouts.wait = Some(Duration::from_secs(5));
+    config.pool = Some(pool_config);
 
-    let pool = PgC3p0Pool::new(pool);
+    let pool = PgC3p0PoolAsync::new(config.create_pool(NoTls).unwrap());
 
     (pool, node)
 }

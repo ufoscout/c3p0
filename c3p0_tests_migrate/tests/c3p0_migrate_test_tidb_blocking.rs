@@ -1,13 +1,13 @@
-#![cfg(feature = "mysql")]
+#![cfg(feature = "mysql_blocking")]
 
-use c3p0_mysql::mysql::driver::{Opts, OptsBuilder};
-use c3p0_mysql::mysql::r2d2::{MysqlConnectionManager, Pool};
-use c3p0_mysql::mysql::*;
-use c3p0_mysql::*;
-
+use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder};
+use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
+pub use c3p0::mysql::blocking::*;
+pub use c3p0::blocking::*;
 use testcontainers::*;
 
-mod tests;
+mod tests_blocking;
+pub mod utils;
 
 pub fn new_connection(
     docker: &clients::Cli,
