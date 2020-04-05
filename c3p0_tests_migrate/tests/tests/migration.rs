@@ -173,7 +173,6 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
 
 #[tokio::test]
 async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
-
     if db_specific::db_type() != crate::utils::DbType::Pg {
         return Ok(());
     }
@@ -220,22 +219,20 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
         result.0.unwrap();
     }
 
-    node.0.transaction(|mut conn| async move {
-        let conn = &mut conn;
-        let status = migrate
-            .get_migrations_history(conn)
-            .await
-            .unwrap();
-        assert_eq!(2, status.len());
-        assert_eq!(
-            "C3P0_INIT_MIGRATION",
-            status.get(0).unwrap().data.migration_id
-        );
-        assert_eq!("first", status.get(1).unwrap().data.migration_id);
+    node.0
+        .transaction(|mut conn| async move {
+            let conn = &mut conn;
+            let status = migrate.get_migrations_history(conn).await.unwrap();
+            assert_eq!(2, status.len());
+            assert_eq!(
+                "C3P0_INIT_MIGRATION",
+                status.get(0).unwrap().data.migration_id
+            );
+            assert_eq!("first", status.get(1).unwrap().data.migration_id);
 
-        Ok(())
-    }).await
-
+            Ok(())
+        })
+        .await
 }
 
 #[tokio::test]

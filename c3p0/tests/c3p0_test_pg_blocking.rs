@@ -5,8 +5,8 @@ pub use c3p0::pg::blocking::postgres::{row::Row, NoTls};
 use c3p0::pg::blocking::r2d2::{Pool, PostgresConnectionManager};
 use c3p0::pg::blocking::*;
 use maybe_single::{Data, MaybeSingle};
-use testcontainers::*;
 use once_cell::sync::OnceCell;
+use testcontainers::*;
 
 pub type C3p0Impl = PgC3p0Pool;
 

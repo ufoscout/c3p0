@@ -5,8 +5,8 @@ pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
 use c3p0::mysql::blocking::*;
 use maybe_single::{Data, MaybeSingle};
-use testcontainers::*;
 use once_cell::sync::OnceCell;
+use testcontainers::*;
 
 pub type C3p0Impl = MysqlC3p0Pool;
 

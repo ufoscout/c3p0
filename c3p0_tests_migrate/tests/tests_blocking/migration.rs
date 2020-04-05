@@ -153,7 +153,6 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<dyn std::error::
 
 #[test]
 fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::Error>> {
-
     if db_specific::db_type() != crate::utils::DbType::Pg {
         return Ok(());
     }

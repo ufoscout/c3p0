@@ -1,7 +1,7 @@
+use once_cell::sync::OnceCell;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use serde_derive::{Deserialize, Serialize};
-use once_cell::sync::OnceCell;
 
 #[derive(Debug, PartialEq)]
 pub enum DbType {
@@ -35,6 +35,6 @@ pub fn test<F: std::future::Future>(f: F) -> F::Output {
             .build()
             .expect("Should create a tokio runtime")
     })
-        .handle()
-        .enter(|| futures::executor::block_on(f))
+    .handle()
+    .enter(|| futures::executor::block_on(f))
 }

@@ -5,8 +5,8 @@ pub use c3p0::pg::tokio_postgres::{row::Row, NoTls};
 use c3p0::pg::*;
 use c3p0::*;
 use maybe_single::{Data, MaybeSingleAsync};
-use testcontainers::*;
 use once_cell::sync::OnceCell;
+use testcontainers::*;
 
 use futures::FutureExt;
 use std::time::Duration;

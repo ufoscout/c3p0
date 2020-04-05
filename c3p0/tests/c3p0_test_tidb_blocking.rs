@@ -5,8 +5,8 @@ pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
 use c3p0::mysql::blocking::*;
 use maybe_single::{Data, MaybeSingle};
-use testcontainers::*;
 use once_cell::sync::OnceCell;
+use testcontainers::*;
 
 pub type C3p0Impl = MysqlC3p0Pool;
 
@@ -27,7 +27,9 @@ fn init() -> MaybeType {
         .with_wait_for(images::generic::WaitFor::message_on_stdout(
             r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#,
         ));
-    let node = DOCKER.get_or_init(|| clients::Cli::default()).run(tidb_image);
+    let node = DOCKER
+        .get_or_init(|| clients::Cli::default())
+        .run(tidb_image);
 
     let db_url = format!(
         "mysql://root@127.0.0.1:{}/mysql",

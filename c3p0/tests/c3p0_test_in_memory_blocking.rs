@@ -12,7 +12,6 @@ pub mod utils;
 
 pub type MaybeType = (C3p0Impl, String);
 
-
 fn init() -> MaybeType {
     let pool = InMemoryC3p0Pool::new();
 
