@@ -17,3 +17,11 @@ pub fn new_connection(_docker: &clients::Cli) -> (SqliteC3p0Pool, String) {
 
     (pool, "".to_owned())
 }
+
+pub mod db_specific {
+    use super::*;
+
+    pub fn db_type() -> utils::DbType {
+        utils::DbType::Sqlite
+    }
+}

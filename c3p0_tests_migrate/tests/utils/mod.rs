@@ -7,3 +7,13 @@ pub fn rand_string(len: usize) -> String {
         .take(len)
         .collect::<String>()
 }
+
+#[derive(Debug, PartialEq)]
+pub enum DbType {
+    MySql,
+    Pg,
+    InMemory,
+    Imdb,
+    Sqlite,
+    TiDB,
+}

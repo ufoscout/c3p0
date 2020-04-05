@@ -171,10 +171,13 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
         .await
 }
 
-/*
-#[cfg(any(feature = "pg_async"))]
 #[tokio::test]
 async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
+
+    if db_specific::db_type() != crate::utils::DbType::Pg {
+        return Ok(());
+    }
+
     let docker = clients::Cli::default();
     let node = new_connection(&docker).await;
     let c3p0 = node.0.clone();
@@ -234,7 +237,6 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
     }).await
 
 }
-*/
 
 #[tokio::test]
 async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {

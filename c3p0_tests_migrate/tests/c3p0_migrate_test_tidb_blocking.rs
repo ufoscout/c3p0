@@ -38,3 +38,11 @@ pub fn new_connection(
 
     (pool, node)
 }
+
+pub mod db_specific {
+    use super::*;
+
+    pub fn db_type() -> utils::DbType {
+        utils::DbType::TiDB
+    }
+}

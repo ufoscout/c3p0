@@ -151,10 +151,13 @@ fn should_not_execute_same_migrations_twice() -> Result<(), Box<dyn std::error::
     })
 }
 
-/*
-#[cfg(any(feature = "pg"))]
 #[test]
 fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::Error>> {
+
+    if db_specific::db_type() != crate::utils::DbType::Pg {
+        return Ok(());
+    }
+
     let docker = clients::Cli::default();
     let node = new_connection(&docker);
     let c3p0 = node.0.clone();
@@ -209,7 +212,6 @@ fn should_handle_parallel_executions() -> Result<(), Box<dyn std::error::Error>>
         Ok(())
     })
 }
-*/
 
 #[test]
 fn should_read_migrations_from_files() -> Result<(), Box<dyn std::error::Error>> {
