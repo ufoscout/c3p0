@@ -1,8 +1,10 @@
 use crate::utils::*;
 use crate::*;
 
-#[tokio::test]
-async fn json_should_commit_transaction() {
+#[test]
+fn json_should_commit_transaction() {
+    test(async {
+
     let data = data(false).await;
     let c3p0 = &data.0;
 
@@ -41,44 +43,7 @@ async fn json_should_commit_transaction() {
     .await
     .unwrap();
 
-    /*
-        test(|pool| async move {
-            {
-                let c3p0 = &pool;
-
-                let table_name = format!("TEST_TABLE_{}", rand_string(8));
-                let jpo = C3p0JsonBuilder::new(table_name).build::<TestData>();
-
-                let model = NewModel::new(TestData {
-                    first_name: "my_first_name".to_owned(),
-                    last_name: "my_last_name".to_owned(),
-                });
-
-                let model_clone = model.clone();
-                /*
-                let result: Result<(), C3p0Error> = c3p0.transaction(|conn| async move {
-                    assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
-                    assert!(jpo.save(conn, model.clone()).await.is_ok());
-                    assert!(jpo.save(conn, model.clone()).await.is_ok());
-                    assert!(jpo.save(conn, model_clone.clone()).await.is_ok());
-                    Ok(())
-                }.boxed()).await;
-
-                assert!(result.is_ok());
-                */
-            }
-    */
-    /*
-            {
-                let conn = &mut c3p0.connection().await.unwrap();
-                let count = jpo.count_all(conn).await.unwrap();
-                assert_eq!(3, count);
-
-                assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
-            }
-    */
-    //        Ok(())
-    //    });
+    })
 }
 
 /*
