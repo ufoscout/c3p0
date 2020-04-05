@@ -3,6 +3,8 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use serde_derive::{Deserialize, Serialize};
 
+pub mod codec;
+
 #[derive(Debug, PartialEq)]
 pub enum DbType {
     MySql,

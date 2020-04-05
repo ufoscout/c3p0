@@ -13,7 +13,8 @@ use std::time::Duration;
 
 pub type C3p0Impl = PgC3p0PoolAsync;
 
-mod tests_json;
+mod tests_async;
+mod tests_async_json;
 mod utils;
 
 pub type MaybeType = (

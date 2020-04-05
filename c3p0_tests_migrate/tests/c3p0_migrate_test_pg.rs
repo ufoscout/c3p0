@@ -7,7 +7,7 @@ pub use c3p0::*;
 use std::time::Duration;
 use testcontainers::*;
 
-mod tests;
+mod tests_async;
 pub mod utils;
 
 pub async fn new_connection(
