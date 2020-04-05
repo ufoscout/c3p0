@@ -4,9 +4,9 @@ use c3p0::blocking::*;
 pub use c3p0::pg::blocking::postgres::{row::Row, NoTls};
 use c3p0::pg::blocking::r2d2::{Pool, PostgresConnectionManager};
 use c3p0::pg::blocking::*;
-use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
 use testcontainers::*;
+use once_cell::sync::OnceCell;
 
 pub type C3p0Impl = PgC3p0Pool;
 
@@ -14,18 +14,16 @@ mod tests_blocking;
 mod tests_blocking_json;
 pub mod utils;
 
-lazy_static! {
-    static ref DOCKER: clients::Cli = clients::Cli::default();
-    pub static ref SINGLETON: MaybeSingle<MaybeType> = MaybeSingle::new(|| init());
-}
-
 pub type MaybeType = (
     C3p0Impl,
     Container<'static, clients::Cli, images::postgres::Postgres>,
 );
 
 fn init() -> MaybeType {
-    let node = DOCKER.run(images::postgres::Postgres::default());
+    static DOCKER: OnceCell<clients::Cli> = OnceCell::new();
+    let node = DOCKER
+        .get_or_init(|| clients::Cli::default())
+        .run(images::postgres::Postgres::default());
 
     let manager = PostgresConnectionManager::new(
         format!(
@@ -45,7 +43,9 @@ fn init() -> MaybeType {
 }
 
 pub fn data(serial: bool) -> Data<'static, MaybeType> {
-    SINGLETON.data(serial)
+    static DATA: OnceCell<MaybeSingle<MaybeType>> = OnceCell::new();
+    DATA.get_or_init(|| MaybeSingle::new(|| init()))
+        .data(serial)
 }
 
 pub mod db_specific {

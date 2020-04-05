@@ -4,9 +4,9 @@ use c3p0::blocking::*;
 pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
 use c3p0::mysql::blocking::*;
-use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
 use testcontainers::*;
+use once_cell::sync::OnceCell;
 
 pub type C3p0Impl = MysqlC3p0Pool;
 
@@ -14,17 +14,14 @@ mod tests_blocking;
 mod tests_blocking_json;
 mod utils;
 
-lazy_static! {
-    static ref DOCKER: clients::Cli = clients::Cli::default();
-    pub static ref SINGLETON: MaybeSingle<MaybeType> = MaybeSingle::new(|| init());
-}
-
 pub type MaybeType = (
     C3p0Impl,
     Container<'static, clients::Cli, images::generic::GenericImage>,
 );
 
 fn init() -> MaybeType {
+    static DOCKER: OnceCell<clients::Cli> = OnceCell::new();
+
     let mysql_version = "5.7.25";
     let mysql_image = images::generic::GenericImage::new(format!("mysql:{}", mysql_version))
         .with_wait_for(images::generic::WaitFor::message_on_stderr(
@@ -34,7 +31,10 @@ fn init() -> MaybeType {
         .with_env_var("MYSQL_USER", "mysql")
         .with_env_var("MYSQL_PASSWORD", "mysql")
         .with_env_var("MYSQL_ROOT_PASSWORD", "mysql");
-    let node = DOCKER.run(mysql_image);
+
+    let node = DOCKER
+        .get_or_init(|| clients::Cli::default())
+        .run(mysql_image);
 
     let db_url = format!(
         "mysql://mysql:mysql@127.0.0.1:{}/mysql",
@@ -54,7 +54,9 @@ fn init() -> MaybeType {
 }
 
 pub fn data(serial: bool) -> Data<'static, MaybeType> {
-    SINGLETON.data(serial)
+    static DATA: OnceCell<MaybeSingle<MaybeType>> = OnceCell::new();
+    DATA.get_or_init(|| MaybeSingle::new(|| init()))
+        .data(serial)
 }
 
 pub mod db_specific {

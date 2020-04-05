@@ -2,8 +2,8 @@
 
 use c3p0::blocking::*;
 use c3p0::in_memory::blocking::*;
-use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
+use once_cell::sync::OnceCell;
 
 pub type C3p0Impl = InMemoryC3p0Pool;
 
@@ -12,9 +12,6 @@ pub mod utils;
 
 pub type MaybeType = (C3p0Impl, String);
 
-lazy_static! {
-    pub static ref SINGLETON: MaybeSingle<MaybeType> = MaybeSingle::new(|| init());
-}
 
 fn init() -> MaybeType {
     let pool = InMemoryC3p0Pool::new();
@@ -23,7 +20,9 @@ fn init() -> MaybeType {
 }
 
 pub fn data(serial: bool) -> Data<'static, MaybeType> {
-    SINGLETON.data(serial)
+    static DATA: OnceCell<MaybeSingle<MaybeType>> = OnceCell::new();
+    DATA.get_or_init(|| MaybeSingle::new(|| init()))
+        .data(serial)
 }
 
 pub mod db_specific {

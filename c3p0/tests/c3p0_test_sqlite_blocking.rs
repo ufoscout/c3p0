@@ -4,18 +4,14 @@ use c3p0::blocking::*;
 use c3p0::sqlite::blocking::r2d2::{Pool, SqliteConnectionManager};
 pub use c3p0::sqlite::blocking::rusqlite::Row;
 use c3p0::sqlite::blocking::*;
-use lazy_static::lazy_static;
 use maybe_single::{Data, MaybeSingle};
+use once_cell::sync::OnceCell;
 
 pub type C3p0Impl = SqliteC3p0Pool;
 
 mod tests_blocking;
 mod tests_blocking_json;
 mod utils;
-
-lazy_static! {
-    pub static ref SINGLETON: MaybeSingle<MaybeType> = MaybeSingle::new(|| init());
-}
 
 pub type MaybeType = (C3p0Impl, String);
 
@@ -30,7 +26,9 @@ fn init() -> MaybeType {
 }
 
 pub fn data(serial: bool) -> Data<'static, MaybeType> {
-    SINGLETON.data(serial)
+    static DATA: OnceCell<MaybeSingle<MaybeType>> = OnceCell::new();
+    DATA.get_or_init(|| MaybeSingle::new(|| init()))
+        .data(serial)
 }
 
 pub mod db_specific {
