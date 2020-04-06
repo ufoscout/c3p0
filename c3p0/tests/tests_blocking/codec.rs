@@ -1,6 +1,6 @@
 use c3p0::blocking::*;
 
-use crate::utils::{*, codec::*};
+use crate::utils::{codec::*, *};
 use crate::*;
 
 #[test]

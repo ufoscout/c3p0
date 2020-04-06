@@ -3,17 +3,17 @@ use crate::error::C3p0Error;
 use async_trait::async_trait;
 use std::future::Future;
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait C3p0PoolAsync: Clone + Send + Sync {
     type CONN: SqlConnectionAsync;
 
     //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
     async fn transaction<
-        T: Send,
-        E: Send + From<C3p0Error>,
-        F: Send + FnOnce(Self::CONN) -> Fut,
-        Fut: Send + Future<Output = Result<T, E>>,
+        T,
+        E: From<C3p0Error>,
+        F: FnOnce(Self::CONN) -> Fut,
+        Fut: Future<Output = Result<T, E>>,
     >(
         &self,
         tx: F,

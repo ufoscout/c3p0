@@ -171,6 +171,7 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
         .await
 }
 
+/*
 #[tokio::test]
 async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
     if db_specific::db_type() != crate::utils::DbType::Pg {
@@ -234,6 +235,7 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
         })
         .await
 }
+*/
 
 #[tokio::test]
 async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
