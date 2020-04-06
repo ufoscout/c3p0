@@ -1,7 +1,7 @@
 [package]
 name = "c3p0_mysql"
 license = "MIT"
-version = "0.50.0"
+version = "0.50.1"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2"
 edition = "2018"
@@ -11,7 +11,7 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["mysql"]
 
 [dependencies]
-c3p0_common = { path = "../c3p0_common", version = "0.50.0" }
+c3p0_common = { path = "../c3p0_common", version = "0.50.1" }
 log = "0.4"
 serde = "1.0"
 
