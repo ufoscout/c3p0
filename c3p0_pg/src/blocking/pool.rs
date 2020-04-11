@@ -23,7 +23,7 @@ impl Into<PgC3p0Pool> for Pool<PostgresConnectionManager> {
 }
 
 impl C3p0Pool for PgC3p0Pool {
-    type CONN = PgConnection;
+    type Conn = PgConnection;
 
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut PgConnection) -> Result<T, E>>(
         &self,

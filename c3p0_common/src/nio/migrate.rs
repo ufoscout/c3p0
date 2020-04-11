@@ -7,49 +7,49 @@ use async_trait::async_trait;
 
 #[async_trait]
 pub trait MigratorAsync: Clone + Send + Sync {
-    type CONN: SqlConnectionAsync;
-    type C3P0: C3p0PoolAsync<CONN = Self::CONN>;
-    type C3P0JSON: C3p0JsonAsync<MigrationData, DefaultJsonCodec, CONN = Self::CONN>;
+    type Conn: SqlConnectionAsync;
+    type C3P0: C3p0PoolAsync<Conn = Self::Conn>;
+    type C3P0Json: C3p0JsonAsync<MigrationData, DefaultJsonCodec, Conn= Self::Conn>;
 
-    fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0JSON;
+    fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json;
 
     async fn lock_table(
         &self,
-        c3p0_json: &Self::C3P0JSON,
-        conn: &mut Self::CONN,
+        c3p0_json: &Self::C3P0Json,
+        conn: &mut Self::Conn,
     ) -> Result<(), C3p0Error>;
 
     async fn lock_first_migration_row(
         &self,
-        c3p0_json: &Self::C3P0JSON,
-        conn: &mut Self::CONN,
+        c3p0_json: &Self::C3P0Json,
+        conn: &mut Self::Conn,
     ) -> Result<(), C3p0Error>;
 }
 
 pub struct C3p0MigrateAsync<
-    CONN: SqlConnectionAsync,
-    C3P0: C3p0PoolAsync<CONN = CONN>,
-    MIGRATOR: MigratorAsync<CONN = CONN>,
+    Conn: SqlConnectionAsync,
+    C3P0: C3p0PoolAsync<Conn=Conn>,
+    Migrator: MigratorAsync<Conn=Conn>,
 > {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
     c3p0: C3P0,
-    migrator: MIGRATOR,
+    migrator: Migrator,
 }
 
 impl<
-        CONN: SqlConnectionAsync,
-        C3P0: C3p0PoolAsync<CONN = CONN>,
-        MIGRATOR: MigratorAsync<CONN = CONN> + Sync,
-    > C3p0MigrateAsync<CONN, C3P0, MIGRATOR>
+        Conn: SqlConnectionAsync,
+        C3P0: C3p0PoolAsync<Conn=Conn>,
+        Migrator: MigratorAsync<Conn=Conn> + Sync,
+    > C3p0MigrateAsync<Conn, C3P0, Migrator>
 {
     pub fn new(
         table: String,
         schema: Option<String>,
         migrations: Vec<SqlMigration>,
         c3p0: C3P0,
-        migrator: MIGRATOR,
+        migrator: Migrator,
     ) -> Self {
         Self {
             table,
@@ -92,7 +92,7 @@ impl<
 
     pub async fn get_migrations_history(
         &self,
-        conn: &mut MIGRATOR::CONN,
+        conn: &mut Migrator::Conn,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self
             .migrator
@@ -102,8 +102,8 @@ impl<
 
     async fn create_migration_zero(
         &self,
-        c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &mut MIGRATOR::CONN,
+        c3p0_json: &Migrator::C3P0Json,
+        conn: &mut Migrator::Conn,
     ) -> Result<(), C3p0Error> {
         let count = c3p0_json.count_all(conn).await?;
 
@@ -114,7 +114,7 @@ impl<
         Ok(())
     }
 
-    async fn pre_migration(&self, c3p0_json: &MIGRATOR::C3P0JSON) -> Result<(), C3p0Error> {
+    async fn pre_migration(&self, c3p0_json: &Migrator::C3P0Json) -> Result<(), C3p0Error> {
         {
             let result = self
                 .c3p0
@@ -138,8 +138,8 @@ impl<
 
     async fn start_migration(
         &self,
-        c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &mut MIGRATOR::CONN,
+        c3p0_json: &Migrator::C3P0Json,
+        conn: &mut Migrator::Conn,
     ) -> Result<(), C3p0Error> {
         let migration_history = self.fetch_migrations_history(c3p0_json, conn).await?;
         let migration_history = clean_history(migration_history)?;
@@ -181,8 +181,8 @@ impl<
 
     async fn fetch_migrations_history(
         &self,
-        c3p0_json: &MIGRATOR::C3P0JSON,
-        conn: &mut MIGRATOR::CONN,
+        c3p0_json: &Migrator::C3P0Json,
+        conn: &mut Migrator::Conn,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         c3p0_json.fetch_all(conn).await
     }

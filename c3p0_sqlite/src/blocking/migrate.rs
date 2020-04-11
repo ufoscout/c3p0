@@ -21,9 +21,9 @@ impl SqliteC3p0MigrateBuilder for C3p0MigrateBuilder<SqliteC3p0Pool> {
 pub struct SqliteMigrator {}
 
 impl Migrator for SqliteMigrator {
-    type CONN = SqliteConnection;
+    type Conn = SqliteConnection;
     type C3P0 = SqliteC3p0Pool;
-    type C3P0JSON = SqliteC3p0Json<MigrationData, DefaultJsonCodec>;
+    type C3P0Json = SqliteC3p0Json<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,

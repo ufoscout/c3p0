@@ -5,14 +5,14 @@ use std::future::Future;
 
 #[async_trait(?Send)]
 pub trait C3p0PoolAsync: Clone + Send + Sync {
-    type CONN: SqlConnectionAsync;
+    type Conn: SqlConnectionAsync;
 
     //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
     async fn transaction<
         T,
         E: From<C3p0Error>,
-        F: FnOnce(Self::CONN) -> Fut,
+        F: FnOnce(Self::Conn) -> Fut,
         Fut: Future<Output = Result<T, E>>,
     >(
         &self,

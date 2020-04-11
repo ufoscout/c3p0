@@ -24,9 +24,9 @@ pub struct PgMigratorAsync {}
 
 #[async_trait]
 impl MigratorAsync for PgMigratorAsync {
-    type CONN = PgConnectionAsync;
+    type Conn = PgConnectionAsync;
     type C3P0 = PgC3p0PoolAsync;
-    type C3P0JSON = PgC3p0JsonAsync<MigrationData, DefaultJsonCodec>;
+    type C3P0Json = PgC3p0JsonAsync<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,

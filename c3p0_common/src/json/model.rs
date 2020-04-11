@@ -4,21 +4,21 @@ pub type IdType = i64;
 pub type VersionType = i32;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Model<DATA>
+pub struct Model<Data>
 where
-    DATA: Clone + serde::ser::Serialize + Send,
+    Data: Clone + serde::ser::Serialize + Send,
 {
     pub id: IdType,
     pub version: VersionType,
-    #[serde(bound(deserialize = "DATA: serde::Deserialize<'de>"))]
-    pub data: DATA,
+    #[serde(bound(deserialize = "Data: serde::Deserialize<'de>"))]
+    pub data: Data,
 }
 
-impl<DATA> Model<DATA>
+impl<Data> Model<Data>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
-    pub fn into_new(self) -> NewModel<DATA> {
+    pub fn into_new(self) -> NewModel<Data> {
         NewModel {
             version: 0,
             data: self.data,
@@ -26,9 +26,9 @@ where
     }
 }
 
-impl<'a, DATA> Into<&'a IdType> for &'a Model<DATA>
+impl<'a, Data> Into<&'a IdType> for &'a Model<Data>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     fn into(self) -> &'a IdType {
         &self.id
@@ -36,38 +36,38 @@ where
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct NewModel<DATA>
+pub struct NewModel<Data>
 where
-    DATA: Clone + serde::ser::Serialize,
+    Data: Clone + serde::ser::Serialize,
 {
     pub version: VersionType,
-    #[serde(bound(deserialize = "DATA: serde::Deserialize<'de>"))]
-    pub data: DATA,
+    #[serde(bound(deserialize = "Data: serde::Deserialize<'de>"))]
+    pub data: Data,
 }
 
-impl<DATA> NewModel<DATA>
+impl<Data> NewModel<Data>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
-    pub fn new(data: DATA) -> Self {
+    pub fn new(data: Data) -> Self {
         NewModel { version: 0, data }
     }
 }
 
-impl<DATA> Default for NewModel<DATA>
+impl<Data> Default for NewModel<Data>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Default,
+    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Default,
 {
     fn default() -> Self {
-        NewModel::new(DATA::default())
+        NewModel::new(Data::default())
     }
 }
 
-impl<DATA> From<DATA> for NewModel<DATA>
+impl<Data> From<Data> for NewModel<Data>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
-    fn from(data: DATA) -> Self {
+    fn from(data: Data) -> Self {
         NewModel::new(data)
     }
 }

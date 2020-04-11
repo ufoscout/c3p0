@@ -77,7 +77,7 @@ impl<DATA> C3p0Json<DATA, DefaultJsonCodec> for InMemoryC3p0Json<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
-    type CONN = InMemoryConnection;
+    type Conn = InMemoryConnection;
 
     fn codec(&self) -> &DefaultJsonCodec {
         &self.codec
@@ -140,7 +140,7 @@ where
 
     fn fetch_all_for_update(
         &self,
-        conn: &mut Self::CONN,
+        conn: &mut Self::Conn,
         _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         self.fetch_all(conn)
@@ -163,7 +163,7 @@ where
 
     fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &mut Self::CONN,
+        conn: &mut Self::Conn,
         id: ID,
         _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {

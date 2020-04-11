@@ -23,7 +23,7 @@ impl Into<SqliteC3p0Pool> for Pool<SqliteConnectionManager> {
 }
 
 impl C3p0Pool for SqliteC3p0Pool {
-    type CONN = SqliteConnection;
+    type Conn = SqliteConnection;
 
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut SqliteConnection) -> Result<T, E>>(
         &self,

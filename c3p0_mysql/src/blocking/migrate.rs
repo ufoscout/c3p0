@@ -21,9 +21,9 @@ impl MysqlC3p0MigrateBuilder for C3p0MigrateBuilder<MysqlC3p0Pool> {
 pub struct MysqlMigrator {}
 
 impl Migrator for MysqlMigrator {
-    type CONN = MysqlConnection;
+    type Conn = MysqlConnection;
     type C3P0 = MysqlC3p0Pool;
-    type C3P0JSON = MysqlC3p0Json<MigrationData, DefaultJsonCodec>;
+    type C3P0Json = MysqlC3p0Json<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,

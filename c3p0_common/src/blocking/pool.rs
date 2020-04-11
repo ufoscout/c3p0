@@ -1,9 +1,9 @@
 use crate::error::C3p0Error;
 
 pub trait C3p0Pool: Clone {
-    type CONN;
+    type Conn;
 
-    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut Self::CONN) -> Result<T, E>>(
+    fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut Self::Conn) -> Result<T, E>>(
         &self,
         tx: F,
     ) -> Result<T, E>;

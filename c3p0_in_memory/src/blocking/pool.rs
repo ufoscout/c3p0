@@ -19,7 +19,7 @@ impl InMemoryC3p0Pool {
 }
 
 impl C3p0Pool for InMemoryC3p0Pool {
-    type CONN = InMemoryConnection;
+    type Conn = InMemoryConnection;
 
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut InMemoryConnection) -> Result<T, E>>(
         &self,

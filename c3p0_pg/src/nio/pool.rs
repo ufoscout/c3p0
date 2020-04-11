@@ -33,12 +33,12 @@ impl Into<PgC3p0PoolAsync> for Pool {
 
 #[async_trait(?Send)]
 impl C3p0PoolAsync for PgC3p0PoolAsync {
-    type CONN = PgConnectionAsync;
+    type Conn = PgConnectionAsync;
 
     async fn transaction<
         T,
         E: From<C3p0Error>,
-        F: FnOnce(Self::CONN) -> Fut,
+        F: FnOnce(Self::Conn) -> Fut,
         Fut: Future<Output = Result<T, E>>,
     >(
         &self,

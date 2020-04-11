@@ -192,7 +192,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for MysqlC3p0Json<DATA,
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
-    type CONN = MysqlConnection;
+    type Conn = MysqlConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec
@@ -237,7 +237,7 @@ where
 
     fn fetch_all_for_update(
         &self,
-        conn: &mut Self::CONN,
+        conn: &mut Self::Conn,
         for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let sql = format!(
@@ -260,7 +260,7 @@ where
 
     fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
         &'a self,
-        conn: &mut Self::CONN,
+        conn: &mut Self::Conn,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {

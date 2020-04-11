@@ -109,7 +109,7 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for PgC3p0JsonAsyn
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type CONN = PgConnectionAsync;
+    type Conn = PgConnectionAsync;
 
     fn codec(&self) -> &CODEC {
         &self.codec

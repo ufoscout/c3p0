@@ -21,9 +21,9 @@ impl PgC3p0MigrateBuilder for C3p0MigrateBuilder<PgC3p0Pool> {
 pub struct PgMigrator {}
 
 impl Migrator for PgMigrator {
-    type CONN = PgConnection;
+    type Conn = PgConnection;
     type C3P0 = PgC3p0Pool;
-    type C3P0JSON = PgC3p0Json<MigrationData, DefaultJsonCodec>;
+    type C3P0Json = PgC3p0Json<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,

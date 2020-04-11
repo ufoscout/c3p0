@@ -23,7 +23,7 @@ impl Into<MysqlC3p0Pool> for Pool<MysqlConnectionManager> {
 }
 
 impl C3p0Pool for MysqlC3p0Pool {
-    type CONN = MysqlConnection;
+    type Conn = MysqlConnection;
 
     fn transaction<T, E: From<C3p0Error>, F: FnOnce(&mut MysqlConnection) -> Result<T, E>>(
         &self,
