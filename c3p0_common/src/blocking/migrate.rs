@@ -17,8 +17,11 @@ pub struct C3p0Migrate<
     migrator: Migrator,
 }
 
-impl<Conn: SqlConnection, C3P0: C3p0Pool<Conn=Conn>, Migrator: crate::blocking::migrate::Migrator<Conn=Conn>>
-    C3p0Migrate<Conn, C3P0, Migrator>
+impl<
+        Conn: SqlConnection,
+        C3P0: C3p0Pool<Conn = Conn>,
+        Migrator: crate::blocking::migrate::Migrator<Conn = Conn>,
+    > C3p0Migrate<Conn, C3P0, Migrator>
 {
     pub fn new(
         table: String,
@@ -154,7 +157,7 @@ impl<Conn: SqlConnection, C3P0: C3p0Pool<Conn=Conn>, Migrator: crate::blocking::
 pub trait Migrator: Clone {
     type Conn: SqlConnection;
     type C3P0: C3p0Pool<Conn = Self::Conn>;
-    type C3P0Json: C3p0Json<MigrationData, DefaultJsonCodec, Conn= Self::Conn>;
+    type C3P0Json: C3p0Json<MigrationData, DefaultJsonCodec, Conn = Self::Conn>;
 
     fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json;
 

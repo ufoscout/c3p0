@@ -9,7 +9,7 @@ use async_trait::async_trait;
 pub trait MigratorAsync: Clone + Send + Sync {
     type Conn: SqlConnectionAsync;
     type C3P0: C3p0PoolAsync<Conn = Self::Conn>;
-    type C3P0Json: C3p0JsonAsync<MigrationData, DefaultJsonCodec, Conn= Self::Conn>;
+    type C3P0Json: C3p0JsonAsync<MigrationData, DefaultJsonCodec, Conn = Self::Conn>;
 
     fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json;
 
@@ -28,8 +28,8 @@ pub trait MigratorAsync: Clone + Send + Sync {
 
 pub struct C3p0MigrateAsync<
     Conn: SqlConnectionAsync,
-    C3P0: C3p0PoolAsync<Conn=Conn>,
-    Migrator: MigratorAsync<Conn=Conn>,
+    C3P0: C3p0PoolAsync<Conn = Conn>,
+    Migrator: MigratorAsync<Conn = Conn>,
 > {
     table: String,
     schema: Option<String>,
@@ -40,8 +40,8 @@ pub struct C3p0MigrateAsync<
 
 impl<
         Conn: SqlConnectionAsync,
-        C3P0: C3p0PoolAsync<Conn=Conn>,
-        Migrator: MigratorAsync<Conn=Conn> + Sync,
+        C3P0: C3p0PoolAsync<Conn = Conn>,
+        Migrator: MigratorAsync<Conn = Conn> + Sync,
     > C3p0MigrateAsync<Conn, C3P0, Migrator>
 {
     pub fn new(
