@@ -1,7 +1,7 @@
 use once_cell::sync::OnceCell;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 pub mod codec;
 

@@ -1,4 +1,4 @@
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 pub type IdType = i64;
 pub type VersionType = i32;
@@ -76,7 +76,7 @@ where
 mod test {
 
     use super::*;
-    use serde_derive::{Deserialize, Serialize};
+    use serde::{Deserialize, Serialize};
     use serde_json;
 
     #[test]

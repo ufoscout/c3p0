@@ -273,7 +273,7 @@ where
 mod test {
 
     use super::*;
-    use serde_derive::{Deserialize, Serialize};
+    use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Serialize, Deserialize)]
     struct TestData {
