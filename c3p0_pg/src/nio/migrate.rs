@@ -22,7 +22,7 @@ impl PgC3p0AsyncMigrateBuilder for C3p0MigrateBuilder<PgC3p0PoolAsync> {
 #[derive(Clone)]
 pub struct PgMigratorAsync {}
 
-#[async_trait]
+#[async_trait(?Send)]
 impl MigratorAsync for PgMigratorAsync {
     type Conn = PgConnectionAsync;
     type C3P0 = PgC3p0PoolAsync;

@@ -22,7 +22,7 @@ impl MysqlC3p0AsyncMigrateBuilder for C3p0MigrateBuilder<MysqlC3p0PoolAsync> {
 #[derive(Clone)]
 pub struct MysqlMigratorAsync {}
 
-#[async_trait]
+#[async_trait(?Send)]
 impl MigratorAsync for MysqlMigratorAsync {
     type Conn = MysqlConnectionAsync;
     type C3P0 = MysqlC3p0PoolAsync;

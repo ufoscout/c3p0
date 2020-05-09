@@ -62,7 +62,7 @@ pub enum MysqlConnectionAsync {
     Tx(&'static mut Transaction<'static>),
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl SqlConnectionAsync for MysqlConnectionAsync {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {

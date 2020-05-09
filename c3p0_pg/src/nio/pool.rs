@@ -64,7 +64,7 @@ pub enum PgConnectionAsync {
     Tx(&'static Transaction<'static>),
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl SqlConnectionAsync for PgConnectionAsync {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
