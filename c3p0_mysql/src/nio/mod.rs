@@ -1,10 +1,10 @@
 pub mod error;
-//mod json;
+mod json;
 mod pool;
 
 pub use crate::common::*;
 pub use error::*;
-//pub use json::*;
+pub use json::*;
 pub use pool::*;
 
 pub mod mysql_async {

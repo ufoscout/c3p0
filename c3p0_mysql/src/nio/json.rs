@@ -1,8 +1,11 @@
-use crate::nio::*;
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
 use mysql_async::Row;
+use mysql_async::prelude::ToValue;
+use crate::nio::{MysqlC3p0PoolAsync, MysqlConnectionAsync};
+use crate::common::{build_mysql_queries, to_model};
+
 
 pub trait MysqlC3p0JsonAsyncBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -71,7 +74,7 @@ where
         &self,
         conn: &mut MysqlConnectionAsync,
         sql: &str,
-        params: &[&(dyn ToSql + Sync)],
+        params: &[&(dyn ToValue)],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(sql, params, |row| self.to_model(row))
             .await
@@ -85,7 +88,7 @@ where
         &self,
         conn: &mut MysqlConnectionAsync,
         sql: &str,
-        params: &[&(dyn ToSql + Sync)],
+        params: &[&(dyn ToValue)],
     ) -> Result<Model<DATA>, C3p0Error> {
         conn.fetch_one(sql, params, |row| self.to_model(row)).await
     }
@@ -98,7 +101,7 @@ where
         &self,
         conn: &mut MysqlConnectionAsync,
         sql: &str,
-        params: &[&(dyn ToSql + Sync)],
+        params: &[&(dyn ToValue)],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row)).await
     }
@@ -115,189 +118,63 @@ where
         &self.codec
     }
 
-    async fn create_table_if_not_exists(
-        &self,
-        conn: &mut MysqlConnectionAsync,
-    ) -> Result<(), C3p0Error> {
-        conn.execute(&self.queries.create_table_sql_query, &[])
-            .await?;
-        Ok(())
+    async fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<(), C3p0Error> {
+        unimplemented!()
     }
 
-    async fn drop_table_if_exists(
-        &self,
-        conn: &mut MysqlConnectionAsync,
-        cascade: bool,
-    ) -> Result<(), C3p0Error> {
-        let query = if cascade {
-            &self.queries.drop_table_sql_query_cascade
-        } else {
-            &self.queries.drop_table_sql_query
-        };
-        conn.execute(query, &[]).await?;
-        Ok(())
+    async fn drop_table_if_exists(&self, conn: &mut Self::Conn, cascade: bool) -> Result<(), C3p0Error> {
+        unimplemented!()
     }
 
-    async fn count_all(&self, conn: &mut MysqlConnectionAsync) -> Result<u64, C3p0Error> {
-        conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
-            .await
-            .map(|val: i64| val as u64)
+    async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        conn: &mut MysqlConnectionAsync,
-        id: ID,
-    ) -> Result<bool, C3p0Error> {
-        conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
-            .await
+    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID) -> Result<bool, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn fetch_all(&self, conn: &mut MysqlConnectionAsync) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
-            self.to_model(row)
-        })
-        .await
+    async fn fetch_all(&self, conn: &mut Self::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn fetch_all_for_update(
-        &self,
-        conn: &mut MysqlConnectionAsync,
-        for_update: &ForUpdate,
-    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_all_sql_query,
-            for_update.to_sql()
-        );
-        conn.fetch_all(&sql, &[], |row| self.to_model(row)).await
+    async fn fetch_all_for_update(&self, conn: &mut Self::Conn, for_update: &ForUpdate) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        conn: &mut MysqlConnectionAsync,
-        id: ID,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
-            self.to_model(row)
-        })
-        .await
+    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID) -> Result<Option<Model<DATA>>, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        conn: &mut MysqlConnectionAsync,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_by_id_sql_query,
-            for_update.to_sql()
-        );
-        conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row))
-            .await
+    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID, for_update: &ForUpdate) -> Result<Option<Model<DATA>>, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        conn: &mut MysqlConnectionAsync,
-        id: ID,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        self.fetch_one_optional_by_id(conn, id)
-            .await
-            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID) -> Result<Model<DATA>, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        conn: &mut MysqlConnectionAsync,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        self.fetch_one_optional_by_id_for_update(conn, id, for_update)
-            .await
-            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID, for_update: &ForUpdate) -> Result<Model<DATA>, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn delete(
-        &self,
-        conn: &mut MysqlConnectionAsync,
-        obj: Model<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        let result = conn
-            .execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])
-            .await?;
-
-        if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
-                                                                        &self.queries.qualified_table_name, &obj.id, &obj.version
-            )});
-        }
-
-        Ok(obj)
+    async fn delete(&self, conn: &mut Self::Conn, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn delete_all(&self, conn: &mut MysqlConnectionAsync) -> Result<u64, C3p0Error> {
-        conn.execute(&self.queries.delete_all_sql_query, &[]).await
+    async fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        conn: &mut MysqlConnectionAsync,
-        id: ID,
-    ) -> Result<u64, C3p0Error> {
-        conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
-            .await
+    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID) -> Result<u64, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn save(
-        &self,
-        conn: &mut MysqlConnectionAsync,
-        obj: NewModel<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        let json_data = self.codec().to_value(&obj.data)?;
-        let id = conn
-            .fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &json_data])
-            .await?;
-        Ok(Model {
-            id,
-            version: obj.version,
-            data: obj.data,
-        })
+    async fn save(&self, conn: &mut Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        unimplemented!()
     }
 
-    async fn update(
-        &self,
-        conn: &mut MysqlConnectionAsync,
-        obj: Model<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        let json_data = self.codec().to_value(&obj.data)?;
-
-        let updated_model = Model {
-            id: obj.id,
-            version: obj.version + 1,
-            data: obj.data,
-        };
-
-        let result = conn
-            .execute(
-                &self.queries.update_sql_query,
-                &[
-                    &updated_model.version,
-                    &json_data,
-                    &updated_model.id,
-                    &obj.version,
-                ],
-            )
-            .await?;
-
-        if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
-                                                                        &self.queries.qualified_table_name, &updated_model.id, &obj.version
-            )});
-        }
-
-        Ok(updated_model)
+    async fn update(&self, conn: &mut Self::Conn, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        unimplemented!()
     }
 }

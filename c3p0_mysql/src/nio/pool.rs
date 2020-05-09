@@ -4,6 +4,7 @@ use futures::Future;
 use mysql_async::prelude::{ToValue, FromValue, Queryable};
 use mysql_async::{Pool, Transaction, Row, TxOpts};
 use crate::nio::error::into_c3p0_error;
+use crate::common::to_value_mapper;
 
 pub enum MysqlC3p0ConnectionManager {
     DeadPool,
@@ -152,13 +153,4 @@ impl MysqlConnectionAsync {
         self.fetch_all(sql, params, to_value_mapper).await
     }
 
-}
-
-fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
-    let result = row
-        .get_opt(0)
-        .ok_or_else(|| C3p0Error::ResultNotFoundError)?;
-    Ok(result.map_err(|err| C3p0Error::RowMapperError {
-        cause: format!("{}", err),
-    })?)
 }

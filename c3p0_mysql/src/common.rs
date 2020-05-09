@@ -3,6 +3,16 @@ use mysql_common::row::{ColumnIndex, Row};
 use mysql_common::value::convert::FromValue;
 use c3p0_common::json::Queries;
 
+pub fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
+    let result = row
+        .get_opt(0)
+        .ok_or_else(|| C3p0Error::ResultNotFoundError)?;
+    Ok(result.map_err(|err| C3p0Error::RowMapperError {
+        cause: format!("{}", err),
+    })?)
+}
+
+
 #[inline]
 pub fn to_model<
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
