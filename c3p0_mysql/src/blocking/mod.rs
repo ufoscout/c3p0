@@ -3,6 +3,7 @@ mod json;
 mod pool;
 pub mod r2d2;
 
+pub use crate::common::*;
 pub use error::*;
 pub use json::*;
 pub use pool::*;

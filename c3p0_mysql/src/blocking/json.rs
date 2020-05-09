@@ -3,6 +3,7 @@ use crate::blocking::mysql::Row;
 use crate::blocking::{MysqlC3p0Pool, MysqlConnection};
 use c3p0_common::blocking::*;
 use c3p0_common::json::Queries;
+use crate::common::build_mysql_queries;
 
 pub trait MysqlC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
@@ -31,95 +32,10 @@ impl MysqlC3p0JsonBuilder for C3p0JsonBuilder<MysqlC3p0Pool> {
         self,
         codec: CODEC,
     ) -> MysqlC3p0Json<DATA, CODEC> {
-        let qualified_table_name = match &self.schema_name {
-            Some(schema_name) => format!(r#"{}."{}""#, schema_name, self.table_name),
-            None => self.table_name.clone(),
-        };
-
         MysqlC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
-            queries: Queries {
-                count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
-
-                exists_by_id_sql_query: format!(
-                    "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = ?)",
-                    qualified_table_name, self.id_field_name,
-                ),
-
-                find_all_sql_query: format!(
-                    "SELECT {}, {}, {} FROM {} ORDER BY {} ASC",
-                    self.id_field_name,
-                    self.version_field_name,
-                    self.data_field_name,
-                    qualified_table_name,
-                    self.id_field_name,
-                ),
-
-                find_by_id_sql_query: format!(
-                    "SELECT {}, {}, {} FROM {} WHERE {} = ? LIMIT 1",
-                    self.id_field_name,
-                    self.version_field_name,
-                    self.data_field_name,
-                    qualified_table_name,
-                    self.id_field_name,
-                ),
-
-                delete_sql_query: format!(
-                    "DELETE FROM {} WHERE {} = ? AND {} = ?",
-                    qualified_table_name, self.id_field_name, self.version_field_name,
-                ),
-
-                delete_all_sql_query: format!("DELETE FROM {}", qualified_table_name,),
-
-                delete_by_id_sql_query: format!(
-                    "DELETE FROM {} WHERE {} = ?",
-                    qualified_table_name, self.id_field_name,
-                ),
-
-                save_sql_query: format!(
-                    "INSERT INTO {} ({}, {}) VALUES (?, ?)",
-                    qualified_table_name, self.version_field_name, self.data_field_name
-                ),
-
-                update_sql_query: format!(
-                    "UPDATE {} SET {} = ?, {} = ? WHERE {} = ? AND {} = ?",
-                    qualified_table_name,
-                    self.version_field_name,
-                    self.data_field_name,
-                    self.id_field_name,
-                    self.version_field_name,
-                ),
-
-                create_table_sql_query: format!(
-                    r#"
-                CREATE TABLE IF NOT EXISTS {} (
-                    {} BIGINT primary key NOT NULL AUTO_INCREMENT,
-                    {} int not null,
-                    {} JSON
-                )
-                "#,
-                    qualified_table_name,
-                    self.id_field_name,
-                    self.version_field_name,
-                    self.data_field_name
-                ),
-
-                drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
-                drop_table_sql_query_cascade: format!(
-                    "DROP TABLE IF EXISTS {} CASCADE",
-                    qualified_table_name
-                ),
-
-                lock_table_sql_query: Some(format!("LOCK TABLES {} WRITE", qualified_table_name)),
-
-                qualified_table_name,
-                table_name: self.table_name,
-                id_field_name: self.id_field_name,
-                version_field_name: self.version_field_name,
-                data_field_name: self.data_field_name,
-                schema_name: self.schema_name,
-            },
+            queries: build_mysql_queries(self),
         }
     }
 }

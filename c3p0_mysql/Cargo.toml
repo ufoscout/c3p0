@@ -15,6 +15,15 @@ c3p0_common = { path = "../c3p0_common", version = "0.51.0" }
 log = "0.4"
 serde = "1.0"
 
+time = "0.2.15"
+# Required by both 'async' and 'blocking'
+mysql_common = "0.22.0"
+
+# feature 'async'
+async-trait = { version = "0.1", optional = true}
+futures = { version = "0.3.1", optional = true}
+mysql_async = { version = "0.24.0-alpha", optional = true}
+
 # feature 'blocking'
 mysql_driver_blocking = { package = "mysql", version = "18", optional = true}
 r2d2 = { version = "0.8.8", optional = true}
@@ -22,5 +31,6 @@ r2d2 = { version = "0.8.8", optional = true}
 [features]
 default = []
 
+async = ["c3p0_common/async", "async-trait", "mysql_async"]
 blocking = ["c3p0_common/blocking", "mysql_driver_blocking", "r2d2"]
 migrate = ["c3p0_common/migrate"]
