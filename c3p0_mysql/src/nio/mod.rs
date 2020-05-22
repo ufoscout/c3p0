@@ -11,7 +11,7 @@ pub mod mysql_async {
     pub use mysql_async::*;
 }
 
-#[cfg(feature = "migrate")]
-mod migrate;
-#[cfg(feature = "migrate")]
-pub use migrate::*;
+//#[cfg(feature = "migrate")]
+//mod migrate;
+//#[cfg(feature = "migrate")]
+//pub use migrate::*;

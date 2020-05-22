@@ -29,15 +29,15 @@ impl Into<MysqlC3p0PoolAsync> for Pool {
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl C3p0PoolAsync for MysqlC3p0PoolAsync {
     type Conn = MysqlConnectionAsync;
 
     async fn transaction<
-        T,
-        E: From<C3p0Error>,
-        F: FnOnce(Self::Conn) -> Fut,
-        Fut: Future<Output = Result<T, E>>,
+        T: Send,
+        E: Send + From<C3p0Error>,
+        F: Send + FnOnce(Self::Conn) -> Fut,
+        Fut: Send + Future<Output = Result<T, E>>,
     >(
         &self,
         tx: F,
@@ -62,7 +62,7 @@ pub enum MysqlConnectionAsync {
     Tx(&'static mut Transaction<'static>),
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl SqlConnectionAsync for MysqlConnectionAsync {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {

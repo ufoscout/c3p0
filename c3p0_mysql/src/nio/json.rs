@@ -107,7 +107,7 @@ where
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for MysqlC3p0JsonAsync<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,

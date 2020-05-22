@@ -5,7 +5,7 @@ use crate::migrate::sql_migration::SqlMigration;
 use crate::migrate::{build_migration_zero, check_if_migration_already_applied, clean_history};
 use async_trait::async_trait;
 
-#[async_trait(?Send)]
+#[async_trait]
 pub trait MigratorAsync: Clone + Send + Sync {
     type Conn: SqlConnectionAsync;
     type C3P0: C3p0PoolAsync<Conn = Self::Conn>;

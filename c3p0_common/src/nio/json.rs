@@ -5,7 +5,7 @@ use crate::nio::pool::SqlConnectionAsync;
 use crate::sql::ForUpdate;
 use async_trait::async_trait;
 
-#[async_trait(?Send)]
+#[async_trait]
 pub trait C3p0JsonAsync<Data, Codec>: Clone + Send + Sync
 where
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
