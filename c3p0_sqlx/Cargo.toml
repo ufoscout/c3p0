@@ -1,0 +1,27 @@
+[package]
+name = "c3p0_sqlx"
+license = "MIT"
+version = "0.53.0"
+authors = ["Francesco Cina <ufoscout@gmail.com>"]
+description = "A good friend for r2d2"
+edition = "2018"
+readme = "../README.md"
+homepage = "https://github.com/ufoscout/c3p0"
+repository = "https://github.com/ufoscout/c3p0"
+keywords = ["sqlx", "postgres", "pg", "mysql", "sqlite", "async"]
+
+[dependencies]
+c3p0_common = { path = "../c3p0_common", version = "0.53.0" }
+log = "0.4"
+serde = "1.0"
+
+sqlx = { version = "0.3", default-features = false, features = [ "json", "macros", "postgres", "runtime-tokio" ] }
+
+# feature 'async'
+async-trait = { version = "0.1", optional = true}
+futures = { version = "0.3.1", optional = true}
+
+[features]
+default = ["async"]
+async = ["c3p0_common/async", "async-trait", "futures"]
+migrate = ["c3p0_common/migrate"]
