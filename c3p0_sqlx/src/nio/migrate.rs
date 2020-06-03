@@ -4,11 +4,11 @@ use c3p0_common::*;
 use async_trait::async_trait;
 
 pub trait PgC3p0AsyncMigrateBuilder {
-    fn build(self) -> C3p0MigrateAsync<SqlxConnectionAsync, PgC3p0PoolAsync, PgMigratorAsync>;
+    fn build(self) -> C3p0MigrateAsync<SqlxConnectionAsync, SqlxC3p0PoolAsync, PgMigratorAsync>;
 }
 
-impl PgC3p0AsyncMigrateBuilder for C3p0MigrateBuilder<PgC3p0PoolAsync> {
-    fn build(self) -> C3p0MigrateAsync<SqlxConnectionAsync, PgC3p0PoolAsync, PgMigratorAsync> {
+impl PgC3p0AsyncMigrateBuilder for C3p0MigrateBuilder<SqlxC3p0PoolAsync> {
+    fn build(self) -> C3p0MigrateAsync<SqlxConnectionAsync, SqlxC3p0PoolAsync, PgMigratorAsync> {
         C3p0MigrateAsync::new(
             self.table,
             self.schema,
@@ -25,7 +25,7 @@ pub struct PgMigratorAsync {}
 #[async_trait]
 impl MigratorAsync for PgMigratorAsync {
     type Conn = SqlxConnectionAsync;
-    type C3P0 = PgC3p0PoolAsync;
+    type C3P0 = SqlxC3p0PoolAsync;
     type C3P0Json = PgC3p0JsonAsync<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
@@ -33,7 +33,7 @@ impl MigratorAsync for PgMigratorAsync {
         table: String,
         schema: Option<String>,
     ) -> PgC3p0JsonAsync<MigrationData, DefaultJsonCodec> {
-        C3p0JsonBuilder::<PgC3p0PoolAsync>::new(table)
+        C3p0JsonBuilder::<SqlxC3p0PoolAsync>::new(table)
             .with_schema_name(schema)
             .build()
     }

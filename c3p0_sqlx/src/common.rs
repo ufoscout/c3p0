@@ -1,6 +1,5 @@
 use c3p0_common::json::Queries;
-use c3p0_common::{C3p0Error, C3p0JsonBuilder, JsonCodec, Model};
-use core::fmt::Display;
+use c3p0_common::{C3p0Error, C3p0JsonBuilder};
 
 
 pub fn into_c3p0_error(error: sqlx::Error) -> C3p0Error {
