@@ -3,7 +3,7 @@ use c3p0_common::*;
 use futures::Future;
 
 use sqlx::postgres::PgPool;
-use sqlx::{Transaction, PgConnection, Row, Type, Postgres};
+use sqlx::{Transaction, PgConnection, Row, Type, Postgres, Connect};
 use crate::into_c3p0_error;
 use sqlx::pool::PoolConnection;
 use sqlx::encode::Encode;
@@ -27,7 +27,7 @@ impl Into<PgC3p0PoolAsync> for PgPool {
 
 #[async_trait]
 impl C3p0PoolAsync for PgC3p0PoolAsync {
-    type Conn = PgConnectionAsync;
+    type Conn = SqlxConnectionAsync<PgConnection>;
 
     async fn transaction<
         T: Send,
@@ -42,7 +42,7 @@ impl C3p0PoolAsync for PgC3p0PoolAsync {
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction =
-            PgConnectionAsync::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
+            SqlxConnectionAsync::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
 
         let result = { (tx)(transaction).await? };
 
@@ -52,26 +52,23 @@ impl C3p0PoolAsync for PgC3p0PoolAsync {
     }
 }
 
-pub enum PgConnectionAsync {
-    Tx(&'static Transaction<PgConnection>),
+pub enum SqlxConnectionAsync<C: Connect + Send + Sync> {
+    Tx(&'static mut Transaction<PoolConnection<C>>),
 }
 
 #[async_trait]
-impl SqlConnectionAsync for PgConnectionAsync {
+impl <C: Connect + Send + Sync> SqlConnectionAsync for SqlxConnectionAsync<C> {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        unimplemented!()
-        /*
         match self {
-            PgConnectionAsync::Tx(tx) => {
-                let mut query = sqlx::query(sql);
-                query.execute(&tx).await.map_err(into_c3p0_error).map(|_| ())
+            SqlxConnectionAsync::Tx(tx) => {
+                let query = sqlx::query(sql);
+                query.execute(tx).await.map_err(into_c3p0_error).map(|_| ())
             },
         }
-
-         */
     }
 }
 
+/*
 impl PgConnectionAsync {
     pub async fn execute(
         &mut self,
@@ -164,3 +161,4 @@ impl PgConnectionAsync {
 
      */
 }
+*/
