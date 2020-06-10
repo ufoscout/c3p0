@@ -14,14 +14,17 @@ keywords = ["sqlx", "postgres", "pg", "mysql", "sqlite", "async"]
 c3p0_common = { path = "../c3p0_common", version = "0.53.0" }
 log = "0.4"
 serde = "1.0"
+serde_json = "1.0"
 
-sqlx = { version = "0.3", default-features = false, features = [ "json", "macros", "runtime-tokio" ] }
+sqlx = { version = "0.3", default-features = false, features = [ "json", "macros", "postgres", "runtime-tokio" ] }
 
 # feature 'async'
 async-trait = { version = "0.1", optional = true}
 futures = { version = "0.3.1", optional = true}
 
 [features]
-default = ["async"]
+default = ["async", "postgres"]
 async = ["c3p0_common/async", "async-trait", "futures"]
 migrate = ["c3p0_common/migrate"]
+mysql = ["sqlx/mysql"]
+postgres = ["sqlx/postgres"]

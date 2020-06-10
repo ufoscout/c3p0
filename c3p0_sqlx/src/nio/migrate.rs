@@ -26,13 +26,13 @@ pub struct PgMigratorAsync {}
 impl MigratorAsync for PgMigratorAsync {
     type Conn = SqlxConnectionAsync;
     type C3P0 = SqlxC3p0PoolAsync;
-    type C3P0Json = PgC3p0JsonAsync<MigrationData, DefaultJsonCodec>;
+    type C3P0Json = SqlxC3p0JsonAsync<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,
         table: String,
         schema: Option<String>,
-    ) -> PgC3p0JsonAsync<MigrationData, DefaultJsonCodec> {
+    ) -> SqlxC3p0JsonAsync<MigrationData, DefaultJsonCodec> {
         C3p0JsonBuilder::<SqlxC3p0PoolAsync>::new(table)
             .with_schema_name(schema)
             .build()
@@ -40,7 +40,7 @@ impl MigratorAsync for PgMigratorAsync {
 
     async fn lock_table(
         &self,
-        c3p0_json: &PgC3p0JsonAsync<MigrationData, DefaultJsonCodec>,
+        c3p0_json: &SqlxC3p0JsonAsync<MigrationData, DefaultJsonCodec>,
         conn: &mut SqlxConnectionAsync,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
@@ -52,7 +52,7 @@ impl MigratorAsync for PgMigratorAsync {
 
     async fn lock_first_migration_row(
         &self,
-        c3p0_json: &PgC3p0JsonAsync<MigrationData, DefaultJsonCodec>,
+        c3p0_json: &SqlxC3p0JsonAsync<MigrationData, DefaultJsonCodec>,
         conn: &mut SqlxConnectionAsync,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
