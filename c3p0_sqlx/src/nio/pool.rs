@@ -2,30 +2,29 @@ use async_trait::async_trait;
 use c3p0_common::*;
 use futures::Future;
 
-use sqlx::{Transaction, Connect, Pool};
 use crate::into_c3p0_error;
-use sqlx::pool::PoolConnection;
+use sqlx::{Any, AnyPool, Transaction};
 
 #[derive(Clone)]
-pub struct SqlxC3p0PoolAsync<C: Connect + Send + Sync> {
-    pool: Pool<C>,
+pub struct SqlxC3p0PoolAsync {
+    pool: AnyPool,
 }
 
-impl <C: Connect + Send + Sync> SqlxC3p0PoolAsync<C> {
-    pub fn new(pool: Pool<C>) -> Self {
+impl SqlxC3p0PoolAsync {
+    pub fn new(pool: AnyPool) -> Self {
         SqlxC3p0PoolAsync { pool }
     }
 }
 
-impl <C: Connect + Send + Sync> Into<SqlxC3p0PoolAsync<C>> for Pool<C> {
-    fn into(self) -> SqlxC3p0PoolAsync<C> {
+impl Into<SqlxC3p0PoolAsync> for AnyPool {
+    fn into(self) -> SqlxC3p0PoolAsync {
         SqlxC3p0PoolAsync::new(self)
     }
 }
 
 #[async_trait]
-impl <C: Connect + Send + Sync + Clone> C3p0PoolAsync for SqlxC3p0PoolAsync<C> {
-    type Conn = SqlxConnectionAsync<C>;
+impl C3p0PoolAsync for SqlxC3p0PoolAsync {
+    type Conn = SqlxConnectionAsync;
 
     async fn transaction<
         T: Send,
@@ -50,18 +49,26 @@ impl <C: Connect + Send + Sync + Clone> C3p0PoolAsync for SqlxC3p0PoolAsync<C> {
     }
 }
 
-pub enum SqlxConnectionAsync<C: Connect + Send + Sync> {
-    Tx(&'static mut Transaction<PoolConnection<C>>),
+pub enum SqlxConnectionAsync {
+    Tx(&'static mut Transaction<'static, Any>),
+}
+
+impl SqlxConnectionAsync {
+    pub fn get_conn(&mut self) -> &mut Transaction<'static, Any> {
+        match self {
+            SqlxConnectionAsync::Tx(tx) => tx,
+        }
+    }
 }
 
 #[async_trait]
-impl <C: Connect + Send + Sync> SqlConnectionAsync for SqlxConnectionAsync<C> {
+impl SqlConnectionAsync for SqlxConnectionAsync {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        match self {
-            SqlxConnectionAsync::Tx(tx) => {
-                let query = sqlx::query(sql);
-                query.execute(tx).await.map_err(into_c3p0_error).map(|_| ())
-            },
-        }
+        let query = sqlx::query(sql);
+        query
+            .execute(self.get_conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
     }
 }

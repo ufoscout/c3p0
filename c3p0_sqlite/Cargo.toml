@@ -16,9 +16,9 @@ log = "0.4"
 serde = "1.0"
 
 # feature 'blocking'
-rusqlite = { version = "0.22", features = ["bundled", "serde_json", "functions"], optional = true }
+rusqlite = { version = "0.23.1", features = ["bundled", "serde_json", "functions"], optional = true }
 r2d2 = { version = "0.8.8", optional = true}
-r2d2_sqlite = { version = "0.15", optional = true}
+r2d2_sqlite = { version = "0.16", optional = true}
 
 [features]
 default = []

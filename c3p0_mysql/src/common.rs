@@ -1,7 +1,7 @@
-use c3p0_common::{JsonCodec, Model, C3p0Error, C3p0JsonBuilder};
+use c3p0_common::json::Queries;
+use c3p0_common::{C3p0Error, C3p0JsonBuilder, JsonCodec, Model};
 use mysql_common::row::{ColumnIndex, Row};
 use mysql_common::value::convert::FromValue;
-use c3p0_common::json::Queries;
 
 pub fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
     let result = row
@@ -11,7 +11,6 @@ pub fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error:
         cause: format!("{}", err),
     })?)
 }
-
 
 #[inline]
 pub fn to_model<

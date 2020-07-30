@@ -1,9 +1,9 @@
 use crate::blocking::mysql::prelude::{ColumnIndex, FromValue, ToValue};
 use crate::blocking::mysql::Row;
 use crate::blocking::{MysqlC3p0Pool, MysqlConnection};
+use crate::common::build_mysql_queries;
 use c3p0_common::blocking::*;
 use c3p0_common::json::Queries;
-use crate::common::build_mysql_queries;
 
 pub trait MysqlC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(

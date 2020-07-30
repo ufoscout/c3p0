@@ -28,9 +28,17 @@ futures = { version = "0.3.1", optional = true}
 postgres = { version = "0.17", features = ["with-serde_json-1"], optional = true}
 r2d2 = { version = "0.8.8", optional = true}
 
+
+[dev-dependencies]
+testcontainers = "0.9"
+tokio = { version = "0.2", features = ["macros"] }
+
+
 [features]
 default = []
 
 async = ["c3p0_common/async", "async-trait", "deadpool", "deadpool-postgres", "futures"]
 blocking = ["c3p0_common/blocking", "postgres", "r2d2"]
 migrate = ["c3p0_common/migrate"]
+
+spike_tests = []

@@ -1,11 +1,10 @@
+use crate::common::{build_mysql_queries, to_model};
+use crate::nio::{MysqlC3p0PoolAsync, MysqlConnectionAsync};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
-use mysql_async::Row;
 use mysql_async::prelude::ToValue;
-use crate::nio::{MysqlC3p0PoolAsync, MysqlConnectionAsync};
-use crate::common::{build_mysql_queries, to_model};
-
+use mysql_async::Row;
 
 pub trait MysqlC3p0JsonAsyncBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -122,7 +121,11 @@ where
         unimplemented!()
     }
 
-    async fn drop_table_if_exists(&self, conn: &mut Self::Conn, cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists(
+        &self,
+        conn: &mut Self::Conn,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
         unimplemented!()
     }
 
@@ -130,7 +133,11 @@ where
         unimplemented!()
     }
 
-    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID) -> Result<bool, C3p0Error> {
+    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
+        conn: &mut Self::Conn,
+        id: ID,
+    ) -> Result<bool, C3p0Error> {
         unimplemented!()
     }
 
@@ -138,27 +145,53 @@ where
         unimplemented!()
     }
 
-    async fn fetch_all_for_update(&self, conn: &mut Self::Conn, for_update: &ForUpdate) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    async fn fetch_all_for_update(
+        &self,
+        conn: &mut Self::Conn,
+        for_update: &ForUpdate,
+    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID) -> Result<Option<Model<DATA>>, C3p0Error> {
+    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
+        conn: &mut Self::Conn,
+        id: ID,
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID, for_update: &ForUpdate) -> Result<Option<Model<DATA>>, C3p0Error> {
+    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
+        conn: &mut Self::Conn,
+        id: ID,
+        for_update: &ForUpdate,
+    ) -> Result<Option<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID) -> Result<Model<DATA>, C3p0Error> {
+    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
+        conn: &mut Self::Conn,
+        id: ID,
+    ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID, for_update: &ForUpdate) -> Result<Model<DATA>, C3p0Error> {
+    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
+        conn: &mut Self::Conn,
+        id: ID,
+        for_update: &ForUpdate,
+    ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 
-    async fn delete(&self, conn: &mut Self::Conn, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    async fn delete(
+        &self,
+        conn: &mut Self::Conn,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 
@@ -166,15 +199,27 @@ where
         unimplemented!()
     }
 
-    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(&'a self, conn: &mut Self::Conn, id: ID) -> Result<u64, C3p0Error> {
+    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
+        conn: &mut Self::Conn,
+        id: ID,
+    ) -> Result<u64, C3p0Error> {
         unimplemented!()
     }
 
-    async fn save(&self, conn: &mut Self::Conn, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    async fn save(
+        &self,
+        conn: &mut Self::Conn,
+        obj: NewModel<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 
-    async fn update(&self, conn: &mut Self::Conn, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+    async fn update(
+        &self,
+        conn: &mut Self::Conn,
+        obj: Model<DATA>,
+    ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 }

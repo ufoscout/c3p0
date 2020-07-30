@@ -1,26 +1,28 @@
+use crate::{into_c3p0_error, SqlxConnectionAsync};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
-use crate::{build_pg_queries, SqlxC3p0PoolAsync, SqlxConnectionAsync};
-use sqlx::{Connect, Row};
+use sqlx::any::AnyRow;
+use sqlx::AnyConnection;
+use sqlx::Row;
 
-pub trait SqlxC3p0JsonAsyncBuilder<C: Connect + Send + Sync> {
+pub trait SqlxC3p0JsonAsyncBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxC3p0JsonAsync<DATA, DefaultJsonCodec, C>;
+    ) -> SqlxC3p0JsonAsync<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> SqlxC3p0JsonAsync<DATA, CODEC, C>;
+    ) -> SqlxC3p0JsonAsync<DATA, CODEC>;
 }
 
-impl <C: Connect + Send + Sync> SqlxC3p0JsonAsyncBuilder<C> for C3p0JsonBuilder<SqlxC3p0PoolAsync<C>> {
+impl SqlxC3p0JsonAsyncBuilder for C3p0JsonBuilder<crate::SqlxC3p0PoolAsync> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxC3p0JsonAsync<DATA, DefaultJsonCodec, C> {
+    ) -> SqlxC3p0JsonAsync<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -30,101 +32,97 @@ impl <C: Connect + Send + Sync> SqlxC3p0JsonAsyncBuilder<C> for C3p0JsonBuilder<
     >(
         self,
         codec: CODEC,
-    ) -> SqlxC3p0JsonAsync<DATA, CODEC, C> {
+    ) -> SqlxC3p0JsonAsync<DATA, CODEC> {
         SqlxC3p0JsonAsync {
             phantom_data: std::marker::PhantomData,
-            phantom_c: std::marker::PhantomData,
             codec,
-            queries: build_pg_queries(self),
+            queries: crate::common::build_pg_queries(self),
         }
     }
 }
 
 #[derive(Clone)]
-pub struct SqlxC3p0JsonAsync<DATA, CODEC: JsonCodec<DATA>, C: Connect + Send + Sync>
+pub struct SqlxC3p0JsonAsync<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     phantom_data: std::marker::PhantomData<DATA>,
-    phantom_c: std::marker::PhantomData<C>,
 
     codec: CODEC,
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>, C: Connect + Send + Sync> SqlxC3p0JsonAsync<DATA, CODEC, C>
+impl<DATA, CODEC: JsonCodec<DATA>> SqlxC3p0JsonAsync<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
-/*
-    #[inline]
-    pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-        to_model(&self.codec, row, 0, 1, 2)
-    }
-*/
+    /*
+        #[inline]
+        pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+            to_model(&self.codec, row, 0, 1, 2)
+        }
+    */
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_optional_with_sql(
         &self,
-        conn: &mut SqlxConnectionAsync<C>,
+        conn: &mut SqlxConnectionAsync,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
-/*
-    /// Allows the execution of a custom sql query and returns the first entry in the result set.
-    /// For this to work, the sql query:
-    /// - must be a SELECT
-    /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub async fn fetch_one_with_sql(
-        &self,
-        conn: &mut SqlxConnectionAsync,
-        sql: &str,
-        params: &[&(dyn ToSql + Sync)],
-    ) -> Result<Model<DATA>, C3p0Error> {
-        conn.fetch_one(sql, params, |row| self.to_model(row)).await
-    }
+    /*
+       /// Allows the execution of a custom sql query and returns the first entry in the result set.
+       /// For this to work, the sql query:
+       /// - must be a SELECT
+       /// - must declare the ID, VERSION and DATA fields in this exact order
+       pub async fn fetch_one_with_sql(
+           &self,
+           conn: &mut SqlxConnectionAsync,
+           sql: &str,
+           params: &[&(dyn ToSql + Sync)],
+       ) -> Result<Model<DATA>, C3p0Error> {
+           conn.fetch_one(sql, params, |row| self.to_model(row)).await
+       }
 
-    /// Allows the execution of a custom sql query and returns all the entries in the result set.
-    /// For this to work, the sql query:
-    /// - must be a SELECT
-    /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub async fn fetch_all_with_sql(
-        &self,
-        conn: &mut SqlxConnectionAsync,
-        sql: &str,
-        params: &[&(dyn ToSql + Sync)],
-    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        conn.fetch_all(sql, params, |row| self.to_model(row)).await
-    }
+       /// Allows the execution of a custom sql query and returns all the entries in the result set.
+       /// For this to work, the sql query:
+       /// - must be a SELECT
+       /// - must declare the ID, VERSION and DATA fields in this exact order
+       pub async fn fetch_all_with_sql(
+           &self,
+           conn: &mut SqlxConnectionAsync,
+           sql: &str,
+           params: &[&(dyn ToSql + Sync)],
+       ) -> Result<Vec<Model<DATA>>, C3p0Error> {
+           conn.fetch_all(sql, params, |row| self.to_model(row)).await
+       }
 
- */
+    */
 }
 
-
 #[async_trait]
-impl<DATA, CODEC: JsonCodec<DATA>, C: Connect + Send + Sync + Clone> C3p0JsonAsync<DATA, CODEC> for SqlxC3p0JsonAsync<DATA, CODEC, C>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for SqlxC3p0JsonAsync<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = SqlxConnectionAsync<C>;
+    type Conn = SqlxConnectionAsync;
 
     fn codec(&self) -> &CODEC {
         &self.codec
     }
 
-    async fn create_table_if_not_exists(
-        &self,
-        conn: &mut Self::Conn,
-    ) -> Result<(), C3p0Error> {
-        unimplemented!()
-        // conn.execute(&self.queries.create_table_sql_query, &[])
-        //     .await?;
-        // Ok(())
+    async fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<(), C3p0Error> {
+        let query = sqlx::query(&self.queries.create_table_sql_query);
+        query
+            .execute(conn.get_conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
     }
 
     async fn drop_table_if_exists(
@@ -132,21 +130,26 @@ where
         conn: &mut Self::Conn,
         cascade: bool,
     ) -> Result<(), C3p0Error> {
-        unimplemented!()
-        // let query = if cascade {
-        //     &self.queries.drop_table_sql_query_cascade
-        // } else {
-        //     &self.queries.drop_table_sql_query
-        // };
-        // conn.execute(query, &[]).await?;
-        // Ok(())
+        let query = if cascade {
+            &self.queries.drop_table_sql_query_cascade
+        } else {
+            &self.queries.drop_table_sql_query
+        };
+        let query = sqlx::query(query);
+        query
+            .execute(conn.get_conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
     }
 
     async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
-        unimplemented!()
-        // conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
-        //     .await
-        //     .map(|val: i64| val as u64)
+        sqlx::query(&self.queries.count_all_sql_query)
+            .fetch_one(conn.get_conn())
+            .await
+            .and_then(|row| row.try_get(0))
+            .map_err(into_c3p0_error)
+            .map(|val: i64| val as u64)
     }
 
     async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(

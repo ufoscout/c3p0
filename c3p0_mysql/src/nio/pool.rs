@@ -1,10 +1,10 @@
+use crate::common::to_value_mapper;
+use crate::nio::error::into_c3p0_error;
 use async_trait::async_trait;
 use c3p0_common::*;
 use futures::Future;
-use mysql_async::prelude::{ToValue, FromValue, Queryable};
-use mysql_async::{Pool, Transaction, Row, TxOpts};
-use crate::nio::error::into_c3p0_error;
-use crate::common::to_value_mapper;
+use mysql_async::prelude::{FromValue, Queryable, ToValue};
+use mysql_async::{Pool, Row, Transaction, TxOpts};
 
 pub enum MysqlC3p0ConnectionManager {
     DeadPool,
@@ -44,7 +44,10 @@ impl C3p0PoolAsync for MysqlC3p0PoolAsync {
     ) -> Result<T, E> {
         let mut conn = self.pool.get_conn().await.map_err(into_c3p0_error)?;
 
-        let mut native_transaction = conn.start_transaction(TxOpts::default()).await.map_err(into_c3p0_error)?;
+        let mut native_transaction = conn
+            .start_transaction(TxOpts::default())
+            .await
+            .map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction =
@@ -74,7 +77,8 @@ impl SqlConnectionAsync for MysqlConnectionAsync {
 impl MysqlConnectionAsync {
     pub async fn execute(&mut self, sql: &str, params: &[&dyn ToValue]) -> Result<u64, C3p0Error> {
         match self {
-            MysqlConnectionAsync::Tx(tx) => tx.exec_iter(sql, params)
+            MysqlConnectionAsync::Tx(tx) => tx
+                .exec_iter(sql, params)
                 .await
                 .map(|row| row.affected_rows())
                 .map_err(into_c3p0_error),
@@ -95,7 +99,8 @@ impl MysqlConnectionAsync {
         params: &[&dyn ToValue],
         mapper: F,
     ) -> Result<T, C3p0Error> {
-        self.fetch_one_optional(sql, params, mapper).await
+        self.fetch_one_optional(sql, params, mapper)
+            .await
             .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
@@ -107,18 +112,18 @@ impl MysqlConnectionAsync {
     ) -> Result<Option<T>, C3p0Error> {
         match self {
             MysqlConnectionAsync::Tx(tx) => {
-                let mut result = tx.exec_iter(sql, params)
-                    .await
-                    .map_err(into_c3p0_error)?;
+                let mut result = tx.exec_iter(sql, params).await.map_err(into_c3p0_error)?;
 
                 if let Some(row) = result.next().await.map_err(into_c3p0_error)? {
-                    Ok(Some(mapper(&row).map_err(|err| C3p0Error::RowMapperError {
-                        cause: format!("{}", err),
+                    Ok(Some(mapper(&row).map_err(|err| {
+                        C3p0Error::RowMapperError {
+                            cause: format!("{}", err),
+                        }
                     })?))
                 } else {
                     Ok(None)
                 }
-            },
+            }
         }
     }
 
@@ -130,9 +135,7 @@ impl MysqlConnectionAsync {
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
             MysqlConnectionAsync::Tx(tx) => {
-                let mut result = tx.exec_iter(sql, params)
-                    .await
-                    .map_err(into_c3p0_error)?;
+                let mut result = tx.exec_iter(sql, params).await.map_err(into_c3p0_error)?;
 
                 let mut rows = vec![];
                 while let Some(row) = result.next().await.map_err(into_c3p0_error)? {
@@ -141,7 +144,7 @@ impl MysqlConnectionAsync {
                     })?);
                 }
                 Ok(rows)
-            },
+            }
         }
     }
 
@@ -152,5 +155,4 @@ impl MysqlConnectionAsync {
     ) -> Result<Vec<T>, C3p0Error> {
         self.fetch_all(sql, params, to_value_mapper).await
     }
-
 }
