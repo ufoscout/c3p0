@@ -1,12 +1,11 @@
-use crate::{into_c3p0_error, SqlxConnectionAsync};
+use crate::{into_c3p0_error, SqlxConnectionAsync, to_model, Db, DbRow};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
-use sqlx::any::AnyRow;
-use sqlx::AnyConnection;
 use sqlx::Row;
 
 pub trait SqlxC3p0JsonAsyncBuilder {
+
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> SqlxC3p0JsonAsync<DATA, DefaultJsonCodec>;
@@ -17,9 +16,11 @@ pub trait SqlxC3p0JsonAsyncBuilder {
         self,
         codec: CODEC,
     ) -> SqlxC3p0JsonAsync<DATA, CODEC>;
+
 }
 
 impl SqlxC3p0JsonAsyncBuilder for C3p0JsonBuilder<crate::SqlxC3p0PoolAsync> {
+
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> SqlxC3p0JsonAsync<DATA, DefaultJsonCodec> {
@@ -59,12 +60,12 @@ where
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
-    /*
-        #[inline]
-        pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-            to_model(&self.codec, row, 0, 1, 2)
-        }
-    */
+
+    #[inline]
+    pub fn to_model(&self, row: &DbRow) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+        to_model(&self.codec, row, 0, 1, 2)
+    }
+
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
@@ -117,8 +118,7 @@ where
     }
 
     async fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<(), C3p0Error> {
-        let query = sqlx::query(&self.queries.create_table_sql_query);
-        query
+        sqlx::query(&self.queries.create_table_sql_query)
             .execute(conn.get_conn())
             .await
             .map_err(into_c3p0_error)
@@ -135,8 +135,7 @@ where
         } else {
             &self.queries.drop_table_sql_query
         };
-        let query = sqlx::query(query);
-        query
+        sqlx::query(query)
             .execute(conn.get_conn())
             .await
             .map_err(into_c3p0_error)

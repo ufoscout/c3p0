@@ -2,21 +2,21 @@ use async_trait::async_trait;
 use c3p0_common::*;
 use futures::Future;
 
-use crate::into_c3p0_error;
-use sqlx::{Any, AnyPool, Transaction};
+use crate::{into_c3p0_error, Db};
+use sqlx::{Pool, Transaction};
 
 #[derive(Clone)]
 pub struct SqlxC3p0PoolAsync {
-    pool: AnyPool,
+    pool: Pool<Db>,
 }
 
 impl SqlxC3p0PoolAsync {
-    pub fn new(pool: AnyPool) -> Self {
+    pub fn new(pool: Pool<Db>) -> Self {
         SqlxC3p0PoolAsync { pool }
     }
 }
 
-impl Into<SqlxC3p0PoolAsync> for AnyPool {
+impl Into<SqlxC3p0PoolAsync> for Pool<Db> {
     fn into(self) -> SqlxC3p0PoolAsync {
         SqlxC3p0PoolAsync::new(self)
     }
@@ -50,11 +50,11 @@ impl C3p0PoolAsync for SqlxC3p0PoolAsync {
 }
 
 pub enum SqlxConnectionAsync {
-    Tx(&'static mut Transaction<'static, Any>),
+    Tx(&'static mut Transaction<'static, Db>),
 }
 
 impl SqlxConnectionAsync {
-    pub fn get_conn(&mut self) -> &mut Transaction<'static, Any> {
+    pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
         match self {
             SqlxConnectionAsync::Tx(tx) => tx,
         }

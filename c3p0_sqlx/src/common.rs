@@ -1,5 +1,6 @@
 use c3p0_common::{C3p0Error, JsonCodec, Model};
-use sqlx::{ColumnIndex, Database, Row};
+use crate::{Db, DbRow};
+use sqlx::Row;
 
 pub fn into_c3p0_error(error: sqlx::Error) -> C3p0Error {
     C3p0Error::DbError {
@@ -14,6 +15,38 @@ pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::err
 }
 */
 
+#[inline]
+pub fn to_model<
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    CODEC: JsonCodec<DATA>
+>(
+    codec: &CODEC,
+    row: &DbRow,
+    id_index: usize,
+    version_index: usize,
+    data_index: usize,
+) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+    let id = row
+        .try_get(id_index)
+        .map_err(|err| C3p0Error::RowMapperError {
+            cause: format!("Row contains no values for id index. Err: {}", err),
+        })?;
+    let version = row
+        .try_get(version_index)
+        .map_err(|err| C3p0Error::RowMapperError {
+            cause: format!("Row contains no values for version index. Err: {}", err),
+        })?;
+    let data =
+        codec.from_value(
+            row.try_get(data_index)
+                .map_err(|err| C3p0Error::RowMapperError {
+                    cause: format!("Row contains no values for data index. Err: {}", err),
+                })?,
+        )?;
+    Ok(Model { id, version, data })
+}
+
+/*
 #[inline]
 pub fn to_model<
     'a,
@@ -55,7 +88,9 @@ where
         )?;
     Ok(Model { id, version, data })
 }
+*/
 
+#[cfg(any(feature = "postgres"))]
 pub fn build_pg_queries<C3P0>(
     json_builder: c3p0_common::C3p0JsonBuilder<C3P0>,
 ) -> c3p0_common::json::Queries {
@@ -153,6 +188,7 @@ pub fn build_pg_queries<C3P0>(
     }
 }
 
+#[cfg(any(feature = "mysql"))]
 pub fn build_mysql_queries<C3P0>(
     json_builder: c3p0_common::C3p0JsonBuilder<C3P0>,
 ) -> c3p0_common::json::Queries {
