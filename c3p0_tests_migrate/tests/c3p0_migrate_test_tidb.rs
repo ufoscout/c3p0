@@ -1,5 +1,6 @@
-#![cfg(feature = "mysql_blocking")]
+#![cfg(feature = "mysql")]
 
+/*
 pub use c3p0::blocking::*;
 use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
@@ -15,20 +16,16 @@ pub fn new_connection(
     MysqlC3p0Pool,
     Container<clients::Cli, images::generic::GenericImage>,
 ) {
-    let mysql_version = "5.7.25";
-    let mysql_image = images::generic::GenericImage::new(format!("mysql:{}", mysql_version))
-        .with_wait_for(images::generic::WaitFor::message_on_stderr(
-            format!("Version: '{}'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server (GPL)", mysql_version),
-        ))
-        .with_env_var("MYSQL_DATABASE", "mysql")
-        .with_env_var("MYSQL_USER", "mysql")
-        .with_env_var("MYSQL_PASSWORD", "mysql")
-        .with_env_var("MYSQL_ROOT_PASSWORD", "mysql");
+    let mysql_version = "v3.0.3";
+    let mysql_image = images::generic::GenericImage::new(format!("pingcap/tidb:{}", mysql_version))
+        .with_wait_for(images::generic::WaitFor::message_on_stdout(
+            r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#,
+        ));
     let node = docker.run(mysql_image);
 
     let db_url = format!(
-        "mysql://mysql:mysql@127.0.0.1:{}/mysql",
-        node.get_host_port(3306).unwrap()
+        "mysql://root@127.0.0.1:{}/mysql",
+        node.get_host_port(4000).unwrap()
     );
 
     let opts = Opts::from_url(&db_url).unwrap();
@@ -47,6 +44,9 @@ pub mod db_specific {
     use super::*;
 
     pub fn db_type() -> utils::DbType {
-        utils::DbType::MySql
+        utils::DbType::TiDB
     }
 }
+
+
+ */

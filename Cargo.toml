@@ -7,5 +7,5 @@ members = [
     "c3p0_mysql",
     "c3p0_sqlx",
     "c3p0",
-    #"c3p0_tests_migrate",
+    "c3p0_tests_migrate",
 ]
