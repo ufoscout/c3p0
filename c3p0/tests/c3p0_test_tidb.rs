@@ -1,5 +1,5 @@
-#![cfg(feature = "mysql_blocking")]
-
+#![cfg(feature = "mysql")]
+/*
 use c3p0::blocking::*;
 pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
@@ -70,3 +70,4 @@ pub mod db_specific {
         format!(r"INSERT INTO {} (name) VALUES (?)", table_name)
     }
 }
+*/

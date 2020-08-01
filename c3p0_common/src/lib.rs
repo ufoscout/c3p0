@@ -22,7 +22,7 @@ mod common {
     pub use crate::migrate::{
         from_embed, from_fs, include_dir, C3p0MigrateBuilder, Migration, MigrationData,
         MigrationModel, MigrationType, Migrations, C3P0_INIT_MIGRATION_ID,
-        C3P0_MIGRATE_TABLE_DEFAULT,
+        C3P0_MIGRATE_TABLE_DEFAULT, C3p0MigrateAsync, MigratorAsync
     };
 }
 

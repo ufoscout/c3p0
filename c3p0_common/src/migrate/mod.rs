@@ -2,6 +2,8 @@ use crate::error::C3p0Error;
 use crate::json::model::Model;
 use crate::migrate::sql_migration::{to_sql_migrations, SqlMigration};
 use serde::{Deserialize, Serialize};
+use async_trait::async_trait;
+use log::*;
 
 pub mod md5;
 pub mod migration;

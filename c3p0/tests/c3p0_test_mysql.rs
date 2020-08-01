@@ -1,5 +1,5 @@
-#![cfg(feature = "mysql_blocking")]
-
+#![cfg(feature = "mysql")]
+/*
 use c3p0::blocking::*;
 pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
@@ -10,8 +10,8 @@ use testcontainers::*;
 
 pub type C3p0Impl = MysqlC3p0Pool;
 
-mod tests_blocking;
-mod tests_blocking_json;
+//mod tests_async;
+//mod tests_async_json;
 mod utils;
 
 pub type MaybeType = (
@@ -75,3 +75,4 @@ pub mod db_specific {
         format!(r"INSERT INTO {} (name) VALUES (?)", table_name)
     }
 }
+*/
