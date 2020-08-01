@@ -14,7 +14,7 @@ pub mod include_dir {
 }
 
 pub use migration::{from_embed, from_fs, Migration, Migrations};
-use crate::{SqlConnectionAsync, C3p0PoolAsync, C3p0JsonAsync, DefaultJsonCodec, NewModel};
+use crate::{SqlConnection, C3p0Pool, C3p0Json, DefaultJsonCodec, NewModel};
 
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
@@ -79,10 +79,10 @@ pub enum MigrationType {
 }
 
 #[async_trait]
-pub trait MigratorAsync: Clone + Send + Sync {
-    type Conn: SqlConnectionAsync;
-    type C3P0: C3p0PoolAsync<Conn = Self::Conn>;
-    type C3P0Json: C3p0JsonAsync<MigrationData, DefaultJsonCodec, Conn = Self::Conn>;
+pub trait C3p0Migrator: Clone + Send + Sync {
+    type Conn: SqlConnection;
+    type C3P0: C3p0Pool<Conn = Self::Conn>;
+    type C3P0Json: C3p0Json<MigrationData, DefaultJsonCodec, Conn = Self::Conn>;
 
     fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json;
 
@@ -99,10 +99,10 @@ pub trait MigratorAsync: Clone + Send + Sync {
     ) -> Result<(), C3p0Error>;
 }
 
-pub struct C3p0MigrateAsync<
-    Conn: SqlConnectionAsync,
-    C3P0: C3p0PoolAsync<Conn = Conn>,
-    Migrator: MigratorAsync<Conn = Conn>,
+pub struct C3p0Migrate<
+    Conn: SqlConnection,
+    C3P0: C3p0Pool<Conn = Conn>,
+    Migrator: C3p0Migrator<Conn = Conn>,
 > {
     table: String,
     schema: Option<String>,
@@ -112,10 +112,10 @@ pub struct C3p0MigrateAsync<
 }
 
 impl<
-    Conn: SqlConnectionAsync,
-    C3P0: C3p0PoolAsync<Conn = Conn>,
-    Migrator: MigratorAsync<Conn = Conn> + Sync,
-> C3p0MigrateAsync<Conn, C3P0, Migrator>
+    Conn: SqlConnection,
+    C3P0: C3p0Pool<Conn = Conn>,
+    Migrator: C3p0Migrator<Conn = Conn> + Sync,
+> C3p0Migrate<Conn, C3P0, Migrator>
 {
     pub fn new(
         table: String,

@@ -13,25 +13,25 @@ pub enum MysqlC3p0ConnectionManager {
 impl MysqlC3p0ConnectionManager {}
 
 #[derive(Clone)]
-pub struct MysqlC3p0PoolAsync {
+pub struct MysqlC3p0Pool {
     pool: Pool,
 }
 
-impl MysqlC3p0PoolAsync {
+impl MysqlC3p0Pool {
     pub fn new(pool: Pool) -> Self {
-        MysqlC3p0PoolAsync { pool }
+        MysqlC3p0Pool { pool }
     }
 }
 
-impl Into<MysqlC3p0PoolAsync> for Pool {
-    fn into(self) -> MysqlC3p0PoolAsync {
-        MysqlC3p0PoolAsync::new(self)
+impl Into<MysqlC3p0Pool> for Pool {
+    fn into(self) -> MysqlC3p0Pool {
+        MysqlC3p0Pool::new(self)
     }
 }
 
 #[async_trait]
-impl C3p0PoolAsync for MysqlC3p0PoolAsync {
-    type Conn = MysqlConnectionAsync;
+impl C3p0Pool for MysqlC3p0Pool {
+    type Conn = MysqlConnection;
 
     async fn transaction<
         T: Send,
@@ -51,7 +51,7 @@ impl C3p0PoolAsync for MysqlC3p0PoolAsync {
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction =
-            MysqlConnectionAsync::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+            MysqlConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
 
         let result = { (tx)(transaction).await? };
 
@@ -61,23 +61,23 @@ impl C3p0PoolAsync for MysqlC3p0PoolAsync {
     }
 }
 
-pub enum MysqlConnectionAsync {
+pub enum MysqlConnection {
     Tx(&'static mut Transaction<'static>),
 }
 
 #[async_trait]
-impl SqlConnectionAsync for MysqlConnectionAsync {
+impl SqlConnection for MysqlConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
-            MysqlConnectionAsync::Tx(tx) => tx.query_drop(sql).await.map_err(into_c3p0_error),
+            MysqlConnection::Tx(tx) => tx.query_drop(sql).await.map_err(into_c3p0_error),
         }
     }
 }
 
-impl MysqlConnectionAsync {
+impl MysqlConnection {
     pub async fn execute(&mut self, sql: &str, params: &[&dyn ToValue]) -> Result<u64, C3p0Error> {
         match self {
-            MysqlConnectionAsync::Tx(tx) => tx
+            MysqlConnection::Tx(tx) => tx
                 .exec_iter(sql, params)
                 .await
                 .map(|row| row.affected_rows())
@@ -111,7 +111,7 @@ impl MysqlConnectionAsync {
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
         match self {
-            MysqlConnectionAsync::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut result = tx.exec_iter(sql, params).await.map_err(into_c3p0_error)?;
 
                 if let Some(row) = result.next().await.map_err(into_c3p0_error)? {
@@ -134,7 +134,7 @@ impl MysqlConnectionAsync {
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
-            MysqlConnectionAsync::Tx(tx) => {
+            MysqlConnection::Tx(tx) => {
                 let mut result = tx.exec_iter(sql, params).await.map_err(into_c3p0_error)?;
 
                 let mut rows = vec![];

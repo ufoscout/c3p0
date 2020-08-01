@@ -1,29 +1,29 @@
-use crate::{into_c3p0_error, SqlxConnectionAsync, to_model, Db, DbRow};
+use crate::{into_c3p0_error, SqlxConnection, to_model, Db, DbRow};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
 use sqlx::Row;
 
-pub trait SqlxC3p0JsonAsyncBuilder {
+pub trait SqlxC3p0JsonBuilder {
 
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxC3p0JsonAsync<DATA, DefaultJsonCodec>;
+    ) -> SqlxC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> SqlxC3p0JsonAsync<DATA, CODEC>;
+    ) -> SqlxC3p0Json<DATA, CODEC>;
 
 }
 
-impl SqlxC3p0JsonAsyncBuilder for C3p0JsonBuilder<crate::SqlxC3p0PoolAsync> {
+impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<crate::SqlxC3p0Pool> {
 
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxC3p0JsonAsync<DATA, DefaultJsonCodec> {
+    ) -> SqlxC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -33,8 +33,8 @@ impl SqlxC3p0JsonAsyncBuilder for C3p0JsonBuilder<crate::SqlxC3p0PoolAsync> {
     >(
         self,
         codec: CODEC,
-    ) -> SqlxC3p0JsonAsync<DATA, CODEC> {
-        SqlxC3p0JsonAsync {
+    ) -> SqlxC3p0Json<DATA, CODEC> {
+        SqlxC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: crate::common::build_pg_queries(self),
@@ -43,7 +43,7 @@ impl SqlxC3p0JsonAsyncBuilder for C3p0JsonBuilder<crate::SqlxC3p0PoolAsync> {
 }
 
 #[derive(Clone)]
-pub struct SqlxC3p0JsonAsync<DATA, CODEC: JsonCodec<DATA>>
+pub struct SqlxC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -53,7 +53,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> SqlxC3p0JsonAsync<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> SqlxC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -72,7 +72,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_optional_with_sql(
         &self,
-        conn: &mut SqlxConnectionAsync,
+        conn: &mut SqlxConnection,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
@@ -107,11 +107,11 @@ where
 }
 
 #[async_trait]
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for SqlxC3p0JsonAsync<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqlxC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = SqlxConnectionAsync;
+    type Conn = SqlxConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec

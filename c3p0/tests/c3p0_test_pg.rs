@@ -11,10 +11,10 @@ use testcontainers::*;
 use futures::FutureExt;
 use std::time::Duration;
 
-pub type C3p0Impl = PgC3p0PoolAsync;
+pub type C3p0Impl = PgC3p0Pool;
 
-mod tests_async;
-mod tests_async_json;
+mod tests;
+mod tests_json;
 mod utils;
 
 pub type MaybeType = (
@@ -40,7 +40,7 @@ async fn init() -> MaybeType {
     pool_config.timeouts.wait = Some(Duration::from_secs(5));
     config.pool = Some(pool_config);
 
-    let pool = PgC3p0PoolAsync::new(config.create_pool(NoTls).unwrap());
+    let pool = PgC3p0Pool::new(config.create_pool(NoTls).unwrap());
 
     (pool, node)
 }

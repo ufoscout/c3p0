@@ -1,28 +1,28 @@
 use crate::common::{build_mysql_queries, to_model};
-use crate::{MysqlC3p0PoolAsync, MysqlConnectionAsync};
+use crate::{MysqlC3p0Pool, MysqlConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
 use mysql_async::prelude::ToValue;
 use mysql_async::Row;
 
-pub trait MysqlC3p0JsonAsyncBuilder {
+pub trait MysqlC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> MysqlC3p0JsonAsync<DATA, DefaultJsonCodec>;
+    ) -> MysqlC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> MysqlC3p0JsonAsync<DATA, CODEC>;
+    ) -> MysqlC3p0Json<DATA, CODEC>;
 }
 
-impl MysqlC3p0JsonAsyncBuilder for C3p0JsonBuilder<MysqlC3p0PoolAsync> {
+impl MysqlC3p0JsonBuilder for C3p0JsonBuilder<MysqlC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> MysqlC3p0JsonAsync<DATA, DefaultJsonCodec> {
+    ) -> MysqlC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -32,8 +32,8 @@ impl MysqlC3p0JsonAsyncBuilder for C3p0JsonBuilder<MysqlC3p0PoolAsync> {
     >(
         self,
         codec: CODEC,
-    ) -> MysqlC3p0JsonAsync<DATA, CODEC> {
-        MysqlC3p0JsonAsync {
+    ) -> MysqlC3p0Json<DATA, CODEC> {
+        MysqlC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: build_mysql_queries(self),
@@ -42,7 +42,7 @@ impl MysqlC3p0JsonAsyncBuilder for C3p0JsonBuilder<MysqlC3p0PoolAsync> {
 }
 
 #[derive(Clone)]
-pub struct MysqlC3p0JsonAsync<DATA, CODEC: JsonCodec<DATA>>
+pub struct MysqlC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -52,7 +52,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> MysqlC3p0JsonAsync<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> MysqlC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -71,7 +71,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_optional_with_sql(
         &self,
-        conn: &mut MysqlConnectionAsync,
+        conn: &mut MysqlConnection,
         sql: &str,
         params: &[&(dyn ToValue)],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -85,7 +85,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_with_sql(
         &self,
-        conn: &mut MysqlConnectionAsync,
+        conn: &mut MysqlConnection,
         sql: &str,
         params: &[&(dyn ToValue)],
     ) -> Result<Model<DATA>, C3p0Error> {
@@ -98,7 +98,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_all_with_sql(
         &self,
-        conn: &mut MysqlConnectionAsync,
+        conn: &mut MysqlConnection,
         sql: &str,
         params: &[&(dyn ToValue)],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
@@ -107,11 +107,11 @@ where
 }
 
 #[async_trait]
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for MysqlC3p0JsonAsync<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for MysqlC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = MysqlConnectionAsync;
+    type Conn = MysqlConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec

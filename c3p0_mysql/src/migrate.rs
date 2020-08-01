@@ -3,45 +3,45 @@ use c3p0_common::*;
 
 use async_trait::async_trait;
 
-pub trait MysqlC3p0AsyncMigrateBuilder {
-    fn build(self) -> C3p0MigrateAsync<MysqlConnectionAsync, MysqlC3p0PoolAsync, MysqlMigratorAsync>;
+pub trait MysqlC3p0MigrateBuilder {
+    fn build(self) -> C3p0Migrate<MysqlConnection, MysqlC3p0Pool, MysqlMigrator>;
 }
 
-impl MysqlC3p0AsyncMigrateBuilder for C3p0MigrateBuilder<MysqlC3p0PoolAsync> {
-    fn build(self) -> C3p0MigrateAsync<MysqlConnectionAsync, MysqlC3p0PoolAsync, MysqlMigratorAsync> {
-        C3p0MigrateAsync::new(
+impl MysqlC3p0MigrateBuilder for C3p0MigrateBuilder<MysqlC3p0Pool> {
+    fn build(self) -> C3p0Migrate<MysqlConnection, MysqlC3p0Pool, MysqlMigrator> {
+        C3p0Migrate::new(
             self.table,
             self.schema,
             self.migrations,
             self.c3p0,
-            MysqlMigratorAsync {},
+            MysqlMigrator {},
         )
     }
 }
 
 #[derive(Clone)]
-pub struct MysqlMigratorAsync {}
+pub struct MysqlMigrator {}
 
 #[async_trait]
-impl MigratorAsync for MysqlMigratorAsync {
-    type Conn = MysqlConnectionAsync;
-    type C3P0 = MysqlC3p0PoolAsync;
-    type C3P0Json = MysqlC3p0JsonAsync<MigrationData, DefaultJsonCodec>;
+impl Migrator for MysqlMigrator {
+    type Conn = MysqlConnection;
+    type C3P0 = MysqlC3p0Pool;
+    type C3P0Json = MysqlC3p0Json<MigrationData, DefaultJsonCodec>;
 
     fn build_cp30_json(
         &self,
         table: String,
         schema: Option<String>,
-    ) -> MysqlC3p0JsonAsync<MigrationData, DefaultJsonCodec> {
-        C3p0JsonBuilder::<MysqlC3p0PoolAsync>::new(table)
+    ) -> MysqlC3p0Json<MigrationData, DefaultJsonCodec> {
+        C3p0JsonBuilder::<MysqlC3p0Pool>::new(table)
             .with_schema_name(schema)
             .build()
     }
 
     async fn lock_table(
         &self,
-        c3p0_json: &MysqlC3p0JsonAsync<MigrationData, DefaultJsonCodec>,
-        conn: &mut MysqlConnectionAsync,
+        c3p0_json: &MysqlC3p0Json<MigrationData, DefaultJsonCodec>,
+        conn: &mut MysqlConnection,
     ) -> Result<(), C3p0Error> {
         conn.batch_execute(&format!(
             "LOCK TABLES {} WRITE",
@@ -52,8 +52,8 @@ impl MigratorAsync for MysqlMigratorAsync {
 
     async fn lock_first_migration_row(
         &self,
-        c3p0_json: &MysqlC3p0JsonAsync<MigrationData, DefaultJsonCodec>,
-        conn: &mut MysqlConnectionAsync,
+        c3p0_json: &MysqlC3p0Json<MigrationData, DefaultJsonCodec>,
+        conn: &mut MysqlConnection,
     ) -> Result<(), C3p0Error> {
         let lock_sql = format!(
             r#"select * from {} where JSON_EXTRACT({}, "$.migration_id") = ? FOR UPDATE"#,

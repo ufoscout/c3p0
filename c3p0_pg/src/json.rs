@@ -4,23 +4,23 @@ use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
 
-pub trait PgC3p0JsonAsyncBuilder {
+pub trait PgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> PgC3p0JsonAsync<DATA, DefaultJsonCodec>;
+    ) -> PgC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> PgC3p0JsonAsync<DATA, CODEC>;
+    ) -> PgC3p0Json<DATA, CODEC>;
 }
 
-impl PgC3p0JsonAsyncBuilder for C3p0JsonBuilder<PgC3p0PoolAsync> {
+impl PgC3p0JsonBuilder for C3p0JsonBuilder<PgC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> PgC3p0JsonAsync<DATA, DefaultJsonCodec> {
+    ) -> PgC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -30,8 +30,8 @@ impl PgC3p0JsonAsyncBuilder for C3p0JsonBuilder<PgC3p0PoolAsync> {
     >(
         self,
         codec: CODEC,
-    ) -> PgC3p0JsonAsync<DATA, CODEC> {
-        PgC3p0JsonAsync {
+    ) -> PgC3p0Json<DATA, CODEC> {
+        PgC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: build_pg_queries(self),
@@ -40,7 +40,7 @@ impl PgC3p0JsonAsyncBuilder for C3p0JsonBuilder<PgC3p0PoolAsync> {
 }
 
 #[derive(Clone)]
-pub struct PgC3p0JsonAsync<DATA, CODEC: JsonCodec<DATA>>
+pub struct PgC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -50,7 +50,7 @@ where
     queries: Queries,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0JsonAsync<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> PgC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -69,7 +69,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_optional_with_sql(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -83,7 +83,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_with_sql(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Model<DATA>, C3p0Error> {
@@ -96,7 +96,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_all_with_sql(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
@@ -105,11 +105,11 @@ where
 }
 
 #[async_trait]
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0JsonAsync<DATA, CODEC> for PgC3p0JsonAsync<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for PgC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = PgConnectionAsync;
+    type Conn = PgConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec
@@ -117,7 +117,7 @@ where
 
     async fn create_table_if_not_exists(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
     ) -> Result<(), C3p0Error> {
         conn.execute(&self.queries.create_table_sql_query, &[])
             .await?;
@@ -126,7 +126,7 @@ where
 
     async fn drop_table_if_exists(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         cascade: bool,
     ) -> Result<(), C3p0Error> {
         let query = if cascade {
@@ -138,7 +138,7 @@ where
         Ok(())
     }
 
-    async fn count_all(&self, conn: &mut PgConnectionAsync) -> Result<u64, C3p0Error> {
+    async fn count_all(&self, conn: &mut PgConnection) -> Result<u64, C3p0Error> {
         conn.fetch_one_value(&self.queries.count_all_sql_query, &[])
             .await
             .map(|val: i64| val as u64)
@@ -146,14 +146,14 @@ where
 
     async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
             .await
     }
 
-    async fn fetch_all(&self, conn: &mut PgConnectionAsync) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    async fn fetch_all(&self, conn: &mut PgConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         })
@@ -162,7 +162,7 @@ where
 
     async fn fetch_all_for_update(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         let sql = format!(
@@ -175,7 +175,7 @@ where
 
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
@@ -186,7 +186,7 @@ where
 
     async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -201,7 +201,7 @@ where
 
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id(conn, id)
@@ -211,7 +211,7 @@ where
 
     async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {
@@ -222,7 +222,7 @@ where
 
     async fn delete(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         let result = conn
@@ -238,13 +238,13 @@ where
         Ok(obj)
     }
 
-    async fn delete_all(&self, conn: &mut PgConnectionAsync) -> Result<u64, C3p0Error> {
+    async fn delete_all(&self, conn: &mut PgConnection) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_all_sql_query, &[]).await
     }
 
     async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
@@ -253,7 +253,7 @@ where
 
     async fn save(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
@@ -269,7 +269,7 @@ where
 
     async fn update(
         &self,
-        conn: &mut PgConnectionAsync,
+        conn: &mut PgConnection,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;

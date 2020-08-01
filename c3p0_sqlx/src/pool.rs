@@ -6,25 +6,25 @@ use crate::{into_c3p0_error, Db};
 use sqlx::{Pool, Transaction};
 
 #[derive(Clone)]
-pub struct SqlxC3p0PoolAsync {
+pub struct SqlxC3p0Pool {
     pool: Pool<Db>,
 }
 
-impl SqlxC3p0PoolAsync {
+impl SqlxC3p0Pool {
     pub fn new(pool: Pool<Db>) -> Self {
-        SqlxC3p0PoolAsync { pool }
+        SqlxC3p0Pool { pool }
     }
 }
 
-impl Into<SqlxC3p0PoolAsync> for Pool<Db> {
-    fn into(self) -> SqlxC3p0PoolAsync {
-        SqlxC3p0PoolAsync::new(self)
+impl Into<SqlxC3p0Pool> for Pool<Db> {
+    fn into(self) -> SqlxC3p0Pool {
+        SqlxC3p0Pool::new(self)
     }
 }
 
 #[async_trait]
-impl C3p0PoolAsync for SqlxC3p0PoolAsync {
-    type Conn = SqlxConnectionAsync;
+impl C3p0Pool for SqlxC3p0Pool {
+    type Conn = SqlxConnection;
 
     async fn transaction<
         T: Send,
@@ -39,7 +39,7 @@ impl C3p0PoolAsync for SqlxC3p0PoolAsync {
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction =
-            SqlxConnectionAsync::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+            SqlxConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
 
         let result = { (tx)(transaction).await? };
 
@@ -49,20 +49,20 @@ impl C3p0PoolAsync for SqlxC3p0PoolAsync {
     }
 }
 
-pub enum SqlxConnectionAsync {
+pub enum SqlxConnection {
     Tx(&'static mut Transaction<'static, Db>),
 }
 
-impl SqlxConnectionAsync {
+impl SqlxConnection {
     pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
         match self {
-            SqlxConnectionAsync::Tx(tx) => tx,
+            SqlxConnection::Tx(tx) => tx,
         }
     }
 }
 
 #[async_trait]
-impl SqlConnectionAsync for SqlxConnectionAsync {
+impl SqlConnection for SqlxConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         let query = sqlx::query(sql);
         query

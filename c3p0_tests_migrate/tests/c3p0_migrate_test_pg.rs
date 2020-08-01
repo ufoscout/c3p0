@@ -13,7 +13,7 @@ pub mod utils;
 pub async fn new_connection(
     docker: &clients::Cli,
 ) -> (
-    PgC3p0PoolAsync,
+    PgC3p0Pool,
     Container<'_, clients::Cli, images::postgres::Postgres>,
 ) {
     let node = docker.run(images::postgres::Postgres::default());
@@ -30,7 +30,7 @@ pub async fn new_connection(
     pool_config.timeouts.wait = Some(Duration::from_secs(5));
     config.pool = Some(pool_config);
 
-    let pool = PgC3p0PoolAsync::new(config.create_pool(NoTls).unwrap());
+    let pool = PgC3p0Pool::new(config.create_pool(NoTls).unwrap());
 
     (pool, node)
 }

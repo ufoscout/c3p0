@@ -15,25 +15,25 @@ pub enum PgC3p0ConnectionManager {
 impl PgC3p0ConnectionManager {}
 
 #[derive(Clone)]
-pub struct PgC3p0PoolAsync {
+pub struct PgC3p0Pool {
     pool: Pool,
 }
 
-impl PgC3p0PoolAsync {
+impl PgC3p0Pool {
     pub fn new(pool: Pool) -> Self {
-        PgC3p0PoolAsync { pool }
+        PgC3p0Pool { pool }
     }
 }
 
-impl Into<PgC3p0PoolAsync> for Pool {
-    fn into(self) -> PgC3p0PoolAsync {
-        PgC3p0PoolAsync::new(self)
+impl Into<PgC3p0Pool> for Pool {
+    fn into(self) -> PgC3p0Pool {
+        PgC3p0Pool::new(self)
     }
 }
 
 #[async_trait]
-impl C3p0PoolAsync for PgC3p0PoolAsync {
-    type Conn = PgConnectionAsync;
+impl C3p0Pool for PgC3p0Pool {
+    type Conn = PgConnection;
 
     async fn transaction<
         T: Send,
@@ -50,7 +50,7 @@ impl C3p0PoolAsync for PgC3p0PoolAsync {
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction =
-            PgConnectionAsync::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
+            PgConnection::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
 
         let result = { (tx)(transaction).await? };
 
@@ -60,27 +60,27 @@ impl C3p0PoolAsync for PgC3p0PoolAsync {
     }
 }
 
-pub enum PgConnectionAsync {
+pub enum PgConnection {
     Tx(&'static Transaction<'static>),
 }
 
 #[async_trait]
-impl SqlConnectionAsync for PgConnectionAsync {
+impl SqlConnection for PgConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {
-            PgConnectionAsync::Tx(tx) => tx.batch_execute(sql).await.map_err(into_c3p0_error),
+            PgConnection::Tx(tx) => tx.batch_execute(sql).await.map_err(into_c3p0_error),
         }
     }
 }
 
-impl PgConnectionAsync {
+impl PgConnection {
     pub async fn execute(
         &mut self,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<u64, C3p0Error> {
         match self {
-            PgConnectionAsync::Tx(tx) => tx.execute(sql, params).await.map_err(into_c3p0_error),
+            PgConnection::Tx(tx) => tx.execute(sql, params).await.map_err(into_c3p0_error),
         }
     }
 
@@ -110,7 +110,7 @@ impl PgConnectionAsync {
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
         match self {
-            PgConnectionAsync::Tx(tx) => {
+            PgConnection::Tx(tx) => {
                 let stmt = tx.prepare(sql).await.map_err(into_c3p0_error)?;
                 tx.query(&stmt, params)
                     .await
@@ -133,7 +133,7 @@ impl PgConnectionAsync {
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
         match self {
-            PgConnectionAsync::Tx(tx) => {
+            PgConnection::Tx(tx) => {
                 let stmt = tx.prepare(sql).await.map_err(into_c3p0_error)?;
                 tx.query(&stmt, params)
                     .await
