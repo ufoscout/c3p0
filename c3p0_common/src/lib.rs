@@ -2,6 +2,7 @@ pub mod error;
 pub mod json;
 pub mod sql;
 pub mod types;
+pub mod pool;
 
 #[cfg(feature = "migrate")]
 mod migrate;
@@ -9,10 +10,13 @@ mod migrate;
 mod common {
     pub use crate::error::C3p0Error;
     pub use crate::json::{
+        C3p0JsonAsync,
         builder::C3p0JsonBuilder, codec::DefaultJsonCodec, codec::JsonCodec, model::IdType,
         model::Model, model::NewModel, model::VersionType,
     };
     pub use crate::sql::{ForUpdate, OrderBy};
+
+    pub use crate::pool::{SqlConnectionAsync, C3p0PoolAsync};
 
     #[cfg(feature = "migrate")]
     pub use crate::migrate::{
@@ -24,10 +28,3 @@ mod common {
 
 pub use crate::common::*;
 
-#[cfg(feature = "async")]
-mod nio;
-#[cfg(feature = "async")]
-pub use nio::*;
-
-#[cfg(feature = "blocking")]
-pub mod blocking;
