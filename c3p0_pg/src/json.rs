@@ -1,5 +1,5 @@
-use crate::nio::tokio_postgres::{row::Row, types::ToSql};
-use crate::nio::*;
+use crate::tokio_postgres::{row::Row, types::ToSql};
+use crate::*;
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;

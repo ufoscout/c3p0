@@ -1,9 +1,26 @@
 pub mod common;
 
-#[cfg(feature = "async")]
-mod nio;
-#[cfg(feature = "async")]
-pub use nio::*;
+mod error;
+mod json;
+mod pool;
 
-#[cfg(feature = "blocking")]
-pub mod blocking;
+pub use crate::common::*;
+pub use error::*;
+pub use json::*;
+pub use pool::*;
+
+pub mod tokio_postgres {
+    pub use tokio_postgres::*;
+}
+
+pub mod deadpool {
+    pub use deadpool::*;
+    pub mod postgres {
+        pub use deadpool_postgres::*;
+    }
+}
+
+#[cfg(feature = "migrate")]
+mod migrate;
+#[cfg(feature = "migrate")]
+pub use migrate::*;

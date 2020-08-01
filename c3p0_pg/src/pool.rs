@@ -1,8 +1,8 @@
-use crate::nio::deadpool::postgres::Pool;
-use crate::nio::tokio_postgres::row::Row;
-use crate::nio::tokio_postgres::types::{FromSqlOwned, ToSql};
-use crate::nio::tokio_postgres::Transaction;
-use crate::nio::*;
+use crate::deadpool::postgres::Pool;
+use crate::tokio_postgres::row::Row;
+use crate::tokio_postgres::types::{FromSqlOwned, ToSql};
+use crate::tokio_postgres::Transaction;
+use crate::*;
 
 use async_trait::async_trait;
 use c3p0_common::*;
