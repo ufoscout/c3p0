@@ -1,5 +1,5 @@
 use crate::common::{build_mysql_queries, to_model};
-use crate::nio::{MysqlC3p0PoolAsync, MysqlConnectionAsync};
+use crate::{MysqlC3p0PoolAsync, MysqlConnectionAsync};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;

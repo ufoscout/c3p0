@@ -1,5 +1,5 @@
 use crate::common::to_value_mapper;
-use crate::nio::error::into_c3p0_error;
+use crate::error::into_c3p0_error;
 use async_trait::async_trait;
 use c3p0_common::*;
 use futures::Future;
