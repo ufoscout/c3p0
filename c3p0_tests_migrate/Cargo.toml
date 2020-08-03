@@ -21,5 +21,6 @@ tokio = { version = "0.2", features = ["macros", "rt-threaded"] }
 [features]
 default = []
 
-mysql = ["c3p0/mysql_migrate"]
+#mysql = ["c3p0/mysql_migrate"]
 postgres = ["c3p0/postgres_migrate"]
+#tidb = ["c3p0/tidb_migrate"]

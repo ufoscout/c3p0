@@ -1,4 +1,4 @@
-#![cfg(feature = "mysql")]
+#![cfg(feature = "tidb")]
 
 /*
 pub use c3p0::blocking::*;

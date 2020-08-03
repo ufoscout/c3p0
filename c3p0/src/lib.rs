@@ -14,3 +14,13 @@ pub mod mysql {
 pub mod postgres {
     pub use c3p0_postgres::*;
 }
+
+#[cfg(any(feature = "sqlx_postgres"))]
+pub mod sqlx_postgres {
+    pub use c3p0_sqlx::*;
+}
+
+#[cfg(any(feature = "tidb"))]
+pub mod tidb {
+    pub use c3p0_mysql::*;
+}
