@@ -3,8 +3,6 @@ use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
 use sqlx::{Row, IntoArguments};
-use futures_util::TryStreamExt;
-use futures::stream::Collect;
 use std::iter::Iterator;
 use sqlx::query::Query;
 use sqlx::Done;
