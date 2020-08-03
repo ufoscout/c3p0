@@ -7,6 +7,7 @@ use futures_util::TryStreamExt;
 use futures::stream::Collect;
 use std::iter::Iterator;
 use sqlx::query::Query;
+use sqlx::Done;
 
 pub trait SqlxC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -252,23 +253,30 @@ where
         conn: &mut Self::Conn,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        unimplemented!()
-        // let result = conn
-        //     .execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])
-        //     .await?;
-        //
-        // if result == 0 {
-        //     return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
-        //                                                                 &self.queries.qualified_table_name, &obj.id, &obj.version
-        //     )});
-        // }
-        //
-        // Ok(obj)
+
+        let result = sqlx::query(&self.queries.delete_sql_query)
+            .bind(&obj.id)
+            .bind(&obj.version)
+            .execute(conn.get_conn())
+            .await
+            .map_err(into_c3p0_error)?
+            .rows_affected();
+
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                                                                        &self.queries.qualified_table_name, &obj.id, &obj.version
+            )});
+        }
+
+        Ok(obj)
     }
 
     async fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
-        unimplemented!()
-        // conn.execute(&self.queries.delete_all_sql_query, &[]).await
+        sqlx::query(&self.queries.delete_all_sql_query)
+            .execute(conn.get_conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|done| done.rows_affected())
     }
 
     async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -276,9 +284,12 @@ where
         conn: &mut Self::Conn,
         id: ID,
     ) -> Result<u64, C3p0Error> {
-        unimplemented!()
-        // conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
-        //     .await
+        sqlx::query(&self.queries.delete_by_id_sql_query)
+            .bind(id.into())
+            .execute(conn.get_conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|done| done.rows_affected())
     }
 
     async fn save(
