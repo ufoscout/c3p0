@@ -1,5 +1,5 @@
 [package]
-name = "c3p0_pg"
+name = "c3p0_postgres"
 license = "MIT"
 version = "0.53.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]

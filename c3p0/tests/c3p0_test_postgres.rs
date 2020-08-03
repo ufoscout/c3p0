@@ -1,8 +1,8 @@
-#![cfg(feature = "pg")]
+#![cfg(feature = "postgres")]
 
-use c3p0::pg::deadpool;
-pub use c3p0::pg::tokio_postgres::{row::Row, NoTls};
-use c3p0::pg::*;
+use c3p0::postgres::deadpool;
+pub use c3p0::postgres::tokio_postgres::{row::Row, NoTls};
+use c3p0::postgres::*;
 use c3p0::*;
 use maybe_single::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;

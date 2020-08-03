@@ -22,4 +22,4 @@ tokio = { version = "0.2", features = ["macros", "rt-threaded"] }
 default = []
 
 mysql = ["c3p0/mysql_migrate"]
-pg = ["c3p0/pg_migrate"]
+postgres = ["c3p0/postgres_migrate"]

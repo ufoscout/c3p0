@@ -10,7 +10,7 @@ pub mod mysql {
     pub use c3p0_mysql::*;
 }
 
-#[cfg(any(feature = "pg"))]
-pub mod pg {
-    pub use c3p0_pg::*;
+#[cfg(any(feature = "postgres"))]
+pub mod postgres {
+    pub use c3p0_postgres::*;
 }

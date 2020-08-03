@@ -1,8 +1,8 @@
-#![cfg(feature = "pg")]
+#![cfg(feature = "postgres")]
 
-use c3p0::pg::deadpool;
-use c3p0::pg::tokio_postgres::NoTls;
-pub use c3p0::pg::*;
+use c3p0::postgres::deadpool;
+use c3p0::postgres::tokio_postgres::NoTls;
+pub use c3p0::postgres::*;
 pub use c3p0::*;
 use std::time::Duration;
 use testcontainers::*;
