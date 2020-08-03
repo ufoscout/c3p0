@@ -314,34 +314,31 @@ where
         conn: &mut Self::Conn,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        unimplemented!()
-        // let json_data = self.codec().to_value(&obj.data)?;
-        //
-        // let updated_model = Model {
-        //     id: obj.id,
-        //     version: obj.version + 1,
-        //     data: obj.data,
-        // };
-        //
-        // let result = conn
-        //     .execute(
-        //         &self.queries.update_sql_query,
-        //         &[
-        //             &updated_model.version,
-        //             &json_data,
-        //             &updated_model.id,
-        //             &obj.version,
-        //         ],
-        //     )
-        //     .await?;
-        //
-        // if result == 0 {
-        //     return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
-        //                                                                 &self.queries.qualified_table_name, &updated_model.id, &obj.version
-        //     )});
-        // }
-        //
-        // Ok(updated_model)
+        let json_data = self.codec().to_value(&obj.data)?;
+
+        let updated_model = Model {
+            id: obj.id,
+            version: obj.version + 1,
+            data: obj.data,
+        };
+
+        let result = sqlx::query(&self.queries.update_sql_query)
+            .bind(&updated_model.version)
+            .bind(&json_data)
+            .bind(&updated_model.id)
+            .bind(&obj.version)
+            .execute(conn.get_conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|done| done.rows_affected())?;
+
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                                                                        &self.queries.qualified_table_name, &updated_model.id, &obj.version
+            )});
+        }
+
+        Ok(updated_model)
     }
 }
 
