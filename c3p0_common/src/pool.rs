@@ -5,7 +5,7 @@ use std::future::Future;
 
 #[async_trait]
 pub trait C3p0Pool: Clone + Send + Sync {
-    type Conn: SqlConnection;
+    type Conn;
 
     //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 

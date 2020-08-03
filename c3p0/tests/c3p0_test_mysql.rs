@@ -1,7 +1,10 @@
 #![cfg(feature = "mysql")]
+pub use c3p0::mysql::mysql_async::{Row};
+use c3p0::*;
+
+mod utils;
+
 /*
-use c3p0::blocking::*;
-pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
 use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
 use c3p0::mysql::blocking::*;
 use maybe_single::{Data, MaybeSingle};
@@ -12,7 +15,6 @@ pub type C3p0Impl = MysqlC3p0Pool;
 
 //mod tests_async;
 //mod tests_async_json;
-mod utils;
 
 pub type MaybeType = (
     C3p0Impl,
@@ -59,6 +61,7 @@ pub fn data(serial: bool) -> Data<'static, MaybeType> {
         .data(serial)
 }
 
+*/
 pub mod db_specific {
 
     use super::*;
@@ -75,4 +78,3 @@ pub mod db_specific {
         format!(r"INSERT INTO {} (name) VALUES (?)", table_name)
     }
 }
-*/

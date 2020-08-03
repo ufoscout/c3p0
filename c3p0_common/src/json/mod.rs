@@ -1,4 +1,4 @@
-use crate::{JsonCodec, SqlConnection, C3p0Error, IdType, Model, ForUpdate, NewModel};
+use crate::{JsonCodec, C3p0Error, IdType, Model, ForUpdate, NewModel};
 use async_trait::async_trait;
 
 pub mod builder;
@@ -11,7 +11,7 @@ pub trait C3p0Json<Data, Codec>: Clone + Send + Sync
         Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
         Codec: JsonCodec<Data>,
 {
-    type Conn: SqlConnection;
+    type Conn;
 
     fn codec(&self) -> &Codec;
 

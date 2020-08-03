@@ -20,7 +20,7 @@ thiserror = "1.0"
 
 # feature 'migrate'
 include_dir = { version = "0.6", optional = true }
-md-5 = { version = "0.8", optional = true }
+md-5 = { version = "0.9.1", optional = true }
 same-file = { version = "1", optional = true }
 walkdir = { version = "2.3", optional = true }
 

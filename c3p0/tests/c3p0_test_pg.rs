@@ -59,4 +59,13 @@ pub mod db_specific {
     pub fn db_type() -> utils::DbType {
         utils::DbType::Pg
     }
+
+    pub fn row_to_string(row: &Row) -> Result<String, Box<dyn std::error::Error>> {
+        let value: String = row.get(0);
+        Ok(value)
+    }
+
+    pub fn build_insert_query(table_name: &str) -> String {
+        format!(r"INSERT INTO {} (name) VALUES ($1)", table_name)
+    }
 }

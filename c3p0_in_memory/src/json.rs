@@ -1,16 +1,17 @@
-use crate::blocking::pool::{InMemoryC3p0Pool, InMemoryConnection};
-use c3p0_common::blocking::*;
+use crate::pool::{InMemoryC3p0Pool, InMemoryConnection};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
+use c3p0_common::{C3p0JsonBuilder, DefaultJsonCodec, IdType, Model, C3p0Error, C3p0Json, ForUpdate, NewModel};
+use async_trait::async_trait;
 
 pub trait InMemoryC3p0JsonBuilder {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> InMemoryC3p0Json<DATA>;
 }
 
 impl InMemoryC3p0JsonBuilder for C3p0JsonBuilder<InMemoryC3p0Pool> {
-    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send>(
+    fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> InMemoryC3p0Json<DATA> {
         let qualified_table_name = match &self.schema_name {
@@ -28,7 +29,7 @@ impl InMemoryC3p0JsonBuilder for C3p0JsonBuilder<InMemoryC3p0Pool> {
 #[derive(Clone)]
 pub struct InMemoryC3p0Json<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     qualified_table_name: String,
     phantom_data: std::marker::PhantomData<DATA>,
@@ -37,7 +38,7 @@ where
 
 impl<DATA> InMemoryC3p0Json<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     fn get_table<'a>(
         &self,
@@ -73,9 +74,10 @@ where
     }
 }
 
+#[async_trait]
 impl<DATA> C3p0Json<DATA, DefaultJsonCodec> for InMemoryC3p0Json<DATA>
 where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     type Conn = InMemoryConnection;
 
@@ -83,51 +85,42 @@ where
         &self.codec
     }
 
-    fn create_table_if_not_exists(&self, conn: &mut InMemoryConnection) -> Result<(), C3p0Error> {
-        conn.write_db(|db| {
-            self.get_or_create_table(&self.qualified_table_name, db);
+    async fn create_table_if_not_exists(&self, conn: &mut InMemoryConnection) -> Result<(), C3p0Error> {
+            self.get_or_create_table(&self.qualified_table_name, conn);
             Ok(())
-        })
     }
 
-    fn drop_table_if_exists(
+    async fn drop_table_if_exists(
         &self,
         conn: &mut InMemoryConnection,
         _cascade: bool,
     ) -> Result<(), C3p0Error> {
-        conn.write_db(|db| {
-            db.remove(&self.qualified_table_name);
+            conn.remove(&self.qualified_table_name);
             Ok(())
-        })
     }
 
-    fn count_all(&self, conn: &mut InMemoryConnection) -> Result<u64, C3p0Error> {
-        conn.read_db(|db| {
-            if let Some(table) = self.get_table(&self.qualified_table_name, db) {
+    async fn count_all(&self, conn: &mut InMemoryConnection) -> Result<u64, C3p0Error> {
+            if let Some(table) = self.get_table(&self.qualified_table_name, conn) {
                 Ok(table.len() as u64)
             } else {
                 Ok(0)
             }
-        })
     }
 
-    fn exists_by_id<'a, ID: Into<&'a IdType>>(
-        &self,
+    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
         conn: &mut InMemoryConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
-        conn.read_db(|db| {
-            if let Some(table) = self.get_table(&self.qualified_table_name, db) {
+            if let Some(table) = self.get_table(&self.qualified_table_name, conn) {
                 Ok(table.contains_key(id.into()))
             } else {
                 Ok(false)
             }
-        })
-    }
+            }
 
-    fn fetch_all(&self, conn: &mut InMemoryConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        conn.read_db(|db| {
-            if let Some(table) = self.get_table(&self.qualified_table_name, db) {
+    async fn fetch_all(&self, conn: &mut InMemoryConnection) -> Result<Vec<Model<DATA>>, C3p0Error> {
+            if let Some(table) = self.get_table(&self.qualified_table_name, conn) {
                 table
                     .values()
                     .map(|value| self.to_data_model(value))
@@ -135,48 +128,65 @@ where
             } else {
                 Ok(vec![])
             }
-        })
     }
 
-    fn fetch_all_for_update(
+    async fn fetch_all_for_update(
         &self,
         conn: &mut Self::Conn,
         _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        self.fetch_all(conn)
+        self.fetch_all(conn).await
     }
 
-    fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType>>(
-        &self,
+    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
         conn: &mut InMemoryConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        conn.read_db(|db| {
-            if let Some(table) = self.get_table(&self.qualified_table_name, db) {
+            if let Some(table) = self.get_table(&self.qualified_table_name, conn) {
                 if let Some(value) = table.get(id.into()) {
                     return Ok(Some(self.to_data_model(value)?));
                 }
             }
             Ok(None)
-        })
     }
 
-    fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType>>(
+    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut Self::Conn,
         id: ID,
         _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        self.fetch_one_optional_by_id(conn, id)
+        self.fetch_one_optional_by_id(conn, id).await
     }
 
-    fn delete(
+    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
+        conn: &mut Self::Conn,
+        id: ID,
+    ) -> Result<Model<DATA>, C3p0Error> {
+        self.fetch_one_optional_by_id(conn, id)
+            .await
+            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+    }
+
+    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
+        conn: &mut Self::Conn,
+        id: ID,
+        for_update: &ForUpdate,
+    ) -> Result<Model<DATA>, C3p0Error> {
+        self.fetch_one_optional_by_id_for_update(conn, id, for_update)
+            .await
+            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+    }
+
+    async fn delete(
         &self,
         conn: &mut InMemoryConnection,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        conn.write_db(|db| {
-            let table = self.get_or_create_table(&self.qualified_table_name, db);
+            let table = self.get_or_create_table(&self.qualified_table_name, conn);
 
             let mut good_version = false;
 
@@ -193,39 +203,33 @@ where
                                                                  &self.qualified_table_name, &obj.id, &obj.version
             )})
 
-        })
     }
 
-    fn delete_all(&self, conn: &mut InMemoryConnection) -> Result<u64, C3p0Error> {
-        conn.write_db(|db| {
-            let table = self.get_or_create_table(&self.qualified_table_name, db);
+    async fn delete_all(&self, conn: &mut InMemoryConnection) -> Result<u64, C3p0Error> {
+            let table = self.get_or_create_table(&self.qualified_table_name, conn);
             let len = table.len();
             table.clear();
             Ok(len as u64)
-        })
     }
 
-    fn delete_by_id<'a, ID: Into<&'a IdType>>(
-        &self,
+    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
+        &'a self,
         conn: &mut InMemoryConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
-        conn.write_db(|db| {
-            let table = self.get_or_create_table(&self.qualified_table_name, db);
+            let table = self.get_or_create_table(&self.qualified_table_name, conn);
             match table.remove(id.into()) {
                 Some(_) => Ok(1),
                 None => Ok(0),
             }
-        })
     }
 
-    fn save(
+    async fn save(
         &self,
         conn: &mut InMemoryConnection,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        conn.write_db(|db| {
-            let table = self.get_or_create_table(&self.qualified_table_name, db);
+            let table = self.get_or_create_table(&self.qualified_table_name, conn);
             let id = table.len() as IdType;
             let model = Model {
                 id,
@@ -234,16 +238,14 @@ where
             };
             table.insert(id, self.to_value_model(&model)?);
             Ok(model)
-        })
     }
 
-    fn update(
+    async fn update(
         &self,
         conn: &mut InMemoryConnection,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        conn.write_db(|db| {
-            let table = self.get_or_create_table(&self.qualified_table_name, db);
+            let table = self.get_or_create_table(&self.qualified_table_name, conn);
 
             let mut good_version = false;
 
@@ -265,7 +267,6 @@ where
                                                                         &self.qualified_table_name, &obj.id, &obj.version
             )})
 
-        })
     }
 }
 
@@ -273,6 +274,7 @@ where
 mod test {
 
     use super::*;
+    use c3p0_common::*;
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Serialize, Deserialize)]
@@ -288,21 +290,24 @@ mod test {
         }
     }
 
-    #[test]
-    fn should_save_and_fetch_new_model() -> Result<(), C3p0Error> {
+
+    #[tokio::test]
+    async fn should_save_and_fetch_new_model() -> Result<(), C3p0Error> {
+
         // Arrange
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        pool.transaction(|conn| {
+        pool.transaction(|mut conn| async move {
+            let conn = &mut conn;
             // Act
-            let saved_model_1 = c3p0.save(conn, TestData::new("value1").into())?;
-            let fetched_model_1 = c3p0.fetch_one_optional_by_id(conn, &saved_model_1)?;
-            let exist_model_1 = c3p0.exists_by_id(conn, &saved_model_1)?;
+            let saved_model_1 = c3p0.save(conn, TestData::new("value1").into()).await?;
+            let fetched_model_1 = c3p0.fetch_one_optional_by_id(conn, &saved_model_1).await?;
+            let exist_model_1 = c3p0.exists_by_id(conn, &saved_model_1).await?;
 
-            let saved_model_2 = c3p0.save(conn, TestData::new("value2").into())?;
-            let fetched_model_2 = c3p0.fetch_one_optional_by_id(conn, &saved_model_2.id)?;
-            let exist_model_2 = c3p0.exists_by_id(conn, &saved_model_2)?;
+            let saved_model_2 = c3p0.save(conn, TestData::new("value2").into()).await?;
+            let fetched_model_2 = c3p0.fetch_one_optional_by_id(conn, &saved_model_2.id).await?;
+            let exist_model_2 = c3p0.exists_by_id(conn, &saved_model_2).await?;
 
             // Assert
             assert!(saved_model_2.id > saved_model_1.id);
@@ -324,135 +329,141 @@ mod test {
             assert_eq!(saved_model_2.data.value, fetched_model_2.data.value);
 
             Ok(())
-        })
+        }).await
     }
 
-    #[test]
-    fn should_return_if_exists() -> Result<(), C3p0Error> {
+
+    #[tokio::test]
+    async fn should_return_if_exists() -> Result<(), C3p0Error> {
         // Arrange
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        pool.transaction(|conn| {
+        pool.transaction(|mut conn| async move {
+        let conn = &mut conn;
             // Act
-            let saved_model_1 = c3p0.save(conn, TestData::new("value1").into())?;
-            let exist_model_1 = c3p0.exists_by_id(conn, &saved_model_1)?;
+            let saved_model_1 = c3p0.save(conn, TestData::new("value1").into()).await?;
+            let exist_model_1 = c3p0.exists_by_id(conn, &saved_model_1).await?;
 
-            let exist_model_2 = c3p0.exists_by_id(conn, &(saved_model_1.id + 1))?;
+            let exist_model_2 = c3p0.exists_by_id(conn, &(saved_model_1.id + 1)).await?;
 
             // Assert
             assert!(exist_model_1);
             assert!(!exist_model_2);
 
             Ok(())
-        })
+        }).await
     }
 
-    #[test]
-    fn should_count_records() -> Result<(), C3p0Error> {
+    #[tokio::test]
+    async fn should_count_records() -> Result<(), C3p0Error> {
         // Arrange
         let pool = InMemoryC3p0Pool::new();
         let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
         let c3p0_2a = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
         let c3p0_2b = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
 
-        pool.transaction(|conn| {
+        pool.transaction(|mut conn| async move {
+        let conn = &mut conn;
             // Act
-            assert_eq!(0, c3p0_1.count_all(conn)?);
-            assert_eq!(0, c3p0_2a.count_all(conn)?);
-            assert_eq!(0, c3p0_2b.count_all(conn)?);
+            assert_eq!(0, c3p0_1.count_all(conn).await?);
+            assert_eq!(0, c3p0_2a.count_all(conn).await?);
+            assert_eq!(0, c3p0_2b.count_all(conn).await?);
 
-            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).await.is_ok());
 
-            assert_eq!(1, c3p0_1.count_all(conn)?);
-            assert_eq!(0, c3p0_2a.count_all(conn)?);
-            assert_eq!(0, c3p0_2b.count_all(conn)?);
+            assert_eq!(1, c3p0_1.count_all(conn).await?);
+            assert_eq!(0, c3p0_2a.count_all(conn).await?);
+            assert_eq!(0, c3p0_2b.count_all(conn).await?);
 
-            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
-            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
-            assert!(c3p0_2a.save(conn, TestData::new("value1").into()).is_ok());
-            assert!(c3p0_2b.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).await.is_ok());
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).await.is_ok());
+            assert!(c3p0_2a.save(conn, TestData::new("value1").into()).await.is_ok());
+            assert!(c3p0_2b.save(conn, TestData::new("value1").into()).await.is_ok());
 
-            assert_eq!(3, c3p0_1.count_all(conn)?);
-            assert_eq!(2, c3p0_2a.count_all(conn)?);
-            assert_eq!(2, c3p0_2b.count_all(conn)?);
+            assert_eq!(3, c3p0_1.count_all(conn).await?);
+            assert_eq!(2, c3p0_2a.count_all(conn).await?);
+            assert_eq!(2, c3p0_2b.count_all(conn).await?);
 
             Ok(())
-        })
+        }).await
     }
 
-    #[test]
-    fn should_delete_by_id_and_delete_all() -> Result<(), C3p0Error> {
+    #[tokio::test]
+    async fn should_delete_by_id_and_delete_all() -> Result<(), C3p0Error> {
         // Arrange
         let pool = InMemoryC3p0Pool::new();
         let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
         let c3p0_2 = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
 
         // Act
-        pool.transaction(|conn| {
-            assert_eq!(0, c3p0_1.count_all(conn)?);
-            assert_eq!(0, c3p0_2.count_all(conn)?);
+        pool.transaction(|mut conn| async move {
+        let conn = &mut conn;
+            assert_eq!(0, c3p0_1.count_all(conn).await?);
+            assert_eq!(0, c3p0_2.count_all(conn).await?);
 
-            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
-            assert!(c3p0_2.save(conn, TestData::new("value1").into()).is_ok());
-            assert!(c3p0_2.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).await.is_ok());
+            assert!(c3p0_2.save(conn, TestData::new("value1").into()).await.is_ok());
+            assert!(c3p0_2.save(conn, TestData::new("value1").into()).await.is_ok());
 
-            let saved_on_2 = c3p0_2.save(conn, TestData::new("value1").into())?;
+            let saved_on_2 = c3p0_2.save(conn, TestData::new("value1").into()).await?;
 
-            assert_eq!(1, c3p0_1.count_all(conn)?);
-            assert_eq!(3, c3p0_2.count_all(conn)?);
+            assert_eq!(1, c3p0_1.count_all(conn).await?);
+            assert_eq!(3, c3p0_2.count_all(conn).await?);
 
-            assert_eq!(1, c3p0_2.delete_by_id(conn, &saved_on_2.id)?);
+            assert_eq!(1, c3p0_2.delete_by_id(conn, &saved_on_2.id).await?);
 
-            assert!(!c3p0_2.exists_by_id(conn, &saved_on_2.id)?);
-            assert_eq!(1, c3p0_1.count_all(conn)?);
-            assert_eq!(2, c3p0_2.count_all(conn)?);
+            assert!(!c3p0_2.exists_by_id(conn, &saved_on_2.id).await?);
+            assert_eq!(1, c3p0_1.count_all(conn).await?);
+            assert_eq!(2, c3p0_2.count_all(conn).await?);
 
-            assert_eq!(2, c3p0_2.delete_all(conn)?);
+            assert_eq!(2, c3p0_2.delete_all(conn).await?);
 
-            assert_eq!(1, c3p0_1.count_all(conn)?);
-            assert_eq!(0, c3p0_2.count_all(conn)?);
+            assert_eq!(1, c3p0_1.count_all(conn).await?);
+            assert_eq!(0, c3p0_2.count_all(conn).await?);
 
             Ok(())
-        })
+        }).await
     }
 
-    #[test]
-    fn should_create_and_drop_table() -> Result<(), C3p0Error> {
+    #[tokio::test]
+    async fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         // Arrange
         let pool = InMemoryC3p0Pool::new();
         let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        pool.transaction(|conn| {
+        pool.transaction(|mut conn| async move {
+        let conn = &mut conn;
             // Act
-            assert!(c3p0_1.create_table_if_not_exists(conn).is_ok());
-            assert!(c3p0_1.create_table_if_not_exists(conn).is_ok());
+            assert!(c3p0_1.create_table_if_not_exists(conn).await.is_ok());
+            assert!(c3p0_1.create_table_if_not_exists(conn).await.is_ok());
 
-            assert!(c3p0_1.save(conn, TestData::new("value1").into()).is_ok());
+            assert!(c3p0_1.save(conn, TestData::new("value1").into()).await.is_ok());
 
-            assert_eq!(1, c3p0_1.count_all(conn)?);
+            assert_eq!(1, c3p0_1.count_all(conn).await?);
 
-            assert!(c3p0_1.drop_table_if_exists(conn, false).is_ok());
+            assert!(c3p0_1.drop_table_if_exists(conn, false).await.is_ok());
 
-            assert_eq!(0, c3p0_1.count_all(conn)?);
+            assert_eq!(0, c3p0_1.count_all(conn).await?);
 
             Ok(())
-        })
+        }).await
     }
 
-    #[test]
-    fn should_fetch_all() -> Result<(), C3p0Error> {
+    #[tokio::test]
+    async fn should_fetch_all() -> Result<(), C3p0Error> {
         // Arrange
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        pool.transaction(|conn| {
+        pool.transaction(|mut conn| async move {
+        let conn = &mut conn;
             // Act
-            let saved_model_0 = c3p0.save(conn, TestData::new("value1").into())?;
-            let saved_model_1 = c3p0.save(conn, TestData::new("value2").into())?;
-            let saved_model_2 = c3p0.save(conn, TestData::new("value2").into())?;
+            let saved_model_0 = c3p0.save(conn, TestData::new("value1").into()).await?;
+            let saved_model_1 = c3p0.save(conn, TestData::new("value2").into()).await?;
+            let saved_model_2 = c3p0.save(conn, TestData::new("value2").into()).await?;
 
-            let all = c3p0.fetch_all(conn)?;
+            let all = c3p0.fetch_all(conn).await?;
 
             // Assert
             assert_eq!(3, all.len());
@@ -473,23 +484,24 @@ mod test {
             assert_eq!(saved_model_2.data.value, fetched_model_2.data.value);
 
             Ok(())
-        })
+        }).await
     }
 
-    #[test]
-    fn should_update_with_optimistic_lock() -> Result<(), C3p0Error> {
+    #[tokio::test]
+    async fn should_update_with_optimistic_lock() -> Result<(), C3p0Error> {
         // Arrange
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        pool.transaction(|conn| {
+        pool.transaction(|mut conn| async move {
+        let conn = &mut conn;
             // Act
-            let saved_model = c3p0.save(conn, TestData::new("value1").into())?;
-            let updated_model = c3p0.update(conn, saved_model.clone())?;
-            let fetched_model = c3p0.fetch_one_optional_by_id(conn, &saved_model)?.unwrap();
+            let saved_model = c3p0.save(conn, TestData::new("value1").into()).await?;
+            let updated_model = c3p0.update(conn, saved_model.clone()).await?;
+            let fetched_model = c3p0.fetch_one_optional_by_id(conn, &saved_model).await?.unwrap();
 
-            let updated_result_1 = c3p0.update(conn, saved_model.clone());
-            let updated_result_2 = c3p0.update(conn, updated_model.clone());
+            let updated_result_1 = c3p0.update(conn, saved_model.clone()).await;
+            let updated_result_2 = c3p0.update(conn, updated_model.clone()).await;
 
             // Assert
             assert_eq!(saved_model.id, updated_model.id);
@@ -507,26 +519,27 @@ mod test {
             }
 
             Ok(())
-        })
+        }).await
     }
 
-    #[test]
-    fn should_delete_with_optimistic_lock() -> Result<(), C3p0Error> {
+    #[tokio::test]
+    async fn should_delete_with_optimistic_lock() -> Result<(), C3p0Error> {
         // Arrange
         let pool = InMemoryC3p0Pool::new();
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
-        pool.transaction(|conn| {
+        pool.transaction(|mut conn| async move {
+        let conn = &mut conn;
             // Act
-            let saved_model = c3p0.save(conn, TestData::new("value1").into())?;
-            let updated_model = c3p0.update(conn, saved_model.clone())?;
-            let fetched_model = c3p0.fetch_one_optional_by_id(conn, &saved_model)?.unwrap();
+            let saved_model = c3p0.save(conn, TestData::new("value1").into()).await?;
+            let updated_model = c3p0.update(conn, saved_model.clone()).await?;
+            let fetched_model = c3p0.fetch_one_optional_by_id(conn, &saved_model).await?.unwrap();
 
-            let delete_result_1 = c3p0.delete(conn, saved_model.clone());
-            assert!(c3p0.exists_by_id(conn, &saved_model)?);
+            let delete_result_1 = c3p0.delete(conn, saved_model.clone()).await;
+            assert!(c3p0.exists_by_id(conn, &saved_model).await?);
 
-            let delete_result_2 = c3p0.delete(conn, updated_model.clone());
-            assert!(!c3p0.exists_by_id(conn, &saved_model)?);
+            let delete_result_2 = c3p0.delete(conn, updated_model.clone()).await;
+            assert!(!c3p0.exists_by_id(conn, &saved_model).await?);
 
             // Assert
             assert_eq!(saved_model.id, updated_model.id);
@@ -544,6 +557,7 @@ mod test {
             }
 
             Ok(())
-        })
+        }).await
     }
+
 }

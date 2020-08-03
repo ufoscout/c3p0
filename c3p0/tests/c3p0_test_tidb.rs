@@ -1,4 +1,9 @@
-#![cfg(feature = "mysql")]
+#![cfg(feature = "tidb")]
+pub use c3p0::mysql::mysql_async::{Row};
+use c3p0::*;
+
+mod utils;
+
 /*
 use c3p0::blocking::*;
 pub use c3p0::mysql::blocking::mysql::{Opts, OptsBuilder, Row};
@@ -12,7 +17,6 @@ pub type C3p0Impl = MysqlC3p0Pool;
 
 mod tests_blocking;
 mod tests_blocking_json;
-mod utils;
 
 pub type MaybeType = (
     C3p0Impl,
@@ -54,6 +58,7 @@ pub fn data(serial: bool) -> Data<'static, MaybeType> {
         .data(serial)
 }
 
+*/
 pub mod db_specific {
 
     use super::*;
@@ -70,4 +75,3 @@ pub mod db_specific {
         format!(r"INSERT INTO {} (name) VALUES (?)", table_name)
     }
 }
-*/
