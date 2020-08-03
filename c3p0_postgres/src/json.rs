@@ -115,10 +115,7 @@ where
         &self.codec
     }
 
-    async fn create_table_if_not_exists(
-        &self,
-        conn: &mut PgConnection,
-    ) -> Result<(), C3p0Error> {
+    async fn create_table_if_not_exists(&self, conn: &mut PgConnection) -> Result<(), C3p0Error> {
         conn.execute(&self.queries.create_table_sql_query, &[])
             .await?;
         Ok(())

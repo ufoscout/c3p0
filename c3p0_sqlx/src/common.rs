@@ -1,5 +1,5 @@
-use c3p0_common::{C3p0Error, JsonCodec, Model};
 use crate::{Db, DbRow};
+use c3p0_common::{C3p0Error, JsonCodec, Model};
 use sqlx::Row;
 
 pub fn into_c3p0_error(error: sqlx::Error) -> C3p0Error {
@@ -18,7 +18,7 @@ pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::err
 #[inline]
 pub fn to_model<
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-    CODEC: JsonCodec<DATA>
+    CODEC: JsonCodec<DATA>,
 >(
     codec: &CODEC,
     row: &DbRow,

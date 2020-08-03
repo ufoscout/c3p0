@@ -1,11 +1,10 @@
-use crate::{into_c3p0_error, SqlxConnection, to_model, Db, DbRow};
+use crate::{into_c3p0_error, to_model, Db, DbRow, SqlxConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
 use sqlx::Row;
 
 pub trait SqlxC3p0JsonBuilder {
-
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> SqlxC3p0Json<DATA, DefaultJsonCodec>;
@@ -16,11 +15,9 @@ pub trait SqlxC3p0JsonBuilder {
         self,
         codec: CODEC,
     ) -> SqlxC3p0Json<DATA, CODEC>;
-
 }
 
 impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<crate::SqlxC3p0Pool> {
-
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> SqlxC3p0Json<DATA, DefaultJsonCodec> {

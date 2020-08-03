@@ -1,10 +1,10 @@
+use async_trait::async_trait;
 use c3p0_common::*;
 use std::collections::{BTreeMap, HashMap};
-use std::ops::{Deref, DerefMut};
-use std::sync::{Arc};
-use tokio::sync::Mutex;
-use async_trait::async_trait;
 use std::future::Future;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 type Db = HashMap<String, BTreeMap<IdType, Model<serde_json::Value>>>;
 
@@ -32,7 +32,6 @@ impl C3p0Pool for InMemoryC3p0Pool {
         &self,
         tx: F,
     ) -> Result<T, E> {
-
         let mut guard = self.db.lock().await;
         // .map_err(|err| C3p0Error::InternalError {
         //         cause: format!("{}", err),
@@ -42,7 +41,7 @@ impl C3p0Pool for InMemoryC3p0Pool {
 
         // ToDo: To avoid this unsafe we need GAT
         let conn = InMemoryConnection {
-                db: (unsafe { ::std::mem::transmute(&mut db_clone) })
+            db: (unsafe { ::std::mem::transmute(&mut db_clone) }),
         };
 
         let result = (tx)(conn).await?;
@@ -52,8 +51,8 @@ impl C3p0Pool for InMemoryC3p0Pool {
     }
 }
 
-pub struct  InMemoryConnection{
-    db: &'static mut Db
+pub struct InMemoryConnection {
+    db: &'static mut Db,
 }
 
 impl Deref for InMemoryConnection {
@@ -79,29 +78,35 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|mut conn| async move {
-                conn.insert("one".to_string(), Default::default());
-                Ok(())
-            }).await;
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|mut conn| async move {
+                    conn.insert("one".to_string(), Default::default());
+                    Ok(())
+                })
+                .await;
             assert!(result.is_ok())
         }
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|mut db| async move {
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|mut db| async move {
                     assert!(db.contains_key("one"));
                     db.insert("two".to_string(), Default::default());
                     db.remove("one");
                     Ok(())
-            }).await;
+                })
+                .await;
             assert!(result.is_ok())
         }
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|db| async move {
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|db| async move {
                     assert!(!db.contains_key("one"));
                     assert!(db.contains_key("two"));
                     Ok(())
-            }).await;
+                })
+                .await;
             assert!(result.is_ok())
         }
 
@@ -113,29 +118,35 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|mut db| async move {
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|mut db| async move {
                     db.insert("one".to_string(), Default::default());
                     Ok(())
-            }).await;
+                })
+                .await;
             assert!(result.is_ok())
         }
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|mut db| async move {
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|mut db| async move {
                     assert!(db.contains_key("one"));
                     db.insert("two".to_string(), Default::default());
                     db.remove("one");
                     Ok(())
-            }).await;
+                })
+                .await;
             assert!(result.is_ok())
         }
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|tx| async move {
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|tx| async move {
                     assert!(!tx.contains_key("one"));
                     assert!(tx.contains_key("two"));
                     Ok(())
-            }).await;
+                })
+                .await;
             assert!(result.is_ok())
         }
 
@@ -147,22 +158,26 @@ mod test {
         let pool = InMemoryC3p0Pool::new();
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|mut tx| async move {
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|mut tx| async move {
                     tx.insert("one".to_string(), Default::default());
                     Ok(())
-            }).await;
+                })
+                .await;
             assert!(result.is_ok())
         }
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|mut tx| async move {
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|mut tx| async move {
                     assert!(tx.contains_key("one"));
                     tx.insert("two".to_string(), Default::default());
                     tx.remove("one");
                     Err(C3p0Error::InternalError {
                         cause: "test error on purpose".to_string(),
                     })
-            }).await;
+                })
+                .await;
             match result {
                 Err(C3p0Error::InternalError { cause }) => {
                     assert_eq!("test error on purpose", cause)
@@ -172,11 +187,13 @@ mod test {
         }
 
         {
-            let result: Result<(), C3p0Error> = pool.transaction(|tx| async move {
+            let result: Result<(), C3p0Error> = pool
+                .transaction(|tx| async move {
                     assert!(tx.contains_key("one"));
                     assert!(!tx.contains_key("two"));
                     Ok(())
-            }).await;
+                })
+                .await;
             assert!(result.is_ok())
         }
 

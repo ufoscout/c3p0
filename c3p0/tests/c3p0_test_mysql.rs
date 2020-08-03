@@ -1,5 +1,5 @@
 #![cfg(feature = "mysql")]
-pub use c3p0::mysql::mysql_async::{Row};
+pub use c3p0::mysql::mysql_async::Row;
 use c3p0::*;
 
 mod utils;

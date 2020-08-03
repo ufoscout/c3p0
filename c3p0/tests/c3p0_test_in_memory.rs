@@ -1,10 +1,10 @@
 #![cfg(feature = "in_memory")]
 
-use c3p0::*;
 use c3p0::in_memory::*;
+use c3p0::*;
+use futures::FutureExt;
 use maybe_single::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use futures::FutureExt;
 
 pub type C3p0Impl = InMemoryC3p0Pool;
 

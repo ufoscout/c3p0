@@ -1,7 +1,6 @@
 use crate::utils::*;
 use crate::*;
 
-
 #[test]
 #[cfg(not(feature = "in_memory"))]
 fn should_create_and_drop_table() -> Result<(), C3p0Error> {
@@ -21,21 +20,23 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
             last_name: "my_last_name".to_owned(),
         });
 
-        pool.transaction::<_, C3p0Error, _ ,_>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
             let conn = &mut conn;
             assert!(jpo.drop_table_if_exists(conn, false).await.is_ok());
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _ ,_>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
             let conn = &mut conn;
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _ ,_>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
             let conn = &mut conn;
             println!("first {:?}", jpo.create_table_if_not_exists(conn).await);
 
@@ -47,29 +48,31 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
             assert!(jpo.drop_table_if_exists(conn, false).await.is_ok());
             assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _ ,_>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
             let conn = &mut conn;
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _ ,_>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
             let conn = &mut conn;
             println!("second {:?}", jpo.create_table_if_not_exists(conn).await);
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             assert!(jpo.save(conn, model_clone).await.is_ok());
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         Ok(())
     })
 }
-
 
 #[test]
 fn basic_crud() -> Result<(), C3p0Error> {
@@ -94,7 +97,8 @@ fn basic_crud() -> Result<(), C3p0Error> {
             assert!(saved_model.id >= 0);
 
             let found_model = jpo
-                .fetch_one_optional_by_id(conn, &saved_model).await
+                .fetch_one_optional_by_id(conn, &saved_model)
+                .await
                 .unwrap()
                 .unwrap();
             assert_eq!(saved_model.id, found_model.id);
@@ -105,7 +109,8 @@ fn basic_crud() -> Result<(), C3p0Error> {
             let deleted = jpo.delete_by_id(conn, &saved_model).await.unwrap();
             assert_eq!(1, deleted);
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -139,7 +144,8 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
             assert_eq!(saved_model_1.id, models[1].id);
             assert_eq!(saved_model_2.id, models[2].id);
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -174,7 +180,8 @@ fn should_delete_all() -> Result<(), C3p0Error> {
             assert_eq!(2, jpo.delete_all(conn).await.unwrap());
             assert_eq!(0, jpo.count_all(conn).await.unwrap());
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -212,7 +219,8 @@ fn should_count() -> Result<(), C3p0Error> {
             assert_eq!(0, jpo.count_all(conn).await.unwrap());
 
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -242,7 +250,8 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
             assert!(!jpo.exists_by_id(conn, &model).await.unwrap());
             assert!(!jpo.exists_by_id(conn, &model.id).await.unwrap());
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -286,7 +295,8 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             assert_eq!(found_model.version, updated_model.version);
             assert_eq!(found_model.data, updated_model.data);
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -332,7 +342,8 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             };
 
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -365,7 +376,8 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
             assert!(!jpo.exists_by_id(conn, &saved_model).await.unwrap());
 
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -411,7 +423,8 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             assert!(jpo.exists_by_id(conn, &saved_model).await.unwrap());
 
             Ok(())
-        }).await
+        })
+        .await
     })
 }
 
@@ -429,46 +442,60 @@ fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
             last_name: "my_last_name".to_owned(),
         });
 
-        let result: Result<_, C3p0Error> = c3p0.transaction(|mut conn| async move {
-            let conn = &mut conn;
-            assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
-            assert!(jpo.save(conn, model.clone()).await.is_ok());
-            assert!(jpo.save(conn, model.clone()).await.is_ok());
-            Ok(())
-        }).await;
+        let result: Result<_, C3p0Error> = c3p0
+            .transaction(|mut conn| async move {
+                let conn = &mut conn;
+                assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
+                assert!(jpo.save(conn, model.clone()).await.is_ok());
+                assert!(jpo.save(conn, model.clone()).await.is_ok());
+                Ok(())
+            })
+            .await;
         assert!(result.is_ok());
 
         // fetch all ForUpdate::Default
-        let result: Result<_, C3p0Error> =
-            c3p0.transaction(|mut conn| async move {
-                jpo.fetch_all_for_update(&mut conn, &ForUpdate::Default).await
-            }).await;
+        let result: Result<_, C3p0Error> = c3p0
+            .transaction(|mut conn| async move {
+                jpo.fetch_all_for_update(&mut conn, &ForUpdate::Default)
+                    .await
+            })
+            .await;
         assert!(result.is_ok());
 
         if db_specific::db_type() != DbType::MySql && db_specific::db_type() != DbType::TiDB {
             // fetch one ForUpdate::NoWait
-            let result: Result<_, C3p0Error> = c3p0.transaction(|mut conn| async move {
-                jpo.fetch_one_optional_by_id_for_update(&mut conn, &0, &ForUpdate::NoWait).await
-            }).await;
+            let result: Result<_, C3p0Error> = c3p0
+                .transaction(|mut conn| async move {
+                    jpo.fetch_one_optional_by_id_for_update(&mut conn, &0, &ForUpdate::NoWait)
+                        .await
+                })
+                .await;
             assert!(result.is_ok());
 
             // fetch one ForUpdate::SkipLocked
-            let result: Result<_, C3p0Error> = c3p0.transaction(|mut conn| async move {
-                jpo.fetch_one_optional_by_id_for_update(&mut conn, &0, &ForUpdate::SkipLocked).await
-            }).await;
+            let result: Result<_, C3p0Error> = c3p0
+                .transaction(|mut conn| async move {
+                    jpo.fetch_one_optional_by_id_for_update(&mut conn, &0, &ForUpdate::SkipLocked)
+                        .await
+                })
+                .await;
             assert!(result.is_ok());
         }
 
         // fetch all ForUpdate::No
-        let result: Result<_, C3p0Error> =
-            c3p0.transaction(|mut conn| async move{
+        let result: Result<_, C3p0Error> = c3p0
+            .transaction(|mut conn| async move {
                 jpo.fetch_all_for_update(&mut conn, &ForUpdate::No).await
-            }).await;
+            })
+            .await;
         assert!(result.is_ok());
 
         {
             assert!(pool
-                .transaction(|mut conn| async move { jpo.drop_table_if_exists(&mut conn, true).await }).await
+                .transaction(
+                    |mut conn| async move { jpo.drop_table_if_exists(&mut conn, true).await }
+                )
+                .await
                 .is_ok());
         }
         Ok(())

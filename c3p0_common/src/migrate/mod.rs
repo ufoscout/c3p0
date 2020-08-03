@@ -1,9 +1,9 @@
 use crate::error::C3p0Error;
 use crate::json::model::Model;
 use crate::migrate::sql_migration::{to_sql_migrations, SqlMigration};
-use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 use log::*;
+use serde::{Deserialize, Serialize};
 
 pub mod md5;
 pub mod migration;
@@ -13,8 +13,8 @@ pub mod include_dir {
     pub use include_dir::*;
 }
 
+use crate::{C3p0Json, C3p0Pool, DefaultJsonCodec, NewModel, SqlConnection};
 pub use migration::{from_embed, from_fs, Migration, Migrations};
-use crate::{SqlConnection, C3p0Pool, C3p0Json, DefaultJsonCodec, NewModel};
 
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
@@ -112,10 +112,10 @@ pub struct C3p0Migrate<
 }
 
 impl<
-    Conn: SqlConnection,
-    C3P0: C3p0Pool<Conn = Conn>,
-    Migrator: C3p0Migrator<Conn = Conn> + Sync,
-> C3p0Migrate<Conn, C3P0, Migrator>
+        Conn: SqlConnection,
+        C3P0: C3p0Pool<Conn = Conn>,
+        Migrator: C3p0Migrator<Conn = Conn> + Sync,
+    > C3p0Migrate<Conn, C3P0, Migrator>
 {
     pub fn new(
         table: String,
@@ -260,7 +260,6 @@ impl<
         c3p0_json.fetch_all(conn).await
     }
 }
-
 
 fn clean_history(migrations: Vec<MigrationModel>) -> Result<Vec<MigrationModel>, C3p0Error> {
     let mut result = vec![];

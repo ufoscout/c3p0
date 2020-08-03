@@ -49,8 +49,7 @@ impl C3p0Pool for PgC3p0Pool {
         let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-        let transaction =
-            PgConnection::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
+        let transaction = PgConnection::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
 
         let result = { (tx)(transaction).await? };
 

@@ -26,7 +26,8 @@ fn should_fetch_by_sql() -> Result<(), C3p0Error> {
                     conn,
                     &format!("select id, version, data from {}", table_name),
                     &[],
-                ).await
+                )
+                .await
                 .unwrap();
             assert!(one.is_some());
 
@@ -35,10 +36,12 @@ fn should_fetch_by_sql() -> Result<(), C3p0Error> {
                     conn,
                     &format!("select id, version, data from {}", table_name),
                     &[],
-                ).await
+                )
+                .await
                 .unwrap();
             assert!(!all.is_empty());
             Ok(())
-        }).await
+        })
+        .await
     })
 }
