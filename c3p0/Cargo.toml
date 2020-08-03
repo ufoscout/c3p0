@@ -46,4 +46,4 @@ postgres = ["c3p0_postgres"]
 postgres_migrate = ["postgres", "c3p0_postgres/migrate"]
 
 tidb = ["c3p0_mysql"]
-tidb_migrate = ["tidb", "c3p0_mysql/migrate"]
+tidb_migrate = ["tidb", "mysql_migrate"]
