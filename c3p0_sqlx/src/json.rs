@@ -297,16 +297,21 @@ where
         conn: &mut Self::Conn,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        unimplemented!()
-        // let json_data = self.codec().to_value(&obj.data)?;
-        // let id = conn
-        //     .fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &json_data])
-        //     .await?;
-        // Ok(Model {
-        //     id,
-        //     version: obj.version,
-        //     data: obj.data,
-        // })
+        let json_data = self.codec().to_value(&obj.data)?;
+
+        let id = sqlx::query(&self.queries.save_sql_query)
+            .bind(&obj.version)
+            .bind(&json_data)
+            .fetch_one(conn.get_conn())
+            .await
+            .and_then(|row| row.try_get(0))
+            .map_err(into_c3p0_error)?;
+
+        Ok(Model {
+            id,
+            version: obj.version,
+            data: obj.data,
+        })
     }
 
     async fn update(
