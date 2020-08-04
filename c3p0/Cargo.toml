@@ -47,6 +47,7 @@ in_memory = ["c3p0_in_memory"]
 postgres = ["c3p0_postgres"]
 postgres_migrate = ["postgres", "c3p0_postgres/migrate"]
 
+sqlx_mysql = ["c3p0_sqlx/mysql"]
 sqlx_postgres = ["c3p0_sqlx/postgres"]
 
 #tidb = ["c3p0_mysql"]
