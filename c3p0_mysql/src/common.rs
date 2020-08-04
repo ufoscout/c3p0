@@ -1,7 +1,8 @@
 use c3p0_common::json::Queries;
 use c3p0_common::{C3p0Error, C3p0JsonBuilder, JsonCodec, Model};
-use mysql_common::row::{ColumnIndex, Row};
-use mysql_common::value::convert::FromValue;
+use mysql_async::prelude::FromValue;
+use mysql_async::Row;
+
 
 pub fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
     let result = row
@@ -16,15 +17,12 @@ pub fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error:
 pub fn to_model<
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     CODEC: JsonCodec<DATA>,
-    IdIdx: ColumnIndex,
-    VersionIdx: ColumnIndex,
-    DataIdx: ColumnIndex,
 >(
     codec: &CODEC,
     row: &Row,
-    id_index: IdIdx,
-    version_index: VersionIdx,
-    data_index: DataIdx,
+    id_index: usize,
+    version_index: usize,
+    data_index: usize,
 ) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
     let id = get_or_error(&row, id_index)?;
     let version = get_or_error(&row, version_index)?;
@@ -33,7 +31,7 @@ pub fn to_model<
 }
 
 #[inline]
-pub fn get_or_error<I: ColumnIndex, T: FromValue>(row: &Row, index: I) -> Result<T, C3p0Error> {
+pub fn get_or_error<T: FromValue>(row: &Row, index: usize) -> Result<T, C3p0Error> {
     row.get(index).ok_or_else(|| C3p0Error::RowMapperError {
         cause: "Row contains no values".to_owned(),
     })
