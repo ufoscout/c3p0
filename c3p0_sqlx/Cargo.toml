@@ -8,7 +8,7 @@ edition = "2018"
 readme = "../README.md"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
-keywords = ["sqlx", "postgres", "pg", "mysql", "sqlite", "async"]
+keywords = ["sqlx", "postgres", "mysql", "sqlite", "async"]
 
 [dependencies]
 c3p0_common = { path = "../c3p0_common", version = "0.60.0" }
