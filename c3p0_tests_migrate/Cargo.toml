@@ -23,5 +23,6 @@ default = []
 
 #mysql = ["c3p0/mysql_migrate"]
 postgres = ["c3p0/postgres_migrate"]
+sqlx_mysql = ["c3p0/sqlx_mysql_migrate"]
 sqlx_postgres = ["c3p0/sqlx_postgres_migrate"]
 #tidb = ["c3p0/tidb_migrate"]
