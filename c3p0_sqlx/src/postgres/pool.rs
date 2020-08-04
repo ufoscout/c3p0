@@ -8,25 +8,25 @@ use sqlx::{Pool, Transaction};
 use crate::common::executor::batch_execute;
 
 #[derive(Clone)]
-pub struct SqlxC3p0Pool {
+pub struct SqlxPgC3p0Pool {
     pool: Pool<Db>,
 }
 
-impl SqlxC3p0Pool {
+impl SqlxPgC3p0Pool {
     pub fn new(pool: Pool<Db>) -> Self {
-        SqlxC3p0Pool { pool }
+        SqlxPgC3p0Pool { pool }
     }
 }
 
-impl Into<SqlxC3p0Pool> for Pool<Db> {
-    fn into(self) -> SqlxC3p0Pool {
-        SqlxC3p0Pool::new(self)
+impl Into<SqlxPgC3p0Pool> for Pool<Db> {
+    fn into(self) -> SqlxPgC3p0Pool {
+        SqlxPgC3p0Pool::new(self)
     }
 }
 
 #[async_trait]
-impl C3p0Pool for SqlxC3p0Pool {
-    type Conn = SqlxConnection;
+impl C3p0Pool for SqlxPgC3p0Pool {
+    type Conn = SqlxPgConnection;
 
     async fn transaction<
         T: Send,
@@ -41,7 +41,7 @@ impl C3p0Pool for SqlxC3p0Pool {
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction =
-            SqlxConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+            SqlxPgConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
 
         let result = { (tx)(transaction).await? };
 
@@ -51,20 +51,20 @@ impl C3p0Pool for SqlxC3p0Pool {
     }
 }
 
-pub enum SqlxConnection {
+pub enum SqlxPgConnection {
     Tx(&'static mut Transaction<'static, Db>),
 }
 
-impl SqlxConnection {
+impl SqlxPgConnection {
     pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
         match self {
-            SqlxConnection::Tx(tx) => tx,
+            SqlxPgConnection::Tx(tx) => tx,
         }
     }
 }
 
 #[async_trait]
-impl SqlConnection for SqlxConnection {
+impl SqlConnection for SqlxPgConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         batch_execute(sql, self.get_conn()).await
     }

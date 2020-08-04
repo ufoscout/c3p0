@@ -1,6 +1,6 @@
 use crate::error::into_c3p0_error;
 use crate::mysql::queries::build_mysql_queries;
-use crate::mysql::{Db, DbRow, SqlxC3p0Pool, SqlxConnection};
+use crate::mysql::{Db, DbRow, SqlxMySqlC3p0Pool, SqlxMySqlConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
@@ -10,21 +10,21 @@ use sqlx::{IntoArguments, Row};
 use crate::common::to_model;
 use crate::common::executor::{fetch_one_optional_with_sql, fetch_one_with_sql, fetch_all_with_sql, batch_execute, update, delete};
 
-pub trait SqlxC3p0JsonBuilder {
+pub trait SqlxMySqlC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxC3p0Json<DATA, DefaultJsonCodec>;
+    ) -> SqlxMySqlC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> SqlxC3p0Json<DATA, CODEC>;
+    ) -> SqlxMySqlC3p0Json<DATA, CODEC>;
 }
 
 #[derive(Clone)]
-pub struct SqlxC3p0Json<DATA, CODEC: JsonCodec<DATA>>
+pub struct SqlxMySqlC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -34,10 +34,10 @@ where
     queries: Queries,
 }
 
-impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<SqlxC3p0Pool> {
+impl SqlxMySqlC3p0JsonBuilder for C3p0JsonBuilder<SqlxMySqlC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxC3p0Json<DATA, DefaultJsonCodec> {
+    ) -> SqlxMySqlC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -47,8 +47,8 @@ impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<SqlxC3p0Pool> {
     >(
         self,
         codec: CODEC,
-    ) -> SqlxC3p0Json<DATA, CODEC> {
-        SqlxC3p0Json {
+    ) -> SqlxMySqlC3p0Json<DATA, CODEC> {
+        SqlxMySqlC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
             queries: build_mysql_queries(self),
@@ -56,7 +56,7 @@ impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<SqlxC3p0Pool> {
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> SqlxC3p0Json<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> SqlxMySqlC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -75,7 +75,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxConnection,
+        conn: &mut SqlxMySqlConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         fetch_one_optional_with_sql(sql, conn.get_conn(), self.codec()).await
@@ -87,7 +87,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxConnection,
+        conn: &mut SqlxMySqlConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<DATA>, C3p0Error> {
         fetch_one_with_sql(sql, conn.get_conn(), self.codec()).await
@@ -99,7 +99,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxConnection,
+        conn: &mut SqlxMySqlConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         fetch_all_with_sql(sql, conn.get_conn(), self.codec()).await
@@ -107,11 +107,11 @@ where
 }
 
 #[async_trait]
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqlxC3p0Json<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqlxMySqlC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = SqlxConnection;
+    type Conn = SqlxMySqlConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec

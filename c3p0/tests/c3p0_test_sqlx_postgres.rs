@@ -1,6 +1,6 @@
 #![cfg(feature = "sqlx_postgres")]
 
-use c3p0::sqlx::postgres::*;
+use c3p0::sqlx::*;
 use c3p0::sqlx::sqlx::postgres::*;
 use c3p0::sqlx::sqlx::Row;
 use c3p0::*;
@@ -10,7 +10,7 @@ use testcontainers::*;
 
 use futures::FutureExt;
 
-pub type C3p0Impl = SqlxC3p0Pool;
+pub type C3p0Impl = SqlxPgC3p0Pool;
 
 //mod tests;
 mod tests_json;
@@ -36,7 +36,7 @@ async fn init() -> MaybeType {
 
     let pool = PgPool::connect_with(options).await.unwrap();
 
-    let pool = SqlxC3p0Pool::new(pool);
+    let pool = SqlxPgC3p0Pool::new(pool);
 
     (pool, node)
 }

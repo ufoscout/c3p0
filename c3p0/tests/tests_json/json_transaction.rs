@@ -8,7 +8,7 @@ fn json_should_commit_transaction() {
         let c3p0 = &data.0;
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
-        let jpo = C3p0JsonBuilder::new(table_name).build::<TestData>();
+        let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build::<TestData>();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
@@ -51,7 +51,7 @@ fn should_rollback_transaction() {
         let c3p0 = &data.0;
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
-        let jpo = &C3p0JsonBuilder::new(table_name).build();
+        let jpo = &C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
