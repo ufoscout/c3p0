@@ -1,6 +1,8 @@
 mod common;
 pub mod error;
 
+mod generic;
+
 pub mod sqlx {
     pub use sqlx::*;
 }
