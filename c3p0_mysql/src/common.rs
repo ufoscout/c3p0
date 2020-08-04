@@ -3,7 +3,6 @@ use c3p0_common::{C3p0Error, C3p0JsonBuilder, JsonCodec, Model};
 use mysql_async::prelude::FromValue;
 use mysql_async::Row;
 
-
 pub fn to_value_mapper<T: FromValue>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
     let result = row
         .get_opt(0)
