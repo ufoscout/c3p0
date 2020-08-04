@@ -23,7 +23,7 @@ pub fn to_model<
     id_index: IdIdx,
     version_index: VersionIdx,
     data_index: DataIdx,
-) -> Result<Model<DATA>, Box<dyn std::error::Error>>
+) -> Result<Model<DATA>, C3p0Error>
 where
     i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'a, DB>,
     i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'a, DB>,
