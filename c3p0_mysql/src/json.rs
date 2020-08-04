@@ -117,108 +117,108 @@ where
         &self.codec
     }
 
-    async fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<(), C3p0Error> {
+    async fn create_table_if_not_exists(&self, _conn: &mut Self::Conn) -> Result<(), C3p0Error> {
         unimplemented!()
     }
 
     async fn drop_table_if_exists(
         &self,
-        conn: &mut Self::Conn,
-        cascade: bool,
+        _conn: &mut Self::Conn,
+        _cascade: bool,
     ) -> Result<(), C3p0Error> {
         unimplemented!()
     }
 
-    async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    async fn count_all(&self, _conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
         unimplemented!()
     }
 
     async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
-        id: ID,
+        _conn: &mut Self::Conn,
+        _id: ID,
     ) -> Result<bool, C3p0Error> {
         unimplemented!()
     }
 
-    async fn fetch_all(&self, conn: &mut Self::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
+    async fn fetch_all(&self, _conn: &mut Self::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
 
     async fn fetch_all_for_update(
         &self,
-        conn: &mut Self::Conn,
-        for_update: &ForUpdate,
+        _conn: &mut Self::Conn,
+        _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
 
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
-        id: ID,
+        _conn: &mut Self::Conn,
+        _id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
 
     async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
-        id: ID,
-        for_update: &ForUpdate,
+        _conn: &mut Self::Conn,
+        _id: ID,
+        _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         unimplemented!()
     }
 
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
-        id: ID,
+        _conn: &mut Self::Conn,
+        _id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 
     async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
-        id: ID,
-        for_update: &ForUpdate,
+        _conn: &mut Self::Conn,
+        _id: ID,
+        _for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 
     async fn delete(
         &self,
-        conn: &mut Self::Conn,
-        obj: Model<DATA>,
+        _conn: &mut Self::Conn,
+        _obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 
-    async fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    async fn delete_all(&self, _conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
         unimplemented!()
     }
 
     async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
-        id: ID,
+        _conn: &mut Self::Conn,
+        _id: ID,
     ) -> Result<u64, C3p0Error> {
         unimplemented!()
     }
 
     async fn save(
         &self,
-        conn: &mut Self::Conn,
-        obj: NewModel<DATA>,
+        _conn: &mut Self::Conn,
+        _obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
 
     async fn update(
         &self,
-        conn: &mut Self::Conn,
-        obj: Model<DATA>,
+        _conn: &mut Self::Conn,
+        _obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         unimplemented!()
     }
