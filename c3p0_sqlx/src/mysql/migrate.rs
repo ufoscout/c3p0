@@ -1,8 +1,8 @@
 use c3p0_common::*;
 
-use async_trait::async_trait;
-use crate::{SqlxMySqlC3p0Pool, SqlxMySqlConnection, SqlxMySqlC3p0Json, SqlxMySqlC3p0JsonBuilder};
 use crate::common::executor::execute;
+use crate::{SqlxMySqlC3p0Json, SqlxMySqlC3p0JsonBuilder, SqlxMySqlC3p0Pool, SqlxMySqlConnection};
+use async_trait::async_trait;
 
 pub trait SqlxMySqlC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<SqlxMySqlConnection, SqlxMySqlC3p0Pool, SqlxMySqlMigrator>;
@@ -29,11 +29,7 @@ impl C3p0Migrator for SqlxMySqlMigrator {
     type C3P0 = SqlxMySqlC3p0Pool;
     type C3P0Json = SqlxMySqlC3p0Json<MigrationData, DefaultJsonCodec>;
 
-    fn build_cp30_json(
-        &self,
-        table: String,
-        schema: Option<String>,
-    ) -> Self::C3P0Json {
+    fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json {
         C3p0JsonBuilder::<Self::C3P0>::new(table)
             .with_schema_name(schema)
             .build()
@@ -61,7 +57,10 @@ impl C3p0Migrator for SqlxMySqlMigrator {
             c3p0_json.queries().qualified_table_name,
             c3p0_json.queries().data_field_name
         );
-        execute(sqlx::query(&lock_sql)
-            .bind(C3P0_INIT_MIGRATION_ID), conn.get_conn()).await
+        execute(
+            sqlx::query(&lock_sql).bind(C3P0_INIT_MIGRATION_ID),
+            conn.get_conn(),
+        )
+        .await
     }
 }

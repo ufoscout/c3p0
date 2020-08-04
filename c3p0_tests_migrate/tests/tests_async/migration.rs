@@ -17,7 +17,8 @@ async fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), 
     node.0
         .transaction(|mut conn| async move {
             let conn = &mut conn;
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(C3P0_MIGRATE_TABLE_DEFAULT).build::<MigrationData>();
+            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(C3P0_MIGRATE_TABLE_DEFAULT)
+                .build::<MigrationData>();
             assert!(jpo.count_all(conn).await.is_ok());
             assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
             Ok(())
@@ -80,9 +81,12 @@ async fn should_execute_migrations() -> Result<(), C3p0Error> {
         .transaction(|mut conn| async move {
             let conn = &mut conn;
 
-            let jpo_migration_table = C3p0JsonBuilder::<C3p0Impl>::new(migration_table_name).build::<MigrationData>();
-            let jpo_first_table = C3p0JsonBuilder::<C3p0Impl>::new(first_table_name).build::<MigrationData>();
-            let jpo_second_table = C3p0JsonBuilder::<C3p0Impl>::new(second_table_name).build::<MigrationData>();
+            let jpo_migration_table =
+                C3p0JsonBuilder::<C3p0Impl>::new(migration_table_name).build::<MigrationData>();
+            let jpo_first_table =
+                C3p0JsonBuilder::<C3p0Impl>::new(first_table_name).build::<MigrationData>();
+            let jpo_second_table =
+                C3p0JsonBuilder::<C3p0Impl>::new(second_table_name).build::<MigrationData>();
 
             assert!(jpo_migration_table.count_all(conn).await.is_ok());
             assert!(jpo_first_table.count_all(conn).await.is_ok());
@@ -126,8 +130,10 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
         .transaction(|mut conn| async move {
             let conn = &mut conn;
 
-            let jpo_migration_table = C3p0JsonBuilder::<C3p0Impl>::new(migration_table_name).build::<MigrationData>();
-            let jpo_first_table = C3p0JsonBuilder::<C3p0Impl>::new(first_table_name).build::<MigrationData>();
+            let jpo_migration_table =
+                C3p0JsonBuilder::<C3p0Impl>::new(migration_table_name).build::<MigrationData>();
+            let jpo_first_table =
+                C3p0JsonBuilder::<C3p0Impl>::new(first_table_name).build::<MigrationData>();
 
             assert!(jpo_migration_table.count_all(conn).await.is_ok());
             assert!(jpo_first_table.count_all(conn).await.is_ok());
@@ -144,7 +150,6 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
         })
         .await
 }
-
 
 #[tokio::test]
 async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
@@ -210,7 +215,6 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
         .await
 }
 
-
 #[tokio::test]
 async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
     let docker = clients::Cli::default();
@@ -260,7 +264,6 @@ async fn should_read_embedded_migrations() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(|mut conn| async move {
-
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new("TEST_TABLE").build::<MigrationData>();
 
             assert_eq!(3, jpo.count_all(&mut conn).await.unwrap());

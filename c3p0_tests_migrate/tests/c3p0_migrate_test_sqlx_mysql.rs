@@ -1,7 +1,7 @@
 #![cfg(feature = "sqlx_mysql")]
 
-use c3p0::sqlx::*;
 use c3p0::sqlx::sqlx::mysql::*;
+use c3p0::sqlx::*;
 pub use c3p0::*;
 use testcontainers::*;
 

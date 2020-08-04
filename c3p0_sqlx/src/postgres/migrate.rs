@@ -1,8 +1,8 @@
 use c3p0_common::*;
 
-use async_trait::async_trait;
-use crate::{SqlxPgC3p0Pool, SqlxPgConnection, SqlxPgC3p0Json, SqlxPgC3p0JsonBuilder};
 use crate::common::executor::execute;
+use crate::{SqlxPgC3p0Json, SqlxPgC3p0JsonBuilder, SqlxPgC3p0Pool, SqlxPgConnection};
+use async_trait::async_trait;
 
 pub trait SqlxPgC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<SqlxPgConnection, SqlxPgC3p0Pool, SqlxPgMigrator>;
@@ -29,11 +29,7 @@ impl C3p0Migrator for SqlxPgMigrator {
     type C3P0 = SqlxPgC3p0Pool;
     type C3P0Json = SqlxPgC3p0Json<MigrationData, DefaultJsonCodec>;
 
-    fn build_cp30_json(
-        &self,
-        table: String,
-        schema: Option<String>,
-    ) -> Self::C3P0Json {
+    fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json {
         C3p0JsonBuilder::<Self::C3P0>::new(table)
             .with_schema_name(schema)
             .build()
@@ -61,7 +57,10 @@ impl C3p0Migrator for SqlxPgMigrator {
             c3p0_json.queries().qualified_table_name,
             c3p0_json.queries().data_field_name
         );
-        execute(sqlx::query(&lock_sql)
-            .bind(C3P0_INIT_MIGRATION_ID), conn.get_conn()).await
+        execute(
+            sqlx::query(&lock_sql).bind(C3P0_INIT_MIGRATION_ID),
+            conn.get_conn(),
+        )
+        .await
     }
 }

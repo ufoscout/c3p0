@@ -19,11 +19,11 @@ pub fn to_model<
     version_index: VersionIdx,
     data_index: DataIdx,
 ) -> Result<Model<DATA>, C3p0Error>
-    where
-        for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
-        for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
-        for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
-//<DB as HasArguments<'_>>::Arguments
+where
+    for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+    for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+    for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+    //<DB as HasArguments<'_>>::Arguments
 {
     let id = row
         .try_get(id_index)

@@ -1,8 +1,8 @@
 #![cfg(feature = "sqlx_mysql")]
 
-use c3p0::sqlx::*;
 use c3p0::sqlx::sqlx::mysql::*;
 use c3p0::sqlx::sqlx::Row;
+use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;

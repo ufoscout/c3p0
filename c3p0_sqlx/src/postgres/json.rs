@@ -1,3 +1,8 @@
+use crate::common::executor::{
+    batch_execute, delete, fetch_all_with_sql, fetch_one_optional_with_sql, fetch_one_with_sql,
+    update,
+};
+use crate::common::to_model;
 use crate::error::into_c3p0_error;
 use crate::postgres::queries::build_pg_queries;
 use crate::postgres::{Db, DbRow, SqlxPgC3p0Pool, SqlxPgConnection};
@@ -7,8 +12,6 @@ use c3p0_common::*;
 use sqlx::query::Query;
 use sqlx::Done;
 use sqlx::{IntoArguments, Row};
-use crate::common::to_model;
-use crate::common::executor::{fetch_one_optional_with_sql, fetch_one_with_sql, fetch_all_with_sql, batch_execute, update, delete};
 
 pub trait SqlxPgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -91,7 +94,6 @@ where
         sql: Query<'a, Db, A>,
     ) -> Result<Model<DATA>, C3p0Error> {
         fetch_one_with_sql(sql, conn.get_conn(), self.codec()).await
-
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -212,7 +214,6 @@ where
             sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
         )
         .await
-
     }
 
     async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(

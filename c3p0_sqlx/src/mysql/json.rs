@@ -1,3 +1,8 @@
+use crate::common::executor::{
+    batch_execute, delete, fetch_all_with_sql, fetch_one_optional_with_sql, fetch_one_with_sql,
+    update,
+};
+use crate::common::to_model;
 use crate::error::into_c3p0_error;
 use crate::mysql::queries::build_mysql_queries;
 use crate::mysql::{Db, DbRow, SqlxMySqlC3p0Pool, SqlxMySqlConnection};
@@ -7,8 +12,6 @@ use c3p0_common::*;
 use sqlx::query::Query;
 use sqlx::Done;
 use sqlx::{IntoArguments, Row};
-use crate::common::to_model;
-use crate::common::executor::{fetch_one_optional_with_sql, fetch_one_with_sql, fetch_all_with_sql, batch_execute, update, delete};
 
 pub trait SqlxMySqlC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(

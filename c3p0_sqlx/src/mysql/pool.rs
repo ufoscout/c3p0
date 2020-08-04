@@ -2,10 +2,10 @@ use async_trait::async_trait;
 use c3p0_common::*;
 use futures::Future;
 
+use crate::common::executor::batch_execute;
 use crate::error::into_c3p0_error;
 use crate::mysql::Db;
 use sqlx::{Pool, Transaction};
-use crate::common::executor::batch_execute;
 
 #[derive(Clone)]
 pub struct SqlxMySqlC3p0Pool {
