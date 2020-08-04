@@ -17,3 +17,6 @@ pub mod mysql;
 
 #[cfg(any(feature = "postgres"))]
 pub mod postgres;
+
+//#[cfg(any(feature = "sqlite"))]
+//pub mod sqlite;
