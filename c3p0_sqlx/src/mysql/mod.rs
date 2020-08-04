@@ -1,6 +1,6 @@
-mod queries;
 mod json;
 mod pool;
+mod queries;
 
 pub use json::*;
 pub use pool::*;

@@ -1,13 +1,13 @@
-use crate::postgres::{Db, DbRow, SqlxConnection, SqlxC3p0Pool};
+use crate::error::into_c3p0_error;
 use crate::postgres::queries::build_pg_queries;
+use crate::postgres::{Db, DbRow, SqlxC3p0Pool, SqlxConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
-use sqlx::{Row, IntoArguments};
-use std::iter::Iterator;
 use sqlx::query::Query;
 use sqlx::Done;
-use crate::error::into_c3p0_error;
+use sqlx::{IntoArguments, Row};
+use std::iter::Iterator;
 
 pub trait SqlxC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -80,46 +80,41 @@ where
         sql.fetch_optional(conn.get_conn())
             .await
             .map_err(into_c3p0_error)?
-            .map(|row| self.to_model(&row) ).transpose()
+            .map(|row| self.to_model(&row))
+            .transpose()
     }
 
-       /// Allows the execution of a custom sql query and returns the first entry in the result set.
-       /// For this to work, the sql query:
-       /// - must be a SELECT
-       /// - must declare the ID, VERSION and DATA fields in this exact order
-       pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
-           &self,
-           conn: &mut SqlxConnection,
-           sql: Query<'a, Db, A>,
-       ) -> Result<Model<DATA>, C3p0Error> {
-           sql.fetch_one(conn.get_conn())
-               .await
-               .map_err(into_c3p0_error)
-               .and_then(|row| {
-                   self.to_model(&row)
-               })
-       }
+    /// Allows the execution of a custom sql query and returns the first entry in the result set.
+    /// For this to work, the sql query:
+    /// - must be a SELECT
+    /// - must declare the ID, VERSION and DATA fields in this exact order
+    pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
+        &self,
+        conn: &mut SqlxConnection,
+        sql: Query<'a, Db, A>,
+    ) -> Result<Model<DATA>, C3p0Error> {
+        sql.fetch_one(conn.get_conn())
+            .await
+            .map_err(into_c3p0_error)
+            .and_then(|row| self.to_model(&row))
+    }
 
-
-       /// Allows the execution of a custom sql query and returns all the entries in the result set.
-       /// For this to work, the sql query:
-       /// - must be a SELECT
-       /// - must declare the ID, VERSION and DATA fields in this exact order
-       pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
-           &self,
-           conn: &mut SqlxConnection,
-           sql: Query<'a, Db, A>,
-       ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-           sql.fetch_all(conn.get_conn())
-               .await
-               .map_err(into_c3p0_error)?
-               .iter()
-               .map(|row| {
-                   self.to_model(&row)
-               })
-               .collect::<Result<Vec<_>, C3p0Error>>()
-       }
-
+    /// Allows the execution of a custom sql query and returns all the entries in the result set.
+    /// For this to work, the sql query:
+    /// - must be a SELECT
+    /// - must declare the ID, VERSION and DATA fields in this exact order
+    pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
+        &self,
+        conn: &mut SqlxConnection,
+        sql: Query<'a, Db, A>,
+    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        sql.fetch_all(conn.get_conn())
+            .await
+            .map_err(into_c3p0_error)?
+            .iter()
+            .map(|row| self.to_model(&row))
+            .collect::<Result<Vec<_>, C3p0Error>>()
+    }
 }
 
 #[async_trait]
@@ -181,7 +176,8 @@ where
     }
 
     async fn fetch_all(&self, conn: &mut Self::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        self.fetch_all_with_sql(conn, sqlx::query(&self.queries.find_all_sql_query)).await
+        self.fetch_all_with_sql(conn, sqlx::query(&self.queries.find_all_sql_query))
+            .await
     }
 
     async fn fetch_all_for_update(
@@ -202,7 +198,11 @@ where
         conn: &mut Self::Conn,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        self.fetch_one_optional_with_sql(conn, sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into())).await
+        self.fetch_one_optional_with_sql(
+            conn,
+            sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
+        )
+        .await
     }
 
     async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
@@ -216,7 +216,8 @@ where
             &self.queries.find_by_id_sql_query,
             for_update.to_sql()
         );
-        self.fetch_one_optional_with_sql(conn, sqlx::query(&sql).bind(id.into())).await
+        self.fetch_one_optional_with_sql(conn, sqlx::query(&sql).bind(id.into()))
+            .await
     }
 
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -224,7 +225,11 @@ where
         conn: &mut Self::Conn,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
-        self.fetch_one_with_sql(conn, sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into())).await
+        self.fetch_one_with_sql(
+            conn,
+            sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
+        )
+        .await
         // self.fetch_one_optional_by_id(conn, id)
         //     .await
         //     .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
@@ -241,7 +246,8 @@ where
             &self.queries.find_by_id_sql_query,
             for_update.to_sql()
         );
-        self.fetch_one_with_sql(conn, sqlx::query(&sql).bind(id.into())).await
+        self.fetch_one_with_sql(conn, sqlx::query(&sql).bind(id.into()))
+            .await
 
         // self.fetch_one_optional_by_id_for_update(conn, id, for_update)
         //     .await
@@ -253,7 +259,6 @@ where
         conn: &mut Self::Conn,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-
         let result = sqlx::query(&self.queries.delete_sql_query)
             .bind(&obj.id)
             .bind(&obj.version)
@@ -346,7 +351,6 @@ where
         Ok(updated_model)
     }
 }
-
 
 #[inline]
 pub fn to_model<

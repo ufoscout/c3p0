@@ -1,8 +1,8 @@
 #![cfg(feature = "sqlx_mysql")]
 
-use c3p0::sqlx::sqlx::Row;
-use c3p0::sqlx::sqlx::mysql::*;
 use c3p0::sqlx::mysql::*;
+use c3p0::sqlx::sqlx::mysql::*;
+use c3p0::sqlx::sqlx::Row;
 use c3p0::*;
 use maybe_single::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
@@ -22,7 +22,6 @@ pub type MaybeType = (
 );
 
 async fn init() -> MaybeType {
-
     let mysql_version = "5.7.25";
     let mysql_image = images::generic::GenericImage::new(format!("mysql:{}", mysql_version))
         .with_wait_for(images::generic::WaitFor::message_on_stderr(

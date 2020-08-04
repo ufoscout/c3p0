@@ -1,4 +1,3 @@
-
 pub fn build_pg_queries<C3P0>(
     json_builder: c3p0_common::C3p0JsonBuilder<C3P0>,
 ) -> c3p0_common::json::Queries {

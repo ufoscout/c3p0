@@ -4,9 +4,8 @@ pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::err
 }
 */
 
-
-use c3p0_common::{JsonCodec, Model, C3p0Error};
-use sqlx::{Row, ColumnIndex, Database};
+use c3p0_common::{C3p0Error, JsonCodec, Model};
+use sqlx::{ColumnIndex, Database, Row};
 
 #[inline]
 pub fn to_model<
@@ -50,4 +49,3 @@ where
         )?;
     Ok(Model { id, version, data })
 }
-

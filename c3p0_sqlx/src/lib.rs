@@ -17,4 +17,3 @@ pub mod mysql;
 
 #[cfg(any(feature = "postgres"))]
 pub mod postgres;
-
