@@ -1,15 +1,10 @@
-/*
-pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
-    Ok(row.try_get(0).map_err(|_| C3p0Error::ResultNotFoundError)?)
-}
-*/
+pub mod executor;
 
 use c3p0_common::{C3p0Error, JsonCodec, Model};
 use sqlx::{ColumnIndex, Database, Row};
 
 #[inline]
 pub fn to_model<
-    'a,
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     CODEC: JsonCodec<DATA>,
     R: Row<Database = DB>,
@@ -19,16 +14,16 @@ pub fn to_model<
     DB: Database,
 >(
     codec: &CODEC,
-    row: &'a R,
+    row: &R,
     id_index: IdIdx,
     version_index: VersionIdx,
     data_index: DataIdx,
 ) -> Result<Model<DATA>, C3p0Error>
-where
-    i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'a, DB>,
-    i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'a, DB>,
-    serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'a, DB>,
-    //<DB as HasArguments<'_>>::Arguments
+    where
+        for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+        for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+        for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+//<DB as HasArguments<'_>>::Arguments
 {
     let id = row
         .try_get(id_index)

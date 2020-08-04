@@ -5,6 +5,7 @@ use futures::Future;
 use crate::error::into_c3p0_error;
 use std::ops::{Deref, DerefMut};
 use sqlx::{Pool, Transaction, Database, Executor, IntoArguments, query::Query};
+use sqlx::database::HasArguments;
 
 #[derive(Clone)]
 pub struct SqlxC3p0Pool<DB>
@@ -104,18 +105,36 @@ pub async fn execute<'q, A, E, DB>(query: Query<'q, DB, A>, executor: E) -> Resu
         .map(|_| ())
 }
 
+pub async fn execute_2<'q, E, DB>(query: Query<'q, DB, <DB as HasArguments<'q>>::Arguments>, executor: E) -> Result<(), C3p0Error>
+    where
+        DB: Database,
+        <DB as sqlx::database::HasArguments<'q>>::Arguments: sqlx::IntoArguments<'q, DB>,
+        E: Executor<'q, Database = DB>,
+{
+    query
+        .execute(executor)
+        .await
+        .map_err(into_c3p0_error)
+        .map(|_| ())
+}
+
+
 
 impl <DB> SqlxConnection<DB>
     where DB: Clone + Database,
           for<'c> <DB as sqlx::database::HasArguments<'c>>::Arguments: sqlx::IntoArguments<'c, DB>,
+    //E: Executor<'q, Database = DB>,
           for<'c> &'c sqlx::Transaction<'c, DB> : sqlx::Executor<'c, Database = DB>,
+
+          for<'c> sqlx::Transaction<'c, DB> : sqlx::Executor<'c, Database = DB>,
+// for<'c> sqlx:Executor<'c>::Database as sqlx::database::HasArguments<'c>>::Arguments: sqlx::IntoArguments<'c, DB>,
 {
 
     pub fn as_executor(&self) -> &Transaction<'static, DB> {
         self.deref()
     }
 
-    pub async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
+    async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         let query  = sqlx::query::<DB>(sql);
         execute(query, self.as_executor()).await
 

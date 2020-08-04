@@ -5,6 +5,7 @@ use futures::Future;
 use crate::error::into_c3p0_error;
 use crate::postgres::Db;
 use sqlx::{Pool, Transaction};
+use crate::common::executor::batch_execute;
 
 #[derive(Clone)]
 pub struct SqlxC3p0Pool {
@@ -65,11 +66,6 @@ impl SqlxConnection {
 #[async_trait]
 impl SqlConnection for SqlxConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        let query = sqlx::query(sql);
-        query
-            .execute(self.get_conn())
-            .await
-            .map_err(into_c3p0_error)
-            .map(|_| ())
+        batch_execute(sql, self.get_conn()).await
     }
 }

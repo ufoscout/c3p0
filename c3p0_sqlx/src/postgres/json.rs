@@ -7,8 +7,8 @@ use c3p0_common::*;
 use sqlx::query::Query;
 use sqlx::Done;
 use sqlx::{IntoArguments, Row};
-use std::iter::Iterator;
 use crate::common::to_model;
+use crate::common::executor::{fetch_one_optional_with_sql, fetch_one_with_sql, fetch_all_with_sql, batch_execute, update, delete};
 
 pub trait SqlxC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -78,11 +78,7 @@ where
         conn: &mut SqlxConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        sql.fetch_optional(conn.get_conn())
-            .await
-            .map_err(into_c3p0_error)?
-            .map(|row| self.to_model(&row))
-            .transpose()
+        fetch_one_optional_with_sql(sql, conn.get_conn(), self.codec()).await
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -94,10 +90,8 @@ where
         conn: &mut SqlxConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        sql.fetch_one(conn.get_conn())
-            .await
-            .map_err(into_c3p0_error)
-            .and_then(|row| self.to_model(&row))
+        fetch_one_with_sql(sql, conn.get_conn(), self.codec()).await
+
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -109,12 +103,7 @@ where
         conn: &mut SqlxConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        sql.fetch_all(conn.get_conn())
-            .await
-            .map_err(into_c3p0_error)?
-            .iter()
-            .map(|row| self.to_model(&row))
-            .collect::<Result<Vec<_>, C3p0Error>>()
+        fetch_all_with_sql(sql, conn.get_conn(), self.codec()).await
     }
 }
 
@@ -130,11 +119,7 @@ where
     }
 
     async fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<(), C3p0Error> {
-        sqlx::query(&self.queries.create_table_sql_query)
-            .execute(conn.get_conn())
-            .await
-            .map_err(into_c3p0_error)
-            .map(|_| ())
+        batch_execute(&self.queries.create_table_sql_query, conn.get_conn()).await
     }
 
     async fn drop_table_if_exists(
@@ -147,11 +132,7 @@ where
         } else {
             &self.queries.drop_table_sql_query
         };
-        sqlx::query(query)
-            .execute(conn.get_conn())
-            .await
-            .map_err(into_c3p0_error)
-            .map(|_| ())
+        batch_execute(&query, conn.get_conn()).await
     }
 
     async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
@@ -231,9 +212,7 @@ where
             sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
         )
         .await
-        // self.fetch_one_optional_by_id(conn, id)
-        //     .await
-        //     .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+
     }
 
     async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
@@ -260,21 +239,7 @@ where
         conn: &mut Self::Conn,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        let result = sqlx::query(&self.queries.delete_sql_query)
-            .bind(&obj.id)
-            .bind(&obj.version)
-            .execute(conn.get_conn())
-            .await
-            .map_err(into_c3p0_error)?
-            .rows_affected();
-
-        if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
-                                                                        &self.queries.qualified_table_name, &obj.id, &obj.version
-            )});
-        }
-
-        Ok(obj)
+        delete(obj, conn.get_conn(), &self.queries).await
     }
 
     async fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
@@ -325,30 +290,6 @@ where
         conn: &mut Self::Conn,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        let json_data = self.codec().to_value(&obj.data)?;
-
-        let updated_model = Model {
-            id: obj.id,
-            version: obj.version + 1,
-            data: obj.data,
-        };
-
-        let result = sqlx::query(&self.queries.update_sql_query)
-            .bind(&updated_model.version)
-            .bind(&json_data)
-            .bind(&updated_model.id)
-            .bind(&obj.version)
-            .execute(conn.get_conn())
-            .await
-            .map_err(into_c3p0_error)
-            .map(|done| done.rows_affected())?;
-
-        if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
-                                                                        &self.queries.qualified_table_name, &updated_model.id, &obj.version
-            )});
-        }
-
-        Ok(updated_model)
+        update(obj, conn.get_conn(), &self.queries, self.codec()).await
     }
 }

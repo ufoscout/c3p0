@@ -1,43 +1,63 @@
 use crate::error::into_c3p0_error;
-use crate::postgres::queries::build_pg_queries;
-use crate::postgres::{Db, DbRow, SqlxC3p0Pool, SqlxConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
 use sqlx::query::Query;
-use sqlx::Done;
+use sqlx::{Done, Database};
 use sqlx::{IntoArguments, Row};
 use std::iter::Iterator;
 use crate::common::to_model;
+use crate::generic::{SqlxC3p0Pool, SqlxConnection};
 
-pub trait SqlxC3p0JsonBuilder {
+pub trait SqlxC3p0JsonBuilder<DB>
+    where DB: Clone + Database + Sync, <DB as Database>::Connection : Sync,
+          for<'c> <DB as sqlx::database::HasArguments<'c>>::Arguments: sqlx::IntoArguments<'c, DB>,
+          for<'c> &'c sqlx::Transaction<'c, DB> : sqlx::Executor<'c, Database = DB>,
+          for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+          for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+          for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+{
+
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxC3p0Json<DATA, DefaultJsonCodec>;
+    ) -> SqlxC3p0Json<DB, DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> SqlxC3p0Json<DATA, CODEC>;
+    ) -> SqlxC3p0Json<DB, DATA, CODEC>;
 }
 
 #[derive(Clone)]
-pub struct SqlxC3p0Json<DATA, CODEC: JsonCodec<DATA>>
-where
+pub struct SqlxC3p0Json<DB, DATA, CODEC: JsonCodec<DATA>>
+    where DB: Clone + Database + Sync, <DB as Database>::Connection : Sync,
+          for<'c> <DB as sqlx::database::HasArguments<'c>>::Arguments: sqlx::IntoArguments<'c, DB>,
+          for<'c> &'c sqlx::Transaction<'c, DB> : sqlx::Executor<'c, Database = DB>,
+          for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+          for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+          for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     phantom_data: std::marker::PhantomData<DATA>,
+    phantom_db: std::marker::PhantomData<DB>,
 
     codec: CODEC,
     queries: Queries,
 }
 
-impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<SqlxC3p0Pool> {
+impl <DB> SqlxC3p0JsonBuilder<DB> for C3p0JsonBuilder<SqlxC3p0Pool<DB>>
+    where DB: Clone + Database + Sync, <DB as Database>::Connection : Sync,
+          for<'c> <DB as sqlx::database::HasArguments<'c>>::Arguments: sqlx::IntoArguments<'c, DB>,
+          for<'c> &'c sqlx::Transaction<'c, DB> : sqlx::Executor<'c, Database = DB>,
+          for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+          for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+          for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+{
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxC3p0Json<DATA, DefaultJsonCodec> {
+    ) -> SqlxC3p0Json<DB, DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -47,17 +67,24 @@ impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<SqlxC3p0Pool> {
     >(
         self,
         codec: CODEC,
-    ) -> SqlxC3p0Json<DATA, CODEC> {
-        SqlxC3p0Json {
-            phantom_data: std::marker::PhantomData,
-            codec,
-            queries: build_pg_queries(self),
-        }
+    ) -> SqlxC3p0Json<DB, DATA, CODEC> {
+        unimplemented!()
+        // SqlxC3p0Json {
+        //     phantom_data: std::marker::PhantomData,
+        //     codec,
+        //     queries: build_pg_queries(self),
+        // }
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> SqlxC3p0Json<DATA, CODEC>
+impl<DB, DATA, CODEC: JsonCodec<DATA>> SqlxC3p0Json<DB, DATA, CODEC>
 where
+    DB: Clone + Database + Sync, <DB as Database>::Connection : Sync,
+    for<'c> <DB as sqlx::database::HasArguments<'c>>::Arguments: sqlx::IntoArguments<'c, DB>,
+    for<'c> &'c sqlx::Transaction<'c, DB> : sqlx::Executor<'c, Database = DB>,
+    for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+    for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+    for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     pub fn queries(&self) -> &Queries {
@@ -65,7 +92,7 @@ where
     }
 
     #[inline]
-    pub fn to_model(&self, row: &DbRow) -> Result<Model<DATA>, C3p0Error> {
+    pub fn to_model<R: Row<Database = DB>>(&self, row: &R) -> Result<Model<DATA>, C3p0Error> {
         to_model(&self.codec, row, 0, 1, 2)
     }
 
@@ -73,12 +100,12 @@ where
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub async fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
+    pub async fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
         &self,
-        conn: &mut SqlxConnection,
-        sql: Query<'a, Db, A>,
+        conn: &mut SqlxConnection<DB>,
+        sql: Query<'a, DB, A>,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        sql.fetch_optional(conn.get_conn())
+        sql.fetch_optional(conn.as_executor())
             .await
             .map_err(into_c3p0_error)?
             .map(|row| self.to_model(&row))
@@ -89,12 +116,12 @@ where
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
+    pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
         &self,
-        conn: &mut SqlxConnection,
-        sql: Query<'a, Db, A>,
+        conn: &mut SqlxConnection<DB>,
+        sql: Query<'a, DB, A>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        sql.fetch_one(conn.get_conn())
+        sql.fetch_one(conn.as_executor())
             .await
             .map_err(into_c3p0_error)
             .and_then(|row| self.to_model(&row))
@@ -104,12 +131,12 @@ where
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and DATA fields in this exact order
-    pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
+    pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
         &self,
-        conn: &mut SqlxConnection,
-        sql: Query<'a, Db, A>,
+        conn: &mut SqlxConnection<DB>,
+        sql: Query<'a, DB, A>,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        sql.fetch_all(conn.get_conn())
+        sql.fetch_all(conn.as_executor())
             .await
             .map_err(into_c3p0_error)?
             .iter()
@@ -119,11 +146,17 @@ where
 }
 
 #[async_trait]
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqlxC3p0Json<DATA, CODEC>
+impl<DB, DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqlxC3p0Json<DB, DATA, CODEC>
 where
+    DB: Clone + Database + Sync, <DB as Database>::Connection : Sync,
+    for<'c> <DB as sqlx::database::HasArguments<'c>>::Arguments: sqlx::IntoArguments<'c, DB>,
+    for<'c> &'c sqlx::Transaction<'c, DB> : sqlx::Executor<'c, Database = DB>,
+    for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+    for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+    for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = SqlxConnection;
+    type Conn = SqlxConnection<DB>;
 
     fn codec(&self) -> &CODEC {
         &self.codec
@@ -131,7 +164,7 @@ where
 
     async fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<(), C3p0Error> {
         sqlx::query(&self.queries.create_table_sql_query)
-            .execute(conn.get_conn())
+            .execute(conn.as_executor())
             .await
             .map_err(into_c3p0_error)
             .map(|_| ())
@@ -148,7 +181,7 @@ where
             &self.queries.drop_table_sql_query
         };
         sqlx::query(query)
-            .execute(conn.get_conn())
+            .execute(conn.as_executor())
             .await
             .map_err(into_c3p0_error)
             .map(|_| ())
@@ -156,7 +189,7 @@ where
 
     async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.count_all_sql_query)
-            .fetch_one(conn.get_conn())
+            .fetch_one(conn.as_executor())
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
@@ -170,7 +203,7 @@ where
     ) -> Result<bool, C3p0Error> {
         sqlx::query(&self.queries.exists_by_id_sql_query)
             .bind(id.into())
-            .fetch_one(conn.get_conn())
+            .fetch_one(conn.as_executor())
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
@@ -263,7 +296,7 @@ where
         let result = sqlx::query(&self.queries.delete_sql_query)
             .bind(&obj.id)
             .bind(&obj.version)
-            .execute(conn.get_conn())
+            .execute(conn.as_executor())
             .await
             .map_err(into_c3p0_error)?
             .rows_affected();
@@ -279,7 +312,7 @@ where
 
     async fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.delete_all_sql_query)
-            .execute(conn.get_conn())
+            .execute(conn.as_executor())
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
@@ -292,7 +325,7 @@ where
     ) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.delete_by_id_sql_query)
             .bind(id.into())
-            .execute(conn.get_conn())
+            .execute(conn.as_executor())
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
@@ -308,7 +341,7 @@ where
         let id = sqlx::query(&self.queries.save_sql_query)
             .bind(&obj.version)
             .bind(&json_data)
-            .fetch_one(conn.get_conn())
+            .fetch_one(conn.as_executor())
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)?;
@@ -338,7 +371,7 @@ where
             .bind(&json_data)
             .bind(&updated_model.id)
             .bind(&obj.version)
-            .execute(conn.get_conn())
+            .execute(conn.as_executor())
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())?;
