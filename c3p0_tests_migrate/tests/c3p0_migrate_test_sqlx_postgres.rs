@@ -2,12 +2,13 @@
 
 use c3p0::sqlx::*;
 use c3p0::sqlx::sqlx::postgres::*;
-use c3p0::sqlx::sqlx::Row;
 pub use c3p0::*;
 use testcontainers::*;
 
 mod tests_async;
 pub mod utils;
+
+pub type C3p0Impl = SqlxPgC3p0Pool;
 
 pub async fn new_connection(
     docker: &clients::Cli,

@@ -17,18 +17,9 @@ async fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), 
     node.0
         .transaction(|mut conn| async move {
             let conn = &mut conn;
-            assert!(conn
-                .fetch_all_values::<i64>(
-                    &format!("select count(*) from {}", C3P0_MIGRATE_TABLE_DEFAULT),
-                    &[]
-                )
-                .await
-                .is_ok());
-
-            assert!(conn
-                .execute(&format!(r"DROP TABLE {}", C3P0_MIGRATE_TABLE_DEFAULT), &[])
-                .await
-                .is_ok());
+            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(C3P0_MIGRATE_TABLE_DEFAULT).build::<MigrationData>();
+            assert!(jpo.count_all(conn).await.is_ok());
+            assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
             Ok(())
         })
         .await
@@ -51,10 +42,8 @@ async fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), C
     node.0
         .transaction(|mut conn| async move {
             let conn = &mut conn;
-            assert!(conn
-                .fetch_all_values::<i64>(&format!("select count(*) from {}", custom_name), &[])
-                .await
-                .is_ok());
+            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(custom_name).build::<MigrationData>();
+            assert!(jpo.count_all(conn).await.is_ok());
             Ok(())
         })
         .await
@@ -90,24 +79,14 @@ async fn should_execute_migrations() -> Result<(), C3p0Error> {
     node.0
         .transaction(|mut conn| async move {
             let conn = &mut conn;
-            assert!(conn
-                .fetch_all_values::<i64>(
-                    &format!("select count(*) from {}", migration_table_name),
-                    &[]
-                )
-                .await
-                .is_ok());
-            assert!(conn
-                .fetch_all_values::<i64>(&format!("select count(*) from {}", first_table_name), &[])
-                .await
-                .is_ok());
-            assert!(conn
-                .fetch_all_values::<i64>(
-                    &format!("select count(*) from {}", second_table_name),
-                    &[]
-                )
-                .await
-                .is_ok());
+
+            let jpo_migration_table = C3p0JsonBuilder::<C3p0Impl>::new(migration_table_name).build::<MigrationData>();
+            let jpo_first_table = C3p0JsonBuilder::<C3p0Impl>::new(first_table_name).build::<MigrationData>();
+            let jpo_second_table = C3p0JsonBuilder::<C3p0Impl>::new(second_table_name).build::<MigrationData>();
+
+            assert!(jpo_migration_table.count_all(conn).await.is_ok());
+            assert!(jpo_first_table.count_all(conn).await.is_ok());
+            assert!(jpo_second_table.count_all(conn).await.is_ok());
 
             let status = migrate.get_migrations_history(conn).await.unwrap();
             assert_eq!(3, status.len());
@@ -146,17 +125,12 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
     node.0
         .transaction(|mut conn| async move {
             let conn = &mut conn;
-            assert!(conn
-                .fetch_all_values::<i64>(
-                    &format!("select count(*) from {}", migration_table_name),
-                    &[]
-                )
-                .await
-                .is_ok());
-            assert!(conn
-                .fetch_all_values::<i64>(&format!("select count(*) from {}", first_table_name), &[])
-                .await
-                .is_ok());
+
+            let jpo_migration_table = C3p0JsonBuilder::<C3p0Impl>::new(migration_table_name).build::<MigrationData>();
+            let jpo_first_table = C3p0JsonBuilder::<C3p0Impl>::new(first_table_name).build::<MigrationData>();
+
+            assert!(jpo_migration_table.count_all(conn).await.is_ok());
+            assert!(jpo_first_table.count_all(conn).await.is_ok());
 
             let status = migrate.get_migrations_history(conn).await.unwrap();
             assert_eq!(2, status.len());
@@ -254,11 +228,9 @@ async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
         .transaction(|mut conn| async move {
             let conn = &mut conn;
 
-            assert_eq!(
-                3,
-                conn.fetch_one_value::<i64>(&format!("select count(*) from TEST_TABLE"), &[])
-                    .await?
-            );
+            let jpo = C3p0JsonBuilder::<C3p0Impl>::new("TEST_TABLE").build::<MigrationData>();
+
+            assert_eq!(3, jpo.count_all(conn).await.unwrap());
 
             let status = migrate.get_migrations_history(conn).await.unwrap();
             assert_eq!(3, status.len());
@@ -288,11 +260,10 @@ async fn should_read_embedded_migrations() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(|mut conn| async move {
-            assert_eq!(
-                3,
-                conn.fetch_one_value::<i64>(&format!("select count(*) from TEST_TABLE"), &[])
-                    .await?
-            );
+
+            let jpo = C3p0JsonBuilder::<C3p0Impl>::new("TEST_TABLE").build::<MigrationData>();
+
+            assert_eq!(3, jpo.count_all(&mut conn).await.unwrap());
 
             let status = migrate.get_migrations_history(&mut conn).await.unwrap();
             assert_eq!(3, status.len());

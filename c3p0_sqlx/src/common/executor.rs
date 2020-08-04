@@ -12,8 +12,9 @@ pub async fn batch_execute<'e, 'q: 'e, E, DB>(query: &'q str, executor: E) -> Re
         <DB as sqlx::database::HasArguments<'q>>::Arguments: sqlx::IntoArguments<'q, DB>,
         E: Executor<'e, Database = DB>,
 {
-    let query = sqlx::query(query);
-    execute(query, executor).await
+    executor.execute(query).await
+        .map_err(into_c3p0_error)
+        .map(|_| ())
 }
 
 #[inline]

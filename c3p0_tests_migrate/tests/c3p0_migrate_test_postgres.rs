@@ -10,6 +10,8 @@ use testcontainers::*;
 mod tests_async;
 pub mod utils;
 
+pub type C3p0Impl = PgC3p0Pool;
+
 pub async fn new_connection(
     docker: &clients::Cli,
 ) -> (
