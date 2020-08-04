@@ -1,12 +1,5 @@
 mod common;
-mod error;
-mod json;
-mod pool;
-
-pub use common::*;
-pub use error::*;
-pub use json::*;
-pub use pool::*;
+pub mod error;
 
 pub mod sqlx {
     pub use sqlx::*;
@@ -19,7 +12,9 @@ mod migrate;
 pub use migrate::*;
 */
 
+#[cfg(any(feature = "mysql"))]
+pub mod mysql;
+
 #[cfg(any(feature = "postgres"))]
-type Db = sqlx::postgres::Postgres;
-#[cfg(any(feature = "postgres"))]
-type DbRow = sqlx::postgres::PgRow;
+pub mod postgres;
+

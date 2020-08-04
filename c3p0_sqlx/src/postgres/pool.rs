@@ -2,8 +2,9 @@ use async_trait::async_trait;
 use c3p0_common::*;
 use futures::Future;
 
-use crate::{into_c3p0_error, Db};
 use sqlx::{Pool, Transaction};
+use crate::postgres::Db;
+use crate::error::into_c3p0_error;
 
 #[derive(Clone)]
 pub struct SqlxC3p0Pool {

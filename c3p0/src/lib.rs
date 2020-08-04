@@ -16,7 +16,7 @@ pub mod postgres {
 }
 
 #[cfg(any(feature = "sqlx_postgres"))]
-pub mod sqlx_postgres {
+pub mod sqlx {
     pub use c3p0_sqlx::*;
 }
 

@@ -1,4 +1,5 @@
-use crate::{into_c3p0_error, Db, DbRow, SqlxConnection};
+use crate::postgres::{Db, DbRow, SqlxConnection, SqlxC3p0Pool};
+use crate::postgres::queries::build_pg_queries;
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
@@ -6,6 +7,7 @@ use sqlx::{Row, IntoArguments};
 use std::iter::Iterator;
 use sqlx::query::Query;
 use sqlx::Done;
+use crate::error::into_c3p0_error;
 
 pub trait SqlxC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -20,7 +22,18 @@ pub trait SqlxC3p0JsonBuilder {
     ) -> SqlxC3p0Json<DATA, CODEC>;
 }
 
-impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<crate::SqlxC3p0Pool> {
+#[derive(Clone)]
+pub struct SqlxC3p0Json<DATA, CODEC: JsonCodec<DATA>>
+where
+    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
+{
+    phantom_data: std::marker::PhantomData<DATA>,
+
+    codec: CODEC,
+    queries: Queries,
+}
+
+impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<SqlxC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
     ) -> SqlxC3p0Json<DATA, DefaultJsonCodec> {
@@ -37,20 +50,9 @@ impl SqlxC3p0JsonBuilder for C3p0JsonBuilder<crate::SqlxC3p0Pool> {
         SqlxC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
-            queries: crate::common::build_pg_queries(self),
+            queries: build_pg_queries(self),
         }
     }
-}
-
-#[derive(Clone)]
-pub struct SqlxC3p0Json<DATA, CODEC: JsonCodec<DATA>>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
-{
-    phantom_data: std::marker::PhantomData<DATA>,
-
-    codec: CODEC,
-    queries: Queries,
 }
 
 impl<DATA, CODEC: JsonCodec<DATA>> SqlxC3p0Json<DATA, CODEC>

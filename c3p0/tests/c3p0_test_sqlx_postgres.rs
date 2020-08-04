@@ -1,15 +1,14 @@
 #![cfg(feature = "sqlx_postgres")]
 
-use c3p0::sqlx_postgres::sqlx::Row;
-use c3p0::sqlx_postgres::sqlx::postgres::*;
-use c3p0::sqlx_postgres::*;
+use c3p0::sqlx::sqlx::Row;
+use c3p0::sqlx::sqlx::postgres::*;
+use c3p0::sqlx::postgres::*;
 use c3p0::*;
 use maybe_single::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::*;
 
 use futures::FutureExt;
-use sqlx::postgres::PgConnectOptions;
 
 pub type C3p0Impl = SqlxC3p0Pool;
 
