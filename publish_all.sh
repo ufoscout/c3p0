@@ -6,9 +6,8 @@ set -e
 declare -a publish_list=(
     "c3p0_common"
     "c3p0_in_memory"
-    "c3p0_mysql"
-    "c3p0_pg"
-    "c3p0_sqlite"
+    "c3p0_postgres"
+    "c3p0_sqlx"
     "c3p0"
 )
 
