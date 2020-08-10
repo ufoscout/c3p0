@@ -61,8 +61,8 @@ pub fn build_sqlite_queries<C3P0>(
         create_table_sql_query: format!(
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
-                    {} BIGINT primary key NOT NULL AUTO_INCREMENT,
-                    {} int not null,
+                    {} integer primary key autoincrement,
+                    {} integer not null,
                     {} JSON
                 )
                 "#,
@@ -74,11 +74,11 @@ pub fn build_sqlite_queries<C3P0>(
 
         drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
         drop_table_sql_query_cascade: format!(
-            "DROP TABLE IF EXISTS {} CASCADE",
+            "DROP TABLE IF EXISTS {}",
             qualified_table_name
         ),
 
-        lock_table_sql_query: Some(format!("LOCK TABLES {} WRITE", qualified_table_name)),
+        lock_table_sql_query: None,
 
         qualified_table_name,
         table_name: json_builder.table_name,

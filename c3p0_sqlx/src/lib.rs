@@ -15,7 +15,7 @@ mod postgres;
 #[cfg(any(feature = "postgres"))]
 pub use postgres::*;
 
-//#[cfg(any(feature = "sqlite"))]
-//mod sqlite;
-//#[cfg(any(feature = "sqlite"))]
-//pub use sqlite::*;
+#[cfg(any(feature = "sqlite"))]
+mod sqlite;
+#[cfg(any(feature = "sqlite"))]
+pub use sqlite::*;

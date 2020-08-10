@@ -4,28 +4,29 @@ use futures::Future;
 
 use crate::error::into_c3p0_error;
 use crate::sqlite::Db;
-use sqlx::{Pool, Transaction};
+use sqlx::{Pool, Transaction, Connection};
+use crate::common::executor::batch_execute;
 
 #[derive(Clone)]
-pub struct SqlxC3p0Pool {
+pub struct SqlxSqliteC3p0Pool {
     pool: Pool<Db>,
 }
 
-impl SqlxC3p0Pool {
+impl SqlxSqliteC3p0Pool {
     pub fn new(pool: Pool<Db>) -> Self {
-        SqlxC3p0Pool { pool }
+        SqlxSqliteC3p0Pool { pool }
     }
 }
 
-impl Into<SqlxC3p0Pool> for Pool<Db> {
-    fn into(self) -> SqlxC3p0Pool {
-        SqlxC3p0Pool::new(self)
+impl Into<SqlxSqliteC3p0Pool> for Pool<Db> {
+    fn into(self) -> SqlxSqliteC3p0Pool {
+        SqlxSqliteC3p0Pool::new(self)
     }
 }
 
 #[async_trait]
-impl C3p0Pool for SqlxC3p0Pool {
-    type Conn = SqlxConnection;
+impl C3p0Pool for SqlxSqliteC3p0Pool {
+    type Conn = SqlxSqliteConnection;
 
     async fn transaction<
         T: Send,
@@ -40,36 +41,30 @@ impl C3p0Pool for SqlxC3p0Pool {
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction =
-            SqlxConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+            SqlxSqliteConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
 
         let result = { (tx)(transaction).await? };
 
         native_transaction.commit().await.map_err(into_c3p0_error)?;
-
         Ok(result)
     }
 }
 
-pub enum SqlxConnection {
+pub enum SqlxSqliteConnection {
     Tx(&'static mut Transaction<'static, Db>),
 }
 
-impl SqlxConnection {
+impl SqlxSqliteConnection {
     pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
         match self {
-            SqlxConnection::Tx(tx) => tx,
+            SqlxSqliteConnection::Tx(tx) => tx,
         }
     }
 }
 
 #[async_trait]
-impl SqlConnection for SqlxConnection {
+impl SqlConnection for SqlxSqliteConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        let query = sqlx::query(sql);
-        query
-            .execute(self.get_conn())
-            .await
-            .map_err(into_c3p0_error)
-            .map(|_| ())
+        batch_execute(sql, self.get_conn()).await
     }
 }
