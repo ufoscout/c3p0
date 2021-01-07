@@ -16,13 +16,13 @@ c3p0 = { path = "../c3p0", version = "0.61.0" }
 [dev-dependencies]
 rand = "0.8"
 testcontainers = "0.11"
-tokio = { version = "0.2", features = ["macros", "rt-threaded"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = []
 
 #mysql = ["c3p0/mysql_migrate"]
 postgres = ["c3p0/postgres_migrate"]
-sqlx_mysql = ["c3p0/sqlx_mysql_migrate"]
-sqlx_postgres = ["c3p0/sqlx_postgres_migrate"]
+#sqlx_mysql = ["c3p0/sqlx_mysql_migrate"]
+#sqlx_postgres = ["c3p0/sqlx_postgres_migrate"]
 #tidb = ["c3p0/tidb_migrate"]

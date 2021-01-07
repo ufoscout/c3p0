@@ -34,7 +34,7 @@ serde = { version = "1.0" , features = ["derive"] }
 serde_json = "1.0"
 testcontainers = "0.11"
 thiserror = "1.0"
-tokio = { version = "0.2", features = ["rt-threaded", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [features]
 default = []
@@ -47,11 +47,11 @@ in_memory = ["c3p0_in_memory"]
 postgres = ["c3p0_postgres"]
 postgres_migrate = ["postgres", "c3p0_postgres/migrate"]
 
-sqlx_mysql = ["c3p0_sqlx/mysql"]
-sqlx_mysql_migrate = ["sqlx_mysql", "c3p0_sqlx/migrate"]
+#sqlx_mysql = ["c3p0_sqlx/mysql"]
+#sqlx_mysql_migrate = ["sqlx_mysql", "c3p0_sqlx/migrate"]
 
-sqlx_postgres = ["c3p0_sqlx/postgres"]
-sqlx_postgres_migrate = ["sqlx_postgres", "c3p0_sqlx/migrate"]
+#sqlx_postgres = ["c3p0_sqlx/postgres"]
+#sqlx_postgres_migrate = ["sqlx_postgres", "c3p0_sqlx/migrate"]
 
 #tidb = ["c3p0_mysql"]
 #tidb_migrate = ["tidb", "mysql_migrate"]

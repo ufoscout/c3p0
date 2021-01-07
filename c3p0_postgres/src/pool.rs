@@ -6,7 +6,7 @@ use crate::*;
 
 use async_trait::async_trait;
 use c3p0_common::*;
-use futures::Future;
+use std::future::Future;
 
 pub enum PgC3p0ConnectionManager {
     DeadPool,
