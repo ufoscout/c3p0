@@ -8,8 +8,6 @@ use maybe_single::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::*;
 
-use futures::FutureExt;
-
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
 
 //mod tests;
@@ -54,7 +52,7 @@ async fn init() -> MaybeType {
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
     static DATA: OnceCell<MaybeSingleAsync<MaybeType>> = OnceCell::new();
-    DATA.get_or_init(|| MaybeSingleAsync::new(|| init().boxed()))
+    DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
         .data(serial)
         .await
 }
