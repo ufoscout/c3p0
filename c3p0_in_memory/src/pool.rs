@@ -5,6 +5,7 @@ use std::future::Future;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use std::pin::Pin;
 
 type Db = HashMap<String, BTreeMap<IdType, Model<serde_json::Value>>>;
 
@@ -26,12 +27,12 @@ impl C3p0Pool for InMemoryC3p0Pool {
     async fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(Self::Conn) -> Fut,
-        Fut: Send + Future<Output = Result<T, E>>,
+        F: Send,
     >(
         &self,
         tx: F,
-    ) -> Result<T, E> {
+    ) -> Result<T, E>
+        where for<'a> F: FnOnce(&'a mut Self::Conn) -> Pin<Box<dyn Future<Output = Result<T, E>> + Send + 'a>> {
         let mut guard = self.db.lock().await;
         // .map_err(|err| C3p0Error::InternalError {
         //         cause: format!("{}", err),
@@ -40,11 +41,11 @@ impl C3p0Pool for InMemoryC3p0Pool {
         let mut db_clone = db.clone();
 
         // ToDo: To avoid this unsafe we need GAT
-        let conn = InMemoryConnection {
+        let mut conn = InMemoryConnection {
             db: (unsafe { ::std::mem::transmute(&mut db_clone) }),
         };
 
-        let result = (tx)(conn).await?;
+        let result = (tx)(&mut conn).await?;
         *guard = db_clone;
 
         Ok(result)
@@ -79,33 +80,33 @@ mod test {
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|mut conn| async move {
+                .transaction(|conn| Box::pin(async move {
                     conn.insert("one".to_string(), Default::default());
                     Ok(())
-                })
+                }))
                 .await;
             assert!(result.is_ok())
         }
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|mut db| async move {
+                .transaction(|db| Box::pin(async move {
                     assert!(db.contains_key("one"));
                     db.insert("two".to_string(), Default::default());
                     db.remove("one");
                     Ok(())
-                })
+                }))
                 .await;
             assert!(result.is_ok())
         }
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|db| async move {
+                .transaction(|db| Box::pin(async move {
                     assert!(!db.contains_key("one"));
                     assert!(db.contains_key("two"));
                     Ok(())
-                })
+                }))
                 .await;
             assert!(result.is_ok())
         }
@@ -119,33 +120,33 @@ mod test {
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|mut db| async move {
+                .transaction(|db| Box::pin(async move {
                     db.insert("one".to_string(), Default::default());
                     Ok(())
-                })
+                }))
                 .await;
             assert!(result.is_ok())
         }
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|mut db| async move {
+                .transaction(|db| Box::pin(async move {
                     assert!(db.contains_key("one"));
                     db.insert("two".to_string(), Default::default());
                     db.remove("one");
                     Ok(())
-                })
+                }))
                 .await;
             assert!(result.is_ok())
         }
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|tx| async move {
+                .transaction(|tx| Box::pin(async move {
                     assert!(!tx.contains_key("one"));
                     assert!(tx.contains_key("two"));
                     Ok(())
-                })
+                }))
                 .await;
             assert!(result.is_ok())
         }
@@ -159,24 +160,24 @@ mod test {
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|mut tx| async move {
+                .transaction(|tx| Box::pin(async move {
                     tx.insert("one".to_string(), Default::default());
                     Ok(())
-                })
+                }))
                 .await;
             assert!(result.is_ok())
         }
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|mut tx| async move {
+                .transaction(|tx| Box::pin(async move {
                     assert!(tx.contains_key("one"));
                     tx.insert("two".to_string(), Default::default());
                     tx.remove("one");
                     Err(C3p0Error::InternalError {
                         cause: "test error on purpose".to_string(),
                     })
-                })
+                }))
                 .await;
             match result {
                 Err(C3p0Error::InternalError { cause }) => {
@@ -188,11 +189,11 @@ mod test {
 
         {
             let result: Result<(), C3p0Error> = pool
-                .transaction(|tx| async move {
+                .transaction(|tx| Box::pin(async move {
                     assert!(tx.contains_key("one"));
                     assert!(!tx.contains_key("two"));
                     Ok(())
-                })
+                }))
                 .await;
             assert!(result.is_ok())
         }

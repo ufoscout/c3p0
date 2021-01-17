@@ -59,7 +59,7 @@ impl C3p0Pool for PgC3p0Pool {
     }
 }
 
-pub enum PgConnection {
+pub enum PgConnection<'a> {
     Tx(&'static Transaction<'static>),
 }
 
