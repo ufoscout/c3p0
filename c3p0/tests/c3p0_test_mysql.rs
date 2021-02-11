@@ -1,27 +1,24 @@
 #![cfg(feature = "mysql")]
 pub use c3p0::mysql::mysql_async::Row;
 use c3p0::*;
-
-mod utils;
-
-/*
-use c3p0::mysql::blocking::r2d2::{MysqlConnectionManager, Pool};
-use c3p0::mysql::blocking::*;
-use maybe_single::{Data, MaybeSingle};
+use c3p0::mysql::*;
+use maybe_single::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::*;
+use c3p0_mysql::mysql_async::{Opts, Pool};
 
 pub type C3p0Impl = MysqlC3p0Pool;
 
-//mod tests_async;
-//mod tests_async_json;
+mod tests;
+mod tests_json;
+mod utils;
 
 pub type MaybeType = (
     C3p0Impl,
     Container<'static, clients::Cli, images::generic::GenericImage>,
 );
 
-fn init() -> MaybeType {
+async fn init() -> MaybeType {
     static DOCKER: OnceCell<clients::Cli> = OnceCell::new();
 
     let mysql_version = "5.7.25";
@@ -44,24 +41,22 @@ fn init() -> MaybeType {
     );
 
     let opts = Opts::from_url(&db_url).unwrap();
-    let builder = OptsBuilder::from_opts(opts);
+//    let builder = OptsBuilder::from_opts(opts);
 
-    let manager = MysqlConnectionManager::new(builder);
-
-    let pool = Pool::builder().min_idle(Some(10)).build(manager).unwrap();
+    let pool = Pool::new(opts);
 
     let pool = MysqlC3p0Pool::new(pool);
 
     (pool, node)
 }
 
-pub fn data(serial: bool) -> Data<'static, MaybeType> {
-    static DATA: OnceCell<MaybeSingle<MaybeType>> = OnceCell::new();
-    DATA.get_or_init(|| MaybeSingle::new(|| init()))
+pub async fn data(serial: bool) -> Data<'static, MaybeType> {
+    static DATA: OnceCell<MaybeSingleAsync<MaybeType>> = OnceCell::new();
+    DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
         .data(serial)
+        .await
 }
 
-*/
 pub mod db_specific {
 
     use super::*;
