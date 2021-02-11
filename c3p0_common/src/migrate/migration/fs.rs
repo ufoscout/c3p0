@@ -40,18 +40,18 @@ pub fn from_fs<P: AsRef<Path>>(path_ref: P) -> Result<Migrations, C3p0Error> {
             .path()
             .file_name()
             .and_then(std::ffi::OsStr::to_str)
-            .ok_or_else(|| C3p0Error::FileSystemError {
+            .ok_or_else(|| C3p0Error::IoError {
                 message: format!("Cannot get filename of [{}]", entry.path().display()),
             })?;
 
         let up = entry.path().join("up.sql");
-        let up_script = read_to_string(up.as_path()).map_err(|err| C3p0Error::FileSystemError {
+        let up_script = read_to_string(up.as_path()).map_err(|err| C3p0Error::IoError {
             message: format!("Error reading file [{}]. Err: [{}]", up.display(), err),
         })?;
 
         let down = entry.path().join("down.sql");
         let down_script =
-            read_to_string(down.as_path()).map_err(|err| C3p0Error::FileSystemError {
+            read_to_string(down.as_path()).map_err(|err| C3p0Error::IoError {
                 message: format!("Error reading file [{}]. Err: [{}]", down.display(), err),
             })?;
 
@@ -102,7 +102,7 @@ mod test {
         assert!(migrations.is_err());
 
         match migrations {
-            Err(C3p0Error::FileSystemError { message }) => {
+            Err(C3p0Error::IoError { message }) => {
                 assert!(message.contains(
                     "Error reading file [./tests/migrations_01/00010_create_test_data/down.sql]"
                 ));
@@ -117,7 +117,7 @@ mod test {
         assert!(migrations.is_err());
 
         match migrations {
-            Err(C3p0Error::FileSystemError { message }) => {
+            Err(C3p0Error::IoError { message }) => {
                 assert!(message.contains(
                     "Error reading file [./tests/migrations_02/00010_create_test_data/up.sql]"
                 ));
