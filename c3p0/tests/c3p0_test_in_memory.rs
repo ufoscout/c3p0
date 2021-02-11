@@ -2,7 +2,7 @@
 
 use c3p0::in_memory::*;
 use c3p0::*;
-use maybe_single::{Data, MaybeSingleAsync};
+use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 
 pub type C3p0Impl = InMemoryC3p0Pool;
