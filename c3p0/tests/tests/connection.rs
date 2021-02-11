@@ -42,6 +42,7 @@ fn should_execute_and_fetch() -> Result<(), C3p0Error> {
                     .unwrap()
             );
 
+            /*
             let fetch_result_1 = conn
                 .fetch_one(
                     &format!(r"SELECT * FROM {} WHERE name = 'one'", table_name),
@@ -60,7 +61,7 @@ fn should_execute_and_fetch() -> Result<(), C3p0Error> {
                 )
                 .await;
             assert!(fetch_result_2.is_err());
-
+*/
             assert!(conn
                 .execute(&format!(r"DROP TABLE {}", table_name), &[])
                 .await

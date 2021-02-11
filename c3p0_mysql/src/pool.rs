@@ -75,7 +75,12 @@ impl SqlConnection for MysqlConnection {
 }
 
 impl MysqlConnection {
-    pub async fn execute(&mut self, sql: &str, params: &[&dyn ToValue]) -> Result<u64, C3p0Error> {
+    pub async fn execute(&mut self, sql: &str, params: &[&(dyn ToValue + Sync)]) -> Result<u64, C3p0Error> {
+
+        let ARE_YOU_SERIOUS = 0usize;
+        let params: Vec<&dyn ToValue> = params.iter().map(|val| *val as _).collect();
+        let params: &[&dyn ToValue] = &params;
+
         match self {
             MysqlConnection::Tx(tx) => tx
                 .exec_iter(sql, params)
@@ -88,7 +93,7 @@ impl MysqlConnection {
     pub async fn fetch_one_value<T: FromValue>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToValue],
+        params: &[&(dyn ToValue + Sync)],
     ) -> Result<T, C3p0Error> {
         self.fetch_one(sql, params, to_value_mapper).await
     }
@@ -96,7 +101,7 @@ impl MysqlConnection {
     pub async fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToValue],
+        params: &[&(dyn ToValue + Sync)],
         mapper: F,
     ) -> Result<T, C3p0Error> {
         self.fetch_one_optional(sql, params, mapper)
@@ -107,9 +112,14 @@ impl MysqlConnection {
     pub async fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToValue],
+        params: &[&(dyn ToValue + Sync)],
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
+
+        let ARE_YOU_SERIOUS = 0usize;
+        let params: Vec<&dyn ToValue> = params.iter().map(|val| *val as _).collect();
+        let params: &[&dyn ToValue] = &params;
+
         match self {
             MysqlConnection::Tx(tx) => {
                 let mut result = tx.exec_iter(sql, params).await.map_err(into_c3p0_error)?;
@@ -130,9 +140,14 @@ impl MysqlConnection {
     pub async fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToValue],
+        params: &[&(dyn ToValue + Sync)],
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
+
+        let ARE_YOU_SERIOUS = 0usize;
+        let params: Vec<&dyn ToValue> = params.iter().map(|val| *val as _).collect();
+        let params: &[&dyn ToValue] = &params;
+
         match self {
             MysqlConnection::Tx(tx) => {
                 let mut result = tx.exec_iter(sql, params).await.map_err(into_c3p0_error)?;
@@ -151,7 +166,7 @@ impl MysqlConnection {
     pub async fn fetch_all_values<T: FromValue>(
         &mut self,
         sql: &str,
-        params: &[&dyn ToValue],
+        params: &[&(dyn ToValue + Sync)],
     ) -> Result<Vec<T>, C3p0Error> {
         self.fetch_all(sql, params, to_value_mapper).await
     }

@@ -73,7 +73,7 @@ where
         &self,
         conn: &mut MysqlConnection,
         sql: &str,
-        params: &[&(dyn ToValue)],
+        params: &[&(dyn ToValue + Sync)],
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         conn.fetch_one_optional(sql, params, |row| self.to_model(row))
             .await
@@ -87,7 +87,7 @@ where
         &self,
         conn: &mut MysqlConnection,
         sql: &str,
-        params: &[&(dyn ToValue)],
+        params: &[&(dyn ToValue + Sync)],
     ) -> Result<Model<DATA>, C3p0Error> {
         conn.fetch_one(sql, params, |row| self.to_model(row)).await
     }
@@ -100,7 +100,7 @@ where
         &self,
         conn: &mut MysqlConnection,
         sql: &str,
-        params: &[&(dyn ToValue)],
+        params: &[&(dyn ToValue + Sync)],
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         conn.fetch_all(sql, params, |row| self.to_model(row)).await
     }
