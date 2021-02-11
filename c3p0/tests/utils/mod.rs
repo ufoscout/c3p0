@@ -18,6 +18,7 @@ pub enum DbType {
 pub fn rand_string(len: usize) -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)
+        .map(char::from)
         .take(len)
         .collect::<String>()
 }
@@ -31,12 +32,10 @@ pub struct TestData {
 pub fn test<F: std::future::Future>(f: F) -> F::Output {
     static RT: OnceCell<tokio::runtime::Runtime> = OnceCell::new();
     RT.get_or_init(|| {
-        tokio::runtime::Builder::new()
-            .threaded_scheduler()
+        tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
             .expect("Should create a tokio runtime")
     })
-    .handle()
-    .enter(|| futures::executor::block_on(f))
+    .block_on(f)
 }

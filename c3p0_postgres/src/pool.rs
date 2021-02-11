@@ -6,7 +6,7 @@ use crate::*;
 
 use async_trait::async_trait;
 use c3p0_common::*;
-use futures::Future;
+use std::future::Future;
 
 pub enum PgC3p0ConnectionManager {
     DeadPool,
@@ -99,7 +99,7 @@ impl PgConnection {
     ) -> Result<T, C3p0Error> {
         self.fetch_one_optional(sql, params, mapper)
             .await
-            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+            .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
     pub async fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
@@ -114,8 +114,7 @@ impl PgConnection {
                 tx.query(&stmt, params)
                     .await
                     .map_err(into_c3p0_error)?
-                    .iter()
-                    .next()
+                    .get(0)
                     .map(|row| mapper(&row))
                     .transpose()
                     .map_err(|err| C3p0Error::RowMapperError {

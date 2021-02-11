@@ -1,6 +1,6 @@
 use crate::common::executor::{
     batch_execute, delete, fetch_all_with_sql, fetch_one_optional_with_sql, fetch_one_with_sql,
-    update,
+    update, ResultWithRowCount,
 };
 use crate::common::to_model;
 use crate::error::into_c3p0_error;
@@ -9,9 +9,15 @@ use crate::postgres::{Db, DbRow, SqlxPgC3p0Pool, SqlxPgConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
+use sqlx::postgres::PgQueryResult;
 use sqlx::query::Query;
-use sqlx::Done;
 use sqlx::{IntoArguments, Row};
+
+impl ResultWithRowCount for PgQueryResult {
+    fn rows_affected(&self) -> u64 {
+        self.rows_affected()
+    }
+}
 
 pub trait SqlxPgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(

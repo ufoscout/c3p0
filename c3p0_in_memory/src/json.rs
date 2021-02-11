@@ -175,7 +175,7 @@ where
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id(conn, id)
             .await
-            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+            .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
     async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
@@ -186,7 +186,7 @@ where
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id_for_update(conn, id, for_update)
             .await
-            .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+            .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
     async fn delete(

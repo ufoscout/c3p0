@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 pub type IdType = i64;
 pub type VersionType = i32;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Model<Data>
 where
     Data: Clone + serde::ser::Serialize + Send,
@@ -35,7 +35,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct NewModel<Data>
 where
     Data: Clone + serde::ser::Serialize,

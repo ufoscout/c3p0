@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use c3p0_common::*;
-use futures::Future;
+use std::future::Future;
 
 use crate::common::executor::batch_execute;
 use crate::error::into_c3p0_error;

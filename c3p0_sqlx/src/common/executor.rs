@@ -3,7 +3,11 @@ use crate::error::into_c3p0_error;
 use c3p0_common::json::Queries;
 use c3p0_common::{C3p0Error, JsonCodec, Model};
 use sqlx::query::Query;
-use sqlx::{ColumnIndex, Database, Done, Executor, IntoArguments};
+use sqlx::{ColumnIndex, Database, Executor, IntoArguments};
+
+pub trait ResultWithRowCount {
+    fn rows_affected(&self) -> u64;
+}
 
 #[inline]
 pub async fn batch_execute<'e, 'q: 'e, E, DB>(query: &'q str, executor: E) -> Result<(), C3p0Error>
@@ -109,13 +113,13 @@ where
 }
 
 #[inline]
-pub async fn delete<'e, 'q: 'e, E, DB, DATA>(
+pub async fn delete<'e, 'q: 'e, E, DB, DATA, DeleteQueryResult: ResultWithRowCount>(
     obj: Model<DATA>,
     executor: E,
     queries: &'q Queries,
 ) -> Result<Model<DATA>, C3p0Error>
 where
-    DB: Database,
+    DB: Database<QueryResult = DeleteQueryResult>,
     <DB as sqlx::database::HasArguments<'q>>::Arguments: sqlx::IntoArguments<'q, DB>,
     E: Executor<'e, Database = DB>,
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
@@ -148,14 +152,22 @@ where
 }
 
 #[inline]
-pub async fn update<'e, 'q: 'e, E, DB, DATA, CODEC: JsonCodec<DATA>>(
+pub async fn update<
+    'e,
+    'q: 'e,
+    E,
+    DB,
+    DATA,
+    CODEC: JsonCodec<DATA>,
+    DeleteQueryResult: ResultWithRowCount,
+>(
     obj: Model<DATA>,
     executor: E,
     queries: &'q Queries,
     codec: &CODEC,
 ) -> Result<Model<DATA>, C3p0Error>
 where
-    DB: Database,
+    DB: Database<QueryResult = DeleteQueryResult>,
     <DB as sqlx::database::HasArguments<'q>>::Arguments: sqlx::IntoArguments<'q, DB>,
     E: Executor<'e, Database = DB>,
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
