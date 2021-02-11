@@ -21,7 +21,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0Error> {
             .path()
             .file_name()
             .and_then(std::ffi::OsStr::to_str)
-            .ok_or_else(|| C3p0Error::FileSystemError {
+            .ok_or_else(|| C3p0Error::IoError {
                 message: format!("Cannot get filename of [{}]", entry.path().display()),
             })?;
 
@@ -33,7 +33,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0Error> {
         let up_script = entry
             .get_file(&up_filename)
             .and_then(|file| file.contents_utf8())
-            .ok_or_else(|| C3p0Error::FileSystemError {
+            .ok_or_else(|| C3p0Error::IoError {
                 message: format!("Error reading file [{}].", up_filename),
             })?;
 
@@ -41,7 +41,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0Error> {
         let down_script = entry
             .get_file(&down_filename)
             .and_then(|file| file.contents_utf8())
-            .ok_or_else(|| C3p0Error::FileSystemError {
+            .ok_or_else(|| C3p0Error::IoError {
                 message: format!("Error reading file [{}].", down_filename),
             })?;
 
@@ -98,7 +98,7 @@ mod test {
         assert!(migrations.is_err());
 
         match migrations {
-            Err(C3p0Error::FileSystemError { message }) => {
+            Err(C3p0Error::IoError { message }) => {
                 assert!(message.contains("Error reading file [00010_create_test_data/down.sql]"));
             }
             _ => assert!(false),
@@ -111,7 +111,7 @@ mod test {
         assert!(migrations.is_err());
 
         match migrations {
-            Err(C3p0Error::FileSystemError { message }) => {
+            Err(C3p0Error::IoError { message }) => {
                 assert!(message.contains("Error reading file [00010_create_test_data/up.sql]"));
             }
             _ => assert!(false),
