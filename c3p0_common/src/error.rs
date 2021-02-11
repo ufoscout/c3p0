@@ -18,7 +18,7 @@ pub enum C3p0Error {
     JsonProcessingError {
         #[from]
         #[source]
-        source: serde_json::error::Error
+        source: serde_json::error::Error,
     },
     #[error("IteratorError: [{message}]")]
     IteratorError { message: String },
@@ -68,7 +68,7 @@ mod test {
             message: "BBBBBBBBBb".to_owned(),
             source: Box::new(C3p0Error::AlteredMigrationSql {
                 message: "AAAAAAAAAAA".to_owned(),
-            })
+            }),
         };
 
         println!("display: {}", err);
@@ -86,7 +86,7 @@ mod test {
             message: "BBBBBBBBBb".to_owned(),
             source: Box::new(C3p0Error::AlteredMigrationSql {
                 message: "AAAAAAAAAAA".to_owned(),
-            })
+            }),
         })?
     }
 }
