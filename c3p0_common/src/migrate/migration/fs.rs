@@ -46,12 +46,12 @@ pub fn from_fs<P: AsRef<Path>>(path_ref: P) -> Result<Migrations, C3p0Error> {
 
         let up = entry.path().join("up.sql");
         let up_script = read_to_string(up.as_path()).map_err(|err| C3p0Error::IoError {
-            message: format!("Error reading file [{}]. Err: [{}]", up.display(), err),
+            message: format!("Error reading file [{}]. Err: [{:?}]", up.display(), err),
         })?;
 
         let down = entry.path().join("down.sql");
         let down_script = read_to_string(down.as_path()).map_err(|err| C3p0Error::IoError {
-            message: format!("Error reading file [{}]. Err: [{}]", down.display(), err),
+            message: format!("Error reading file [{}]. Err: [{:?}]", down.display(), err),
         })?;
 
         migrations.push(Migration {

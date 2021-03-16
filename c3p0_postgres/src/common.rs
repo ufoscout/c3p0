@@ -44,7 +44,7 @@ pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
 ) -> Result<T, C3p0Error> {
     row.try_get(&index)
         .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for index {}. Err: {}", index, err),
+            cause: format!("Row contains no values for index {}. Err: {:?}", index, err),
         })
 }
 

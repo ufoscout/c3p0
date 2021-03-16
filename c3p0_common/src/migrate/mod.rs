@@ -196,7 +196,7 @@ impl<
                 })
                 .await;
             if let Err(err) = result {
-                warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
+                warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {:?}", err);
             };
         }
 
