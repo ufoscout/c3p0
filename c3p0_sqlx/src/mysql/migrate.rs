@@ -37,14 +37,18 @@ impl C3p0Migrator for SqlxMySqlMigrator {
 
     async fn lock_table(
         &self,
-        c3p0_json: &Self::C3P0Json,
-        conn: &mut Self::Conn,
+        _c3p0_json: &Self::C3P0Json,
+        _conn: &mut Self::Conn,
     ) -> Result<(), C3p0Error> {
+        // This locks the entire migration process, to be investigated
+        /*
         conn.batch_execute(&format!(
             "LOCK TABLES {} WRITE",
             c3p0_json.queries().qualified_table_name
         ))
         .await
+        */
+        Ok(())
     }
 
     async fn lock_first_migration_row(
