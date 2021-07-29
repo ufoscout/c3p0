@@ -1,6 +1,6 @@
 #![cfg(feature = "postgres")]
 
-use c3p0::postgres::deadpool::{self, Runtime};
+use c3p0::postgres::deadpool;
 use c3p0::postgres::tokio_postgres::NoTls;
 pub use c3p0::postgres::*;
 pub use c3p0::*;
@@ -27,7 +27,6 @@ pub async fn new_connection(
     config.host = Some(format!("127.0.0.1"));
     config.port = Some(node.get_host_port(5432).unwrap());
     let mut pool_config = deadpool::managed::PoolConfig::default();
-    pool_config.runtime = Runtime::Tokio1;
     pool_config.timeouts.create = Some(Duration::from_secs(5));
     pool_config.timeouts.recycle = Some(Duration::from_secs(5));
     pool_config.timeouts.wait = Some(Duration::from_secs(5));
