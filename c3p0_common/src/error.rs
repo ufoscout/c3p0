@@ -1,54 +1,87 @@
-use thiserror::Error;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum C3p0Error {
-    #[error("InternalError: [{cause}]")]
     InternalError { cause: String },
-    #[error("DbError. DB: {db}. DB specific error code: [{code:?}]. Msg: {cause}")]
     DbError {
         db: &'static str,
         cause: String,
         code: Option<String>,
     },
-    #[error("RowMapperError: [{cause}]")]
     RowMapperError { cause: String },
-    #[error("OptimisticLockError: [{message}]")]
     OptimisticLockError { message: String },
-    #[error("JsonProcessingError")]
     JsonProcessingError {
-        #[from]
-        #[source]
         source: serde_json::error::Error,
     },
-    #[error("IteratorError: [{message}]")]
     IteratorError { message: String },
-    #[error("PoolError: pool [{pool}] for [{db}] returned error: [{cause}]")]
     PoolError {
         db: &'static str,
         pool: &'static str,
         cause: String,
     },
-    #[error("ResultNotFoundError: Expected one result but found zero.")]
     ResultNotFoundError,
-    #[error("TransactionError")]
     TransactionError {
-        #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
-    #[error("CorruptedDbMigrationState: [{message}]")]
     CorruptedDbMigrationState { message: String },
-    #[error("AlteredMigrationSql: [{message}]")]
     AlteredMigrationSql { message: String },
-    #[error("WrongMigrationSet: [{message}]")]
     WrongMigrationSet { message: String },
-    #[error("IoError: [{message}]")]
     IoError { message: String },
-    #[error("MigrationError: [{message}]")]
     MigrationError {
         message: String,
-        #[source]
         source: Box<C3p0Error>,
     },
+}
+
+impl Display for C3p0Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            C3p0Error::InternalError { cause } => write!(f, "InternalError: [{}]", cause),
+            C3p0Error::DbError {db, cause, code} => write!(f, "DbError. DB: {}. DB specific error code: [{:?}]. Msg: {}", db, code, cause),
+            C3p0Error::RowMapperError { cause } => write!(f, "RowMapperError: [{}]", cause),
+            C3p0Error::OptimisticLockError { message } => write!(f, "OptimisticLockError: [{}]", message),
+            C3p0Error::JsonProcessingError {..} => write!(f, "JsonProcessingError"),
+            C3p0Error::IteratorError { message } => write!(f, "IteratorError: [{}]", message),
+            C3p0Error::PoolError {db, pool, cause} => write!(f, "PoolError: pool [{}] for [{}] returned error: [{}]", pool, db, cause),
+            C3p0Error::ResultNotFoundError => write!(f, "ResultNotFoundError: Expected one result but found zero."),
+            C3p0Error::TransactionError { .. } => write!(f, "TransactionError"),
+            C3p0Error::CorruptedDbMigrationState { message } => write!(f, "CorruptedDbMigrationState: [{}]", message),
+            C3p0Error::AlteredMigrationSql { message } => write!(f, "AlteredMigrationSql: [{}]", message),
+            C3p0Error::WrongMigrationSet { message } => write!(f, "WrongMigrationSet: [{}]", message),
+            C3p0Error::IoError { message } => write!(f, "IoError: [{}]", message),
+            C3p0Error::MigrationError {message, source: _} => write!(f, "MigrationError: [{}]", message),
+        }
+    }
+}
+
+impl From<serde_json::error::Error> for C3p0Error {
+    fn from(err: serde_json::Error) -> Self {
+        C3p0Error::JsonProcessingError { source: err }
+    }
+}
+
+impl Error for C3p0Error {
+
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            C3p0Error::InternalError { .. } |
+            C3p0Error::DbError { .. } |
+            C3p0Error::RowMapperError { .. } |
+            C3p0Error::OptimisticLockError { .. } |
+            C3p0Error::IteratorError { .. } |
+            C3p0Error::PoolError { ..} |
+            C3p0Error::ResultNotFoundError |
+            C3p0Error::CorruptedDbMigrationState { .. } |
+            C3p0Error::AlteredMigrationSql { .. } |
+            C3p0Error::WrongMigrationSet { .. } |
+            C3p0Error::IoError { .. } => None,
+            C3p0Error::JsonProcessingError { source, .. } => Some(source),
+            C3p0Error::MigrationError { source, .. } => Some(source.as_ref()),
+            C3p0Error::TransactionError { source} => Some(source.as_ref()),
+        }
+    }
+
 }
 
 #[cfg(test)]
