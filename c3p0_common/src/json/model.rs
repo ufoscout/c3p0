@@ -28,14 +28,12 @@ where
 
 impl<'a, Data> From<&'a Model<Data>> for &'a IdType
 where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send, {
-        
+    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+{
     fn from(model: &'a Model<Data>) -> Self {
-        &model.id        
+        &model.id
     }
 }
-
-
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct NewModel<Data>
