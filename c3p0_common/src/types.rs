@@ -2,30 +2,26 @@ pub struct OptString {
     pub value: Option<String>,
 }
 
-impl Into<OptString> for String {
-    fn into(self) -> OptString {
-        OptString { value: Some(self) }
+impl From<String> for OptString {
+    fn from(val: String) -> Self {
+        OptString { value: Some(val) }
     }
 }
 
-impl Into<OptString> for &str {
-    fn into(self) -> OptString {
-        OptString {
-            value: Some(self.to_owned()),
-        }
+impl From<&str> for OptString {
+    fn from(val: &str) -> Self {
+        OptString { value: Some(val.to_owned()) }
     }
 }
 
-impl Into<OptString> for Option<String> {
-    fn into(self) -> OptString {
-        OptString { value: self }
+impl From<Option<String>> for OptString {
+    fn from(value: Option<String>) -> Self {
+        OptString { value }
     }
 }
 
-impl Into<OptString> for Option<&str> {
-    fn into(self) -> OptString {
-        OptString {
-            value: self.map(std::borrow::ToOwned::to_owned),
-        }
+impl From<Option<&str>> for OptString {
+    fn from(value: Option<&str>) -> Self {
+        OptString { value: value.map(std::borrow::ToOwned::to_owned) }
     }
 }

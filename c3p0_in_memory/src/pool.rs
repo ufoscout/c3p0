@@ -59,7 +59,7 @@ impl Deref for InMemoryConnection {
     type Target = Db;
 
     fn deref(&self) -> &Self::Target {
-        &self.db
+        self.db
     }
 }
 

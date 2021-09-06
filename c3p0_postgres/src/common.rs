@@ -31,9 +31,9 @@ pub fn to_model<
     version_index: VersionIdx,
     data_index: DataIdx,
 ) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-    let id = get_or_error(&row, id_index)?;
-    let version = get_or_error(&row, version_index)?;
-    let data = codec.from_value(get_or_error(&row, data_index)?)?;
+    let id = get_or_error(row, id_index)?;
+    let version = get_or_error(row, version_index)?;
+    let data = codec.from_value(get_or_error(row, data_index)?)?;
     Ok(Model { id, version, data })
 }
 
