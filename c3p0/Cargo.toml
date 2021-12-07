@@ -1,7 +1,7 @@
 [package]
 name = "c3p0"
 license = "MIT"
-version = "0.63.1"
+version = "0.64.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2. Based on rust-postgres."
 edition = "2018"
@@ -11,19 +11,19 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
 
 [dependencies]
-c3p0_common = { path = "../c3p0_common", version = "0.63.1" }
+c3p0_common = { path = "../c3p0_common", version = "0.64.0" }
 
 #in_memory feature
-c3p0_in_memory = { path = "../c3p0_in_memory", version = "0.63.1", optional = true }
+c3p0_in_memory = { path = "../c3p0_in_memory", version = "0.64.0", optional = true }
 
 # mysql feature
-#c3p0_mysql = { path = "../c3p0_mysql", version = "0.63.1", optional = true }
+#c3p0_mysql = { path = "../c3p0_mysql", version = "0.64.0", optional = true }
 
 # postgres feature
-c3p0_postgres = { path = "../c3p0_postgres", version = "0.63.1", optional = true }
+c3p0_postgres = { path = "../c3p0_postgres", version = "0.64.0", optional = true }
 
 # sqlx feature
-c3p0_sqlx = { path = "../c3p0_sqlx", version = "0.63.1", optional = true }
+c3p0_sqlx = { path = "../c3p0_sqlx", version = "0.64.0", optional = true }
 
 [dev-dependencies]
 maybe-single = { version = "0.15.0", features =["async"] }
