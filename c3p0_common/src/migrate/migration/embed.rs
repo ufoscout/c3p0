@@ -64,10 +64,10 @@ mod test {
     use include_dir::*;
     use std::convert::TryInto;
 
-    const MIGRATIONS_00: Dir = include_dir!("./tests/migrations_00");
-    const MIGRATIONS_01: Dir = include_dir!("./tests/migrations_01");
-    const MIGRATIONS_02: Dir = include_dir!("./tests/migrations_02");
-    const MIGRATIONS_03: Dir = include_dir!("./tests/migrations_03");
+    const MIGRATIONS_00: Dir = include_dir!("$CARGO_MANIFEST_DIR/tests/migrations_00");
+    const MIGRATIONS_01: Dir = include_dir!("$CARGO_MANIFEST_DIR/tests/migrations_01");
+    const MIGRATIONS_02: Dir = include_dir!("$CARGO_MANIFEST_DIR/tests/migrations_02");
+    const MIGRATIONS_03: Dir = include_dir!("$CARGO_MANIFEST_DIR/tests/migrations_03");
 
     #[test]
     fn should_read_migrations_from_embed() {

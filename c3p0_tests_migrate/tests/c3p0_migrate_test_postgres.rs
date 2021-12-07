@@ -1,6 +1,6 @@
 #![cfg(feature = "postgres")]
 
-use c3p0::postgres::deadpool;
+use c3p0::postgres::deadpool::{self};
 use c3p0::postgres::tokio_postgres::NoTls;
 pub use c3p0::postgres::*;
 pub use c3p0::*;
