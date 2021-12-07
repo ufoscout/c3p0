@@ -4,6 +4,7 @@ use c3p0::postgres::deadpool;
 pub use c3p0::postgres::tokio_postgres::{row::Row, NoTls};
 use c3p0::postgres::*;
 use c3p0::*;
+use c3p0_postgres::deadpool::Runtime;
 use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::*;
@@ -39,7 +40,7 @@ async fn init() -> MaybeType {
     pool_config.timeouts.wait = Some(Duration::from_secs(5));
     config.pool = Some(pool_config);
 
-    let pool = PgC3p0Pool::new(config.create_pool(NoTls).unwrap());
+    let pool = PgC3p0Pool::new(config.create_pool(Some(Runtime::Tokio1), NoTls).unwrap());
 
     (pool, node)
 }

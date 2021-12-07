@@ -1,6 +1,6 @@
 #![cfg(feature = "postgres")]
 
-use c3p0::postgres::deadpool::{self};
+use c3p0::postgres::deadpool::{self, Runtime};
 use c3p0::postgres::tokio_postgres::NoTls;
 pub use c3p0::postgres::*;
 pub use c3p0::*;
@@ -32,7 +32,7 @@ pub async fn new_connection(
     pool_config.timeouts.wait = Some(Duration::from_secs(5));
     config.pool = Some(pool_config);
 
-    let pool = PgC3p0Pool::new(config.create_pool(NoTls).unwrap());
+    let pool = PgC3p0Pool::new(config.create_pool(Some(Runtime::Tokio1), NoTls).unwrap());
 
     (pool, node)
 }
