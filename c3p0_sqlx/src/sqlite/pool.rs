@@ -17,9 +17,9 @@ impl SqlxSqliteC3p0Pool {
     }
 }
 
-impl Into<SqlxSqliteC3p0Pool> for Pool<Db> {
-    fn into(self) -> SqlxSqliteC3p0Pool {
-        SqlxSqliteC3p0Pool::new(self)
+impl From<Pool<Db>> for SqlxSqliteC3p0Pool {
+    fn from(pool: Pool<Db>) -> Self {
+        SqlxSqliteC3p0Pool::new(pool)
     }
 }
 

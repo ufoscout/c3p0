@@ -115,7 +115,7 @@ impl PgConnection {
                     .await
                     .map_err(into_c3p0_error)?
                     .get(0)
-                    .map(|row| mapper(row))
+                    .map(mapper)
                     .transpose()
                     .map_err(|err| C3p0Error::RowMapperError {
                         cause: format!("{:?}", err),
@@ -137,7 +137,7 @@ impl PgConnection {
                     .await
                     .map_err(into_c3p0_error)?
                     .iter()
-                    .map(|row| mapper(row))
+                    .map(mapper)
                     .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
                     .map_err(|err| C3p0Error::RowMapperError {
                         cause: format!("{:?}", err),

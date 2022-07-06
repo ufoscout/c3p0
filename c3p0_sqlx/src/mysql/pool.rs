@@ -18,9 +18,9 @@ impl SqlxMySqlC3p0Pool {
     }
 }
 
-impl Into<SqlxMySqlC3p0Pool> for Pool<Db> {
-    fn into(self) -> SqlxMySqlC3p0Pool {
-        SqlxMySqlC3p0Pool::new(self)
+impl From<Pool<Db>> for SqlxMySqlC3p0Pool {
+    fn from(pool: Pool<Db>) -> Self {
+        SqlxMySqlC3p0Pool::new(pool)
     }
 }
 

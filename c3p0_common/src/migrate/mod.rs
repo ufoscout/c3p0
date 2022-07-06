@@ -204,7 +204,7 @@ impl<
         self.c3p0
             .transaction(|mut conn| async move {
                 self.migrator.lock_table(c3p0_json, &mut conn).await?;
-                Ok(self.create_migration_zero(c3p0_json, &mut conn).await?)
+                self.create_migration_zero(c3p0_json, &mut conn).await
             })
             .await
     }
@@ -220,7 +220,7 @@ impl<
         for i in 0..self.migrations.len() {
             let migration = &self.migrations[i];
 
-            if check_if_migration_already_applied(&migration_history, &migration, i)? {
+            if check_if_migration_already_applied(&migration_history, migration, i)? {
                 continue;
             }
 

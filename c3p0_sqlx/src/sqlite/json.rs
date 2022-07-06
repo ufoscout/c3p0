@@ -141,7 +141,7 @@ where
         } else {
             &self.queries.drop_table_sql_query
         };
-        batch_execute(&query, conn.get_conn()).await
+        batch_execute(query, conn.get_conn()).await
     }
 
     async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
