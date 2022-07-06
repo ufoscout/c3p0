@@ -8,6 +8,7 @@ fn json_should_commit_transaction() {
         let c3p0 = &data.0;
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
+        println!("Create table {table_name}");
         let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build::<TestData>();
 
         let model = NewModel::new(TestData {
@@ -22,9 +23,13 @@ fn json_should_commit_transaction() {
             .transaction(|mut conn| async move {
                 let conn = &mut conn;
                 assert!(jpo_ref.create_table_if_not_exists(conn).await.is_ok());
+                println!("Table created!");
                 assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
+                println!("Model saved 1!");
                 assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
+                println!("Model saved 2!");
                 assert!(jpo_ref.save(conn, model_clone.clone()).await.is_ok());
+                println!("Model saved 3!");
                 Ok(())
             })
             .await;
@@ -35,8 +40,10 @@ fn json_should_commit_transaction() {
             let conn = &mut conn;
             let count = jpo.count_all(conn).await.unwrap();
             assert_eq!(3, count);
+            println!("Count performed!");
 
             assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
+            println!("Table dropped!");
             Ok(())
         })
         .await
@@ -45,7 +52,7 @@ fn json_should_commit_transaction() {
 }
 
 #[test]
-fn should_rollback_transaction() {
+fn json_should_rollback_transaction() {
     test(async {
         let data = data(false).await;
         let c3p0 = &data.0;
@@ -93,7 +100,7 @@ fn should_rollback_transaction() {
 }
 
 #[test]
-fn transaction_should_return_internal_error() {
+fn json_transaction_should_return_internal_error() {
     use thiserror::Error;
 
     #[derive(Error, Debug, PartialEq)]

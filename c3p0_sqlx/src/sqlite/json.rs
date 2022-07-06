@@ -4,36 +4,37 @@ use crate::common::executor::{
 };
 use crate::common::to_model;
 use crate::error::into_c3p0_error;
-use crate::postgres::queries::build_pg_queries;
-use crate::postgres::{Db, DbRow, SqlxPgC3p0Pool, SqlxPgConnection};
+use crate::sqlite::queries::build_sqlite_queries;
+use crate::sqlite::{Db, DbRow, SqlxSqliteC3p0Pool, SqlxSqliteConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
-use sqlx::postgres::PgQueryResult;
+use log::warn;
 use sqlx::query::Query;
+use sqlx::sqlite::SqliteQueryResult;
 use sqlx::{IntoArguments, Row};
 
-impl ResultWithRowCount for PgQueryResult {
+impl ResultWithRowCount for SqliteQueryResult {
     fn rows_affected(&self) -> u64 {
         self.rows_affected()
     }
 }
 
-pub trait SqlxPgC3p0JsonBuilder {
+pub trait SqlxSqliteC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxPgC3p0Json<DATA, DefaultJsonCodec>;
+    ) -> SqlxSqliteC3p0Json<DATA, DefaultJsonCodec>;
     fn build_with_codec<
         DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
         CODEC: JsonCodec<DATA>,
     >(
         self,
         codec: CODEC,
-    ) -> SqlxPgC3p0Json<DATA, CODEC>;
+    ) -> SqlxSqliteC3p0Json<DATA, CODEC>;
 }
 
 #[derive(Clone)]
-pub struct SqlxPgC3p0Json<DATA, CODEC: JsonCodec<DATA>>
+pub struct SqlxSqliteC3p0Json<DATA, CODEC: JsonCodec<DATA>>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -43,10 +44,10 @@ where
     queries: Queries,
 }
 
-impl SqlxPgC3p0JsonBuilder for C3p0JsonBuilder<SqlxPgC3p0Pool> {
+impl SqlxSqliteC3p0JsonBuilder for C3p0JsonBuilder<SqlxSqliteC3p0Pool> {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
         self,
-    ) -> SqlxPgC3p0Json<DATA, DefaultJsonCodec> {
+    ) -> SqlxSqliteC3p0Json<DATA, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -56,16 +57,16 @@ impl SqlxPgC3p0JsonBuilder for C3p0JsonBuilder<SqlxPgC3p0Pool> {
     >(
         self,
         codec: CODEC,
-    ) -> SqlxPgC3p0Json<DATA, CODEC> {
-        SqlxPgC3p0Json {
+    ) -> SqlxSqliteC3p0Json<DATA, CODEC> {
+        SqlxSqliteC3p0Json {
             phantom_data: std::marker::PhantomData,
             codec,
-            queries: build_pg_queries(self),
+            queries: build_sqlite_queries(self),
         }
     }
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> SqlxPgC3p0Json<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> SqlxSqliteC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
@@ -84,7 +85,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxPgConnection,
+        conn: &mut SqlxSqliteConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         fetch_one_optional_with_sql(sql, conn.get_conn(), self.codec()).await
@@ -96,7 +97,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxPgConnection,
+        conn: &mut SqlxSqliteConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<DATA>, C3p0Error> {
         fetch_one_with_sql(sql, conn.get_conn(), self.codec()).await
@@ -108,7 +109,7 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxPgConnection,
+        conn: &mut SqlxSqliteConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         fetch_all_with_sql(sql, conn.get_conn(), self.codec()).await
@@ -116,11 +117,11 @@ where
 }
 
 #[async_trait]
-impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqlxPgC3p0Json<DATA, CODEC>
+impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqlxSqliteC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = SqlxPgConnection;
+    type Conn = SqlxSqliteConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec
@@ -173,14 +174,10 @@ where
     async fn fetch_all_for_update(
         &self,
         conn: &mut Self::Conn,
-        for_update: &ForUpdate,
+        _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_all_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_all_with_sql(conn, sqlx::query(&sql)).await
+        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
+        self.fetch_all(conn).await
     }
 
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -199,15 +196,10 @@ where
         &'a self,
         conn: &mut Self::Conn,
         id: ID,
-        for_update: &ForUpdate,
+        _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_by_id_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_one_optional_with_sql(conn, sqlx::query(&sql).bind(id.into()))
-            .await
+        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
+        self.fetch_one_optional_by_id(conn, id).await
     }
 
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -226,19 +218,10 @@ where
         &'a self,
         conn: &mut Self::Conn,
         id: ID,
-        for_update: &ForUpdate,
+        _for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_by_id_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_one_with_sql(conn, sqlx::query(&sql).bind(id.into()))
-            .await
-
-        // self.fetch_one_optional_by_id_for_update(conn, id, for_update)
-        //     .await
-        //     .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
+        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
+        self.fetch_one_by_id(conn, id).await
     }
 
     async fn delete(
@@ -280,13 +263,13 @@ where
         let id = sqlx::query(&self.queries.save_sql_query)
             .bind(&obj.version)
             .bind(&json_data)
-            .fetch_one(conn.get_conn())
+            .execute(conn.get_conn())
             .await
-            .and_then(|row| row.try_get(0))
+            .map(|done| done.last_insert_rowid())
             .map_err(into_c3p0_error)?;
 
         Ok(Model {
-            id,
+            id: id as i64,
             version: obj.version,
             data: obj.data,
         })

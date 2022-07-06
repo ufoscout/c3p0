@@ -1,32 +1,31 @@
-use async_trait::async_trait;
-use c3p0_common::*;
-use std::future::Future;
-
 use crate::common::executor::batch_execute;
 use crate::error::into_c3p0_error;
-use crate::mysql::Db;
+use crate::sqlite::Db;
+use async_trait::async_trait;
+use c3p0_common::*;
 use sqlx::{Pool, Transaction};
+use std::future::Future;
 
 #[derive(Clone)]
-pub struct SqlxMySqlC3p0Pool {
+pub struct SqlxSqliteC3p0Pool {
     pool: Pool<Db>,
 }
 
-impl SqlxMySqlC3p0Pool {
+impl SqlxSqliteC3p0Pool {
     pub fn new(pool: Pool<Db>) -> Self {
-        SqlxMySqlC3p0Pool { pool }
+        SqlxSqliteC3p0Pool { pool }
     }
 }
 
-impl From<Pool<Db>> for SqlxMySqlC3p0Pool {
+impl From<Pool<Db>> for SqlxSqliteC3p0Pool {
     fn from(pool: Pool<Db>) -> Self {
-        SqlxMySqlC3p0Pool::new(pool)
+        SqlxSqliteC3p0Pool::new(pool)
     }
 }
 
 #[async_trait]
-impl C3p0Pool for SqlxMySqlC3p0Pool {
-    type Conn = SqlxMySqlConnection;
+impl C3p0Pool for SqlxSqliteC3p0Pool {
+    type Conn = SqlxSqliteConnection;
 
     async fn transaction<
         T: Send,
@@ -41,30 +40,29 @@ impl C3p0Pool for SqlxMySqlC3p0Pool {
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction =
-            SqlxMySqlConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+            SqlxSqliteConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
 
         let result = { (tx)(transaction).await? };
 
         native_transaction.commit().await.map_err(into_c3p0_error)?;
-
         Ok(result)
     }
 }
 
-pub enum SqlxMySqlConnection {
+pub enum SqlxSqliteConnection {
     Tx(&'static mut Transaction<'static, Db>),
 }
 
-impl SqlxMySqlConnection {
+impl SqlxSqliteConnection {
     pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
         match self {
-            SqlxMySqlConnection::Tx(tx) => tx,
+            SqlxSqliteConnection::Tx(tx) => tx,
         }
     }
 }
 
 #[async_trait]
-impl SqlConnection for SqlxMySqlConnection {
+impl SqlConnection for SqlxSqliteConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         batch_execute(sql, self.get_conn()).await
     }
