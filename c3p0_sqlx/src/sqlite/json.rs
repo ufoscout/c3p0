@@ -5,10 +5,16 @@ use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
 use sqlx::query::Query;
-use sqlx::Done;
+use sqlx::sqlite::SqliteQueryResult;
 use sqlx::{IntoArguments, Row};
 use crate::common::to_model;
-use crate::common::executor::{fetch_one_optional_with_sql, fetch_one_with_sql, fetch_all_with_sql, batch_execute, delete, update};
+use crate::common::executor::{fetch_one_optional_with_sql, fetch_one_with_sql, fetch_all_with_sql, batch_execute, delete, update, ResultWithRowCount};
+
+impl ResultWithRowCount for SqliteQueryResult {
+    fn rows_affected(&self) -> u64 {
+        self.rows_affected()
+    }
+}
 
 pub trait SqlxSqliteC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(

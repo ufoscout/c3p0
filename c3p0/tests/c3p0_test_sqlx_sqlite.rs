@@ -4,10 +4,8 @@ use c3p0::sqlx::sqlx::sqlite::*;
 use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::*;
 use c3p0::*;
-use maybe_single::{Data, MaybeSingleAsync};
+use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-
-use futures::FutureExt;
 
 pub type C3p0Impl = SqlxSqliteC3p0Pool;
 
@@ -31,7 +29,7 @@ async fn init() -> MaybeType {
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
     static DATA: OnceCell<MaybeSingleAsync<MaybeType>> = OnceCell::new();
-    DATA.get_or_init(|| MaybeSingleAsync::new(|| init().boxed()))
+    DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
         .data(serial)
         .await
 }

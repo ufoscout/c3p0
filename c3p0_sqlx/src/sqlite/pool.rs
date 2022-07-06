@@ -1,10 +1,9 @@
 use async_trait::async_trait;
 use c3p0_common::*;
-use futures::Future;
-
+use std::future::Future;
 use crate::error::into_c3p0_error;
 use crate::sqlite::Db;
-use sqlx::{Pool, Transaction, Connection};
+use sqlx::{Pool, Transaction};
 use crate::common::executor::batch_execute;
 
 #[derive(Clone)]
