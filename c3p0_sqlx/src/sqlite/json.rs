@@ -67,6 +67,11 @@ impl<DATA, CODEC: JsonCodec<DATA>> SqlxSqliteC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
+
+    pub fn queries(&self) -> &Queries {
+        &self.queries
+    }
+    
     #[inline]
     pub fn to_model(&self, row: &DbRow) -> Result<Model<DATA>, C3p0Error> {
         to_model(&self.codec, row, 0, 1, 2)
