@@ -4,6 +4,7 @@ use crate::sqlite::{Db, DbRow, SqlxSqliteC3p0Pool, SqlxSqliteConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
+use log::warn;
 use sqlx::query::Query;
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::{IntoArguments, Row};
@@ -166,14 +167,10 @@ where
     async fn fetch_all_for_update(
         &self,
         conn: &mut Self::Conn,
-        for_update: &ForUpdate,
+        _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_all_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_all_with_sql(conn, sqlx::query(&sql)).await
+        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
+        self.fetch_all(conn).await
     }
 
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -192,14 +189,10 @@ where
         &'a self,
         conn: &mut Self::Conn,
         id: ID,
-        for_update: &ForUpdate,
+        _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_by_id_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_one_optional_with_sql(conn, sqlx::query(&sql).bind(id.into()))
+        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
+        self.fetch_one_optional_by_id(conn, id)
             .await
     }
 
@@ -219,19 +212,11 @@ where
         &'a self,
         conn: &mut Self::Conn,
         id: ID,
-        for_update: &ForUpdate,
+        _for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_by_id_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_one_with_sql(conn, sqlx::query(&sql).bind(id.into()))
+        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
+        self.fetch_one_by_id(conn, id)
             .await
-
-        // self.fetch_one_optional_by_id_for_update(conn, id, for_update)
-        //     .await
-        //     .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
     async fn delete(
