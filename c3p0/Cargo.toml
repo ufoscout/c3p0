@@ -4,7 +4,7 @@ license = "MIT"
 version = "0.65.0"
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2. Based on rust-postgres."
-edition = "2018"
+edition = "2021"
 readme = "README.md"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
@@ -38,23 +38,11 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [features]
 default = []
-
 in_memory = ["c3p0_in_memory"]
-
+migrate = ["c3p0_postgres?/migrate", "c3p0_sqlx?/migrate"]
 #mysql = ["c3p0_mysql"]
-#mysql_migrate = ["mysql", "c3p0_mysql/migrate"]
-
 postgres = ["c3p0_postgres"]
-postgres_migrate = ["postgres", "c3p0_postgres/migrate"]
-
 sqlx_mysql = ["c3p0_sqlx/mysql"]
-sqlx_mysql_migrate = ["sqlx_mysql", "c3p0_sqlx/migrate"]
-
 sqlx_postgres = ["c3p0_sqlx/postgres"]
-sqlx_postgres_migrate = ["sqlx_postgres", "c3p0_sqlx/migrate"]
-
 sqlx_sqlite = ["c3p0_sqlx/sqlite"]
-sqlx_sqlite_migrate = ["sqlx_sqlite", "c3p0_sqlx/migrate"]
-
 #tidb = ["c3p0_mysql"]
-#tidb_migrate = ["tidb", "mysql_migrate"]
