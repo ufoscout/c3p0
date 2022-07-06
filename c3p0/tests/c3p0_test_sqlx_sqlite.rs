@@ -13,23 +13,21 @@ pub type C3p0Impl = SqlxSqliteC3p0Pool;
 mod tests_json;
 mod utils;
 
-pub type MaybeType = (
-    C3p0Impl,
-    (),
-);
+pub type MaybeType = (C3p0Impl, ());
 
 async fn init() -> MaybeType {
-
     let options = SqliteConnectOptions::new();
 
     let pool: c3p0::sqlx::sqlx::Pool<Sqlite> = c3p0::sqlx::sqlx::pool::PoolOptions::new()
-    .max_lifetime(None)
-    .idle_timeout(None)
-    .max_connections(1)
-    .connect_with(options).await.unwrap();
+        .max_lifetime(None)
+        .idle_timeout(None)
+        .max_connections(1)
+        .connect_with(options)
+        .await
+        .unwrap();
 
     //let pool = SqlitePool::connect_with(options).await.unwrap();
-    
+
     let pool = SqlxSqliteC3p0Pool::new(pool);
 
     (pool, ())

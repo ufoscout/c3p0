@@ -1,7 +1,9 @@
 use c3p0_common::*;
 use log::warn;
 
-use crate::{SqlxSqliteC3p0Json, SqlxSqliteC3p0JsonBuilder, SqlxSqliteC3p0Pool, SqlxSqliteConnection};
+use crate::{
+    SqlxSqliteC3p0Json, SqlxSqliteC3p0JsonBuilder, SqlxSqliteC3p0Pool, SqlxSqliteConnection,
+};
 use async_trait::async_trait;
 
 pub trait SqlxSqliteC3p0MigrateBuilder {

@@ -4,9 +4,9 @@ mod queries;
 
 #[cfg(feature = "migrate")]
 mod migrate;
+use crate::common::executor::execute;
 #[cfg(feature = "migrate")]
 pub use migrate::*;
-use crate::common::executor::execute;
 
 pub use json::*;
 pub use pool::*;

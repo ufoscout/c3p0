@@ -1,10 +1,10 @@
-use async_trait::async_trait;
-use c3p0_common::*;
-use std::future::Future;
+use crate::common::executor::batch_execute;
 use crate::error::into_c3p0_error;
 use crate::sqlite::Db;
+use async_trait::async_trait;
+use c3p0_common::*;
 use sqlx::{Pool, Transaction};
-use crate::common::executor::batch_execute;
+use std::future::Future;
 
 #[derive(Clone)]
 pub struct SqlxSqliteC3p0Pool {

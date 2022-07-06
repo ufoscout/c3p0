@@ -1,3 +1,8 @@
+use crate::common::executor::{
+    batch_execute, delete, fetch_all_with_sql, fetch_one_optional_with_sql, fetch_one_with_sql,
+    update, ResultWithRowCount,
+};
+use crate::common::to_model;
 use crate::error::into_c3p0_error;
 use crate::sqlite::queries::build_sqlite_queries;
 use crate::sqlite::{Db, DbRow, SqlxSqliteC3p0Pool, SqlxSqliteConnection};
@@ -8,8 +13,6 @@ use log::warn;
 use sqlx::query::Query;
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::{IntoArguments, Row};
-use crate::common::to_model;
-use crate::common::executor::{fetch_one_optional_with_sql, fetch_one_with_sql, fetch_all_with_sql, batch_execute, delete, update, ResultWithRowCount};
 
 impl ResultWithRowCount for SqliteQueryResult {
     fn rows_affected(&self) -> u64 {
@@ -67,11 +70,10 @@ impl<DATA, CODEC: JsonCodec<DATA>> SqlxSqliteC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
-    
+
     #[inline]
     pub fn to_model(&self, row: &DbRow) -> Result<Model<DATA>, C3p0Error> {
         to_model(&self.codec, row, 0, 1, 2)
@@ -187,7 +189,7 @@ where
             conn,
             sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
         )
-            .await
+        .await
     }
 
     async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
@@ -197,8 +199,7 @@ where
         _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
-        self.fetch_one_optional_by_id(conn, id)
-            .await
+        self.fetch_one_optional_by_id(conn, id).await
     }
 
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -210,7 +211,7 @@ where
             conn,
             sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
         )
-            .await
+        .await
     }
 
     async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
@@ -220,8 +221,7 @@ where
         _for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {
         warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
-        self.fetch_one_by_id(conn, id)
-            .await
+        self.fetch_one_by_id(conn, id).await
     }
 
     async fn delete(

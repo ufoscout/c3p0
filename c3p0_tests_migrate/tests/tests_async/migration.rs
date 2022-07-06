@@ -247,7 +247,8 @@ async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
         .await
 }
 
-const MIGRATIONS: include_dir::Dir = include_dir::include_dir!("$CARGO_MANIFEST_DIR/tests/migrations_00");
+const MIGRATIONS: include_dir::Dir =
+    include_dir::include_dir!("$CARGO_MANIFEST_DIR/tests/migrations_00");
 
 #[tokio::test]
 async fn should_read_embedded_migrations() -> Result<(), C3p0Error> {

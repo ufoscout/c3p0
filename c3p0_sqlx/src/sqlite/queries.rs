@@ -73,10 +73,7 @@ pub fn build_sqlite_queries<C3P0>(
         ),
 
         drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
-        drop_table_sql_query_cascade: format!(
-            "DROP TABLE IF EXISTS {}",
-            qualified_table_name
-        ),
+        drop_table_sql_query_cascade: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
 
         lock_table_sql_query: None,
 
