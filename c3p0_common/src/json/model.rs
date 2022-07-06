@@ -26,12 +26,12 @@ where
     }
 }
 
-impl<'a, Data> Into<&'a IdType> for &'a Model<Data>
+impl<'a, Data> From<&'a Model<Data>> for &'a IdType
 where
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
-    fn into(self) -> &'a IdType {
-        &self.id
+    fn from(model: &'a Model<Data>) -> Self {
+        &model.id
     }
 }
 

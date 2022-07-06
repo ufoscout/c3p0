@@ -34,7 +34,7 @@ impl C3p0Pool for InMemoryC3p0Pool {
     ) -> Result<T, E> {
         let mut guard = self.db.lock().await;
         // .map_err(|err| C3p0Error::InternalError {
-        //         cause: format!("{}", err),
+        //         cause: format!("{:?}", err),
         //     })?;
         let db = guard.deref();
         let mut db_clone = db.clone();
@@ -59,7 +59,7 @@ impl Deref for InMemoryConnection {
     type Target = Db;
 
     fn deref(&self) -> &Self::Target {
-        &self.db
+        self.db
     }
 }
 

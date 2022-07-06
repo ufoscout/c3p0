@@ -25,9 +25,9 @@ impl PgC3p0Pool {
     }
 }
 
-impl Into<PgC3p0Pool> for Pool {
-    fn into(self) -> PgC3p0Pool {
-        PgC3p0Pool::new(self)
+impl From<Pool> for PgC3p0Pool {
+    fn from(pool: Pool) -> Self {
+        PgC3p0Pool::new(pool)
     }
 }
 
@@ -115,10 +115,10 @@ impl PgConnection {
                     .await
                     .map_err(into_c3p0_error)?
                     .get(0)
-                    .map(|row| mapper(&row))
+                    .map(|row| mapper(row))
                     .transpose()
                     .map_err(|err| C3p0Error::RowMapperError {
-                        cause: format!("{}", err),
+                        cause: format!("{:?}", err),
                     })
             }
         }
@@ -137,10 +137,10 @@ impl PgConnection {
                     .await
                     .map_err(into_c3p0_error)?
                     .iter()
-                    .map(|row| mapper(&row))
+                    .map(|row| mapper(row))
                     .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
                     .map_err(|err| C3p0Error::RowMapperError {
-                        cause: format!("{}", err),
+                        cause: format!("{:?}", err),
                     })
             }
         }

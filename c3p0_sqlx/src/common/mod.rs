@@ -28,18 +28,18 @@ where
     let id = row
         .try_get(id_index)
         .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for id index. Err: {}", err),
+            cause: format!("Row contains no values for id index. Err: {:?}", err),
         })?;
     let version = row
         .try_get(version_index)
         .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for version index. Err: {}", err),
+            cause: format!("Row contains no values for version index. Err: {:?}", err),
         })?;
     let data =
         codec.from_value(
             row.try_get(data_index)
                 .map_err(|err| C3p0Error::RowMapperError {
-                    cause: format!("Row contains no values for data index. Err: {}", err),
+                    cause: format!("Row contains no values for data index. Err: {:?}", err),
                 })?,
         )?;
     Ok(Model { id, version, data })

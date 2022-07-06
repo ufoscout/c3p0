@@ -4,11 +4,11 @@ use c3p0::postgres::deadpool;
 pub use c3p0::postgres::tokio_postgres::{row::Row, NoTls};
 use c3p0::postgres::*;
 use c3p0::*;
-use maybe_single::{Data, MaybeSingleAsync};
+use c3p0_postgres::deadpool::Runtime;
+use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::*;
 
-use futures::FutureExt;
 use std::time::Duration;
 
 pub type C3p0Impl = PgC3p0Pool;
@@ -40,14 +40,14 @@ async fn init() -> MaybeType {
     pool_config.timeouts.wait = Some(Duration::from_secs(5));
     config.pool = Some(pool_config);
 
-    let pool = PgC3p0Pool::new(config.create_pool(NoTls).unwrap());
+    let pool = PgC3p0Pool::new(config.create_pool(Some(Runtime::Tokio1), NoTls).unwrap());
 
     (pool, node)
 }
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
     static DATA: OnceCell<MaybeSingleAsync<MaybeType>> = OnceCell::new();
-    DATA.get_or_init(|| MaybeSingleAsync::new(|| init().boxed()))
+    DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
         .data(serial)
         .await
 }

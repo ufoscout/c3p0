@@ -31,9 +31,9 @@ pub fn to_model<
     version_index: VersionIdx,
     data_index: DataIdx,
 ) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-    let id = get_or_error(&row, id_index)?;
-    let version = get_or_error(&row, version_index)?;
-    let data = codec.from_value(get_or_error(&row, data_index)?)?;
+    let id = get_or_error(row, id_index)?;
+    let version = get_or_error(row, version_index)?;
+    let data = codec.from_value(get_or_error(row, data_index)?)?;
     Ok(Model { id, version, data })
 }
 
@@ -44,7 +44,7 @@ pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
 ) -> Result<T, C3p0Error> {
     row.try_get(&index)
         .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for index {}. Err: {}", index, err),
+            cause: format!("Row contains no values for index {}. Err: {:?}", index, err),
         })
 }
 

@@ -144,7 +144,7 @@ impl<
             .map_err(|err| C3p0Error::MigrationError {
                 message: "C3p0Migrate - Failed to execute pre-migration DB preparation."
                     .to_string(),
-                cause: Box::new(err),
+                source: Box::new(err),
             })?;
 
         // Start Migration
@@ -159,7 +159,7 @@ impl<
             .await
             .map_err(|err| C3p0Error::MigrationError {
                 message: "C3p0Migrate - Failed to execute DB migration script.".to_string(),
-                cause: err,
+                source: err,
             })
     }
 
@@ -196,7 +196,7 @@ impl<
                 })
                 .await;
             if let Err(err) = result {
-                warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {}", err);
+                warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {:?}", err);
             };
         }
 
@@ -230,7 +230,7 @@ impl<
                         "C3p0Migrate - Failed to execute migration with id [{}].",
                         &migration.id
                     ),
-                    cause: Box::new(err),
+                    source: Box::new(err),
                 }
             })?;
 
