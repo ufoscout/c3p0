@@ -8,6 +8,7 @@ use crate::mysql::queries::build_mysql_queries;
 use crate::mysql::{Db, DbRow, SqlxMySqlC3p0Pool, SqlxMySqlConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
+use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use sqlx::mysql::MySqlQueryResult;
 use sqlx::query::Query;
@@ -75,7 +76,7 @@ where
 
     #[inline]
     pub fn to_model(&self, row: &DbRow) -> Result<Model<DATA>, C3p0Error> {
-        to_model(&self.codec, row, 0, 1, 2)
+        to_model(&self.codec, row, 0, 1, 2, 3, 4)
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -276,9 +277,11 @@ where
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
-
+        let create_epoch_millis = get_current_epoch_millis();
         let id = sqlx::query(&self.queries.save_sql_query)
             .bind(&obj.version)
+            .bind(&create_epoch_millis)
+            .bind(&create_epoch_millis)
             .bind(&json_data)
             .execute(conn.get_conn())
             .await
@@ -286,9 +289,11 @@ where
             .map_err(into_c3p0_error)?;
 
         Ok(Model {
-            id: id as i64,
+            id: id as IdType,
             version: obj.version,
             data: obj.data,
+            create_epoch_millis,
+            update_epoch_millis: create_epoch_millis,
         })
     }
 

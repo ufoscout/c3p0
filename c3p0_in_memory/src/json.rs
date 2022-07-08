@@ -1,7 +1,8 @@
 use crate::pool::{InMemoryC3p0Pool, InMemoryConnection};
 use async_trait::async_trait;
 use c3p0_common::{
-    C3p0Error, C3p0Json, C3p0JsonBuilder, DefaultJsonCodec, ForUpdate, IdType, Model, NewModel,
+    time::utils::get_current_epoch_millis, C3p0Error, C3p0Json, C3p0JsonBuilder, DefaultJsonCodec,
+    ForUpdate, IdType, Model, NewModel,
 };
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -63,6 +64,8 @@ where
         Ok(Model {
             id: model.id,
             version: model.version,
+            create_epoch_millis: model.create_epoch_millis,
+            update_epoch_millis: model.update_epoch_millis,
             data: serde_json::to_value(&model.data)?,
         })
     }
@@ -71,6 +74,8 @@ where
         Ok(Model {
             id: model.id,
             version: model.version,
+            create_epoch_millis: model.create_epoch_millis,
+            update_epoch_millis: model.update_epoch_millis,
             data: serde_json::from_value(model.data.clone())?,
         })
     }
@@ -241,11 +246,7 @@ where
     ) -> Result<Model<DATA>, C3p0Error> {
         let table = self.get_or_create_table(&self.qualified_table_name, conn);
         let id = table.len() as IdType;
-        let model = Model {
-            id,
-            version: obj.version,
-            data: obj.data,
-        };
+        let model = Model::from_new(id, get_current_epoch_millis(), obj);
         table.insert(id, self.to_value_model(&model)?);
         Ok(model)
     }
@@ -264,11 +265,7 @@ where
         };
 
         if good_version {
-            let updated_model = Model {
-                id: obj.id,
-                version: obj.version + 1,
-                data: obj.data,
-            };
+            let updated_model = obj.into_new_version(get_current_epoch_millis());
             table.insert(updated_model.id, self.to_value_model(&updated_model)?);
             return Ok(updated_model);
         }

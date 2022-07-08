@@ -15,18 +15,22 @@ pub fn build_sqlite_queries<C3P0>(
         ),
 
         find_all_sql_query: format!(
-            "SELECT {}, {}, {} FROM {} ORDER BY {} ASC",
+            "SELECT {}, {}, {}, {}, {} FROM {} ORDER BY {} ASC",
             json_builder.id_field_name,
             json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name,
             qualified_table_name,
             json_builder.id_field_name,
         ),
 
         find_by_id_sql_query: format!(
-            "SELECT {}, {}, {} FROM {} WHERE {} = ? LIMIT 1",
+            "SELECT {}, {}, {}, {}, {} FROM {} WHERE {} = ? LIMIT 1",
             json_builder.id_field_name,
             json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name,
             qualified_table_name,
             json_builder.id_field_name,
@@ -45,14 +49,19 @@ pub fn build_sqlite_queries<C3P0>(
         ),
 
         save_sql_query: format!(
-            "INSERT INTO {} ({}, {}) VALUES (?, ?)",
-            qualified_table_name, json_builder.version_field_name, json_builder.data_field_name
+            "INSERT INTO {} ({}, {}, {}, {}) VALUES (?, ?, ?, ?)",
+            qualified_table_name,
+            json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
+            json_builder.data_field_name
         ),
 
         update_sql_query: format!(
-            "UPDATE {} SET {} = ?, {} = ? WHERE {} = ? AND {} = ?",
+            "UPDATE {} SET {} = ?, {} = ?, {} = ? WHERE {} = ? AND {} = ?",
             qualified_table_name,
             json_builder.version_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name,
             json_builder.id_field_name,
             json_builder.version_field_name,
@@ -63,12 +72,16 @@ pub fn build_sqlite_queries<C3P0>(
                 CREATE TABLE IF NOT EXISTS {} (
                     {} integer primary key autoincrement,
                     {} integer not null,
+                    {} integer not null,
+                    {} integer not null,
                     {} JSON
                 )
                 "#,
             qualified_table_name,
             json_builder.id_field_name,
             json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name
         ),
 
@@ -81,6 +94,8 @@ pub fn build_sqlite_queries<C3P0>(
         table_name: json_builder.table_name,
         id_field_name: json_builder.id_field_name,
         version_field_name: json_builder.version_field_name,
+        create_epoch_millis_field_name: json_builder.create_epoch_millis_field_name,
+        update_epoch_millis_field_name: json_builder.update_epoch_millis_field_name,
         data_field_name: json_builder.data_field_name,
         schema_name: json_builder.schema_name,
     }

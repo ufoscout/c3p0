@@ -96,6 +96,8 @@ where
 pub struct Queries {
     pub id_field_name: String,
     pub version_field_name: String,
+    pub create_epoch_millis_field_name: String,
+    pub update_epoch_millis_field_name: String,
     pub data_field_name: String,
 
     pub table_name: String,

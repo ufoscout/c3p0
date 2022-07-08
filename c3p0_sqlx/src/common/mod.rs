@@ -10,6 +10,8 @@ pub fn to_model<
     R: Row<Database = DB>,
     IdIdx: ColumnIndex<R>,
     VersionIdx: ColumnIndex<R>,
+    CreateEpochMillisIdx: ColumnIndex<R>,
+    UpdateEpochMillisIdx: ColumnIndex<R>,
     DataIdx: ColumnIndex<R>,
     DB: Database,
 >(
@@ -17,6 +19,8 @@ pub fn to_model<
     row: &R,
     id_index: IdIdx,
     version_index: VersionIdx,
+    create_epoch_millis_index: CreateEpochMillisIdx,
+    update_epoch_millis_index: UpdateEpochMillisIdx,
     data_index: DataIdx,
 ) -> Result<Model<DATA>, C3p0Error>
 where
@@ -35,6 +39,22 @@ where
         .map_err(|err| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for version index. Err: {:?}", err),
         })?;
+    let create_epoch_millis =
+        row.try_get(create_epoch_millis_index)
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!(
+                    "Row contains no values for create_epoch_millis index. Err: {:?}",
+                    err
+                ),
+            })?;
+    let update_epoch_millis =
+        row.try_get(update_epoch_millis_index)
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!(
+                    "Row contains no values for update_epoch_millis index. Err: {:?}",
+                    err
+                ),
+            })?;
     let data =
         codec.from_value(
             row.try_get(data_index)
@@ -42,5 +62,11 @@ where
                     cause: format!("Row contains no values for data index. Err: {:?}", err),
                 })?,
         )?;
-    Ok(Model { id, version, data })
+    Ok(Model {
+        id,
+        version,
+        data,
+        create_epoch_millis,
+        update_epoch_millis,
+    })
 }
