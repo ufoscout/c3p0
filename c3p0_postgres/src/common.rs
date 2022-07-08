@@ -116,7 +116,7 @@ pub fn build_pg_queries<C3P0>(json_builder: C3p0JsonBuilder<C3P0>) -> Queries {
             "UPDATE {} SET {} = $1, {} = $2, {} = $3  WHERE {} = $4 AND {} = $5",
             qualified_table_name,
             json_builder.version_field_name,
-            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name,
             json_builder.id_field_name,
             json_builder.version_field_name,

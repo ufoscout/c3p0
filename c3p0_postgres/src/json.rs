@@ -283,7 +283,7 @@ where
                 &self.queries.update_sql_query,
                 &[
                     &updated_model.version,
-                    &updated_model.create_epoch_millis,
+                    &updated_model.update_epoch_millis,
                     &json_data,
                     &updated_model.id,
                     &previous_version,

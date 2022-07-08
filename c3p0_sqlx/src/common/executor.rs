@@ -1,6 +1,7 @@
 use crate::common::to_model;
 use crate::error::into_c3p0_error;
 use c3p0_common::json::Queries;
+use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::{C3p0Error, JsonCodec, Model};
 use sqlx::query::Query;
 use sqlx::{ColumnIndex, Database, Executor, IntoArguments};
@@ -180,22 +181,16 @@ where
     usize: ColumnIndex<DB::Row>,
 {
     let json_data = codec.to_value(&obj.data)?;
-
-    let id = obj.id;
-    let new_version = obj.version + 1;
-
-    let updated_model = Model {
-        id,
-        version: new_version,
-        data: obj.data,
-    };
-
+    let previous_version = obj.version;
+    let updated_model = obj.into_new_version(get_current_epoch_millis());
+    
     let result = {
         sqlx::query(&queries.update_sql_query)
-            .bind(new_version)
+            .bind(updated_model.version)
+            .bind(updated_model.update_epoch_millis)
             .bind(json_data)
-            .bind(id)
-            .bind(obj.version)
+            .bind(updated_model.id)
+            .bind(previous_version)
             .execute(executor)
             .await
             .map_err(into_c3p0_error)
@@ -206,7 +201,7 @@ where
         return Err(C3p0Error::OptimisticLockError {
             message: format!(
                 "Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
-                queries.qualified_table_name, &updated_model.id, &obj.version
+                queries.qualified_table_name, &updated_model.id, &previous_version
             ),
         });
     }
