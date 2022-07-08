@@ -183,7 +183,7 @@ where
     let json_data = codec.to_value(&obj.data)?;
     let previous_version = obj.version;
     let updated_model = obj.into_new_version(get_current_epoch_millis());
-    
+
     let result = {
         sqlx::query(&queries.update_sql_query)
             .bind(updated_model.version)

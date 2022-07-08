@@ -8,8 +8,8 @@ use crate::postgres::queries::build_pg_queries;
 use crate::postgres::{Db, DbRow, SqlxPgC3p0Pool, SqlxPgConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
-use c3p0_common::*;
 use c3p0_common::time::utils::get_current_epoch_millis;
+use c3p0_common::*;
 use sqlx::postgres::PgQueryResult;
 use sqlx::query::Query;
 use sqlx::{IntoArguments, Row};
@@ -292,7 +292,7 @@ where
             version: obj.version,
             data: obj.data,
             create_epoch_millis,
-            update_epoch_millis: create_epoch_millis
+            update_epoch_millis: create_epoch_millis,
         })
     }
 

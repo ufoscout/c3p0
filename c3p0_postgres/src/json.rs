@@ -2,8 +2,8 @@ use crate::tokio_postgres::{row::Row, types::ToSql};
 use crate::*;
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
-use c3p0_common::*;
 use c3p0_common::time::utils::get_current_epoch_millis;
+use c3p0_common::*;
 
 pub trait PgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -254,18 +254,20 @@ where
         conn: &mut PgConnection,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        
         let json_data = self.codec().to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
         let id = conn
-            .fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &create_epoch_millis, &json_data])
+            .fetch_one_value(
+                &self.queries.save_sql_query,
+                &[&obj.version, &create_epoch_millis, &json_data],
+            )
             .await?;
         Ok(Model {
             id,
             version: obj.version,
             data: obj.data,
             create_epoch_millis,
-            update_epoch_millis: create_epoch_millis
+            update_epoch_millis: create_epoch_millis,
         })
     }
 

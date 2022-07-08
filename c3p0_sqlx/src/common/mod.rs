@@ -39,16 +39,22 @@ where
         .map_err(|err| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for version index. Err: {:?}", err),
         })?;
-    let create_epoch_millis = row
-        .try_get(create_epoch_millis_index)
-        .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for create_epoch_millis index. Err: {:?}", err),
-        })?;
-    let update_epoch_millis = row
-        .try_get(update_epoch_millis_index)
-        .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for update_epoch_millis index. Err: {:?}", err),
-        })?;
+    let create_epoch_millis =
+        row.try_get(create_epoch_millis_index)
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!(
+                    "Row contains no values for create_epoch_millis index. Err: {:?}",
+                    err
+                ),
+            })?;
+    let update_epoch_millis =
+        row.try_get(update_epoch_millis_index)
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!(
+                    "Row contains no values for update_epoch_millis index. Err: {:?}",
+                    err
+                ),
+            })?;
     let data =
         codec.from_value(
             row.try_get(data_index)
@@ -56,5 +62,11 @@ where
                     cause: format!("Row contains no values for data index. Err: {:?}", err),
                 })?,
         )?;
-        Ok(Model { id, version, data, create_epoch_millis, update_epoch_millis })
-    }
+    Ok(Model {
+        id,
+        version,
+        data,
+        create_epoch_millis,
+        update_epoch_millis,
+    })
+}

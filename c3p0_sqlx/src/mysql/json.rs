@@ -8,8 +8,8 @@ use crate::mysql::queries::build_mysql_queries;
 use crate::mysql::{Db, DbRow, SqlxMySqlC3p0Pool, SqlxMySqlConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
-use c3p0_common::*;
 use c3p0_common::time::utils::get_current_epoch_millis;
+use c3p0_common::*;
 use sqlx::mysql::MySqlQueryResult;
 use sqlx::query::Query;
 use sqlx::{IntoArguments, Row};
@@ -293,7 +293,7 @@ where
             version: obj.version,
             data: obj.data,
             create_epoch_millis,
-            update_epoch_millis: create_epoch_millis
+            update_epoch_millis: create_epoch_millis,
         })
     }
 

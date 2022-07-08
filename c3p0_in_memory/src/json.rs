@@ -1,7 +1,8 @@
 use crate::pool::{InMemoryC3p0Pool, InMemoryConnection};
 use async_trait::async_trait;
 use c3p0_common::{
-    C3p0Error, C3p0Json, C3p0JsonBuilder, DefaultJsonCodec, ForUpdate, IdType, Model, NewModel, time::utils::get_current_epoch_millis
+    time::utils::get_current_epoch_millis, C3p0Error, C3p0Json, C3p0JsonBuilder, DefaultJsonCodec,
+    ForUpdate, IdType, Model, NewModel,
 };
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};

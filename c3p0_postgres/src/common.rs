@@ -40,7 +40,13 @@ pub fn to_model<
     let create_epoch_millis = get_or_error(row, create_epoch_millis_index)?;
     let update_epoch_millis = get_or_error(row, update_epoch_millis_index)?;
     let data = codec.from_value(get_or_error(row, data_index)?)?;
-    Ok(Model { id, version, data, create_epoch_millis, update_epoch_millis })
+    Ok(Model {
+        id,
+        version,
+        data,
+        create_epoch_millis,
+        update_epoch_millis,
+    })
 }
 
 #[inline]

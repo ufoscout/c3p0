@@ -8,8 +8,8 @@ use crate::sqlite::queries::build_sqlite_queries;
 use crate::sqlite::{Db, DbRow, SqlxSqliteC3p0Pool, SqlxSqliteConnection};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
-use c3p0_common::*;
 use c3p0_common::time::utils::get_current_epoch_millis;
+use c3p0_common::*;
 use log::warn;
 use sqlx::query::Query;
 use sqlx::sqlite::SqliteQueryResult;
@@ -276,7 +276,7 @@ where
             version: obj.version,
             data: obj.data,
             create_epoch_millis,
-            update_epoch_millis: create_epoch_millis
+            update_epoch_millis: create_epoch_millis,
         })
     }
 

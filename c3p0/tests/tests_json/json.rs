@@ -1,7 +1,7 @@
-use c3p0::time::utils::get_current_epoch_millis;
-use std::time::Duration;
 use crate::utils::*;
 use crate::*;
+use c3p0::time::utils::get_current_epoch_millis;
+use std::time::Duration;
 
 #[test]
 #[cfg(not(feature = "in_memory"))]
@@ -105,8 +105,14 @@ fn basic_crud() -> Result<(), C3p0Error> {
                 .unwrap();
             assert_eq!(saved_model.id, found_model.id);
             assert_eq!(saved_model.version, found_model.version);
-            assert_eq!(saved_model.create_epoch_millis, found_model.create_epoch_millis);
-            assert_eq!(saved_model.update_epoch_millis, found_model.update_epoch_millis);
+            assert_eq!(
+                saved_model.create_epoch_millis,
+                found_model.create_epoch_millis
+            );
+            assert_eq!(
+                saved_model.update_epoch_millis,
+                found_model.update_epoch_millis
+            );
             assert_eq!(saved_model.data.first_name, found_model.data.first_name);
             assert_eq!(saved_model.data.last_name, found_model.data.last_name);
 
@@ -282,7 +288,10 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             let mut saved_model = jpo.save(conn, model.clone()).await.unwrap();
 
             assert!(saved_model.create_epoch_millis >= current_epoch);
-            assert_eq!(saved_model.create_epoch_millis, saved_model.update_epoch_millis);
+            assert_eq!(
+                saved_model.create_epoch_millis,
+                saved_model.update_epoch_millis
+            );
 
             tokio::time::sleep(Duration::from_millis(10)).await;
 
@@ -290,7 +299,10 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             let mut updated_model = jpo.update(conn, saved_model.clone()).await.unwrap();
             assert_eq!(saved_model.id, updated_model.id);
             assert_eq!(saved_model.version + 1, updated_model.version);
-            assert_eq!(saved_model.create_epoch_millis, updated_model.create_epoch_millis);
+            assert_eq!(
+                saved_model.create_epoch_millis,
+                updated_model.create_epoch_millis
+            );
             assert!(updated_model.update_epoch_millis > updated_model.create_epoch_millis);
             assert_eq!("second_first_name", updated_model.data.first_name);
             assert_eq!("my_last_name", updated_model.data.last_name);
@@ -302,9 +314,15 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             updated_model = jpo.update(conn, updated_model.clone()).await.unwrap();
             assert_eq!(saved_model.id, updated_model.id);
             assert_eq!(saved_model.version + 2, updated_model.version);
-            assert_eq!(saved_model.create_epoch_millis, updated_model.create_epoch_millis);
+            assert_eq!(
+                saved_model.create_epoch_millis,
+                updated_model.create_epoch_millis
+            );
             assert!(updated_model.update_epoch_millis > updated_model.create_epoch_millis);
-            assert_eq!(saved_model.create_epoch_millis, updated_model.create_epoch_millis);
+            assert_eq!(
+                saved_model.create_epoch_millis,
+                updated_model.create_epoch_millis
+            );
             assert!(updated_model.update_epoch_millis > previous_update_epoch_millis);
             assert_eq!("second_first_name", updated_model.data.first_name);
             assert_eq!("second_last_name", updated_model.data.last_name);
@@ -312,8 +330,14 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             let found_model = jpo.fetch_one_by_id(conn, &saved_model).await.unwrap();
             assert_eq!(found_model.id, updated_model.id);
             assert_eq!(found_model.version, updated_model.version);
-            assert_eq!(found_model.create_epoch_millis, updated_model.create_epoch_millis);
-            assert_eq!(found_model.update_epoch_millis, updated_model.update_epoch_millis);
+            assert_eq!(
+                found_model.create_epoch_millis,
+                updated_model.create_epoch_millis
+            );
+            assert_eq!(
+                found_model.update_epoch_millis,
+                updated_model.update_epoch_millis
+            );
             assert_eq!(found_model.data, updated_model.data);
             Ok(())
         })

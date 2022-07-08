@@ -37,12 +37,18 @@ impl<C3P0> C3p0JsonBuilder<C3P0> {
         self
     }
 
-    pub fn with_create_epoch_millis_field_name<T: Into<String>>(mut self, create_epoch_millis_field_name: T) -> Self {
+    pub fn with_create_epoch_millis_field_name<T: Into<String>>(
+        mut self,
+        create_epoch_millis_field_name: T,
+    ) -> Self {
         self.create_epoch_millis_field_name = create_epoch_millis_field_name.into();
         self
     }
 
-    pub fn with_update_epoch_millis_field_name<T: Into<String>>(mut self, update_epoch_millis_field_name: T) -> Self {
+    pub fn with_update_epoch_millis_field_name<T: Into<String>>(
+        mut self,
+        update_epoch_millis_field_name: T,
+    ) -> Self {
         self.update_epoch_millis_field_name = update_epoch_millis_field_name.into();
         self
     }

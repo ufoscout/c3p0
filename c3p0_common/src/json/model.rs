@@ -25,12 +25,28 @@ where
         NewModel::new(self.data)
     }
 
-    pub fn from_new(id: IdType, create_epoch_millis: EpochMillisType, model: NewModel<Data>) -> Model<Data> {
-        Model { id, version: model.version, create_epoch_millis, update_epoch_millis: create_epoch_millis, data: model.data }
+    pub fn from_new(
+        id: IdType,
+        create_epoch_millis: EpochMillisType,
+        model: NewModel<Data>,
+    ) -> Model<Data> {
+        Model {
+            id,
+            version: model.version,
+            create_epoch_millis,
+            update_epoch_millis: create_epoch_millis,
+            data: model.data,
+        }
     }
 
     pub fn into_new_version(self, update_epoch_millis: EpochMillisType) -> Model<Data> {
-        Model { id: self.id, version: self.version + 1, create_epoch_millis: self.create_epoch_millis, update_epoch_millis, data: self.data }
+        Model {
+            id: self.id,
+            version: self.version + 1,
+            create_epoch_millis: self.create_epoch_millis,
+            update_epoch_millis,
+            data: self.data,
+        }
     }
 }
 
@@ -149,7 +165,6 @@ mod test {
 
     #[test]
     fn new_model_from_model_should_have_new_version() {
-        
         let model = Model {
             id: 10,
             version: 10,
@@ -168,7 +183,6 @@ mod test {
 
     #[test]
     fn should_build_new_model_version() {
-        
         let model = Model {
             id: 10,
             version: 10,
@@ -185,8 +199,14 @@ mod test {
 
         assert_eq!(model.data, new_model_version.data);
         assert_eq!(model.id, new_model_version.id);
-        assert_eq!(model.create_epoch_millis, new_model_version.create_epoch_millis);
-        assert_eq!(new_update_epoch_millis, new_model_version.update_epoch_millis);
+        assert_eq!(
+            model.create_epoch_millis,
+            new_model_version.create_epoch_millis
+        );
+        assert_eq!(
+            new_update_epoch_millis,
+            new_model_version.update_epoch_millis
+        );
         assert_eq!(model.version + 1, new_model_version.version);
     }
 

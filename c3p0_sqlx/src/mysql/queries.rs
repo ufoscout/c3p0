@@ -50,8 +50,11 @@ pub fn build_mysql_queries<C3P0>(
 
         save_sql_query: format!(
             "INSERT INTO {} ({}, {}, {}, {}) VALUES (?, ?, ?, ?)",
-            qualified_table_name, json_builder.version_field_name, json_builder.create_epoch_millis_field_name,
-            json_builder.update_epoch_millis_field_name, json_builder.data_field_name
+            qualified_table_name,
+            json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
+            json_builder.data_field_name
         ),
 
         update_sql_query: format!(
