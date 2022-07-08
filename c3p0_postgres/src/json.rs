@@ -3,6 +3,7 @@ use crate::*;
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::*;
+use c3p0_common::time::utils::get_current_epoch_millis;
 
 pub trait PgC3p0JsonBuilder {
     fn build<DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
@@ -60,7 +61,7 @@ where
 
     #[inline]
     pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-        to_model(&self.codec, row, 0, 1, 2)
+        to_model(&self.codec, row, 0, 1, 2, 3, 4)
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -146,7 +147,7 @@ where
         conn: &mut PgConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
-        conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&id.into()])
+        conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&(id.into())])
             .await
     }
 
@@ -253,14 +254,18 @@ where
         conn: &mut PgConnection,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
+        
         let json_data = self.codec().to_value(&obj.data)?;
+        let create_epoch_millis = get_current_epoch_millis();
         let id = conn
-            .fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &json_data])
+            .fetch_one_value(&self.queries.save_sql_query, &[&obj.version, &create_epoch_millis, &json_data])
             .await?;
         Ok(Model {
             id,
             version: obj.version,
             data: obj.data,
+            create_epoch_millis,
+            update_epoch_millis: create_epoch_millis
         })
     }
 
@@ -270,28 +275,25 @@ where
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().to_value(&obj.data)?;
-
-        let updated_model = Model {
-            id: obj.id,
-            version: obj.version + 1,
-            data: obj.data,
-        };
+        let previous_version = obj.version;
+        let updated_model = obj.into_new_version(get_current_epoch_millis());
 
         let result = conn
             .execute(
                 &self.queries.update_sql_query,
                 &[
                     &updated_model.version,
+                    &updated_model.create_epoch_millis,
                     &json_data,
                     &updated_model.id,
-                    &obj.version,
+                    &previous_version,
                 ],
             )
             .await?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
-                                                                        &self.queries.qualified_table_name, &updated_model.id, &obj.version
+                                                                        &self.queries.qualified_table_name, &updated_model.id, &previous_version
             )});
         }
 

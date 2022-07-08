@@ -1,11 +1,13 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::json::model::EpochMillisType;
+
 /// Returns the current unix timestamp in millis
-pub fn get_current_epoch_millis() -> u128 {
+pub fn get_current_epoch_millis() -> EpochMillisType {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards?")
-        .as_millis()
+        .as_millis() as EpochMillisType
 }
 
 #[cfg(test)]

@@ -286,7 +286,7 @@ where
             .map_err(into_c3p0_error)?;
 
         Ok(Model {
-            id: id as i64,
+            id,
             version: obj.version,
             data: obj.data,
         })

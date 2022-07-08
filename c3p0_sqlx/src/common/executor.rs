@@ -60,7 +60,7 @@ where
         .fetch_optional(executor)
         .await
         .map_err(into_c3p0_error)?
-        .map(|row| to_model(codec, &row, 0, 1, 2))
+        .map(|row| to_model(codec, &row, 0, 1, 2, 3, 4))
         .transpose()
 }
 
@@ -84,7 +84,7 @@ where
         .fetch_one(executor)
         .await
         .map_err(into_c3p0_error)
-        .and_then(|row| to_model(codec, &row, 0, 1, 2))
+        .and_then(|row| to_model(codec, &row, 0, 1, 2, 3, 4))
 }
 
 #[inline]
@@ -108,7 +108,7 @@ where
         .await
         .map_err(into_c3p0_error)?
         .iter()
-        .map(|row| to_model(codec, row, 0, 1, 2))
+        .map(|row| to_model(codec, row, 0, 1, 2, 3, 4))
         .collect::<Result<Vec<_>, C3p0Error>>()
 }
 
