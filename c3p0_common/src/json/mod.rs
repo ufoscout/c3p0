@@ -107,6 +107,7 @@ pub struct Queries {
     pub count_all_sql_query: String,
     pub exists_by_id_sql_query: String,
 
+    pub find_base_sql_query: String,
     pub find_all_sql_query: String,
     pub find_by_id_sql_query: String,
 

@@ -66,6 +66,16 @@ pub fn build_pg_queries<C3P0>(json_builder: C3p0JsonBuilder<C3P0>) -> Queries {
         None => json_builder.table_name.clone(),
     };
 
+    let find_base_sql_query = format!(
+        "SELECT {}, {}, {}, {}, {} FROM {}",
+        json_builder.id_field_name,
+        json_builder.version_field_name,
+        json_builder.create_epoch_millis_field_name,
+        json_builder.update_epoch_millis_field_name,
+        json_builder.data_field_name,
+        qualified_table_name
+    );
+
     Queries {
         count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
 
@@ -75,26 +85,16 @@ pub fn build_pg_queries<C3P0>(json_builder: C3p0JsonBuilder<C3P0>) -> Queries {
         ),
 
         find_all_sql_query: format!(
-            "SELECT {}, {}, {}, {}, {} FROM {} ORDER BY {} ASC",
-            json_builder.id_field_name,
-            json_builder.version_field_name,
-            json_builder.create_epoch_millis_field_name,
-            json_builder.update_epoch_millis_field_name,
-            json_builder.data_field_name,
-            qualified_table_name,
-            json_builder.id_field_name,
+            "{} ORDER BY {} ASC",
+            find_base_sql_query, json_builder.id_field_name,
         ),
 
         find_by_id_sql_query: format!(
-            "SELECT {}, {}, {}, {}, {} FROM {} WHERE {} = $1 LIMIT 1",
-            json_builder.id_field_name,
-            json_builder.version_field_name,
-            json_builder.create_epoch_millis_field_name,
-            json_builder.update_epoch_millis_field_name,
-            json_builder.data_field_name,
-            qualified_table_name,
-            json_builder.id_field_name,
+            "{} WHERE {} = $1 LIMIT 1",
+            find_base_sql_query, json_builder.id_field_name,
         ),
+
+        find_base_sql_query,
 
         delete_sql_query: format!(
             "DELETE FROM {} WHERE {} = $1 AND {} = $2",
