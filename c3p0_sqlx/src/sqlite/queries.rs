@@ -81,6 +81,8 @@ pub fn build_sqlite_queries<C3P0>(
         table_name: json_builder.table_name,
         id_field_name: json_builder.id_field_name,
         version_field_name: json_builder.version_field_name,
+        create_epoch_millis_field_name: json_builder.create_epoch_millis_field_name,
+        update_epoch_millis_field_name: json_builder.update_epoch_millis_field_name,
         data_field_name: json_builder.data_field_name,
         schema_name: json_builder.schema_name,
     }

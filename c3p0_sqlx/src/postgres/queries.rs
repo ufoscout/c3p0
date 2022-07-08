@@ -15,18 +15,22 @@ pub fn build_pg_queries<C3P0>(
         ),
 
         find_all_sql_query: format!(
-            "SELECT {}, {}, {} FROM {} ORDER BY {} ASC",
+            "SELECT {}, {}, {}, {}, {} FROM {} ORDER BY {} ASC",
             json_builder.id_field_name,
             json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name,
             qualified_table_name,
             json_builder.id_field_name,
         ),
 
         find_by_id_sql_query: format!(
-            "SELECT {}, {}, {} FROM {} WHERE {} = $1 LIMIT 1",
+            "SELECT {}, {}, {}, {}, {} FROM {} WHERE {} = $1 LIMIT 1",
             json_builder.id_field_name,
             json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name,
             qualified_table_name,
             json_builder.id_field_name,
@@ -45,17 +49,20 @@ pub fn build_pg_queries<C3P0>(
         ),
 
         save_sql_query: format!(
-            "INSERT INTO {} ({}, {}) VALUES ($1, $2) RETURNING {}",
+            "INSERT INTO {} ({}, {}, {}, {}) VALUES ($1, $2, $2, $3) RETURNING {}",
             qualified_table_name,
             json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name,
             json_builder.id_field_name
         ),
 
         update_sql_query: format!(
-            "UPDATE {} SET {} = $1, {} = $2 WHERE {} = $3 AND {} = $4",
+            "UPDATE {} SET {} = $1, {} = $2, {} = $3 WHERE {} = $4 AND {} = $5",
             qualified_table_name,
             json_builder.version_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name,
             json_builder.id_field_name,
             json_builder.version_field_name,
@@ -66,12 +73,16 @@ pub fn build_pg_queries<C3P0>(
                 CREATE TABLE IF NOT EXISTS {} (
                     {} bigserial primary key,
                     {} int not null,
+                    {} bigint not null,
+                    {} bigint not null,
                     {} JSONB
                 )
                 "#,
             qualified_table_name,
             json_builder.id_field_name,
             json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
             json_builder.data_field_name
         ),
 
@@ -90,6 +101,8 @@ pub fn build_pg_queries<C3P0>(
         table_name: json_builder.table_name,
         id_field_name: json_builder.id_field_name,
         version_field_name: json_builder.version_field_name,
+        create_epoch_millis_field_name: json_builder.create_epoch_millis_field_name,
+        update_epoch_millis_field_name: json_builder.update_epoch_millis_field_name,
         data_field_name: json_builder.data_field_name,
         schema_name: json_builder.schema_name,
     }
