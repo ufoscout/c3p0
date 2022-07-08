@@ -63,3 +63,37 @@ impl<C3P0> C3p0JsonBuilder<C3P0> {
         self
     }
 }
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn should_set_update_epoch_millis_field_name() {
+        assert_eq!(
+            "update_epoch_millis",
+            C3p0JsonBuilder::<()>::new("table").update_epoch_millis_field_name
+        );
+        assert_eq!(
+            "custom",
+            C3p0JsonBuilder::<()>::new("table")
+                .with_update_epoch_millis_field_name("custom")
+                .update_epoch_millis_field_name
+        )
+    }
+
+    #[test]
+    fn should_set_create_epoch_millis_field_name() {
+        assert_eq!(
+            "create_epoch_millis",
+            C3p0JsonBuilder::<()>::new("table").create_epoch_millis_field_name
+        );
+        assert_eq!(
+            "custom",
+            C3p0JsonBuilder::<()>::new("table")
+                .with_create_epoch_millis_field_name("custom")
+                .create_epoch_millis_field_name
+        )
+    }
+}
