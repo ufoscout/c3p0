@@ -1,3 +1,5 @@
+#![feature(async_fn_in_trait)]
+#![feature(return_position_impl_trait_in_trait)]
 pub mod error;
 pub mod json;
 pub mod pool;

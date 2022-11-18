@@ -1,8 +1,6 @@
 use crate::*;
 use c3p0_common::*;
 
-use async_trait::async_trait;
-
 pub trait PgC3p0MigrateBuilder {
     fn build(self) -> C3p0Migrate<PgConnection, PgC3p0Pool, PgMigrator>;
 }
@@ -22,7 +20,6 @@ impl PgC3p0MigrateBuilder for C3p0MigrateBuilder<PgC3p0Pool> {
 #[derive(Clone)]
 pub struct PgMigrator {}
 
-#[async_trait]
 impl C3p0Migrator for PgMigrator {
     type Conn = PgConnection;
     type C3P0 = PgC3p0Pool;

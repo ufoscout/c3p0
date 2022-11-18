@@ -4,7 +4,6 @@ use crate::tokio_postgres::types::{FromSqlOwned, ToSql};
 use crate::tokio_postgres::Transaction;
 use crate::*;
 
-use async_trait::async_trait;
 use c3p0_common::*;
 use std::future::Future;
 
@@ -31,7 +30,6 @@ impl From<Pool> for PgC3p0Pool {
     }
 }
 
-#[async_trait]
 impl C3p0Pool for PgC3p0Pool {
     type Conn = PgConnection;
 
@@ -39,7 +37,7 @@ impl C3p0Pool for PgC3p0Pool {
         T: Send,
         E: Send + From<C3p0Error>,
         F: Send + FnOnce(Self::Conn) -> Fut,
-        Fut: Send + Future<Output = Result<T, E>>,
+        Fut: Future<Output = Result<T, E>>,
     >(
         &self,
         tx: F,
@@ -63,7 +61,6 @@ pub enum PgConnection {
     Tx(&'static Transaction<'static>),
 }
 
-#[async_trait]
 impl SqlConnection for PgConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         match self {

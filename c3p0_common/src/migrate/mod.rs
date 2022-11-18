@@ -1,7 +1,6 @@
 use crate::error::C3p0Error;
 use crate::json::model::Model;
 use crate::migrate::sql_migration::{to_sql_migrations, SqlMigration};
-use async_trait::async_trait;
 use log::*;
 use serde::{Deserialize, Serialize};
 
@@ -78,7 +77,6 @@ pub enum MigrationType {
     DOWN,
 }
 
-#[async_trait]
 pub trait C3p0Migrator: Clone + Send + Sync {
     type Conn: SqlConnection;
     type C3P0: C3p0Pool<Conn = Self::Conn>;

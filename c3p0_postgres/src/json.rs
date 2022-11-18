@@ -1,6 +1,5 @@
 use crate::tokio_postgres::{row::Row, types::ToSql};
 use crate::*;
-use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
@@ -105,7 +104,6 @@ where
     }
 }
 
-#[async_trait]
 impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for PgC3p0Json<DATA, CODEC>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,

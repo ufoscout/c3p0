@@ -1,11 +1,9 @@
 use crate::{C3p0Error, ForUpdate, IdType, JsonCodec, Model, NewModel};
-use async_trait::async_trait;
 
 pub mod builder;
 pub mod codec;
 pub mod model;
 
-#[async_trait]
 pub trait C3p0Json<Data, Codec>: Clone + Send + Sync
 where
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,

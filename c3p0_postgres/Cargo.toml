@@ -11,7 +11,6 @@ repository = "https://github.com/ufoscout/c3p0"
 keywords = ["postgres", "pg"]
 
 [dependencies]
-async-trait = "0.1"
 c3p0_common = { path = "../c3p0_common", version = "0.67.0" }
 
 deadpool = { version = "0.9", features = ["rt_tokio_1"] }

@@ -1,5 +1,7 @@
-mod common;
+#![feature(async_fn_in_trait)]
+#![feature(return_position_impl_trait_in_trait)]
 
+mod common;
 mod error;
 mod json;
 mod pool;
