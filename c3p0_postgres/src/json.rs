@@ -140,8 +140,8 @@ where
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
+    async fn exists_by_id<ID: Into<IdType> + Send>(
+        &self,
         conn: &mut PgConnection,
         id: ID,
     ) -> Result<bool, C3p0Error> {
@@ -169,8 +169,8 @@ where
         conn.fetch_all(&sql, &[], |row| self.to_model(row)).await
     }
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
+    async fn fetch_one_optional_by_id<ID: Into<IdType> + Send>(
+        &self,
         conn: &mut PgConnection,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -180,8 +180,8 @@ where
         .await
     }
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
+    async fn fetch_one_optional_by_id_for_update<ID: Into<IdType> + Send>(
+        &self,
         conn: &mut PgConnection,
         id: ID,
         for_update: &ForUpdate,
@@ -195,8 +195,8 @@ where
             .await
     }
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
+    async fn fetch_one_by_id<ID: Into<IdType> + Send>(
+        &self,
         conn: &mut PgConnection,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
@@ -205,8 +205,8 @@ where
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
+    async fn fetch_one_by_id_for_update<ID: Into<IdType> + Send>(
+        &self,
         conn: &mut PgConnection,
         id: ID,
         for_update: &ForUpdate,
@@ -238,12 +238,12 @@ where
         conn.execute(&self.queries.delete_all_sql_query, &[]).await
     }
 
-    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
+    async fn delete_by_id<ID: Into<IdType> + Send>(
+        &self,
         conn: &mut PgConnection,
         id: ID,
     ) -> Result<u64, C3p0Error> {
-        conn.execute(&self.queries.delete_by_id_sql_query, &[id.into()])
+        conn.execute(&self.queries.delete_by_id_sql_query, &[&(id.into())])
             .await
     }
 
