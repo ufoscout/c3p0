@@ -23,10 +23,10 @@ where
 
     async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error>;
 
-    async fn exists_by_id<ID: Into<IdType> + Send>(
+    async fn exists_by_id(
         &self,
         conn: &mut Self::Conn,
-        id: ID,
+        id: &IdType,
     ) -> Result<bool, C3p0Error>;
 
     async fn fetch_all(&self, conn: &mut Self::Conn) -> Result<Vec<Model<Data>>, C3p0Error>;
@@ -37,29 +37,29 @@ where
         for_update: &ForUpdate,
     ) -> Result<Vec<Model<Data>>, C3p0Error>;
 
-    async fn fetch_one_optional_by_id<ID: Into<IdType> + Send>(
+    async fn fetch_one_optional_by_id(
         &self,
         conn: &mut Self::Conn,
-        id: ID,
+        id: &IdType,
     ) -> Result<Option<Model<Data>>, C3p0Error>;
 
-    async fn fetch_one_optional_by_id_for_update<ID: Into<IdType> + Send>(
+    async fn fetch_one_optional_by_id_for_update(
         &self,
         conn: &mut Self::Conn,
-        id: ID,
+        id: &IdType,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<Data>>, C3p0Error>;
 
-    async fn fetch_one_by_id<ID: Into<IdType> + Send>(
+    async fn fetch_one_by_id(
         &self,
         conn: &mut Self::Conn,
-        id: ID,
+        id: &IdType,
     ) -> Result<Model<Data>, C3p0Error>;
 
-    async fn fetch_one_by_id_for_update<ID: Into<IdType> + Send>(
+    async fn fetch_one_by_id_for_update(
         &self,
         conn: &mut Self::Conn,
-        id: ID,
+        id: &IdType,
         for_update: &ForUpdate,
     ) -> Result<Model<Data>, C3p0Error>;
 
@@ -71,10 +71,10 @@ where
 
     async fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error>;
 
-    async fn delete_by_id<ID: Into<IdType> + Send>(
+    async fn delete_by_id(
         &self,
         conn: &mut Self::Conn,
-        id: ID,
+        id: &IdType,
     ) -> Result<u64, C3p0Error>;
 
     async fn save(

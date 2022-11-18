@@ -140,12 +140,12 @@ where
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id<ID: Into<IdType> + Send>(
+    async fn exists_by_id(
         &self,
         conn: &mut PgConnection,
-        id: ID,
+        id: &IdType,
     ) -> Result<bool, C3p0Error> {
-        conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[&(id.into())])
+        conn.fetch_one_value(&self.queries.exists_by_id_sql_query, &[id])
             .await
     }
 
@@ -169,21 +169,21 @@ where
         conn.fetch_all(&sql, &[], |row| self.to_model(row)).await
     }
 
-    async fn fetch_one_optional_by_id<ID: Into<IdType> + Send>(
+    async fn fetch_one_optional_by_id(
         &self,
         conn: &mut PgConnection,
-        id: ID,
+        id: &IdType,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[&id.into()], |row| {
+        conn.fetch_one_optional(&self.queries.find_by_id_sql_query, &[id], |row| {
             self.to_model(row)
         })
         .await
     }
 
-    async fn fetch_one_optional_by_id_for_update<ID: Into<IdType> + Send>(
+    async fn fetch_one_optional_by_id_for_update(
         &self,
         conn: &mut PgConnection,
-        id: ID,
+        id: &IdType,
         for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         let sql = format!(
@@ -191,24 +191,24 @@ where
             &self.queries.find_by_id_sql_query,
             for_update.to_sql()
         );
-        conn.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row))
+        conn.fetch_one_optional(&sql, &[id], |row| self.to_model(row))
             .await
     }
 
-    async fn fetch_one_by_id<ID: Into<IdType> + Send>(
+    async fn fetch_one_by_id(
         &self,
         conn: &mut PgConnection,
-        id: ID,
+        id: &IdType,
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id(conn, id)
             .await
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
-    async fn fetch_one_by_id_for_update<ID: Into<IdType> + Send>(
+    async fn fetch_one_by_id_for_update(
         &self,
         conn: &mut PgConnection,
-        id: ID,
+        id: &IdType,
         for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id_for_update(conn, id, for_update)
@@ -238,12 +238,12 @@ where
         conn.execute(&self.queries.delete_all_sql_query, &[]).await
     }
 
-    async fn delete_by_id<ID: Into<IdType> + Send>(
+    async fn delete_by_id(
         &self,
         conn: &mut PgConnection,
-        id: ID,
+        id: &IdType,
     ) -> Result<u64, C3p0Error> {
-        conn.execute(&self.queries.delete_by_id_sql_query, &[&(id.into())])
+        conn.execute(&self.queries.delete_by_id_sql_query, &[id])
             .await
     }
 
