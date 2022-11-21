@@ -78,27 +78,27 @@ pub enum MigrationType {
 }
 
 pub trait C3p0Migrator: Clone + Send + Sync {
-    type Conn: SqlConnection;
-    type C3P0: C3p0Pool<Conn = Self::Conn>;
-    type C3P0Json: C3p0Json<MigrationData, DefaultJsonCodec, Conn = Self::Conn>;
+    type Conn<'a>: SqlConnection<'a> where Self: 'a;
+    type C3P0<'a>: C3p0Pool<Conn<'a> = Self::Conn<'a>> where Self: 'a;
+    type C3P0Json<'a>: C3p0Json<MigrationData, DefaultJsonCodec, Conn = Self::Conn<'a>>;
 
-    fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json;
+    fn build_cp30_json<'a>(&'a self, table: String, schema: Option<String>) -> Self::C3P0Json<'a>;
 
-    async fn lock_table(
-        &self,
-        c3p0_json: &Self::C3P0Json,
-        conn: &mut Self::Conn,
+    async fn lock_table<'a>(
+        &'a self,
+        c3p0_json: &Self::C3P0Json<'a>,
+        conn: &mut Self::Conn<'a>,
     ) -> Result<(), C3p0Error>;
 
-    async fn lock_first_migration_row(
-        &self,
-        c3p0_json: &Self::C3P0Json,
-        conn: &mut Self::Conn,
+    async fn lock_first_migration_row<'a>(
+        &'a self,
+        c3p0_json: &Self::C3P0Json<'a>,
+        conn: &mut Self::Conn<'a>,
     ) -> Result<(), C3p0Error>;
 }
 
 pub struct C3p0Migrate<
-    Conn: SqlConnection,
+    Conn: SqlConnection<'a>,
     C3P0: C3p0Pool<Conn = Conn>,
     Migrator: C3p0Migrator<Conn = Conn>,
 > {

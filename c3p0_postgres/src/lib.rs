@@ -22,7 +22,7 @@ pub mod deadpool {
     }
 }
 
-#[cfg(feature = "migrate")]
-mod migrate;
-#[cfg(feature = "migrate")]
-pub use migrate::*;
+// #[cfg(feature = "migrate")]
+// mod migrate;
+// #[cfg(feature = "migrate")]
+// pub use migrate::*;

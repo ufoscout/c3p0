@@ -1,10 +1,10 @@
 use crate::deadpool::postgres::Pool;
 use crate::tokio_postgres::row::Row;
 use crate::tokio_postgres::types::{FromSqlOwned, ToSql};
-use crate::tokio_postgres::Transaction;
 use crate::*;
 
 use c3p0_common::*;
+use deadpool_postgres::Transaction;
 use std::future::Future;
 
 pub enum PgC3p0ConnectionManager {
@@ -36,7 +36,7 @@ impl C3p0Pool for PgC3p0Pool {
     async fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(Self::Conn) -> Fut,
+        F: FnOnce(&mut Self::Conn) -> Fut,
         Fut: Future<Output = Result<T, E>>,
     >(
         &self,
@@ -47,27 +47,31 @@ impl C3p0Pool for PgC3p0Pool {
         let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-        let transaction = PgConnection::Tx(unsafe { ::std::mem::transmute(&native_transaction) });
+        // See: https://github.com/rust-lang/rust/issues/104678
+        // and https://users.rust-lang.org/t/lifetime-ignored-by-async-trait-fn/84517
+        let native_transaction: Transaction<'static> = unsafe { ::std::mem::transmute(native_transaction) };
 
-        let result = { (tx)(transaction).await? };
+        let mut transaction = PgConnection{tx: native_transaction};
 
-        native_transaction.commit().await.map_err(into_c3p0_error)?;
+        let result = { (tx)(&mut transaction).await? };
+
+        transaction.tx.commit().await.map_err(into_c3p0_error)?;
 
         Ok(result)
     }
 }
 
-pub enum PgConnection {
-    Tx(&'static Transaction<'static>),
+pub struct PgConnection {
+    tx: Transaction<'static>,
 }
 
-impl SqlConnection for PgConnection {
-    async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        match self {
-            PgConnection::Tx(tx) => tx.batch_execute(sql).await.map_err(into_c3p0_error),
-        }
-    }
-}
+// impl <'a> SqlConnection<'a> for PgConnection<'a> {
+//     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
+//         match self {
+//             PgConnection::Tx(tx) => tx.batch_execute(sql).await.map_err(into_c3p0_error),
+//         }
+//     }
+// }
 
 impl PgConnection {
     pub async fn execute(
@@ -75,9 +79,7 @@ impl PgConnection {
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<u64, C3p0Error> {
-        match self {
-            PgConnection::Tx(tx) => tx.execute(sql, params).await.map_err(into_c3p0_error),
-        }
+        self.tx.execute(sql, params).await.map_err(into_c3p0_error)
     }
 
     pub async fn fetch_one_value<T: FromSqlOwned>(
@@ -105,10 +107,8 @@ impl PgConnection {
         params: &[&(dyn ToSql + Sync)],
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
-        match self {
-            PgConnection::Tx(tx) => {
-                let stmt = tx.prepare(sql).await.map_err(into_c3p0_error)?;
-                tx.query(&stmt, params)
+        let stmt = self.tx.prepare(sql).await.map_err(into_c3p0_error)?;
+                self.tx.query(&stmt, params)
                     .await
                     .map_err(into_c3p0_error)?
                     .get(0)
@@ -117,8 +117,6 @@ impl PgConnection {
                     .map_err(|err| C3p0Error::RowMapperError {
                         cause: format!("{:?}", err),
                     })
-            }
-        }
     }
 
     pub async fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
@@ -127,10 +125,8 @@ impl PgConnection {
         params: &[&(dyn ToSql + Sync)],
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
-        match self {
-            PgConnection::Tx(tx) => {
-                let stmt = tx.prepare(sql).await.map_err(into_c3p0_error)?;
-                tx.query(&stmt, params)
+                let stmt = self.tx.prepare(sql).await.map_err(into_c3p0_error)?;
+                self.tx.query(&stmt, params)
                     .await
                     .map_err(into_c3p0_error)?
                     .iter()
@@ -139,8 +135,6 @@ impl PgConnection {
                     .map_err(|err| C3p0Error::RowMapperError {
                         cause: format!("{:?}", err),
                     })
-            }
-        }
     }
 
     pub async fn fetch_all_values<T: FromSqlOwned>(
