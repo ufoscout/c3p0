@@ -31,12 +31,12 @@ impl From<Pool> for PgC3p0Pool {
 }
 
 impl C3p0Pool for PgC3p0Pool {
-    type Conn = PgConnection;
+    type Conn<'a> = PgConnection<'a>;
 
     async fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: FnOnce(&mut Self::Conn) -> Fut,
+        F: FnOnce(&mut Self::Conn<'_>) -> Fut,
         Fut: Future<Output = Result<T, E>>,
     >(
         &self,
@@ -45,11 +45,6 @@ impl C3p0Pool for PgC3p0Pool {
         let mut conn = self.pool.get().await.map_err(deadpool_into_c3p0_error)?;
 
         let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
-
-        // ToDo: To avoid this unsafe we need GAT
-        // See: https://github.com/rust-lang/rust/issues/104678
-        // and https://users.rust-lang.org/t/lifetime-ignored-by-async-trait-fn/84517
-        let native_transaction: Transaction<'static> = unsafe { ::std::mem::transmute(native_transaction) };
 
         let mut transaction = PgConnection{tx: native_transaction};
 
@@ -61,19 +56,17 @@ impl C3p0Pool for PgC3p0Pool {
     }
 }
 
-pub struct PgConnection {
-    tx: Transaction<'static>,
+pub struct PgConnection<'a> {
+    tx: Transaction<'a>,
 }
 
-// impl <'a> SqlConnection<'a> for PgConnection<'a> {
-//     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-//         match self {
-//             PgConnection::Tx(tx) => tx.batch_execute(sql).await.map_err(into_c3p0_error),
-//         }
-//     }
-// }
+impl <'a> SqlConnection<'a> for PgConnection<'a> {
+    async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
+        self.tx.batch_execute(sql).await.map_err(into_c3p0_error)
+    }
+}
 
-impl PgConnection {
+impl <'a> PgConnection<'a> {
     pub async fn execute(
         &mut self,
         sql: &str,

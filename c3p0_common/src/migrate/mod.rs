@@ -78,8 +78,8 @@ pub enum MigrationType {
 }
 
 pub trait C3p0Migrator: Clone + Send + Sync {
-    type Conn<'a>: SqlConnection<'a> where Self: 'a;
-    type C3P0<'a>: C3p0Pool<Conn<'a> = Self::Conn<'a>> where Self: 'a;
+    type Conn<'a>: SqlConnection<'a>;
+    type C3P0<'a>: C3p0Pool<Conn<'a> = Self::Conn<'a>>;
     type C3P0Json<'a>: C3p0Json<MigrationData, DefaultJsonCodec, Conn = Self::Conn<'a>>;
 
     fn build_cp30_json<'a>(&'a self, table: String, schema: Option<String>) -> Self::C3P0Json<'a>;
@@ -97,10 +97,10 @@ pub trait C3p0Migrator: Clone + Send + Sync {
     ) -> Result<(), C3p0Error>;
 }
 
-pub struct C3p0Migrate<
+pub struct C3p0Migrate<'a,
     Conn: SqlConnection<'a>,
-    C3P0: C3p0Pool<Conn = Conn>,
-    Migrator: C3p0Migrator<Conn = Conn>,
+    C3P0: C3p0Pool<Conn<'a> = Conn>,
+    Migrator: C3p0Migrator<Conn<'a> = Conn>,
 > {
     table: String,
     schema: Option<String>,
@@ -109,11 +109,11 @@ pub struct C3p0Migrate<
     migrator: Migrator,
 }
 
-impl<
-        Conn: SqlConnection,
-        C3P0: C3p0Pool<Conn = Conn>,
-        Migrator: C3p0Migrator<Conn = Conn> + Sync,
-    > C3p0Migrate<Conn, C3P0, Migrator>
+impl<'a,
+        Conn: SqlConnection<'a>,
+        C3P0: C3p0Pool<Conn<'a> = Conn>,
+        Migrator: C3p0Migrator<Conn<'a> = Conn> + Sync,
+    > C3p0Migrate<'a, Conn, C3P0, Migrator>
 {
     pub fn new(
         table: String,
@@ -163,7 +163,7 @@ impl<
 
     pub async fn get_migrations_history(
         &self,
-        conn: &mut Migrator::Conn,
+        conn: &mut Migrator::Conn<'a>,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         let c3p0_json = self
             .migrator
@@ -173,8 +173,8 @@ impl<
 
     async fn create_migration_zero(
         &self,
-        c3p0_json: &Migrator::C3P0Json,
-        conn: &mut Migrator::Conn,
+        c3p0_json: &Migrator::C3P0Json<'a>,
+        conn: &mut Migrator::Conn<'a>,
     ) -> Result<(), C3p0Error> {
         let count = c3p0_json.count_all(conn).await?;
 
@@ -185,7 +185,7 @@ impl<
         Ok(())
     }
 
-    async fn pre_migration(&self, c3p0_json: &Migrator::C3P0Json) -> Result<(), C3p0Error> {
+    async fn pre_migration(&self, c3p0_json: &Migrator::C3P0Json<'a>) -> Result<(), C3p0Error> {
         {
             let result = self
                 .c3p0
@@ -209,8 +209,8 @@ impl<
 
     async fn start_migration(
         &self,
-        c3p0_json: &Migrator::C3P0Json,
-        conn: &mut Migrator::Conn,
+        c3p0_json: &Migrator::C3P0Json<'a>,
+        conn: &mut Migrator::Conn<'a>,
     ) -> Result<(), C3p0Error> {
         let migration_history = self.fetch_migrations_history(c3p0_json, conn).await?;
         let migration_history = clean_history(migration_history)?;
@@ -252,8 +252,8 @@ impl<
 
     async fn fetch_migrations_history(
         &self,
-        c3p0_json: &Migrator::C3P0Json,
-        conn: &mut Migrator::Conn,
+        c3p0_json: &Migrator::C3P0Json<'a>,
+        conn: &mut Migrator::Conn<'a>,
     ) -> Result<Vec<MigrationModel>, C3p0Error> {
         c3p0_json.fetch_all(conn).await
     }

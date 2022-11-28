@@ -3,14 +3,14 @@ use crate::error::C3p0Error;
 use std::future::Future;
 
 pub trait C3p0Pool: Clone + Send + Sync {
-    type Conn;
+    type Conn<'a>;
 
     //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
     async fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: FnOnce(&mut Self::Conn) -> Fut,
+        F: FnOnce(&mut Self::Conn<'_>) -> Fut,
         Fut: Future<Output = Result<T, E>>,
     >(
         &self,
@@ -18,6 +18,6 @@ pub trait C3p0Pool: Clone + Send + Sync {
     ) -> Result<T, E>;
 }
 
-pub trait SqlConnection: Send {
+pub trait SqlConnection<'a>: Send {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error>;
 }
