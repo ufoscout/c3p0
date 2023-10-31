@@ -38,7 +38,7 @@ impl C3p0Pool for SqlxPgC3p0Pool {
         &'a self,
         tx: F,
     ) -> Result<T, E> {
-        let mut native_transaction: Transaction<'_, Db> = self.pool.begin().await.map_err(into_c3p0_error)?;
+        let mut native_transaction = self.pool.begin().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
         let mut transaction = SqlxPgConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
@@ -69,6 +69,6 @@ impl SqlxPgConnection {
 #[async_trait]
 impl SqlConnection for SqlxPgConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        batch_execute(sql, self.get_conn()).await
+        batch_execute(sql, &mut **self.get_conn()).await
     }
 }

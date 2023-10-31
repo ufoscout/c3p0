@@ -63,7 +63,7 @@ impl C3p0Migrator for SqlxMySqlMigrator {
         );
         execute(
             sqlx::query(&lock_sql).bind(C3P0_INIT_MIGRATION_ID),
-            conn.get_conn(),
+            &mut **conn.get_conn(),
         )
         .await
     }

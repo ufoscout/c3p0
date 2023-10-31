@@ -69,6 +69,6 @@ impl SqlxMySqlConnection {
 #[async_trait]
 impl SqlConnection for SqlxMySqlConnection {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        batch_execute(sql, self.get_conn()).await
+        batch_execute(sql, &mut **self.get_conn()).await
     }
 }

@@ -88,7 +88,7 @@ where
         conn: &mut SqlxPgConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        fetch_one_optional_with_sql(sql, conn.get_conn(), self.codec()).await
+        fetch_one_optional_with_sql(sql, &mut **conn.get_conn(), self.codec()).await
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -100,7 +100,7 @@ where
         conn: &mut SqlxPgConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        fetch_one_with_sql(sql, conn.get_conn(), self.codec()).await
+        fetch_one_with_sql(sql, &mut **conn.get_conn(), self.codec()).await
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -112,7 +112,7 @@ where
         conn: &mut SqlxPgConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        fetch_all_with_sql(sql, conn.get_conn(), self.codec()).await
+        fetch_all_with_sql(sql, &mut **conn.get_conn(), self.codec()).await
     }
 }
 
@@ -128,7 +128,7 @@ where
     }
 
     async fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<(), C3p0Error> {
-        batch_execute(&self.queries.create_table_sql_query, conn.get_conn()).await
+        batch_execute(&self.queries.create_table_sql_query, &mut **conn.get_conn()).await
     }
 
     async fn drop_table_if_exists(
@@ -141,12 +141,12 @@ where
         } else {
             &self.queries.drop_table_sql_query
         };
-        batch_execute(query, conn.get_conn()).await
+        batch_execute(query, &mut **conn.get_conn()).await
     }
 
     async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.count_all_sql_query)
-            .fetch_one(conn.get_conn())
+            .fetch_one(&mut **conn.get_conn())
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
@@ -160,7 +160,7 @@ where
     ) -> Result<bool, C3p0Error> {
         sqlx::query(&self.queries.exists_by_id_sql_query)
             .bind(id.into())
-            .fetch_one(conn.get_conn())
+            .fetch_one(&mut **conn.get_conn())
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
@@ -247,12 +247,12 @@ where
         conn: &mut Self::Conn,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        delete(obj, conn.get_conn(), &self.queries).await
+        delete(obj, &mut **conn.get_conn(), &self.queries).await
     }
 
     async fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.delete_all_sql_query)
-            .execute(conn.get_conn())
+            .execute(&mut **conn.get_conn())
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
@@ -265,7 +265,7 @@ where
     ) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.delete_by_id_sql_query)
             .bind(id.into())
-            .execute(conn.get_conn())
+            .execute(&mut **conn.get_conn())
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
@@ -282,7 +282,7 @@ where
             .bind(&obj.version)
             .bind(&create_epoch_millis)
             .bind(&json_data)
-            .fetch_one(conn.get_conn())
+            .fetch_one(&mut **conn.get_conn())
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)?;
@@ -301,6 +301,6 @@ where
         conn: &mut Self::Conn,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        update(obj, conn.get_conn(), &self.queries, self.codec()).await
+        update(obj, &mut **conn.get_conn(), &self.queries, self.codec()).await
     }
 }
