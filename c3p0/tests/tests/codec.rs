@@ -9,8 +9,8 @@ fn should_upgrade_structs_on_load() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+
             let table_name = format!("USER_TABLE_{}", rand_string(8));
 
             let jpo_v1 = C3p0JsonBuilder::<C3p0Impl>::new(&table_name)

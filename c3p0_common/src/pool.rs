@@ -10,12 +10,13 @@ pub trait C3p0Pool: Clone + Send + Sync {
     //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
     async fn transaction<
+    'a, 
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(Self::Conn) -> Fut,
+        F: Send + FnOnce(&'a mut Self::Conn) -> Fut,
         Fut: Send + Future<Output = Result<T, E>>,
     >(
-        &self,
+        &'a self,
         tx: F,
     ) -> Result<T, E>;
 }

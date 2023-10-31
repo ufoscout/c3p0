@@ -23,7 +23,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         });
 
         pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
-            let conn = &mut conn;
+            
             assert!(jpo.drop_table_if_exists(conn, false).await.is_ok());
             Ok(())
         })
@@ -31,7 +31,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
 
         let model_clone = model.clone();
         pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
-            let conn = &mut conn;
+            
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
         })
@@ -39,7 +39,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
 
         let model_clone = model.clone();
         pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
-            let conn = &mut conn;
+            
             println!("first {:?}", jpo.create_table_if_not_exists(conn).await);
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
@@ -55,7 +55,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
 
         let model_clone = model.clone();
         pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
-            let conn = &mut conn;
+            
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
         })
@@ -63,7 +63,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
 
         let model_clone = model.clone();
         pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
-            let conn = &mut conn;
+            
             println!("second {:?}", jpo.create_table_if_not_exists(conn).await);
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
@@ -82,8 +82,8 @@ fn basic_crud() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
@@ -130,8 +130,8 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
@@ -165,8 +165,8 @@ fn should_delete_all() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
@@ -201,8 +201,8 @@ fn should_count() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
@@ -240,8 +240,8 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
@@ -271,8 +271,8 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
@@ -351,8 +351,8 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(&table_name).build();
 
@@ -398,8 +398,8 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
@@ -432,8 +432,8 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|mut conn| async move {
-            let conn = &mut conn;
+        pool.transaction(|conn| async {
+            
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(&table_name).build();
 
@@ -488,8 +488,8 @@ fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
         });
 
         let result: Result<_, C3p0Error> = c3p0
-            .transaction(|mut conn| async move {
-                let conn = &mut conn;
+            .transaction(|conn| async {
+                
                 assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
                 assert!(jpo.save(conn, model.clone()).await.is_ok());
                 assert!(jpo.save(conn, model.clone()).await.is_ok());
@@ -500,8 +500,8 @@ fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
 
         // fetch all ForUpdate::Default
         let result: Result<_, C3p0Error> = c3p0
-            .transaction(|mut conn| async move {
-                jpo.fetch_all_for_update(&mut conn, &ForUpdate::Default)
+            .transaction(|conn| async {
+                jpo.fetch_all_for_update(conn, &ForUpdate::Default)
                     .await
             })
             .await;
@@ -510,8 +510,8 @@ fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
         if db_specific::db_type() != DbType::MySql && db_specific::db_type() != DbType::TiDB {
             // fetch one ForUpdate::NoWait
             let result: Result<_, C3p0Error> = c3p0
-                .transaction(|mut conn| async move {
-                    jpo.fetch_one_optional_by_id_for_update(&mut conn, &0, &ForUpdate::NoWait)
+                .transaction(|conn| async {
+                    jpo.fetch_one_optional_by_id_for_update(conn, &0, &ForUpdate::NoWait)
                         .await
                 })
                 .await;
@@ -519,8 +519,8 @@ fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
 
             // fetch one ForUpdate::SkipLocked
             let result: Result<_, C3p0Error> = c3p0
-                .transaction(|mut conn| async move {
-                    jpo.fetch_one_optional_by_id_for_update(&mut conn, &0, &ForUpdate::SkipLocked)
+                .transaction(|conn| async {
+                    jpo.fetch_one_optional_by_id_for_update(conn, &0, &ForUpdate::SkipLocked)
                         .await
                 })
                 .await;
@@ -529,8 +529,8 @@ fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
 
         // fetch all ForUpdate::No
         let result: Result<_, C3p0Error> = c3p0
-            .transaction(|mut conn| async move {
-                jpo.fetch_all_for_update(&mut conn, &ForUpdate::No).await
+            .transaction(|conn| async {
+                jpo.fetch_all_for_update(conn, &ForUpdate::No).await
             })
             .await;
         assert!(result.is_ok());

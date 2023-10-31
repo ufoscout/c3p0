@@ -29,21 +29,24 @@ impl C3p0Pool for SqlxMySqlC3p0Pool {
     type Conn = SqlxMySqlConnection;
 
     async fn transaction<
+    'a, 
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(Self::Conn) -> Fut,
+        F: Send + FnOnce(&'a mut Self::Conn) -> Fut,
         Fut: Send + Future<Output = Result<T, E>>,
     >(
-        &self,
+        &'a self,
         tx: F,
     ) -> Result<T, E> {
         let mut native_transaction: Transaction<'_, Db> = self.pool.begin().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-        let transaction =
-            SqlxMySqlConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+        let mut transaction = SqlxMySqlConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+        let ref_transaction = unsafe { 
+            ::std::mem::transmute(&mut transaction) 
+        };
 
-        let result = { (tx)(transaction).await? };
+        let result = { (tx)(ref_transaction).await? };
 
         native_transaction.commit().await.map_err(into_c3p0_error)?;
 

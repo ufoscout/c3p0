@@ -149,8 +149,7 @@ impl<
 
         // Start Migration
         self.c3p0
-            .transaction(|mut conn| async move {
-                let conn = &mut conn;
+            .transaction(|conn| async {
                 self.migrator
                     .lock_first_migration_row(&c3p0_json, conn)
                     .await?;
@@ -191,8 +190,8 @@ impl<
         {
             let result = self
                 .c3p0
-                .transaction(|mut conn| async move {
-                    c3p0_json.create_table_if_not_exists(&mut conn).await
+                .transaction(|conn| async {
+                    c3p0_json.create_table_if_not_exists(conn).await
                 })
                 .await;
             if let Err(err) = result {
@@ -202,9 +201,9 @@ impl<
 
         // Start Migration
         self.c3p0
-            .transaction(|mut conn| async move {
-                self.migrator.lock_table(c3p0_json, &mut conn).await?;
-                self.create_migration_zero(c3p0_json, &mut conn).await
+            .transaction(|conn| async {
+                self.migrator.lock_table(c3p0_json, conn).await?;
+                self.create_migration_zero(c3p0_json, conn).await
             })
             .await
     }
