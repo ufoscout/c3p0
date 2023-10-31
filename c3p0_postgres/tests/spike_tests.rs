@@ -1,6 +1,6 @@
 #![cfg(feature = "spike_tests")]
 
-use testcontainers::{testcontainers::clients::Cli, postgres::Postgres};
+use testcontainers::{postgres::Postgres, testcontainers::clients::Cli};
 use tokio_postgres::NoTls;
 
 #[tokio::test]

@@ -11,7 +11,6 @@ fn should_commit_transaction() {
 
         let result: Result<_, C3p0Error> = c3p0
             .transaction(|conn| async {
-                
                 assert!(conn
                     .execute(
                         &format!(
@@ -51,7 +50,6 @@ fn should_commit_transaction() {
 
         {
             pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
-                
                 let count = conn
                     .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
                     .await
@@ -80,7 +78,6 @@ fn should_rollback_transaction() {
 
         let result_create_table: Result<(), C3p0Error> = c3p0
             .transaction(|conn| async {
-                
                 assert!(conn
                     .batch_execute(&format!(
                         r"CREATE TABLE {} (
@@ -97,7 +94,6 @@ fn should_rollback_transaction() {
 
         let result: Result<(), C3p0Error> = c3p0
             .transaction(|conn| async {
-                
                 conn.execute(
                     &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
                     &[],
@@ -124,7 +120,6 @@ fn should_rollback_transaction() {
 
         {
             pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
-                
                 let count = conn
                     .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
                     .await

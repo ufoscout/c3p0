@@ -4,20 +4,15 @@ use c3p0::sqlx::sqlx::postgres::*;
 use c3p0::sqlx::*;
 pub use c3p0::*;
 use testcontainers::postgres::Postgres;
-use testcontainers::testcontainers::Container;
 use testcontainers::testcontainers::clients::Cli;
+use testcontainers::testcontainers::Container;
 
 mod tests_async;
 pub mod utils;
 
 pub type C3p0Impl = SqlxPgC3p0Pool;
 
-pub async fn new_connection(
-    docker: &Cli,
-) -> (
-    SqlxPgC3p0Pool,
-    Container<'_, Postgres>,
-) {
+pub async fn new_connection(docker: &Cli) -> (SqlxPgC3p0Pool, Container<'_, Postgres>) {
     let node = docker.run(Postgres::default());
 
     let options = PgConnectOptions::new()

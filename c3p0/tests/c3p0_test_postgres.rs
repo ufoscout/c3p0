@@ -7,7 +7,10 @@ use c3p0::*;
 use c3p0_postgres::deadpool::Runtime;
 use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use testcontainers::{testcontainers::{Container, clients::Cli}, postgres::Postgres};
+use testcontainers::{
+    postgres::Postgres,
+    testcontainers::{clients::Cli, Container},
+};
 
 use std::time::Duration;
 
@@ -17,10 +20,7 @@ mod tests;
 mod tests_json;
 mod utils;
 
-pub type MaybeType = (
-    C3p0Impl,
-    Container<'static, Postgres>,
-);
+pub type MaybeType = (C3p0Impl, Container<'static, Postgres>);
 
 async fn init() -> MaybeType {
     static DOCKER: OnceCell<Cli> = OnceCell::new();

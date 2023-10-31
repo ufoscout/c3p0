@@ -190,9 +190,7 @@ impl<
         {
             let result = self
                 .c3p0
-                .transaction(|conn| async {
-                    c3p0_json.create_table_if_not_exists(conn).await
-                })
+                .transaction(|conn| async { c3p0_json.create_table_if_not_exists(conn).await })
                 .await;
             if let Err(err) = result {
                 warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {:?}", err);

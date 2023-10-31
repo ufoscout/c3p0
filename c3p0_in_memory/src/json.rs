@@ -306,7 +306,6 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         pool.transaction(|conn| async {
-            
             // Act
             let saved_model_1 = c3p0.save(conn, TestData::new("value1").into()).await?;
             let fetched_model_1 = c3p0.fetch_one_optional_by_id(conn, &saved_model_1).await?;
@@ -349,7 +348,6 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         pool.transaction(|conn| async {
-            
             // Act
             let saved_model_1 = c3p0.save(conn, TestData::new("value1").into()).await?;
             let exist_model_1 = c3p0.exists_by_id(conn, &saved_model_1).await?;
@@ -374,7 +372,6 @@ mod test {
         let c3p0_2b = C3p0JsonBuilder::new("TABLE_2").build::<TestData>();
 
         pool.transaction(|conn| async {
-            
             // Act
             assert_eq!(0, c3p0_1.count_all(conn).await?);
             assert_eq!(0, c3p0_2a.count_all(conn).await?);
@@ -424,7 +421,6 @@ mod test {
 
         // Act
         pool.transaction(|conn| async {
-            
             assert_eq!(0, c3p0_1.count_all(conn).await?);
             assert_eq!(0, c3p0_2.count_all(conn).await?);
 
@@ -469,7 +465,6 @@ mod test {
         let c3p0_1 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         pool.transaction(|conn| async {
-            
             // Act
             assert!(c3p0_1.create_table_if_not_exists(conn).await.is_ok());
             assert!(c3p0_1.create_table_if_not_exists(conn).await.is_ok());
@@ -497,7 +492,6 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         pool.transaction(|conn| async {
-            
             // Act
             let saved_model_0 = c3p0.save(conn, TestData::new("value1").into()).await?;
             let saved_model_1 = c3p0.save(conn, TestData::new("value2").into()).await?;
@@ -535,7 +529,6 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         pool.transaction(|conn| async {
-            
             // Act
             let saved_model = c3p0.save(conn, TestData::new("value1").into()).await?;
             let updated_model = c3p0.update(conn, saved_model.clone()).await?;
@@ -574,7 +567,6 @@ mod test {
         let c3p0 = C3p0JsonBuilder::new("TABLE_1").build::<TestData>();
 
         pool.transaction(|conn| async {
-            
             // Act
             let saved_model = c3p0.save(conn, TestData::new("value1").into()).await?;
             let updated_model = c3p0.update(conn, saved_model.clone()).await?;

@@ -7,8 +7,8 @@ use c3p0::*;
 use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::postgres::Postgres;
-use testcontainers::testcontainers::Container;
 use testcontainers::testcontainers::clients::Cli;
+use testcontainers::testcontainers::Container;
 
 pub type C3p0Impl = SqlxPgC3p0Pool;
 
@@ -16,10 +16,7 @@ pub type C3p0Impl = SqlxPgC3p0Pool;
 mod tests_json;
 mod utils;
 
-pub type MaybeType = (
-    C3p0Impl,
-    Container<'static, Postgres>,
-);
+pub type MaybeType = (C3p0Impl, Container<'static, Postgres>);
 
 async fn init() -> MaybeType {
     static DOCKER: OnceCell<Cli> = OnceCell::new();

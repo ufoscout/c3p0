@@ -3,19 +3,14 @@
 use c3p0::sqlx::sqlx::mysql::*;
 use c3p0::sqlx::*;
 pub use c3p0::*;
-use testcontainers::testcontainers::{Container, GenericImage, core::WaitFor, clients::Cli};
+use testcontainers::testcontainers::{clients::Cli, core::WaitFor, Container, GenericImage};
 
 mod tests_async;
 pub mod utils;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
 
-pub async fn new_connection(
-    docker: &Cli,
-) -> (
-    SqlxMySqlC3p0Pool,
-    Container<'_, GenericImage>,
-) {
+pub async fn new_connection(docker: &Cli) -> (SqlxMySqlC3p0Pool, Container<'_, GenericImage>) {
     let mysql_version = "5.7.25";
     let mysql_image = GenericImage::new("mysql", mysql_version)
         .with_wait_for(WaitFor::message_on_stderr(

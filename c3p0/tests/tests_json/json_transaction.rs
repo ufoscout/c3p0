@@ -21,7 +21,6 @@ fn json_should_commit_transaction() {
         let jpo_ref = &jpo;
         let result: Result<(), C3p0Error> = c3p0
             .transaction(|conn| async {
-                
                 assert!(jpo_ref.create_table_if_not_exists(conn).await.is_ok());
                 println!("Table created!");
                 assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
@@ -36,8 +35,7 @@ fn json_should_commit_transaction() {
 
         assert!(result.is_ok());
 
-        c3p0.transaction::<_, C3p0Error, _, _>(| conn| async move {
-            
+        c3p0.transaction::<_, C3p0Error, _, _>(|conn| async move {
             let count = jpo.count_all(conn).await.unwrap();
             assert_eq!(3, count);
             println!("Count performed!");
@@ -86,7 +84,6 @@ fn json_should_rollback_transaction() {
 
         {
             c3p0.transaction::<_, C3p0Error, _, _>(|conn| async move {
-                
                 let count = jpo.count_all(conn).await.unwrap();
                 assert_eq!(0, count);
 

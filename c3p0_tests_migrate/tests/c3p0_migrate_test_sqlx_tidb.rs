@@ -1,29 +1,23 @@
 #![cfg(feature = "sqlx_mysql")]
 
+use ::testcontainers::testcontainers::Container;
 use c3p0::sqlx::sqlx::mysql::*;
 use c3p0::sqlx::*;
 pub use c3p0::*;
-use ::testcontainers::testcontainers::Container;
-use testcontainers::testcontainers::GenericImage;
 use testcontainers::testcontainers::clients::Cli;
 use testcontainers::testcontainers::core::WaitFor;
+use testcontainers::testcontainers::GenericImage;
 
 mod tests_async;
 pub mod utils;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
 
-pub async fn new_connection(
-    docker: &Cli,
-) -> (
-    SqlxMySqlC3p0Pool,
-    Container<'_, GenericImage>,
-) {
+pub async fn new_connection(docker: &Cli) -> (SqlxMySqlC3p0Pool, Container<'_, GenericImage>) {
     let tidb_version = "v3.0.3";
-    let tidb_image = GenericImage::new("pingcap/tidb", tidb_version)
-        .with_wait_for(WaitFor::message_on_stdout(
-            r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#,
-        ));
+    let tidb_image = GenericImage::new("pingcap/tidb", tidb_version).with_wait_for(
+        WaitFor::message_on_stdout(r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#),
+    );
 
     let node = docker.run(tidb_image);
 

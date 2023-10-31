@@ -1,4 +1,3 @@
-
 use crate::utils::rand_string;
 use crate::*;
 
@@ -15,7 +14,6 @@ async fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), 
 
     node.0
         .transaction(|conn| async {
-            
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(C3P0_MIGRATE_TABLE_DEFAULT)
                 .build::<MigrationData>();
             assert!(jpo.count_all(conn).await.is_ok());
@@ -41,7 +39,6 @@ async fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), C
 
     node.0
         .transaction(|conn| async {
-            
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(custom_name).build::<MigrationData>();
             assert!(jpo.count_all(conn).await.is_ok());
             Ok(())
@@ -78,8 +75,6 @@ async fn should_execute_migrations() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(|conn| async {
-            
-
             let jpo_migration_table =
                 C3p0JsonBuilder::<C3p0Impl>::new(migration_table_name).build::<MigrationData>();
             let jpo_first_table =
@@ -127,8 +122,6 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(|conn| async {
-            
-
             let jpo_migration_table =
                 C3p0JsonBuilder::<C3p0Impl>::new(migration_table_name).build::<MigrationData>();
             let jpo_first_table =
@@ -200,7 +193,6 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(|conn| async {
-            
             let status = migrate.get_migrations_history(conn).await.unwrap();
             assert_eq!(2, status.len());
             assert_eq!(
@@ -229,8 +221,6 @@ async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(|conn| async {
-            
-
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new("TEST_TABLE").build::<MigrationData>();
 
             assert_eq!(3, jpo.count_all(conn).await.unwrap());

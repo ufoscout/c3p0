@@ -29,7 +29,7 @@ impl C3p0Pool for SqlxPgC3p0Pool {
     type Conn = SqlxPgConnection;
 
     async fn transaction<
-    'a, 
+        'a,
         T: Send,
         E: Send + From<C3p0Error>,
         F: Send + FnOnce(&'a mut Self::Conn) -> Fut,
@@ -41,10 +41,9 @@ impl C3p0Pool for SqlxPgC3p0Pool {
         let mut native_transaction = self.pool.begin().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-        let mut transaction = SqlxPgConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
-        let ref_transaction = unsafe { 
-            ::std::mem::transmute(&mut transaction) 
-        };
+        let mut transaction =
+            SqlxPgConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+        let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
 
         let result = { (tx)(ref_transaction).await? };
 

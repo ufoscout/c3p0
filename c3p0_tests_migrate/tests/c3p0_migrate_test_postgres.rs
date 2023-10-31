@@ -4,22 +4,17 @@ use c3p0::postgres::deadpool::Runtime;
 use c3p0::postgres::tokio_postgres::NoTls;
 pub use c3p0::postgres::*;
 pub use c3p0::*;
-use testcontainers::postgres::Postgres;
-use testcontainers::testcontainers::Container;
-use testcontainers::testcontainers::clients::Cli;
 use std::time::Duration;
+use testcontainers::postgres::Postgres;
+use testcontainers::testcontainers::clients::Cli;
+use testcontainers::testcontainers::Container;
 
 mod tests_async;
 pub mod utils;
 
 pub type C3p0Impl = PgC3p0Pool;
 
-pub async fn new_connection(
-    docker: &Cli,
-) -> (
-    PgC3p0Pool,
-    Container<'_, Postgres>,
-) {
+pub async fn new_connection(docker: &Cli) -> (PgC3p0Pool, Container<'_, Postgres>) {
     let node = docker.run(Postgres::default());
 
     let mut config = deadpool::postgres::Config::default();

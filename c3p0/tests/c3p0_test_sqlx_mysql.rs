@@ -6,10 +6,10 @@ use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use testcontainers::testcontainers::Container;
-use testcontainers::testcontainers::GenericImage;
 use testcontainers::testcontainers::clients::Cli;
 use testcontainers::testcontainers::core::WaitFor;
+use testcontainers::testcontainers::Container;
+use testcontainers::testcontainers::GenericImage;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
 
@@ -17,10 +17,7 @@ pub type C3p0Impl = SqlxMySqlC3p0Pool;
 mod tests_json;
 mod utils;
 
-pub type MaybeType = (
-    C3p0Impl,
-    Container<'static, GenericImage>,
-);
+pub type MaybeType = (C3p0Impl, Container<'static, GenericImage>);
 
 async fn init() -> MaybeType {
     let mysql_version = "5.7.25";
@@ -34,9 +31,7 @@ async fn init() -> MaybeType {
         .with_env_var("MYSQL_ROOT_PASSWORD", "mysql");
 
     static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER
-        .get_or_init(|| Cli::default())
-        .run(mysql_image);
+    let node = DOCKER.get_or_init(|| Cli::default()).run(mysql_image);
 
     let options = MySqlConnectOptions::new()
         .username("mysql")
