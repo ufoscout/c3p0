@@ -17,9 +17,6 @@ c3p0_common = { workspace = true }
 #in_memory feature
 c3p0_in_memory = { workspace = true, optional = true }
 
-# mysql feature
-#c3p0_mysql = { workspace = true, optional = true }
-
 # postgres feature
 c3p0_postgres = { workspace = true, optional = true }
 
@@ -41,9 +38,8 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 default = []
 in_memory = ["c3p0_in_memory"]
 migrate = ["c3p0_postgres?/migrate", "c3p0_sqlx?/migrate"]
-#mysql = ["c3p0_mysql"]
 postgres = ["c3p0_postgres"]
 sqlx_mysql = ["c3p0_sqlx/mysql"]
 sqlx_postgres = ["c3p0_sqlx/postgres"]
 sqlx_sqlite = ["c3p0_sqlx/sqlite"]
-#tidb = ["c3p0_mysql"]
+
