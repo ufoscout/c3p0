@@ -35,7 +35,7 @@ fn json_should_commit_transaction() {
 
         assert!(result.is_ok());
 
-        c3p0.transaction::<_, C3p0Error, _, _>(|conn| async move {
+        c3p0.transaction::<_, C3p0Error, _, _>(|conn| async {
             let count = jpo.count_all(conn).await.unwrap();
             assert_eq!(3, count);
             println!("Count performed!");
@@ -83,7 +83,7 @@ fn json_should_rollback_transaction() {
         assert!(result.is_err());
 
         {
-            c3p0.transaction::<_, C3p0Error, _, _>(|conn| async move {
+            c3p0.transaction::<_, C3p0Error, _, _>(|conn| async {
                 let count = jpo.count_all(conn).await.unwrap();
                 assert_eq!(0, count);
 

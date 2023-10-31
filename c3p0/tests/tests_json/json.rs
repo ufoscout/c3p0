@@ -21,21 +21,21 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
             last_name: "my_last_name".to_owned(),
         });
 
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
             assert!(jpo.drop_table_if_exists(conn, false).await.is_ok());
             Ok(())
         })
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
         })
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
             println!("first {:?}", jpo.create_table_if_not_exists(conn).await);
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
@@ -50,14 +50,14 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
         })
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
             println!("second {:?}", jpo.create_table_if_not_exists(conn).await);
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
@@ -516,7 +516,7 @@ fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
 
         {
             assert!(pool
-                .transaction(|conn| async move { jpo.drop_table_if_exists(conn, true).await })
+                .transaction(|conn| async { jpo.drop_table_if_exists(conn, true).await })
                 .await
                 .is_ok());
         }

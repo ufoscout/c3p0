@@ -49,7 +49,7 @@ fn should_commit_transaction() {
         assert!(result.is_ok());
 
         {
-            pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
+            pool.transaction::<_, C3p0Error, _, _>(|conn| async {
                 let count = conn
                     .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
                     .await
@@ -119,7 +119,7 @@ fn should_rollback_transaction() {
         assert!(result.is_err());
 
         {
-            pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
+            pool.transaction::<_, C3p0Error, _, _>(|conn| async {
                 let count = conn
                     .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
                     .await
