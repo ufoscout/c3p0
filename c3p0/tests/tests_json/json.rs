@@ -517,7 +517,7 @@ fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
         {
             assert!(pool
                 .transaction(
-                    |mut conn| async move { jpo.drop_table_if_exists(&mut conn, true).await }
+                    |conn| async move { jpo.drop_table_if_exists(conn, true).await }
                 )
                 .await
                 .is_ok());

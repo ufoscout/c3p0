@@ -31,7 +31,7 @@ async fn init() -> MaybeType {
         .with_env_var("MYSQL_ROOT_PASSWORD", "mysql");
 
     static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER.get_or_init(|| Cli::default()).run(mysql_image);
+    let node = DOCKER.get_or_init(Cli::default).run(mysql_image);
 
     let options = MySqlConnectOptions::new()
         .username("mysql")

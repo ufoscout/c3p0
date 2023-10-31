@@ -26,7 +26,7 @@ async fn init() -> MaybeType {
     );
 
     static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER.get_or_init(|| Cli::default()).run(tidb_image);
+    let node = DOCKER.get_or_init(Cli::default).run(tidb_image);
 
     let options = MySqlConnectOptions::new()
         .username("root")

@@ -254,7 +254,7 @@ where
         conn: &mut PgConnection,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        let json_data = self.codec().to_value(&obj.data)?;
+        let json_data = self.codec().data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
         let id = conn
             .fetch_one_value(
@@ -276,7 +276,7 @@ where
         conn: &mut PgConnection,
         obj: Model<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        let json_data = self.codec().to_value(&obj.data)?;
+        let json_data = self.codec().data_to_value(&obj.data)?;
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());
 

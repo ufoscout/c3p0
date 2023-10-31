@@ -21,7 +21,7 @@ pub async fn new_connection(docker: &Cli) -> (PgC3p0Pool, Container<'_, Postgres
     config.user = Some("postgres".to_owned());
     config.password = Some("postgres".to_owned());
     config.dbname = Some("postgres".to_owned());
-    config.host = Some(format!("127.0.0.1"));
+    config.host = Some("127.0.0.1".to_string());
     config.port = Some(node.get_host_port_ipv4(5432));
     let mut pool_config = deadpool::managed::PoolConfig::default();
     pool_config.timeouts.create = Some(Duration::from_secs(5));

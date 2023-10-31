@@ -9,7 +9,7 @@ impl TryFrom<String> for Migrations {
     type Error = C3p0Error;
 
     fn try_from(path: String) -> Result<Self, Self::Error> {
-        from_fs(&path)
+        from_fs(path)
     }
 }
 

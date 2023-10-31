@@ -276,11 +276,11 @@ where
         conn: &mut Self::Conn,
         obj: NewModel<DATA>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        let json_data = self.codec().to_value(&obj.data)?;
+        let json_data = self.codec().data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
         let id = sqlx::query(&self.queries.save_sql_query)
-            .bind(&obj.version)
-            .bind(&create_epoch_millis)
+            .bind(obj.version)
+            .bind(create_epoch_millis)
             .bind(&json_data)
             .fetch_one(&mut **conn.get_conn())
             .await

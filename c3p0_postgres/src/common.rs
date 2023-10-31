@@ -39,7 +39,7 @@ pub fn to_model<
     let version = get_or_error(row, version_index)?;
     let create_epoch_millis = get_or_error(row, create_epoch_millis_index)?;
     let update_epoch_millis = get_or_error(row, update_epoch_millis_index)?;
-    let data = codec.from_value(get_or_error(row, data_index)?)?;
+    let data = codec.data_from_value(get_or_error(row, data_index)?)?;
     Ok(Model {
         id,
         version,

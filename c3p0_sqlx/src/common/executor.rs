@@ -180,7 +180,7 @@ where
         sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB> + sqlx::encode::Encode<'c, DB>,
     usize: ColumnIndex<DB::Row>,
 {
-    let json_data = codec.to_value(&obj.data)?;
+    let json_data = codec.data_to_value(&obj.data)?;
     let previous_version = obj.version;
     let updated_model = obj.into_new_version(get_current_epoch_millis());
 

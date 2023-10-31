@@ -67,7 +67,7 @@ impl Deref for InMemoryConnection {
 
 impl DerefMut for InMemoryConnection {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.db
+        self.db
     }
 }
 

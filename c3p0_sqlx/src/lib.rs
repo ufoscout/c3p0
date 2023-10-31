@@ -5,17 +5,17 @@ pub mod sqlx {
     pub use sqlx::*;
 }
 
-#[cfg(any(feature = "mysql"))]
+#[cfg(feature = "mysql")]
 mod mysql;
-#[cfg(any(feature = "mysql"))]
+#[cfg(feature = "mysql")]
 pub use mysql::*;
 
-#[cfg(any(feature = "postgres"))]
+#[cfg(feature = "postgres")]
 mod postgres;
-#[cfg(any(feature = "postgres"))]
+#[cfg(feature = "postgres")]
 pub use postgres::*;
 
-#[cfg(any(feature = "sqlite"))]
+#[cfg(feature = "sqlite")]
 mod sqlite;
-#[cfg(any(feature = "sqlite"))]
+#[cfg(feature = "sqlite")]
 pub use sqlite::*;

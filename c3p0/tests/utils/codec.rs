@@ -27,7 +27,7 @@ enum Versioning1<'a> {
 pub struct UserVersionCoded1 {}
 
 impl JsonCodec<UserVersion1> for UserVersionCoded1 {
-    fn from_value(&self, value: Value) -> Result<UserVersion1, C3p0Error> {
+    fn data_from_value(&self, value: Value) -> Result<UserVersion1, C3p0Error> {
         let versioning = serde_json::from_value(value)?;
         let user = match versioning {
             Versioning1::V1(user_v1) => user_v1.into_owned(),
@@ -35,7 +35,7 @@ impl JsonCodec<UserVersion1> for UserVersionCoded1 {
         Ok(user)
     }
 
-    fn to_value(&self, data: &UserVersion1) -> Result<Value, C3p0Error> {
+    fn data_to_value(&self, data: &UserVersion1) -> Result<Value, C3p0Error> {
         serde_json::to_value(Versioning1::V1(Cow::Borrowed(data))).map_err(C3p0Error::from)
     }
 }
@@ -51,7 +51,7 @@ enum Versioning2<'a> {
 pub struct UserVersionCoded2 {}
 
 impl JsonCodec<UserVersion2> for UserVersionCoded2 {
-    fn from_value(&self, value: Value) -> Result<UserVersion2, C3p0Error> {
+    fn data_from_value(&self, value: Value) -> Result<UserVersion2, C3p0Error> {
         let versioning = serde_json::from_value(value)?;
         let user = match versioning {
             Versioning2::V1(user_v1) => UserVersion2 {
@@ -64,7 +64,7 @@ impl JsonCodec<UserVersion2> for UserVersionCoded2 {
         Ok(user)
     }
 
-    fn to_value(&self, data: &UserVersion2) -> Result<Value, C3p0Error> {
+    fn data_to_value(&self, data: &UserVersion2) -> Result<Value, C3p0Error> {
         serde_json::to_value(Versioning2::V2(Cow::Borrowed(data))).map_err(C3p0Error::from)
     }
 }
