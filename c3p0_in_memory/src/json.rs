@@ -56,8 +56,7 @@ where
         qualified_table_name: &str,
         db: &'a mut HashMap<String, BTreeMap<IdType, Model<Value>>>,
     ) -> &'a mut BTreeMap<IdType, Model<Value>> {
-        db.entry(qualified_table_name.to_owned())
-            .or_default()
+        db.entry(qualified_table_name.to_owned()).or_default()
     }
 
     fn to_value_model(&self, model: &Model<DATA>) -> Result<Model<Value>, C3p0Error> {

@@ -55,13 +55,11 @@ where
                     err
                 ),
             })?;
-    let data =
-        codec.data_from_value(
-            row.try_get(data_index)
-                .map_err(|err| C3p0Error::RowMapperError {
-                    cause: format!("Row contains no values for data index. Err: {:?}", err),
-                })?,
-        )?;
+    let data = codec.data_from_value(row.try_get(data_index).map_err(|err| {
+        C3p0Error::RowMapperError {
+            cause: format!("Row contains no values for data index. Err: {:?}", err),
+        }
+    })?)?;
     Ok(Model {
         id,
         version,

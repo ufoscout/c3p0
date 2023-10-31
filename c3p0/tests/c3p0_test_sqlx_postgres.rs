@@ -20,9 +20,7 @@ pub type MaybeType = (C3p0Impl, Container<'static, Postgres>);
 
 async fn init() -> MaybeType {
     static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER
-        .get_or_init(Cli::default)
-        .run(Postgres::default());
+    let node = DOCKER.get_or_init(Cli::default).run(Postgres::default());
 
     let options = PgConnectOptions::new()
         .username("postgres")
