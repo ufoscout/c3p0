@@ -4,7 +4,6 @@ use c3p0::time::utils::get_current_epoch_millis;
 use std::time::Duration;
 
 #[test]
-#[cfg(not(feature = "in_memory"))]
 fn should_create_and_drop_table() -> Result<(), C3p0Error> {
     test(async {
         if db_specific::db_type() == DbType::InMemory {
@@ -22,7 +21,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
             last_name: "my_last_name".to_owned(),
         });
 
-        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
             
             assert!(jpo.drop_table_if_exists(conn, false).await.is_ok());
             Ok(())
@@ -30,7 +29,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
             
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
@@ -38,7 +37,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
             
             println!("first {:?}", jpo.create_table_if_not_exists(conn).await);
 
@@ -54,7 +53,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
             
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
@@ -62,7 +61,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|mut conn| async move {
+        pool.transaction::<_, C3p0Error, _, _>(|conn| async move {
             
             println!("second {:?}", jpo.create_table_if_not_exists(conn).await);
 
