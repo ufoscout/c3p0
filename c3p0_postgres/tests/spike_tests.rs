@@ -1,18 +1,18 @@
 #![cfg(feature = "spike_tests")]
 
-use testcontainers::*;
+use testcontainers::{testcontainers::clients::Cli, postgres::Postgres};
 use tokio_postgres::NoTls;
 
 #[tokio::test]
 async fn should_cast_parameter() {
-    let docker = clients::Cli::default();
-    let node = docker.run(images::postgres::Postgres::default());
+    let docker = Cli::default();
+    let node = docker.run(Postgres::default());
 
     // Connect to the database.
     let (client, connection) = tokio_postgres::connect(
         &format!(
             "host=localhost port={} user=postgres password=postgres dbname=postgres",
-            node.get_host_port(5432).unwrap()
+            node.get_host_port_ipv4(5432)
         ),
         NoTls,
     )

@@ -6,7 +6,10 @@ use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use testcontainers::*;
+use testcontainers::testcontainers::Container;
+use testcontainers::testcontainers::GenericImage;
+use testcontainers::testcontainers::clients::Cli;
+use testcontainers::testcontainers::core::WaitFor;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
 
@@ -16,19 +19,19 @@ mod utils;
 
 pub type MaybeType = (
     C3p0Impl,
-    Container<'static, clients::Cli, images::generic::GenericImage>,
+    Container<'static, GenericImage>,
 );
 
 async fn init() -> MaybeType {
     let tidb_version = "v3.0.3";
-    let tidb_image = images::generic::GenericImage::new(format!("pingcap/tidb:{}", tidb_version))
-        .with_wait_for(images::generic::WaitFor::message_on_stdout(
+    let tidb_image = GenericImage::new("pingcap/tidb", tidb_version)
+        .with_wait_for(WaitFor::message_on_stdout(
             r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#,
         ));
 
-    static DOCKER: OnceCell<clients::Cli> = OnceCell::new();
+    static DOCKER: OnceCell<Cli> = OnceCell::new();
     let node = DOCKER
-        .get_or_init(|| clients::Cli::default())
+        .get_or_init(|| Cli::default())
         .run(tidb_image);
 
     let options = MySqlConnectOptions::new()
@@ -36,7 +39,7 @@ async fn init() -> MaybeType {
         //.password("mysql")
         .database("mysql")
         .host("127.0.0.1")
-        .port(node.get_host_port(4000).unwrap())
+        .port(node.get_host_port_ipv4(4000))
         .ssl_mode(MySqlSslMode::Disabled);
 
     let pool = MySqlPool::connect_with(options).await.unwrap();

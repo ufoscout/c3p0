@@ -1,22 +1,24 @@
 [package]
 name = "c3p0_tests_migrate"
-license = "MIT"
-version = "0.67.0"
-authors = ["Francesco Cina <ufoscout@gmail.com>"]
 description = "A good friend for r2d2. Based on rust-postgres."
-edition = "2021"
 readme = "README.md"
-homepage = "https://github.com/ufoscout/c3p0"
-repository = "https://github.com/ufoscout/c3p0"
-keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
+
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+version.workspace = true
+
 
 [dependencies]
-c3p0 = { path = "../c3p0", version = "0.67.0" }
+c3p0 = { workspace = true }
 
 [dev-dependencies]
-rand = "0.8"
-testcontainers = "0.12"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+rand = { workspace = true }
+testcontainers = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = []

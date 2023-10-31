@@ -1,7 +1,6 @@
-use crate::deadpool::postgres::Pool;
+use crate::deadpool::postgres::{Pool, Transaction};
 use crate::tokio_postgres::row::Row;
 use crate::tokio_postgres::types::{FromSqlOwned, ToSql};
-use crate::tokio_postgres::Transaction;
 use crate::*;
 
 use async_trait::async_trait;
@@ -46,7 +45,7 @@ impl C3p0Pool for PgC3p0Pool {
     ) -> Result<T, E> {
         let mut conn = self.pool.get().await.map_err(deadpool_into_c3p0_error)?;
 
-        let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
+        let native_transaction: Transaction<'_> = conn.transaction().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
         let transaction = PgConnection::Tx(unsafe { ::std::mem::transmute(&native_transaction) });

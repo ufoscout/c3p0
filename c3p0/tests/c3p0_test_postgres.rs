@@ -7,7 +7,7 @@ use c3p0::*;
 use c3p0_postgres::deadpool::Runtime;
 use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use testcontainers::*;
+use testcontainers::{testcontainers::{Container, clients::Cli}, postgres::Postgres};
 
 use std::time::Duration;
 
@@ -19,21 +19,21 @@ mod utils;
 
 pub type MaybeType = (
     C3p0Impl,
-    Container<'static, clients::Cli, images::postgres::Postgres>,
+    Container<'static, Postgres>,
 );
 
 async fn init() -> MaybeType {
-    static DOCKER: OnceCell<clients::Cli> = OnceCell::new();
+    static DOCKER: OnceCell<Cli> = OnceCell::new();
     let node = DOCKER
-        .get_or_init(|| clients::Cli::default())
-        .run(images::postgres::Postgres::default());
+        .get_or_init(|| Cli::default())
+        .run(Postgres::default());
 
     let mut config = deadpool::postgres::Config::default();
     config.user = Some("postgres".to_owned());
     config.password = Some("postgres".to_owned());
     config.dbname = Some("postgres".to_owned());
     config.host = Some(format!("127.0.0.1"));
-    config.port = Some(node.get_host_port(5432).unwrap());
+    config.port = Some(node.get_host_port_ipv4(5432));
     let mut pool_config = deadpool::managed::PoolConfig::default();
     pool_config.timeouts.create = Some(Duration::from_secs(5));
     pool_config.timeouts.recycle = Some(Duration::from_secs(5));

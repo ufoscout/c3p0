@@ -3,14 +3,14 @@
 use c3p0::sqlx::sqlx::sqlite::*;
 use c3p0::sqlx::*;
 pub use c3p0::*;
-use testcontainers::*;
+use testcontainers::testcontainers::clients::Cli;
 
 mod tests_async;
 pub mod utils;
 
 pub type C3p0Impl = SqlxSqliteC3p0Pool;
 
-pub async fn new_connection(_docker: &clients::Cli) -> (SqlxSqliteC3p0Pool, ()) {
+pub async fn new_connection(_docker: &Cli) -> (SqlxSqliteC3p0Pool, ()) {
     let options = SqliteConnectOptions::new();
 
     let pool: c3p0::sqlx::sqlx::Pool<Sqlite> = c3p0::sqlx::sqlx::pool::PoolOptions::new()

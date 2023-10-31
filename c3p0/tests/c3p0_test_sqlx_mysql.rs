@@ -6,7 +6,10 @@ use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use testcontainers::*;
+use testcontainers::testcontainers::Container;
+use testcontainers::testcontainers::GenericImage;
+use testcontainers::testcontainers::clients::Cli;
+use testcontainers::testcontainers::core::WaitFor;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
 
@@ -16,13 +19,13 @@ mod utils;
 
 pub type MaybeType = (
     C3p0Impl,
-    Container<'static, clients::Cli, images::generic::GenericImage>,
+    Container<'static, GenericImage>,
 );
 
 async fn init() -> MaybeType {
     let mysql_version = "5.7.25";
-    let mysql_image = images::generic::GenericImage::new(format!("mysql:{}", mysql_version))
-        .with_wait_for(images::generic::WaitFor::message_on_stderr(
+    let mysql_image = GenericImage::new("mysql", mysql_version)
+        .with_wait_for(WaitFor::message_on_stderr(
             format!("Version: '{}'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server (GPL)", mysql_version),
         ))
         .with_env_var("MYSQL_DATABASE", "mysql")
@@ -30,9 +33,9 @@ async fn init() -> MaybeType {
         .with_env_var("MYSQL_PASSWORD", "mysql")
         .with_env_var("MYSQL_ROOT_PASSWORD", "mysql");
 
-    static DOCKER: OnceCell<clients::Cli> = OnceCell::new();
+    static DOCKER: OnceCell<Cli> = OnceCell::new();
     let node = DOCKER
-        .get_or_init(|| clients::Cli::default())
+        .get_or_init(|| Cli::default())
         .run(mysql_image);
 
     let options = MySqlConnectOptions::new()
@@ -40,7 +43,7 @@ async fn init() -> MaybeType {
         .password("mysql")
         .database("mysql")
         .host("127.0.0.1")
-        .port(node.get_host_port(3306).unwrap())
+        .port(node.get_host_port_ipv4(3306))
         .ssl_mode(MySqlSslMode::Disabled);
 
     let pool = MySqlPool::connect_with(options).await.unwrap();

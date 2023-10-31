@@ -6,7 +6,9 @@ use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::nio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use testcontainers::*;
+use testcontainers::postgres::Postgres;
+use testcontainers::testcontainers::Container;
+use testcontainers::testcontainers::clients::Cli;
 
 pub type C3p0Impl = SqlxPgC3p0Pool;
 
@@ -16,21 +18,21 @@ mod utils;
 
 pub type MaybeType = (
     C3p0Impl,
-    Container<'static, clients::Cli, images::postgres::Postgres>,
+    Container<'static, Postgres>,
 );
 
 async fn init() -> MaybeType {
-    static DOCKER: OnceCell<clients::Cli> = OnceCell::new();
+    static DOCKER: OnceCell<Cli> = OnceCell::new();
     let node = DOCKER
-        .get_or_init(|| clients::Cli::default())
-        .run(images::postgres::Postgres::default());
+        .get_or_init(|| Cli::default())
+        .run(Postgres::default());
 
     let options = PgConnectOptions::new()
         .username("postgres")
         .password("postgres")
         .database("postgres")
         .host("127.0.0.1")
-        .port(node.get_host_port(5432).unwrap());
+        .port(node.get_host_port_ipv4(5432));
 
     let pool = PgPool::connect_with(options).await.unwrap();
 
