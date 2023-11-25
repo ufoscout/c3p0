@@ -42,7 +42,9 @@ impl C3p0Pool for SqlxSqliteC3p0Pool {
 
         // ToDo: To avoid this unsafe we need GAT
         let mut transaction =
-            SqlxSqliteConnection::Tx(unsafe { ::std::mem::transmute(&mut native_transaction) });
+            SqlxSqliteConnection {
+                inner: unsafe { ::std::mem::transmute(&mut native_transaction) }
+               };
         let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
         let result = { (tx)(ref_transaction).await? };
 
@@ -51,15 +53,13 @@ impl C3p0Pool for SqlxSqliteC3p0Pool {
     }
 }
 
-pub enum SqlxSqliteConnection {
-    Tx(&'static mut Transaction<'static, Db>),
+pub struct SqlxSqliteConnection {
+    inner: &'static mut Transaction<'static, Db>,
 }
 
 impl SqlxSqliteConnection {
     pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
-        match self {
-            SqlxSqliteConnection::Tx(tx) => tx,
-        }
+        self.inner
     }
 }
 
