@@ -50,10 +50,9 @@ impl C3p0Pool for PgC3p0Pool {
             conn.transaction().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-        let mut transaction =
-            PgConnection{
-             inner:   (unsafe { ::std::mem::transmute(&native_transaction) })
-            };
+        let mut transaction = PgConnection {
+            inner: (unsafe { ::std::mem::transmute(&native_transaction) }),
+        };
         let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
         let result = { (tx)(ref_transaction).await? };
 
@@ -80,7 +79,10 @@ impl PgConnection {
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<u64, C3p0Error> {
-        self.inner.execute(sql, params).await.map_err(into_c3p0_error)
+        self.inner
+            .execute(sql, params)
+            .await
+            .map_err(into_c3p0_error)
     }
 
     pub async fn fetch_one_value<T: FromSqlOwned>(
@@ -109,16 +111,16 @@ impl PgConnection {
         mapper: F,
     ) -> Result<Option<T>, C3p0Error> {
         let stmt = self.inner.prepare(sql).await.map_err(into_c3p0_error)?;
-        self.inner.query(&stmt, params)
-                    .await
-                    .map_err(into_c3p0_error)?
-                    .get(0)
-                    .map(mapper)
-                    .transpose()
-                    .map_err(|err| C3p0Error::RowMapperError {
-                        cause: format!("{:?}", err),
-                    })
-          
+        self.inner
+            .query(&stmt, params)
+            .await
+            .map_err(into_c3p0_error)?
+            .get(0)
+            .map(mapper)
+            .transpose()
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!("{:?}", err),
+            })
     }
 
     pub async fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
@@ -127,16 +129,17 @@ impl PgConnection {
         params: &[&(dyn ToSql + Sync)],
         mapper: F,
     ) -> Result<Vec<T>, C3p0Error> {
-            let stmt = self.inner.prepare(sql).await.map_err(into_c3p0_error)?;
-            self.inner.query(&stmt, params)
-                .await
-                .map_err(into_c3p0_error)?
-                .iter()
-                .map(mapper)
-                .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
-                .map_err(|err| C3p0Error::RowMapperError {
-                    cause: format!("{:?}", err),
-                })
+        let stmt = self.inner.prepare(sql).await.map_err(into_c3p0_error)?;
+        self.inner
+            .query(&stmt, params)
+            .await
+            .map_err(into_c3p0_error)?
+            .iter()
+            .map(mapper)
+            .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!("{:?}", err),
+            })
     }
 
     pub async fn fetch_all_values<T: FromSqlOwned>(

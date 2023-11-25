@@ -111,11 +111,8 @@ pub struct C3p0Migrate<
     migrator: Migrator,
 }
 
-impl<
-        Conn: SqlConnection,
-        C3P0: C3p0Pool<Conn = Conn>,
-        Migrator: C3p0Migrator<Conn = Conn>,
-    > C3p0Migrate<Conn, C3P0, Migrator>
+impl<Conn: SqlConnection, C3P0: C3p0Pool<Conn = Conn>, Migrator: C3p0Migrator<Conn = Conn>>
+    C3p0Migrate<Conn, C3P0, Migrator>
 {
     pub fn new(
         table: String,
