@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/ufoscout/c3p0.svg?branch=master)](https://travis-ci.org/ufoscout/c3p0)
+![Build Status](https://github.com/ufoscout/c3p0/actions/workflows/build_and_test.yml/badge.svg)
+[![codecov](https://codecov.io/gh/ufoscout/c3p0/branch/master/graph/badge.svg)](https://codecov.io/gh/ufoscout/c3p0)
 
 # "A pleasure to meet you. I am C-3p0, JSON-DB Relations."
 
