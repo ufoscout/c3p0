@@ -184,7 +184,7 @@ mod test {
                 Err(C3p0Error::InternalError { cause }) => {
                     assert_eq!("test error on purpose", cause)
                 }
-                _ => assert!(false),
+                _ => panic!(),
             }
         }
 

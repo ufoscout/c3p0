@@ -17,12 +17,14 @@ pub type C3p0Impl = PgC3p0Pool;
 pub async fn new_connection(docker: &Cli) -> (PgC3p0Pool, Container<'_, Postgres>) {
     let node = docker.run(Postgres::default());
 
-    let mut config = deadpool::postgres::Config::default();
-    config.user = Some("postgres".to_owned());
-    config.password = Some("postgres".to_owned());
-    config.dbname = Some("postgres".to_owned());
-    config.host = Some("127.0.0.1".to_string());
-    config.port = Some(node.get_host_port_ipv4(5432));
+    let mut config = deadpool::postgres::Config {
+        user: Some("postgres".to_owned()),
+        password: Some("postgres".to_owned()),
+        dbname: Some("postgres".to_owned()),
+        host: Some("127.0.0.1".to_string()),
+        port: Some(node.get_host_port_ipv4(5432)),
+        ..Default::default()
+    };
     let mut pool_config = deadpool::managed::PoolConfig::default();
     pool_config.timeouts.create = Some(Duration::from_secs(5));
     pool_config.timeouts.recycle = Some(Duration::from_secs(5));

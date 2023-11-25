@@ -360,7 +360,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             assert!(expected_error.is_err());
 
             match expected_error {
-                Ok(_) => assert!(false),
+                Ok(_) => panic!(),
                 Err(e) => match e {
                     C3p0Error::OptimisticLockError { message } => {
                         assert!(message.contains(&table_name));
@@ -369,7 +369,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
                             saved_model.id, saved_model.version
                         )));
                     }
-                    _ => assert!(false),
+                    _ => panic!(),
                 },
             };
 
@@ -437,7 +437,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             assert!(expected_error.is_err());
 
             match expected_error {
-                Ok(_) => assert!(false),
+                Ok(_) => panic!(),
                 Err(e) => match e {
                     C3p0Error::OptimisticLockError { message } => {
                         assert!(message.contains(&table_name));
@@ -446,7 +446,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
                             saved_model.id, saved_model.version
                         )));
                     }
-                    _ => assert!(false),
+                    _ => panic!(),
                 },
             };
 

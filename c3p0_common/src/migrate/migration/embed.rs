@@ -101,7 +101,7 @@ mod test {
             Err(C3p0Error::IoError { message }) => {
                 assert!(message.contains("Error reading file [00010_create_test_data/down.sql]"));
             }
-            _ => assert!(false),
+            _ => panic!(),
         };
     }
 
@@ -114,7 +114,7 @@ mod test {
             Err(C3p0Error::IoError { message }) => {
                 assert!(message.contains("Error reading file [00010_create_test_data/up.sql]"));
             }
-            _ => assert!(false),
+            _ => panic!(),
         };
     }
 

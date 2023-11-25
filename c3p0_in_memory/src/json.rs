@@ -550,8 +550,8 @@ mod test {
             assert!(updated_result_2.is_ok());
 
             match updated_result_1 {
-                Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
-                _ => assert!(false),
+                Err(C3p0Error::OptimisticLockError { .. }) => (),
+                _ => panic!(),
             }
 
             Ok(())
@@ -591,8 +591,8 @@ mod test {
             assert_eq!(updated_model.id, delete_result_2.unwrap().id);
 
             match delete_result_1 {
-                Err(C3p0Error::OptimisticLockError { .. }) => assert!(true),
-                _ => assert!(false),
+                Err(C3p0Error::OptimisticLockError { .. }) => (),
+                _ => panic!(),
             }
 
             Ok(())

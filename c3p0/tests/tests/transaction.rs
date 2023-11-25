@@ -168,8 +168,8 @@ fn transaction_should_return_internal_error() {
         assert!(result.is_err());
 
         match &result {
-            Err(CustomError::InnerError) => assert!(true),
-            _ => assert!(false),
+            Err(CustomError::InnerError) => (),
+            _ => panic!(),
         }
     })
 }

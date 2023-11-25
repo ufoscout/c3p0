@@ -106,7 +106,7 @@ mod test {
                     "Error reading file [./tests/migrations_01/00010_create_test_data/down.sql]"
                 ));
             }
-            _ => assert!(false),
+            _ => panic!(),
         };
     }
 
@@ -121,7 +121,7 @@ mod test {
                     "Error reading file [./tests/migrations_02/00010_create_test_data/up.sql]"
                 ));
             }
-            _ => assert!(false),
+            _ => panic!(),
         };
     }
 
