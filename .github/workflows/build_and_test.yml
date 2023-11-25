@@ -1,0 +1,38 @@
+name: Rust Build and Test
+
+on:
+  pull_request:
+    branches:
+    - master
+    - develop
+  push:
+    branches:
+    - master
+    - develop
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v2
+     
+      - name: Install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: rustfmt
+        run: |
+          cargo fmt --all --check
+
+      - name: clippy
+        run: |
+          cargo clippy --all-features --all-targets
+
+      - name: test
+        run: |
+          ./scripts/test.sh
