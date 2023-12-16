@@ -16,6 +16,10 @@ impl SqlxMySqlC3p0Pool {
     pub fn new(pool: Pool<Db>) -> Self {
         SqlxMySqlC3p0Pool { pool }
     }
+
+    pub fn pool(&self) -> &Pool<Db> {
+        &self.pool
+    }
 }
 
 impl From<Pool<Db>> for SqlxMySqlC3p0Pool {

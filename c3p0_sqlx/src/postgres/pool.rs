@@ -16,6 +16,10 @@ impl SqlxPgC3p0Pool {
     pub fn new(pool: Pool<Db>) -> Self {
         SqlxPgC3p0Pool { pool }
     }
+
+    pub fn pool(&self) -> &Pool<Db> {
+        &self.pool
+    }
 }
 
 impl From<Pool<Db>> for SqlxPgC3p0Pool {

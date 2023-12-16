@@ -9,11 +9,16 @@ use std::future::Future;
 #[derive(Clone)]
 pub struct SqlxSqliteC3p0Pool {
     pool: Pool<Db>,
+
 }
 
 impl SqlxSqliteC3p0Pool {
     pub fn new(pool: Pool<Db>) -> Self {
         SqlxSqliteC3p0Pool { pool }
+    }
+    
+    pub fn pool(&self) -> &Pool<Db> {
+        &self.pool
     }
 }
 
