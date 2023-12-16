@@ -4,7 +4,7 @@ use c3p0::sqlx::sqlx::postgres::*;
 use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::*;
 use c3p0::*;
-use maybe_single::nio::{Data, MaybeSingleAsync};
+use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::postgres::Postgres;
 use testcontainers::testcontainers::clients::Cli;

@@ -5,7 +5,7 @@ pub use c3p0::postgres::tokio_postgres::{row::Row, NoTls};
 use c3p0::postgres::*;
 use c3p0::*;
 use c3p0_postgres::deadpool::Runtime;
-use maybe_single::nio::{Data, MaybeSingleAsync};
+use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::{
     postgres::Postgres,
