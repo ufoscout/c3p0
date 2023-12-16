@@ -22,7 +22,6 @@ sqlx = { workspace = true }
 
 [features]
 default = ["sqlx/runtime-tokio-rustls"]
-migrate = ["c3p0_common/migrate"]
 mysql = ["sqlx/mysql"]
 postgres = ["sqlx/postgres"]
 sqlite = ["sqlx/sqlite"]

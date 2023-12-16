@@ -87,3 +87,7 @@ and, at the same time, to get a better and safer concurrency level.
 __Han__ "Don't worry. Everything's gonna be fine. Trust me."
 
 __C3p0__: "Every time he employs that phrase, my circuitry becomes erratic!"
+
+__Han__: ???
+
+__C3p0__: "Artoo says that the chances of survival are 725 to 1".

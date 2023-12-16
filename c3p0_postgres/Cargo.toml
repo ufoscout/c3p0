@@ -29,6 +29,5 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = []
-migrate = ["c3p0_common/migrate"]
 
 spike_tests = []

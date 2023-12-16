@@ -37,7 +37,6 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 [features]
 default = []
 in_memory = ["c3p0_in_memory"]
-migrate = ["c3p0_postgres?/migrate", "c3p0_sqlx?/migrate"]
 postgres = ["c3p0_postgres"]
 sqlx_mysql = ["c3p0_sqlx/mysql"]
 sqlx_postgres = ["c3p0_sqlx/postgres"]
