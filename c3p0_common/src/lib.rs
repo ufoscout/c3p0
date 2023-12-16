@@ -15,7 +15,6 @@ mod common {
     pub use crate::sql::{ForUpdate, OrderBy};
 
     pub use crate::pool::{C3p0Pool, SqlConnection};
-
 }
 
 pub use crate::common::*;
