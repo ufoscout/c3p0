@@ -25,23 +25,6 @@ where
 }
 
 #[inline]
-pub async fn execute<'e, 'q: 'e, A, E, DB>(
-    query: Query<'q, DB, A>,
-    executor: E,
-) -> Result<(), C3p0Error>
-where
-    DB: Database,
-    A: 'q + IntoArguments<'q, DB>,
-    E: Executor<'e, Database = DB>,
-{
-    query
-        .execute(executor)
-        .await
-        .map_err(into_c3p0_error)
-        .map(|_| ())
-}
-
-#[inline]
 pub async fn fetch_one_optional_with_sql<'e, 'q: 'e, A, E, DB, DATA, CODEC: JsonCodec<DATA>>(
     query: Query<'q, DB, A>,
     executor: E,
