@@ -5,7 +5,7 @@ use crate::common::executor::{
 use crate::common::to_model;
 use crate::error::into_c3p0_error;
 use crate::sqlite::queries::build_sqlite_queries;
-use crate::sqlite::{Db, DbRow, SqlxSqliteC3p0Pool, SqlxSqliteConnection};
+use crate::sqlite::{Db, DbRow, SqliteTx, SqlxSqliteC3p0Pool};
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
@@ -86,10 +86,10 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxSqliteConnection,
+        tx: &mut SqliteTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        fetch_one_optional_with_sql(sql, &mut **conn.get_conn(), self.codec()).await
+        fetch_one_optional_with_sql(sql, tx.conn(), self.codec()).await
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -98,10 +98,10 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxSqliteConnection,
+        tx: &mut SqliteTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<DATA>, C3p0Error> {
-        fetch_one_with_sql(sql, &mut **conn.get_conn(), self.codec()).await
+        fetch_one_with_sql(sql, tx.conn(), self.codec()).await
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -110,10 +110,10 @@ where
     /// - must declare the ID, VERSION and DATA fields in this exact order
     pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        conn: &mut SqlxSqliteConnection,
+        tx: &mut SqliteTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        fetch_all_with_sql(sql, &mut **conn.get_conn(), self.codec()).await
+        fetch_all_with_sql(sql, tx.conn(), self.codec()).await
     }
 }
 
@@ -122,19 +122,19 @@ impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for SqlxSqliteC3p0Json<
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = SqlxSqliteConnection;
+    type Tx = SqliteTx;
 
     fn codec(&self) -> &CODEC {
         &self.codec
     }
 
-    async fn create_table_if_not_exists(&self, conn: &mut Self::Conn) -> Result<(), C3p0Error> {
-        batch_execute(&self.queries.create_table_sql_query, &mut **conn.get_conn()).await
+    async fn create_table_if_not_exists(&self, tx: &mut Self::Tx) -> Result<(), C3p0Error> {
+        batch_execute(&self.queries.create_table_sql_query, tx.conn()).await
     }
 
     async fn drop_table_if_exists(
         &self,
-        conn: &mut Self::Conn,
+        tx: &mut Self::Tx,
         cascade: bool,
     ) -> Result<(), C3p0Error> {
         let query = if cascade {
@@ -142,12 +142,12 @@ where
         } else {
             &self.queries.drop_table_sql_query
         };
-        batch_execute(query, &mut **conn.get_conn()).await
+        batch_execute(query, tx.conn()).await
     }
 
-    async fn count_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.count_all_sql_query)
-            .fetch_one(&mut **conn.get_conn())
+            .fetch_one(tx.conn())
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
@@ -156,38 +156,38 @@ where
 
     async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        tx: &mut Self::Tx,
         id: ID,
     ) -> Result<bool, C3p0Error> {
         sqlx::query(&self.queries.exists_by_id_sql_query)
             .bind(id.into())
-            .fetch_one(&mut **conn.get_conn())
+            .fetch_one(tx.conn())
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
     }
 
-    async fn fetch_all(&self, conn: &mut Self::Conn) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        self.fetch_all_with_sql(conn, sqlx::query(&self.queries.find_all_sql_query))
+    async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<DATA>>, C3p0Error> {
+        self.fetch_all_with_sql(tx, sqlx::query(&self.queries.find_all_sql_query))
             .await
     }
 
     async fn fetch_all_for_update(
         &self,
-        conn: &mut Self::Conn,
+        tx: &mut Self::Tx,
         _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
-        self.fetch_all(conn).await
+        self.fetch_all(tx).await
     }
 
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        tx: &mut Self::Tx,
         id: ID,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         self.fetch_one_optional_with_sql(
-            conn,
+            tx,
             sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
         )
         .await
@@ -195,21 +195,21 @@ where
 
     async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        tx: &mut Self::Tx,
         id: ID,
         _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
         warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
-        self.fetch_one_optional_by_id(conn, id).await
+        self.fetch_one_optional_by_id(tx, id).await
     }
 
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        tx: &mut Self::Tx,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_with_sql(
-            conn,
+            tx,
             sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
         )
         .await
@@ -217,25 +217,21 @@ where
 
     async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        tx: &mut Self::Tx,
         id: ID,
         _for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {
         warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
-        self.fetch_one_by_id(conn, id).await
+        self.fetch_one_by_id(tx, id).await
     }
 
-    async fn delete(
-        &self,
-        conn: &mut Self::Conn,
-        obj: Model<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        delete(obj, &mut **conn.get_conn(), &self.queries).await
+    async fn delete(&self, tx: &mut Self::Tx, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        delete(obj, tx.conn(), &self.queries).await
     }
 
-    async fn delete_all(&self, conn: &mut Self::Conn) -> Result<u64, C3p0Error> {
+    async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.delete_all_sql_query)
-            .execute(&mut **conn.get_conn())
+            .execute(tx.conn())
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
@@ -243,22 +239,18 @@ where
 
     async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        tx: &mut Self::Tx,
         id: ID,
     ) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.delete_by_id_sql_query)
             .bind(id.into())
-            .execute(&mut **conn.get_conn())
+            .execute(tx.conn())
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
     }
 
-    async fn save(
-        &self,
-        conn: &mut Self::Conn,
-        obj: NewModel<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
+    async fn save(&self, tx: &mut Self::Tx, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let json_data = self.codec().data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
         let id = sqlx::query(&self.queries.save_sql_query)
@@ -266,7 +258,7 @@ where
             .bind(create_epoch_millis)
             .bind(create_epoch_millis)
             .bind(&json_data)
-            .execute(&mut **conn.get_conn())
+            .execute(tx.conn())
             .await
             .map(|done| done.last_insert_rowid())
             .map_err(into_c3p0_error)?;
@@ -280,11 +272,7 @@ where
         })
     }
 
-    async fn update(
-        &self,
-        conn: &mut Self::Conn,
-        obj: Model<DATA>,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        update(obj, &mut **conn.get_conn(), &self.queries, self.codec()).await
+    async fn update(&self, tx: &mut Self::Tx, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
+        update(obj, tx.conn(), &self.queries, self.codec()).await
     }
 }

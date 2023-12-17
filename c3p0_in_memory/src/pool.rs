@@ -21,13 +21,13 @@ impl InMemoryC3p0Pool {
 
 #[async_trait]
 impl C3p0Pool for InMemoryC3p0Pool {
-    type Conn = InMemoryConnection;
+    type Tx = InMemoryConnection;
 
     async fn transaction<
         'a,
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(&'a mut Self::Conn) -> Fut,
+        F: Send + FnOnce(&'a mut Self::Tx) -> Fut,
         Fut: Send + Future<Output = Result<T, E>>,
     >(
         &'a self,

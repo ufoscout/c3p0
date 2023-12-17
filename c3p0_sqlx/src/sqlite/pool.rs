@@ -3,7 +3,7 @@ use crate::error::into_c3p0_error;
 use crate::sqlite::Db;
 use async_trait::async_trait;
 use c3p0_common::*;
-use sqlx::{Pool, Transaction};
+use sqlx::{Pool, SqliteConnection, Transaction};
 use std::future::Future;
 
 #[derive(Clone)]
@@ -29,13 +29,13 @@ impl From<Pool<Db>> for SqlxSqliteC3p0Pool {
 
 #[async_trait]
 impl C3p0Pool for SqlxSqliteC3p0Pool {
-    type Conn = SqlxSqliteConnection;
+    type Tx = SqliteTx;
 
     async fn transaction<
         'a,
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(&'a mut Self::Conn) -> Fut,
+        F: Send + FnOnce(&'a mut Self::Tx) -> Fut,
         Fut: Send + Future<Output = Result<T, E>>,
     >(
         &'a self,
@@ -45,7 +45,7 @@ impl C3p0Pool for SqlxSqliteC3p0Pool {
             self.pool.begin().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-        let mut transaction = SqlxSqliteConnection {
+        let mut transaction = SqliteTx {
             inner: unsafe { ::std::mem::transmute(&mut native_transaction) },
         };
         let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
@@ -56,19 +56,19 @@ impl C3p0Pool for SqlxSqliteC3p0Pool {
     }
 }
 
-pub struct SqlxSqliteConnection {
+pub struct SqliteTx {
     inner: &'static mut Transaction<'static, Db>,
 }
 
-impl SqlxSqliteConnection {
-    pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
+impl SqliteTx {
+    pub fn conn(&mut self) -> &mut SqliteConnection {
         self.inner
     }
 }
 
 #[async_trait]
-impl SqlConnection for SqlxSqliteConnection {
+impl SqlTx for SqliteTx {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        batch_execute(sql, &mut **self.get_conn()).await
+        batch_execute(sql, self.conn()).await
     }
 }

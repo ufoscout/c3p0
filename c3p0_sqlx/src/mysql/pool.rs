@@ -5,7 +5,7 @@ use std::future::Future;
 use crate::common::executor::batch_execute;
 use crate::error::into_c3p0_error;
 use crate::mysql::Db;
-use sqlx::{Pool, Transaction};
+use sqlx::{MySqlConnection, Pool, Transaction};
 
 #[derive(Clone)]
 pub struct SqlxMySqlC3p0Pool {
@@ -30,13 +30,13 @@ impl From<Pool<Db>> for SqlxMySqlC3p0Pool {
 
 #[async_trait]
 impl C3p0Pool for SqlxMySqlC3p0Pool {
-    type Conn = SqlxMySqlConnection;
+    type Tx = MySqlTx;
 
     async fn transaction<
         'a,
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(&'a mut Self::Conn) -> Fut,
+        F: Send + FnOnce(&'a mut Self::Tx) -> Fut,
         Fut: Send + Future<Output = Result<T, E>>,
     >(
         &'a self,
@@ -46,7 +46,7 @@ impl C3p0Pool for SqlxMySqlC3p0Pool {
             self.pool.begin().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-        let mut transaction = SqlxMySqlConnection {
+        let mut transaction = MySqlTx {
             inner: unsafe { ::std::mem::transmute(&mut native_transaction) },
         };
         let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
@@ -59,19 +59,19 @@ impl C3p0Pool for SqlxMySqlC3p0Pool {
     }
 }
 
-pub struct SqlxMySqlConnection {
+pub struct MySqlTx {
     inner: &'static mut Transaction<'static, Db>,
 }
 
-impl SqlxMySqlConnection {
-    pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
+impl MySqlTx {
+    pub fn conn(&mut self) -> &mut MySqlConnection {
         self.inner
     }
 }
 
 #[async_trait]
-impl SqlConnection for SqlxMySqlConnection {
+impl SqlTx for MySqlTx {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        batch_execute(sql, &mut **self.get_conn()).await
+        batch_execute(sql, self.conn()).await
     }
 }

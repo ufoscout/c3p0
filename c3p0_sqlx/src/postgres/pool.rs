@@ -5,7 +5,7 @@ use std::future::Future;
 use crate::common::executor::batch_execute;
 use crate::error::into_c3p0_error;
 use crate::postgres::Db;
-use sqlx::{Pool, Transaction};
+use sqlx::{PgConnection, Pool, Transaction};
 
 #[derive(Clone)]
 pub struct SqlxPgC3p0Pool {
@@ -30,13 +30,13 @@ impl From<Pool<Db>> for SqlxPgC3p0Pool {
 
 #[async_trait]
 impl C3p0Pool for SqlxPgC3p0Pool {
-    type Conn = SqlxPgConnection;
+    type Tx = PgTx;
 
     async fn transaction<
         'a,
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(&'a mut Self::Conn) -> Fut,
+        F: Send + FnOnce(&'a mut Self::Tx) -> Fut,
         Fut: Send + Future<Output = Result<T, E>>,
     >(
         &'a self,
@@ -45,7 +45,7 @@ impl C3p0Pool for SqlxPgC3p0Pool {
         let mut native_transaction = self.pool.begin().await.map_err(into_c3p0_error)?;
 
         // ToDo: To avoid this unsafe we need GAT
-        let mut transaction = SqlxPgConnection {
+        let mut transaction = PgTx {
             inner: unsafe { ::std::mem::transmute(&mut native_transaction) },
         };
         let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
@@ -58,19 +58,19 @@ impl C3p0Pool for SqlxPgC3p0Pool {
     }
 }
 
-pub struct SqlxPgConnection {
+pub struct PgTx {
     inner: &'static mut Transaction<'static, Db>,
 }
 
-impl SqlxPgConnection {
-    pub fn get_conn(&mut self) -> &mut Transaction<'static, Db> {
+impl PgTx {
+    pub fn conn(&mut self) -> &mut PgConnection {
         self.inner
     }
 }
 
 #[async_trait]
-impl SqlConnection for SqlxPgConnection {
+impl SqlTx for PgTx {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        batch_execute(sql, &mut **self.get_conn()).await
+        batch_execute(sql, self.conn()).await
     }
 }

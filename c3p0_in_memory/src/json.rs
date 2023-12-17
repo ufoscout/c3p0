@@ -85,7 +85,7 @@ impl<DATA> C3p0Json<DATA, DefaultJsonCodec> for InMemoryC3p0Json<DATA>
 where
     DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
-    type Conn = InMemoryConnection;
+    type Tx = InMemoryConnection;
 
     fn codec(&self) -> &DefaultJsonCodec {
         &self.codec
@@ -144,7 +144,7 @@ where
 
     async fn fetch_all_for_update(
         &self,
-        conn: &mut Self::Conn,
+        conn: &mut Self::Tx,
         _for_update: &ForUpdate,
     ) -> Result<Vec<Model<DATA>>, C3p0Error> {
         self.fetch_all(conn).await
@@ -165,7 +165,7 @@ where
 
     async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        conn: &mut Self::Tx,
         id: ID,
         _for_update: &ForUpdate,
     ) -> Result<Option<Model<DATA>>, C3p0Error> {
@@ -174,7 +174,7 @@ where
 
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        conn: &mut Self::Tx,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id(conn, id)
@@ -184,7 +184,7 @@ where
 
     async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
-        conn: &mut Self::Conn,
+        conn: &mut Self::Tx,
         id: ID,
         for_update: &ForUpdate,
     ) -> Result<Model<DATA>, C3p0Error> {

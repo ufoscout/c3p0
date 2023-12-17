@@ -5,7 +5,7 @@ use std::future::Future;
 
 #[async_trait]
 pub trait C3p0Pool: Clone + Send + Sync {
-    type Conn;
+    type Tx;
 
     //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
 
@@ -13,7 +13,7 @@ pub trait C3p0Pool: Clone + Send + Sync {
         'a,
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(&'a mut Self::Conn) -> Fut,
+        F: Send + FnOnce(&'a mut Self::Tx) -> Fut,
         Fut: Send + Future<Output = Result<T, E>>,
     >(
         &'a self,
@@ -22,6 +22,6 @@ pub trait C3p0Pool: Clone + Send + Sync {
 }
 
 #[async_trait]
-pub trait SqlConnection: Send {
+pub trait SqlTx: Send {
     async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error>;
 }
