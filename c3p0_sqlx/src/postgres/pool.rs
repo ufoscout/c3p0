@@ -42,29 +42,30 @@ impl C3p0Pool for SqlxPgC3p0Pool {
         &'a self,
         tx: F,
     ) -> Result<T, E> {
-        let mut native_transaction = self.pool.begin().await.map_err(into_c3p0_error)?;
+        let native_transaction: Transaction<'static, Db> = self.pool.begin().await.map_err(into_c3p0_error)?;
 
-        // ToDo: To avoid this unsafe we need GAT
         let mut transaction = PgTx {
-            inner: unsafe { ::std::mem::transmute(&mut native_transaction) },
+            inner: native_transaction,
         };
+        
+        // ToDo: To avoid this unsafe we need GAT
         let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
 
         let result = { (tx)(ref_transaction).await? };
 
-        native_transaction.commit().await.map_err(into_c3p0_error)?;
+        transaction.inner.commit().await.map_err(into_c3p0_error)?;
 
         Ok(result)
     }
 }
 
 pub struct PgTx {
-    inner: &'static mut Transaction<'static, Db>,
+    inner: Transaction<'static, Db>,
 }
 
 impl PgTx {
     pub fn conn(&mut self) -> &mut PgConnection {
-        self.inner
+        &mut self.inner
     }
 }
 
