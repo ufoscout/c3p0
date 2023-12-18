@@ -1,0 +1,30 @@
+[package]
+name = "c3p0_surrealdb"
+description = "A good friend for r2d2"
+readme = "../README.md"
+
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+version.workspace = true
+
+
+[dependencies]
+async-trait = { workspace = true }
+c3p0_common = { workspace = true }
+deadpool = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+surrealdb = { workspace = true }
+
+[dev-dependencies]
+surrealdb = { workspace = true, features = ["kv-mem"]}
+testcontainers = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+
+[features]
+default = []
