@@ -2,7 +2,7 @@ use crate::*;
 
 use async_trait::async_trait;
 use c3p0_common::*;
-use ::mongodb::{Client, Database};
+use ::mongodb::{Client, Database, options::{SessionOptions, TransactionOptions}, ClientSession};
 use std::future::Future;
 
 #[derive(Clone)]
@@ -37,7 +37,11 @@ impl C3p0Pool for MongodbC3p0Pool {
         &'a self,
         tx: F,
     ) -> Result<T, E> {
-        let mut session = self.pool.start_session(None).await.map_err(into_c3p0_error)?;
+
+        let session_options = SessionOptions::builder()
+            // .causal_consistency(true)
+            .build();
+        let mut session = self.pool.start_session(session_options).await.map_err(into_c3p0_error)?;
         session.start_transaction(None).await.map_err(into_c3p0_error)?;
 
         let client = session.client();
@@ -46,17 +50,22 @@ impl C3p0Pool for MongodbC3p0Pool {
         // ToDo: To avoid this unsafe we need GAT
         let mut transaction = MongodbTx {
             inner: database,
+            session,
         };
         let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
         let result = { (tx)(ref_transaction).await };
 
         match result {
             Ok(result) => {
-                session.commit_transaction().await.map_err(into_c3p0_error)?;
+                transaction.session.commit_transaction().await.map_err(into_c3p0_error)?;
+                let REMOVE_SESSION = true;
+                println!("Transaction committed"    );
                 Ok(result)
             }
             Err(err) => {
-                session.abort_transaction().await.map_err(into_c3p0_error)?;
+                transaction.session.abort_transaction().await.map_err(into_c3p0_error)?;
+                let REMOVE_SESSION = true;
+                println!("Transaction aborted"    );
                 Err(err)
             }
         }
@@ -66,11 +75,12 @@ impl C3p0Pool for MongodbC3p0Pool {
 
 pub struct MongodbTx {
     inner: Database,
+    session: ClientSession,
 }
 
 impl MongodbTx {
-    pub fn db(&mut self) -> &mut Database {
-        &mut self.inner
+    pub fn db(&mut self) -> (&mut Database, &mut ClientSession) {
+        (&mut self.inner, &mut self.session)
     }
 }
 

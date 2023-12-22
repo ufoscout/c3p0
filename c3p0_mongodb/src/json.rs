@@ -125,7 +125,8 @@ where
     }
 
     async fn count_all(&self, tx: &mut MongodbTx) -> Result<u64, C3p0Error> {
-        tx.db().collection::<Model<DATA>>(&self.table_name).count_documents(None, None).await.map_err(into_c3p0_error)
+        let (db, session) = tx.db();
+        db.collection::<Model<DATA>>(&self.table_name).count_documents_with_session(None, None, session).await.map_err(into_c3p0_error)
     }
 
     async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -135,13 +136,15 @@ where
     ) -> Result<bool, C3p0Error> {
         let filter = doc! { "_id": id.into() };
         let options = CountOptions::builder().limit(1).build();
-        tx.db().collection::<Model<DATA>>(&self.table_name).count_documents(filter, options).await.map_err(into_c3p0_error).map(|count| count > 0)
+        let (db, session) = tx.db();
+        db.collection::<Model<DATA>>(&self.table_name).count_documents_with_session(filter, options, session).await.map_err(into_c3p0_error).map(|count| count > 0)
     }
 
     async fn fetch_all(&self, tx: &mut MongodbTx) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let mut cursor = tx.db().collection::<Model<DATA>>(&self.table_name).find(None, None).await.map_err(into_c3p0_error)?;
+        let (db, session) = tx.db();
+        let mut cursor = db.collection::<Model<DATA>>(&self.table_name).find_with_session(None, None, session).await.map_err(into_c3p0_error)?;
         let mut result = vec![];
-        while cursor.advance().await.map_err(into_c3p0_error)? {
+        while cursor.advance(session).await.map_err(into_c3p0_error)? {
             result.push(cursor.deserialize_current().map_err(into_c3p0_error)?);
         }
         Ok(result)
@@ -164,7 +167,8 @@ where
         let filter = doc! {
             "_id": id.into()
         };
-        tx.db().collection::<Model<DATA>>(&self.table_name).find_one(filter, None).await.map_err(into_c3p0_error)
+        let (db, session) = tx.db();
+        db.collection::<Model<DATA>>(&self.table_name).find_one_with_session(filter, None, session).await.map_err(into_c3p0_error)
     }
 
     async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
@@ -204,8 +208,8 @@ where
             "_id": obj.id,
             "version": obj.version
         };
-
-        let result = tx.db().collection::<Model<DATA>>(&self.table_name).delete_one(filter, None).await.map_err(into_c3p0_error)?;
+        let (db, session) = tx.db();
+        let result = db.collection::<Model<DATA>>(&self.table_name).delete_one_with_session(filter, None, session).await.map_err(into_c3p0_error)?;
 
         if result.deleted_count == 0 {
             return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
@@ -217,7 +221,8 @@ where
     }
 
     async fn delete_all(&self, tx: &mut MongodbTx) -> Result<u64, C3p0Error> {
-        tx.db().collection::<Model<DATA>>(&self.table_name).delete_many(doc! {}, None).await.map_err(into_c3p0_error).map(|result| result.deleted_count)
+        let (db, session) = tx.db();
+        db.collection::<Model<DATA>>(&self.table_name).delete_many_with_session(doc! {}, None, session).await.map_err(into_c3p0_error).map(|result| result.deleted_count)
     }
 
     async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -225,7 +230,8 @@ where
         tx: &mut MongodbTx,
         id: ID,
     ) -> Result<u64, C3p0Error> {
-        tx.db().collection::<Model<DATA>>(&self.table_name).delete_one(doc! { "_id": id.into() }, None).await.map_err(into_c3p0_error).map(|result| result.deleted_count)
+        let (db, session) = tx.db();
+        db.collection::<Model<DATA>>(&self.table_name).delete_one_with_session(doc! { "_id": id.into() }, None, session).await.map_err(into_c3p0_error).map(|result| result.deleted_count)
     }
 
     async fn save(&self, tx: &mut MongodbTx, obj: NewModel<DATA>) -> Result<Model<DATA>, C3p0Error> {
@@ -233,7 +239,7 @@ where
         let create_epoch_millis = get_current_epoch_millis();
 
         // TODO REMOVE_ME
-        let id = rand::random::<u64>();
+        let id = rand::random::<u32>();
         let REMOVE_ME = 0;
 
         let new_model = Model {
@@ -244,7 +250,8 @@ where
             update_epoch_millis: create_epoch_millis,
         };
 
-        tx.db().collection::<Model<DATA>>(&self.table_name).insert_one(&new_model, None).await.map_err(into_c3p0_error)?;
+        let (db, session) = tx.db();
+        db.collection::<Model<DATA>>(&self.table_name).insert_one_with_session(&new_model, None, session).await.map_err(into_c3p0_error)?;
 
         Ok(new_model)
     }
@@ -254,10 +261,11 @@ where
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());
 
-        let result = tx.db().collection::<Model<DATA>>(&self.table_name)
-            .replace_one(doc! { "_id": updated_model.id, "version": previous_version }, 
+        let (db, session) = tx.db();
+        let result = db.collection::<Model<DATA>>(&self.table_name)
+            .replace_one_with_session(doc! { "_id": updated_model.id, "version": previous_version }, 
             &updated_model, 
-            None)
+            None, session)
             .await.map_err(into_c3p0_error)?;
 
         // let result = tx

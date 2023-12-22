@@ -30,6 +30,7 @@ c3p0_sqlx = { workspace = true, optional = true }
 maybe-single = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }
+rustainers = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 testcontainers = { workspace = true }

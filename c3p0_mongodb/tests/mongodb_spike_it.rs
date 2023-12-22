@@ -42,6 +42,8 @@ async fn mongo_fetch_document() {
         data: "hello world!".to_owned()
     };
 
+
+
     let coll = client.database("some_db").collection::<Model<String>>("some-coll");
 
     let insert_one_result = coll.insert_one(&my_obj, None).await.unwrap();

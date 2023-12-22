@@ -27,6 +27,7 @@ c3p0_postgres = { path = "./c3p0_postgres", version = "0.68.0" }
 c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.68.0" }
 
 rand = "0.8"
+rustainers = "0.11"
 testcontainers = { package = "testcontainers-modules", version = "0.2", features = ["mysql", "mongo", "postgres"] }
 tokio = { version = "1" }
 async-trait = "0.1"
