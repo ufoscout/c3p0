@@ -5,15 +5,12 @@ pub type VersionType = i32;
 pub type EpochMillisType = i64;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Model<Data>
-where
-    Data: Clone + serde::ser::Serialize + Send,
-{
+pub struct Model<Data> {
+    #[serde(rename = "_id")] 
     pub id: IdType,
     pub version: VersionType,
     pub create_epoch_millis: EpochMillisType,
     pub update_epoch_millis: EpochMillisType,
-    #[serde(bound(deserialize = "Data: serde::Deserialize<'de>"))]
     pub data: Data,
 }
 

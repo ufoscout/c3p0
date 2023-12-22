@@ -13,6 +13,7 @@ pub enum DbType {
     Imdb,
     Sqlite,
     TiDB,
+    Mongodb,
 }
 
 pub fn rand_string(len: usize) -> String {

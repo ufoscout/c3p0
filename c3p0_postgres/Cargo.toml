@@ -25,9 +25,3 @@ tokio-postgres = { workspace = true }
 [dev-dependencies]
 testcontainers = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-
-
-[features]
-default = []
-
-spike_tests = []

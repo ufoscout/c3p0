@@ -17,7 +17,6 @@ async-trait = { workspace = true }
 c3p0_common = { workspace = true }
 
 bson = { workspace = true }
-future-utils = { version = "0.12" }
 log = { workspace = true }
 mongodb = { workspace = true }
 serde = { workspace = true }
@@ -26,11 +25,7 @@ serde = { workspace = true }
 rand = { workspace = true }
 
 [dev-dependencies]
+once_cell = { workspace = true }
+maybe-single = { workspace = true }
 testcontainers = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-
-
-[features]
-default = []
-
-spike_tests = []
