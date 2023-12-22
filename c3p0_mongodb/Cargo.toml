@@ -17,9 +17,13 @@ async-trait = { workspace = true }
 c3p0_common = { workspace = true }
 
 bson = { workspace = true }
+future-utils = { version = "0.12" }
 log = { workspace = true }
 mongodb = { workspace = true }
 serde = { workspace = true }
+
+# TODO: remove this once
+rand = { workspace = true }
 
 [dev-dependencies]
 testcontainers = { workspace = true }

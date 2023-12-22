@@ -126,7 +126,7 @@ where
     if result == 0 {
         return Err(C3p0Error::OptimisticLockError {
             message: format!(
-                "Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+                "Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
                 &queries.qualified_table_name, &obj.id, &obj.version
             ),
         });

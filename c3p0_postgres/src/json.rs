@@ -220,7 +220,7 @@ where
             .await?;
 
         if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
                                                                         &self.queries.qualified_table_name, &obj.id, &obj.version
             )});
         }
