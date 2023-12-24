@@ -365,6 +365,7 @@ where
                 .bind(create_epoch_millis)
                 .bind(create_epoch_millis)
                 .bind(&json_data)
+                .bind(&id)
                 .execute(tx.conn())
                 .await
                 .map_err(into_c3p0_error)?;
@@ -422,6 +423,7 @@ where
     }
 }
 
+#[inline]
 fn downcast_to_id<Id: 'static>(value: Box<dyn std::any::Any>) -> Id {
     if let Ok(value) = value.downcast::<Id>() {
         *value
