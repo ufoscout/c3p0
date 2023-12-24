@@ -171,19 +171,6 @@ where
             .await
     }
 
-    async fn fetch_all_for_update(
-        &self,
-        tx: &mut Self::Tx,
-        for_update: &ForUpdate,
-    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_all_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_all_with_sql(tx, sqlx::query(&sql)).await
-    }
-
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut Self::Tx,
@@ -196,21 +183,6 @@ where
         .await
     }
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_by_id_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_one_optional_with_sql(tx, sqlx::query(&sql).bind(id.into()))
-            .await
-    }
-
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut Self::Tx,
@@ -221,25 +193,6 @@ where
             sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
         )
         .await
-    }
-
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_by_id_sql_query,
-            for_update.to_sql()
-        );
-        self.fetch_one_with_sql(tx, sqlx::query(&sql).bind(id.into()))
-            .await
-
-        // self.fetch_one_optional_by_id_for_update(tx, id, for_update)
-        //     .await
-        //     .and_then(|result| result.ok_or_else(|| C3p0Error::ResultNotFoundError))
     }
 
     async fn delete(&self, tx: &mut Self::Tx, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {

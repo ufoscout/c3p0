@@ -1,4 +1,4 @@
-use crate::{C3p0Error, ForUpdate, IdType, JsonCodec, Model, NewModel};
+use crate::{C3p0Error, IdType, JsonCodec, Model, NewModel};
 use async_trait::async_trait;
 
 pub mod builder;
@@ -30,36 +30,16 @@ where
 
     async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Data>>, C3p0Error>;
 
-    async fn fetch_all_for_update(
-        &self,
-        tx: &mut Self::Tx,
-        for_update: &ForUpdate,
-    ) -> Result<Vec<Model<Data>>, C3p0Error>;
-
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut Self::Tx,
         id: ID,
     ) -> Result<Option<Model<Data>>, C3p0Error>;
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Option<Model<Data>>, C3p0Error>;
-
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut Self::Tx,
         id: ID,
-    ) -> Result<Model<Data>, C3p0Error>;
-
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-        for_update: &ForUpdate,
     ) -> Result<Model<Data>, C3p0Error>;
 
     async fn delete(&self, tx: &mut Self::Tx, obj: Model<Data>) -> Result<Model<Data>, C3p0Error>;

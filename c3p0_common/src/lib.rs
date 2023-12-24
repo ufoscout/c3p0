@@ -12,7 +12,7 @@ mod common {
         model::EpochMillisType, model::IdType, model::Model, model::NewModel, model::VersionType,
         C3p0Json,
     };
-    pub use crate::sql::{ForUpdate, OrderBy};
+    pub use crate::sql::OrderBy;
 
     pub use crate::pool::{C3p0Pool, SqlTx};
 }

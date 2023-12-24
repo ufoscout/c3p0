@@ -2,7 +2,7 @@ use crate::pool::{InMemoryC3p0Pool, InMemoryConnection};
 use async_trait::async_trait;
 use c3p0_common::{
     time::utils::get_current_epoch_millis, C3p0Error, C3p0Json, C3p0JsonBuilder, DefaultJsonCodec,
-    ForUpdate, IdType, Model, NewModel,
+    IdType, Model, NewModel,
 };
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
@@ -142,14 +142,6 @@ where
         }
     }
 
-    async fn fetch_all_for_update(
-        &self,
-        conn: &mut Self::Tx,
-        _for_update: &ForUpdate,
-    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        self.fetch_all(conn).await
-    }
-
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut InMemoryConnection,
@@ -163,32 +155,12 @@ where
         Ok(None)
     }
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        conn: &mut Self::Tx,
-        id: ID,
-        _for_update: &ForUpdate,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        self.fetch_one_optional_by_id(conn, id).await
-    }
-
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         conn: &mut Self::Tx,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id(conn, id)
-            .await
-            .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
-    }
-
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        conn: &mut Self::Tx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        self.fetch_one_optional_by_id_for_update(conn, id, for_update)
             .await
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
@@ -212,7 +184,7 @@ where
         }
 
         Err(C3p0Error::OptimisticLockError {
-            message: format!(
+            cause: format!(
                 "Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
                 &self.qualified_table_name, &obj.id, &obj.version
             ),
@@ -270,7 +242,7 @@ where
         }
 
         Err(C3p0Error::OptimisticLockError {
-            message: format!(
+            cause: format!(
                 "Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
                 &self.qualified_table_name, &obj.id, &obj.version
             ),

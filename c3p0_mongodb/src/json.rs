@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use bson::doc;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
+use log::warn;
 use ::mongodb::options::CountOptions;
 
 pub trait MongodbC3p0JsonBuilder {
@@ -51,58 +52,6 @@ where
     table_name: String,
 }
 
-impl<DATA, CODEC: JsonCodec<DATA>> MongodbC3p0Json<DATA, CODEC>
-where
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
-{
-
-
-    // #[inline]
-    // pub fn to_model(&self, row: &Row) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
-    //     to_model(&self.codec, row, 0, 1, 2, 3, 4)
-    // }
-
-    // /// Allows the execution of a custom sql query and returns the first entry in the result set.
-    // /// For this to work, the sql query:
-    // /// - must be a SELECT
-    // /// - must declare the ID, VERSION and DATA fields in this exact order
-    // pub async fn fetch_one_optional_with_sql(
-    //     &self,
-    //     tx: &mut MongodbTx,
-    //     sql: &str,
-    //     params: &[&(dyn ToSql + Sync)],
-    // ) -> Result<Option<Model<DATA>>, C3p0Error> {
-    //     tx.fetch_one_optional(sql, params, |row| self.to_model(row))
-    //         .await
-    // }
-
-    // /// Allows the execution of a custom sql query and returns the first entry in the result set.
-    // /// For this to work, the sql query:
-    // /// - must be a SELECT
-    // /// - must declare the ID, VERSION and DATA fields in this exact order
-    // pub async fn fetch_one_with_sql(
-    //     &self,
-    //     tx: &mut MongodbTx,
-    //     sql: &str,
-    //     params: &[&(dyn ToSql + Sync)],
-    // ) -> Result<Model<DATA>, C3p0Error> {
-    //     tx.fetch_one(sql, params, |row| self.to_model(row)).await
-    // }
-
-    // /// Allows the execution of a custom sql query and returns all the entries in the result set.
-    // /// For this to work, the sql query:
-    // /// - must be a SELECT
-    // /// - must declare the ID, VERSION and DATA fields in this exact order
-    // pub async fn fetch_all_with_sql(
-    //     &self,
-    //     tx: &mut MongodbTx,
-    //     sql: &str,
-    //     params: &[&(dyn ToSql + Sync)],
-    // ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-    //     tx.fetch_all(sql, params, |row| self.to_model(row)).await
-    // }
-}
-
 #[async_trait]
 impl<DATA, CODEC: JsonCodec<DATA>> C3p0Json<DATA, CODEC> for MongodbC3p0Json<DATA, CODEC>
 where
@@ -115,13 +64,13 @@ where
     }
 
     async fn create_table_if_not_exists(&self, tx: &mut MongodbTx) -> Result<(), C3p0Error> {
-        let TO_DO = 0;
-        Ok(())
+        // perform a simple query will create the table if it does not exist
+        self.count_all(tx).await.map(|_| ())
     }
 
     async fn drop_table_if_exists(&self, tx: &mut MongodbTx, cascade: bool) -> Result<(), C3p0Error> {
-        let TO_DO = 0;
-        Ok(())
+        // Cannot drop collection with session because it is not supported by mongodb
+        Err(C3p0Error::OperationNotSupported { cause: "Cannot drop collection with session because it is not supported by mongodb".into() })
     }
 
     async fn count_all(&self, tx: &mut MongodbTx) -> Result<u64, C3p0Error> {
@@ -150,15 +99,6 @@ where
         Ok(result)
     }
 
-    async fn fetch_all_for_update(
-        &self,
-        tx: &mut MongodbTx,
-        for_update: &ForUpdate,
-    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let THIS_METHOD_COULD_BE_REMOVED = 0;
-        self.fetch_all(tx).await
-    }
-
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut MongodbTx,
@@ -171,33 +111,12 @@ where
         db.collection::<Model<DATA>>(&self.table_name).find_one_with_session(filter, None, session).await.map_err(into_c3p0_error)
     }
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut MongodbTx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let THIS_METHOD_COULD_BE_REMOVED = 0;
-        self.fetch_one_optional_by_id(tx, id)            .await
-    }
-
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut MongodbTx,
         id: ID,
     ) -> Result<Model<DATA>, C3p0Error> {
         self.fetch_one_optional_by_id(tx, id)
-            .await
-            .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
-    }
-
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut MongodbTx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        self.fetch_one_optional_by_id_for_update(tx, id, for_update)
             .await
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
@@ -212,7 +131,7 @@ where
         let result = db.collection::<Model<DATA>>(&self.table_name).delete_one_with_session(filter, None, session).await.map_err(into_c3p0_error)?;
 
         if result.deleted_count == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
+            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
                                                                         &self.table_name, &obj.id, &obj.version
             )});
         }
@@ -282,7 +201,7 @@ where
         //     .await?;
 
         if result.modified_count == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
                                                                         &self.table_name, &updated_model.id, &previous_version
             )});
         }

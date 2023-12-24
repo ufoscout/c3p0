@@ -10,7 +10,6 @@ use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
-use log::warn;
 use sqlx::query::Query;
 use sqlx::sqlite::SqliteQueryResult;
 use sqlx::{IntoArguments, Row};
@@ -172,15 +171,6 @@ where
             .await
     }
 
-    async fn fetch_all_for_update(
-        &self,
-        tx: &mut Self::Tx,
-        _for_update: &ForUpdate,
-    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
-        self.fetch_all(tx).await
-    }
-
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut Self::Tx,
@@ -193,16 +183,6 @@ where
         .await
     }
 
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-        _for_update: &ForUpdate,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
-        self.fetch_one_optional_by_id(tx, id).await
-    }
-
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut Self::Tx,
@@ -213,16 +193,6 @@ where
             sqlx::query(&self.queries.find_by_id_sql_query).bind(id.into()),
         )
         .await
-    }
-
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-        _for_update: &ForUpdate,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        warn!("SQLite does not support 'Select... for Update' statements. A normal select will be permorfed.");
-        self.fetch_one_by_id(tx, id).await
     }
 
     async fn delete(&self, tx: &mut Self::Tx, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {

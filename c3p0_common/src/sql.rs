@@ -14,22 +14,3 @@ impl OrderBy {
         }
     }
 }
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ForUpdate {
-    Default,
-    SkipLocked,
-    NoWait,
-    No,
-}
-
-impl ForUpdate {
-    pub fn to_sql(&self) -> &str {
-        match self {
-            ForUpdate::Default => "for update",
-            ForUpdate::SkipLocked => "for update skip locked",
-            ForUpdate::NoWait => "for update NoWait",
-            ForUpdate::No => "",
-        }
-    }
-}

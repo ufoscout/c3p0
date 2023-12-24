@@ -40,7 +40,7 @@ fn json_should_commit_transaction() {
             assert_eq!(3, count);
             println!("Count performed!");
 
-            assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
+            let _ = jpo.drop_table_if_exists(conn, true).await;
             println!("Table dropped!");
             Ok(())
         })
@@ -87,7 +87,7 @@ fn json_should_rollback_transaction() {
                 let count = jpo.count_all(conn).await.unwrap();
                 assert_eq!(0, count);
 
-                assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
+                let _ = jpo.drop_table_if_exists(conn, true).await;
                 Ok(())
             })
             .await

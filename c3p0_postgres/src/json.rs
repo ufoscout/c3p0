@@ -154,19 +154,6 @@ where
         .await
     }
 
-    async fn fetch_all_for_update(
-        &self,
-        tx: &mut PgTx,
-        for_update: &ForUpdate,
-    ) -> Result<Vec<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_all_sql_query,
-            for_update.to_sql()
-        );
-        tx.fetch_all(&sql, &[], |row| self.to_model(row)).await
-    }
-
     async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
         &'a self,
         tx: &mut PgTx,
@@ -176,21 +163,6 @@ where
             self.to_model(row)
         })
         .await
-    }
-
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut PgTx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Option<Model<DATA>>, C3p0Error> {
-        let sql = format!(
-            "{}\n{}",
-            &self.queries.find_by_id_sql_query,
-            for_update.to_sql()
-        );
-        tx.fetch_one_optional(&sql, &[&id.into()], |row| self.to_model(row))
-            .await
     }
 
     async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
@@ -203,24 +175,13 @@ where
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut PgTx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Model<DATA>, C3p0Error> {
-        self.fetch_one_optional_by_id_for_update(tx, id, for_update)
-            .await
-            .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
-    }
-
     async fn delete(&self, tx: &mut PgTx, obj: Model<DATA>) -> Result<Model<DATA>, C3p0Error> {
         let result = tx
             .execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])
             .await?;
 
         if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
+            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
                                                                         &self.queries.qualified_table_name, &obj.id, &obj.version
             )});
         }
@@ -278,7 +239,7 @@ where
             .await?;
 
         if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ message: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
                                                                         &self.queries.qualified_table_name, &updated_model.id, &previous_version
             )});
         }

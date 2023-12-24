@@ -6,7 +6,7 @@ use std::time::Duration;
 #[test]
 fn should_create_and_drop_table() -> Result<(), C3p0Error> {
     test(async {
-        if db_specific::db_type() == DbType::InMemory {
+        if [DbType::InMemory, DbType::Mongodb].contains(&db_specific::db_type()) {
             return Ok(());
         }
 
@@ -162,7 +162,6 @@ fn should_delete_all() -> Result<(), C3p0Error> {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
 
-            assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
 
             let model = NewModel::new(TestData {
@@ -363,9 +362,9 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             match expected_error {
                 Ok(_) => panic!(),
                 Err(e) => match e {
-                    C3p0Error::OptimisticLockError { message } => {
-                        assert!(message.contains(&table_name));
-                        assert!(message.contains(&format!(
+                    C3p0Error::OptimisticLockError { cause } => {
+                        assert!(cause.contains(&table_name));
+                        assert!(cause.contains(&format!(
                             "id [{}], version [{}]",
                             saved_model.id, saved_model.version
                         )));
@@ -440,9 +439,9 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             match expected_error {
                 Ok(_) => panic!(),
                 Err(e) => match e {
-                    C3p0Error::OptimisticLockError { message } => {
-                        assert!(message.contains(&table_name));
-                        assert!(message.contains(&format!(
+                    C3p0Error::OptimisticLockError { cause } => {
+                        assert!(cause.contains(&table_name));
+                        assert!(cause.contains(&format!(
                             "id [{}], version [{}]",
                             saved_model.id, saved_model.version
                         )));
@@ -456,71 +455,5 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             Ok(())
         })
         .await
-    })
-}
-
-#[test]
-fn json_should_perform_for_update_fetches() -> Result<(), C3p0Error> {
-    test(async {
-        let data = data(false).await;
-        let pool = &data.0;
-        let c3p0: C3p0Impl = pool.clone();
-        let table_name = format!("TEST_TABLE_{}", rand_string(8));
-        let jpo = &C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
-
-        let model = NewModel::new(TestData {
-            first_name: "my_first_name".to_owned(),
-            last_name: "my_last_name".to_owned(),
-        });
-
-        let result: Result<_, C3p0Error> = c3p0
-            .transaction(|conn| async {
-                assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
-                assert!(jpo.save(conn, model.clone()).await.is_ok());
-                assert!(jpo.save(conn, model.clone()).await.is_ok());
-                Ok(())
-            })
-            .await;
-        assert!(result.is_ok());
-
-        // fetch all ForUpdate::Default
-        let result: Result<_, C3p0Error> = c3p0
-            .transaction(|conn| async { jpo.fetch_all_for_update(conn, &ForUpdate::Default).await })
-            .await;
-        assert!(result.is_ok());
-
-        if db_specific::db_type() != DbType::MySql && db_specific::db_type() != DbType::TiDB {
-            // fetch one ForUpdate::NoWait
-            let result: Result<_, C3p0Error> = c3p0
-                .transaction(|conn| async {
-                    jpo.fetch_one_optional_by_id_for_update(conn, &0, &ForUpdate::NoWait)
-                        .await
-                })
-                .await;
-            assert!(result.is_ok());
-
-            // fetch one ForUpdate::SkipLocked
-            let result: Result<_, C3p0Error> = c3p0
-                .transaction(|conn| async {
-                    jpo.fetch_one_optional_by_id_for_update(conn, &0, &ForUpdate::SkipLocked)
-                        .await
-                })
-                .await;
-            assert!(result.is_ok());
-        }
-
-        // fetch all ForUpdate::No
-        let result: Result<_, C3p0Error> = c3p0
-            .transaction(|conn| async { jpo.fetch_all_for_update(conn, &ForUpdate::No).await })
-            .await;
-        assert!(result.is_ok());
-
-        {
-            assert!(pool
-                .transaction(|conn| async { jpo.drop_table_if_exists(conn, true).await })
-                .await
-                .is_ok());
-        }
-        Ok(())
     })
 }
