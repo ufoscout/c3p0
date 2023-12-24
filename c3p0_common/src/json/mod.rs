@@ -81,6 +81,7 @@ pub struct Queries {
     pub delete_by_id_sql_query: String,
 
     pub save_sql_query: String,
+    pub save_sql_query_with_id: String,
 
     pub update_sql_query: String,
 

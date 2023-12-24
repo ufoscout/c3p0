@@ -8,6 +8,7 @@ use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 
 pub type C3p0Impl = SqlxSqliteC3p0Pool;
+pub type Builder = SqlxSqliteC3p0JsonBuilder<i64>;
 
 //mod tests;
 mod tests_json;

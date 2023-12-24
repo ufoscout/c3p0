@@ -12,6 +12,7 @@ use testcontainers::testcontainers::Container;
 use testcontainers::testcontainers::GenericImage;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
+pub type Builder = SqlxMySqlC3p0JsonBuilder<i64>;
 
 //mod tests;
 mod tests_json;

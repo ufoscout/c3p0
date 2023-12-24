@@ -15,6 +15,7 @@ use testcontainers::{
 use std::time::Duration;
 
 pub type C3p0Impl = PgC3p0Pool;
+pub type Builder = PgC3p0JsonBuilder<i64>;
 
 mod tests;
 mod tests_json;

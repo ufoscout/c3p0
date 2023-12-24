@@ -10,7 +10,7 @@ use c3p0_common::*;
 use ::tokio_postgres::types::FromSqlOwned;
 
 /// A trait that allows the creation of an Id
-pub trait IdGenerator<Id> {
+pub trait IdGenerator<Id>: Send + Sync {
     fn generate_id(&self) -> Option<Id>;
 }
 
@@ -130,7 +130,7 @@ impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + S
     ) -> PgC3p0Json<Id, Data, CODEC> {
         PgC3p0Json {
             phantom_data: std::marker::PhantomData,
-            phantom_id: std::marker::PhantomData,
+            id_generator: self.id_generator.clone(),
             codec,
             queries: build_pg_queries(self),
         }
@@ -144,7 +144,7 @@ where
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     phantom_data: std::marker::PhantomData<Data>,
-    phantom_id: std::marker::PhantomData<Id>,
+    id_generator: Arc<dyn IdGenerator<Id>>,
     codec: CODEC,
     queries: Queries,
 }
@@ -305,12 +305,24 @@ where
     async fn save(&self, tx: &mut PgTx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec().data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
-        let id = tx
+
+        let id = if let Some(id) = self.id_generator.generate_id() {
+            tx
+            .execute(
+                &self.queries.save_sql_query_with_id,
+                &[&obj.version, &create_epoch_millis, &json_data, &id],
+            )
+            .await?;
+            id
+        } else {
+            tx
             .fetch_one_value(
                 &self.queries.save_sql_query,
                 &[&obj.version, &create_epoch_millis, &json_data],
             )
-            .await?;
+            .await?
+        };
+        
         Ok(Model {
             id,
             version: obj.version,

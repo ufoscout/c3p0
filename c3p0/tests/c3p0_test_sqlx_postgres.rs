@@ -11,6 +11,7 @@ use testcontainers::testcontainers::clients::Cli;
 use testcontainers::testcontainers::Container;
 
 pub type C3p0Impl = SqlxPgC3p0Pool;
+pub type Builder = SqlxPgC3p0JsonBuilder<i64>;
 
 //mod tests;
 mod tests_json;

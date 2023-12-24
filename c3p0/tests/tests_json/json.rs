@@ -14,7 +14,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
-        let jpo = &C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+        let jpo = &Builder::new(table_name).build();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
@@ -78,7 +78,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+            let jpo = Builder::new(table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
@@ -93,7 +93,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
             assert!(saved_model.id >= 0);
 
             let found_model = jpo
-                .fetch_one_optional_by_id(conn, &saved_model)
+                .fetch_one_optional_by_id(conn, &saved_model.id)
                 .await
                 .unwrap()
                 .unwrap();
@@ -110,7 +110,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
             assert_eq!(saved_model.data.first_name, found_model.data.first_name);
             assert_eq!(saved_model.data.last_name, found_model.data.last_name);
 
-            let deleted = jpo.delete_by_id(conn, &saved_model).await.unwrap();
+            let deleted = jpo.delete_by_id(conn, &saved_model.id).await.unwrap();
             assert_eq!(1, deleted);
             Ok(())
         })
@@ -126,7 +126,7 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+            let jpo = Builder::new(table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
@@ -160,7 +160,7 @@ fn should_delete_all() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+            let jpo = Builder::new(table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
 
@@ -175,7 +175,7 @@ fn should_delete_all() -> Result<(), C3p0Error> {
 
             assert!(jpo.fetch_one_by_id(conn, &model1.id).await.is_ok());
             assert_eq!(1, jpo.delete_by_id(conn, &model1.id).await.unwrap());
-            assert!(jpo.fetch_one_by_id(conn, &model1).await.is_err());
+            assert!(jpo.fetch_one_by_id(conn, &model1.id).await.is_err());
             assert_eq!(2, jpo.count_all(conn).await.unwrap());
 
             assert_eq!(2, jpo.delete_all(conn).await.unwrap());
@@ -194,7 +194,7 @@ fn should_count() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+            let jpo = Builder::new(table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             assert!(jpo.delete_all(conn).await.is_ok());
@@ -232,7 +232,7 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+            let jpo = Builder::new(table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
 
@@ -242,11 +242,11 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
             });
 
             let model = jpo.save(conn, model.clone()).await.unwrap();
-            assert!(jpo.exists_by_id(conn, &model).await.unwrap());
+            assert!(jpo.exists_by_id(conn, &model.id).await.unwrap());
             assert!(jpo.exists_by_id(conn, &model.id).await.unwrap());
 
-            assert_eq!(1, jpo.delete_by_id(conn, &model).await.unwrap());
-            assert!(!jpo.exists_by_id(conn, &model).await.unwrap());
+            assert_eq!(1, jpo.delete_by_id(conn, &model.id).await.unwrap());
+            assert!(!jpo.exists_by_id(conn, &model.id).await.unwrap());
             assert!(!jpo.exists_by_id(conn, &model.id).await.unwrap());
             Ok(())
         })
@@ -262,7 +262,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+            let jpo = Builder::new(table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
@@ -315,7 +315,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             assert_eq!("second_first_name", updated_model.data.first_name);
             assert_eq!("second_last_name", updated_model.data.last_name);
 
-            let found_model = jpo.fetch_one_by_id(conn, &saved_model).await.unwrap();
+            let found_model = jpo.fetch_one_by_id(conn, &saved_model.id).await.unwrap();
             assert_eq!(found_model.id, updated_model.id);
             assert_eq!(found_model.version, updated_model.version);
             assert_eq!(
@@ -341,7 +341,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(&table_name).build();
+            let jpo = Builder::new(&table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
@@ -387,7 +387,7 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+            let jpo = Builder::new(table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
@@ -404,7 +404,7 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
 
             assert!(jpo.delete(conn, saved_model.clone()).await.is_err());
 
-            assert!(!jpo.exists_by_id(conn, &saved_model).await.unwrap());
+            assert!(!jpo.exists_by_id(conn, &saved_model.id).await.unwrap());
 
             Ok(())
         })
@@ -420,7 +420,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
 
         pool.transaction(|conn| async {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            let jpo = C3p0JsonBuilder::<C3p0Impl>::new(&table_name).build();
+            let jpo = Builder::new(&table_name).build();
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
@@ -450,7 +450,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
                 },
             };
 
-            assert!(jpo.exists_by_id(conn, &saved_model).await.unwrap());
+            assert!(jpo.exists_by_id(conn, &saved_model.id).await.unwrap());
 
             Ok(())
         })

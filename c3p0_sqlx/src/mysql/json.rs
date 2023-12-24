@@ -18,7 +18,7 @@ use sqlx::query::Query;
 use sqlx::{IntoArguments, Row, Encode, Decode, Type};
 
 /// A trait that allows the creation of an Id
-pub trait IdGenerator<Id> {
+pub trait IdGenerator<Id>: Send + Sync {
     fn generate_id(&self) -> Option<Id>;
 }
 
@@ -138,7 +138,7 @@ impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + S
     ) -> SqlxMySqlC3p0Json<Id, Data, CODEC> {
         SqlxMySqlC3p0Json {
             phantom_data: std::marker::PhantomData,
-            phantom_id: std::marker::PhantomData,
+            id_generator: self.id_generator.clone(),
             codec,
             queries: build_mysql_queries(self),
         }
@@ -158,7 +158,7 @@ where
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     phantom_data: std::marker::PhantomData<Data>,
-    phantom_id: std::marker::PhantomData<Id>,
+    id_generator: Arc<dyn IdGenerator<Id>>,
     codec: CODEC,
     queries: Queries,
 }

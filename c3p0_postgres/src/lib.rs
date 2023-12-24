@@ -3,11 +3,13 @@ mod common;
 mod error;
 mod json;
 mod pool;
+mod query;
 
 pub use common::*;
 pub use error::*;
 pub use json::*;
 pub use pool::*;
+pub use query::*;
 
 pub mod tokio_postgres {
     pub use tokio_postgres::*;
