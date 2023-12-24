@@ -2,7 +2,7 @@ use crate::*;
 
 use async_trait::async_trait;
 use c3p0_common::*;
-use ::mongodb::{Client, Database, options::{SessionOptions, TransactionOptions}, ClientSession};
+use ::mongodb::{Client, Database, options::SessionOptions, ClientSession};
 use std::future::Future;
 
 #[derive(Clone)]
@@ -58,14 +58,10 @@ impl C3p0Pool for MongodbC3p0Pool {
         match result {
             Ok(result) => {
                 transaction.session.commit_transaction().await.map_err(into_c3p0_error)?;
-                let REMOVE_SESSION = true;
-                println!("Transaction committed"    );
                 Ok(result)
             }
             Err(err) => {
                 transaction.session.abort_transaction().await.map_err(into_c3p0_error)?;
-                let REMOVE_SESSION = true;
-                println!("Transaction aborted"    );
                 Err(err)
             }
         }

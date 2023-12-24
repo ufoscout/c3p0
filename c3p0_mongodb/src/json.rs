@@ -3,7 +3,6 @@ use async_trait::async_trait;
 use bson::doc;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
-use log::warn;
 use ::mongodb::options::CountOptions;
 
 pub trait MongodbC3p0JsonBuilder {
@@ -68,7 +67,7 @@ where
         self.count_all(tx).await.map(|_| ())
     }
 
-    async fn drop_table_if_exists(&self, tx: &mut MongodbTx, cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists(&self, tx: &mut MongodbTx, _cascade: bool) -> Result<(), C3p0Error> {
         // Cannot drop collection with session because it is not supported by mongodb
         Err(C3p0Error::OperationNotSupported { cause: "Cannot drop collection with session because it is not supported by mongodb".into() })
     }
@@ -186,19 +185,6 @@ where
             &updated_model, 
             None, session)
             .await.map_err(into_c3p0_error)?;
-
-        // let result = tx
-        //     .execute(
-        //         &self.queries.update_sql_query,
-        //         &[
-        //             &updated_model.version,
-        //             &updated_model.update_epoch_millis,
-        //             &json_data,
-        //             &updated_model.id,
-        //             &previous_version,
-        //         ],
-        //     )
-        //     .await?;
 
         if result.modified_count == 0 {
             return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
