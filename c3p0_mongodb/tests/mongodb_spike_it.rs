@@ -1,3 +1,4 @@
+use bson::{Bson, doc, oid::ObjectId};
 use c3p0_common::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use mongodb::Client;
@@ -34,7 +35,7 @@ async fn mongo_fetch_document() {
     let client = &data.0;
     // let pool = MongodbC3p0Pool::new(client.clone(), "TEST_DB".to_owned());
 
-    let my_obj = Model::<String> { 
+    let my_obj = Model::<i64, String> { 
         id: 100, 
         version: 0, 
         create_epoch_millis: 0, 
@@ -44,7 +45,7 @@ async fn mongo_fetch_document() {
 
 
 
-    let coll = client.database("some_db").collection::<Model<String>>("some-coll");
+    let coll = client.database("some_db").collection::<Model<i64, String>>("some-coll");
 
     let insert_one_result = coll.insert_one(&my_obj, None).await.unwrap();
     println!("inserted_id: {:?}", insert_one_result.inserted_id.as_i64());
@@ -65,5 +66,31 @@ async fn mongo_fetch_document() {
     println!("find_one_result: {:?}", find_one_result);
     // assert_eq!(42, find_one_result.get_i32("x").unwrap())
 
-    assert!(client.database("some_db").collection::<Model<String>>("some-coll").insert_one(&my_obj, None).await.is_err());
+    assert!(client.database("some_db").collection::<Model<i64, String>>("some-coll").insert_one(&my_obj, None).await.is_err());
+}
+
+
+#[test]
+fn should_be_bson() {
+    let x = 42_i64;
+    doc! { "x": x };
+    test_bson(x);
+
+    let x = ObjectId::new();
+    doc! { "x": x };
+    test_bson(x);
+
+    let x = "hello world!";
+    doc! { "x": x };
+    test_bson(x);
+}
+
+// fn test_bson<T: serde::Serialize>(val: T) {
+//     doc! { "x": val };
+// }
+
+fn test_bson<T>(val: T)
+where T: Into<Bson>
+{
+    doc! { "x": val.into() };
 }

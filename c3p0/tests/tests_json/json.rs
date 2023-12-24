@@ -90,7 +90,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
 
             let saved_model = jpo.save(conn, model.clone()).await.unwrap();
             println!("saved_model {:?}", saved_model);
-            assert!(saved_model.id >= 0);
+            // assert!(saved_model.id >= 0);
 
             let found_model = jpo
                 .fetch_one_optional_by_id(conn, &saved_model.id)

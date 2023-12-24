@@ -2,12 +2,13 @@
 
 use c3p0::mongodb::*;
 use c3p0::*;
-use c3p0_mongodb::mongodb::Client;
+use c3p0_mongodb::mongodb::{Client, bson::oid::ObjectId};
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use rustainers::{compose::{ToRunnableComposeContainers, RunnableComposeContainersBuilder, TemporaryDirectory, ComposeContainers, TemporaryFile, RunnableComposeContainers}, WaitStrategy, ExposedPort, runner::Runner, PortError};
 
 pub type C3p0Impl = MongodbC3p0Pool;
+pub type Builder = MongodbC3p0JsonBuilder<ObjectId>;
 
 // mod tests;
 mod tests_json;

@@ -20,9 +20,7 @@ bson = { workspace = true }
 log = { workspace = true }
 mongodb = { workspace = true }
 serde = { workspace = true }
-
-# TODO: remove this once
-rand = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 once_cell = { workspace = true }
