@@ -60,7 +60,7 @@ pub fn build_pg_queries<C3P0>(json_builder: PgC3p0JsonBuilder<C3P0>) -> Queries 
         ),
 
         save_sql_query_with_id: format!(
-            "INSERT INTO {} ({}, {}, {}, {}, {}) VALUES ($1, $2, $2, $3)",
+            "INSERT INTO {} ({}, {}, {}, {}, {}) VALUES ($1, $2, $2, $3, $4)",
             qualified_table_name,
             json_builder.version_field_name,
             json_builder.create_epoch_millis_field_name,

@@ -5,7 +5,7 @@ use sqlx::{ColumnIndex, Database, Row, Decode, Encode, Type};
 
 #[inline]
 pub fn to_model<
-    Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Decode<'static, DB> + Encode<'static, DB> + Type<DB>,
+    Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     CODEC: JsonCodec<Data>,
     R: Row<Database = DB>,
@@ -25,9 +25,10 @@ pub fn to_model<
     data_index: DataIdx,
 ) -> Result<Model<Id, Data>, C3p0Error>
 where
-    for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
-    for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
-    for<'c> serde_json::value::Value: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
+    for<'c> Id: Type<DB> + Decode<'c, DB>,
+    for<'c> i32: Type<DB> + Decode<'c, DB>,
+    for<'c> i64: Type<DB> + Decode<'c, DB>,
+    for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
     //<DB as HasArguments<'_>>::Arguments
 {
     let id = row

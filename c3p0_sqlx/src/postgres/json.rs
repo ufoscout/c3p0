@@ -1,10 +1,7 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use crate::common::executor::{
-    delete, fetch_all_with_sql, fetch_one_optional_with_sql, fetch_one_with_sql,
-    update, ResultWithRowCount,
-};
+use crate::common::executor::ResultWithRowCount;
 use crate::common::to_model;
 use crate::error::into_c3p0_error;
 use crate::postgres::queries::build_pg_queries;
@@ -68,7 +65,10 @@ impl SqlxPgC3p0JsonBuilder<i64> {
     }
 }
 
-impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Encode<'static, Db> + Decode<'static, Db> + Type<Db> + Debug> SqlxPgC3p0JsonBuilder<Id> {
+impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug> SqlxPgC3p0JsonBuilder<Id> 
+where
+for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
+{
 
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
@@ -138,7 +138,7 @@ impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + S
     ) -> SqlxPgC3p0Json<Id, Data, CODEC> {
         SqlxPgC3p0Json {
             phantom_data: std::marker::PhantomData,
-            id_generator: self.id_generator,
+            id_generator: self.id_generator.clone(),
             codec,
             queries: build_pg_queries(self),
         }
@@ -154,8 +154,9 @@ impl ResultWithRowCount for PgQueryResult {
 #[derive(Clone)]
 pub struct SqlxPgC3p0Json<Id, Data, CODEC: JsonCodec<Data>>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Encode<'static, Db> + Decode<'static, Db> + Type<Db> + Debug,
+    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
+    for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
@@ -165,8 +166,9 @@ where
 
 impl<Id, Data, CODEC: JsonCodec<Data>> SqlxPgC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Encode<'static, Db> + Decode<'static, Db> + Type<Db> + Debug,
+    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
+    for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
@@ -186,7 +188,12 @@ where
         tx: &mut PgTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
-        fetch_one_optional_with_sql(sql, tx.conn(), self.codec()).await
+        sql
+        .fetch_optional(tx.conn())
+        .await
+        .map_err(into_c3p0_error)?
+        .map(|row| to_model(&self.codec, &row, 0, 1, 2, 3, 4))
+        .transpose()
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -198,7 +205,11 @@ where
         tx: &mut PgTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        fetch_one_with_sql(sql, tx.conn(), self.codec()).await
+        sql
+        .fetch_one(tx.conn())
+        .await
+        .map_err(into_c3p0_error)
+        .and_then(|row| to_model(self.codec(), &row, 0, 1, 2, 3, 4))
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -210,15 +221,22 @@ where
         tx: &mut PgTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
-        fetch_all_with_sql(sql, tx.conn(), self.codec()).await
+        sql
+        .fetch_all(tx.conn())
+        .await
+        .map_err(into_c3p0_error)?
+        .iter()
+        .map(|row| to_model(self.codec(), row, 0, 1, 2, 3, 4))
+        .collect::<Result<Vec<_>, C3p0Error>>()
     }
 }
 
 #[async_trait]
 impl<Id, Data, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for SqlxPgC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Encode<'static, Db> + Decode<'static, Db> + Type<Db> + Debug,
+    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
+    for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     type Tx = PgTx;
 
@@ -302,7 +320,24 @@ where
     }
 
     async fn delete(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
-        delete(obj, tx.conn(), &self.queries).await
+        let result = sqlx::query(&self.queries.delete_sql_query)
+        .bind(obj.id.clone())
+        .bind(obj.version)
+        .execute(tx.conn())
+        .await
+        .map_err(into_c3p0_error)?
+        .rows_affected();
+
+    if result == 0 {
+        return Err(C3p0Error::OptimisticLockError {
+            cause: format!(
+                "Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
+                &self.queries.qualified_table_name, &obj.id, &obj.version
+            ),
+        });
+    }
+
+    Ok(obj)
     }
 
     async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
@@ -329,14 +364,27 @@ where
     async fn save(&self, tx: &mut Self::Tx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec().data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
-        let id = sqlx::query(&self.queries.save_sql_query)
+
+        let id = if let Some(id) = self.id_generator.generate_id() {
+            sqlx::query(&self.queries.save_sql_query_with_id)
+            .bind(obj.version)
+            .bind(create_epoch_millis)
+            .bind(&json_data)
+            .bind(&id)
+            .fetch_one(tx.conn())
+            .await
+            .map_err(into_c3p0_error)?;
+            id
+        } else {
+            sqlx::query(&self.queries.save_sql_query)
             .bind(obj.version)
             .bind(create_epoch_millis)
             .bind(&json_data)
             .fetch_one(tx.conn())
             .await
             .and_then(|row| row.try_get(0))
-            .map_err(into_c3p0_error)?;
+            .map_err(into_c3p0_error)?
+        };
 
         Ok(Model {
             id,
@@ -348,6 +396,32 @@ where
     }
 
     async fn update(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
-        update(obj, tx.conn(), &self.queries, self.codec()).await
+        let json_data = self.codec.data_to_value(&obj.data)?;
+        let previous_version = obj.version;
+        let updated_model = obj.into_new_version(get_current_epoch_millis());
+    
+        let result = {
+            sqlx::query(&self.queries.update_sql_query)
+                .bind(updated_model.version)
+                .bind(updated_model.update_epoch_millis)
+                .bind(json_data)
+                .bind(updated_model.id.clone())
+                .bind(previous_version)
+                .execute(tx.conn())
+                .await
+                .map_err(into_c3p0_error)
+                .map(|done| done.rows_affected())?
+        };
+    
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError {
+                cause: format!(
+                    "Cannot update data in table [{}] with id [{:?}], version [{}]: data was changed!",
+                    self.queries.qualified_table_name, updated_model.id, &previous_version
+                ),
+            });
+        }
+    
+        Ok(updated_model)
     }
 }
