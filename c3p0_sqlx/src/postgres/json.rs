@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use crate::common::executor::ResultWithRowCount;
 use crate::common::to_model;
 use crate::error::into_c3p0_error;
 use crate::postgres::queries::build_pg_queries;
@@ -10,7 +9,6 @@ use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
-use sqlx::postgres::PgQueryResult;
 use sqlx::query::Query;
 use sqlx::{IntoArguments, Row, Encode, Decode, Type};
 
@@ -142,12 +140,6 @@ for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
             codec,
             queries: build_pg_queries(self),
         }
-    }
-}
-
-impl ResultWithRowCount for PgQueryResult {
-    fn rows_affected(&self) -> u64 {
-        self.rows_affected()
     }
 }
 

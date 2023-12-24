@@ -1,7 +1,5 @@
-pub mod executor;
-
 use c3p0_common::{C3p0Error, JsonCodec, Model};
-use sqlx::{ColumnIndex, Database, Row, Decode, Encode, Type};
+use sqlx::{ColumnIndex, Database, Row, Decode, Type};
 
 #[inline]
 pub fn to_model<

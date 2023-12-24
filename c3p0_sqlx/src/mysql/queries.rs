@@ -59,6 +59,16 @@ pub fn build_mysql_queries<C3P0>(
             json_builder.data_field_name
         ),
 
+        save_sql_query_with_id: format!(
+            "INSERT INTO {} ({}, {}, {}, {}, {}) VALUES (?, ?, ?, ?)",
+            qualified_table_name,
+            json_builder.version_field_name,
+            json_builder.create_epoch_millis_field_name,
+            json_builder.update_epoch_millis_field_name,
+            json_builder.data_field_name,
+            json_builder.id_field_name,
+        ),
+
         update_sql_query: format!(
             "UPDATE {} SET {} = ?, {} = ?, {} = ? WHERE {} = ? AND {} = ?",
             qualified_table_name,
