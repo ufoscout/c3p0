@@ -2,7 +2,6 @@
 resolver = "2"
 members = [
     "c3p0_common",
-    "c3p0_in_memory",
     "c3p0_mongodb",
     "c3p0_postgres",
     "c3p0_sqlx",
@@ -21,7 +20,6 @@ authors = ["Francesco Cina <ufoscout@gmail.com>"]
 [workspace.dependencies]
 c3p0_common = { path = "./c3p0_common", version = "0.68.0" }
 c3p0 = { path = "./c3p0", version = "0.68.0" }
-c3p0_in_memory = { path = "./c3p0_in_memory", version = "0.68.0" }
 c3p0_mongodb = { path = "./c3p0_mongodb", version = "0.68.0" }
 c3p0_postgres = { path = "./c3p0_postgres", version = "0.68.0" }
 c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.68.0" }
@@ -43,6 +41,7 @@ maybe-single = { version = "0.16", features =["tokio"] }
 mongodb = { version = "2.0" }
 once_cell = "1.5.0"
 thiserror = "1.0"
+uuid = { version = "1", features = ["serde", "v4"] }
 
 anyhow = "1"
 static_assertions = "1"

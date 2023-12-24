@@ -1,21 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-pub type IdType = i64;
 pub type VersionType = i32;
 pub type EpochMillisType = i64;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Model<Data> {
+pub struct Model<Id, Data> {
     #[serde(rename = "_id")] 
-    pub id: IdType,
+    pub id: Id,
     pub version: VersionType,
     pub create_epoch_millis: EpochMillisType,
     pub update_epoch_millis: EpochMillisType,
     pub data: Data,
 }
 
-impl<Data> Model<Data>
+impl<Id, Data> Model<Id, Data>
 where
+    Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     pub fn into_new(self) -> NewModel<Data> {
@@ -23,10 +23,10 @@ where
     }
 
     pub fn from_new(
-        id: IdType,
+        id: Id,
         create_epoch_millis: EpochMillisType,
         model: NewModel<Data>,
-    ) -> Model<Data> {
+    ) -> Model<Id, Data> {
         Model {
             id,
             version: model.version,
@@ -36,7 +36,7 @@ where
         }
     }
 
-    pub fn into_new_version(self, update_epoch_millis: EpochMillisType) -> Model<Data> {
+    pub fn into_new_version(self, update_epoch_millis: EpochMillisType) -> Model<Id, Data> {
         Model {
             id: self.id,
             version: self.version + 1,
@@ -47,22 +47,10 @@ where
     }
 }
 
-impl<'a, Data> From<&'a Model<Data>> for &'a IdType
-where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-{
-    fn from(model: &'a Model<Data>) -> Self {
-        &model.id
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct NewModel<Data>
-where
-    Data: Clone + serde::ser::Serialize,
 {
     pub version: VersionType,
-    #[serde(bound(deserialize = "Data: serde::Deserialize<'de>"))]
     pub data: Data,
 }
 
@@ -113,7 +101,7 @@ mod test {
         };
 
         let serialize = serde_json::to_string(&model)?;
-        let deserialize: Model<SimpleData> = serde_json::from_str(&serialize)?;
+        let deserialize: Model<i64, SimpleData> = serde_json::from_str(&serialize)?;
 
         assert_eq!(model.id, deserialize.id);
         assert_eq!(model.version, deserialize.version);

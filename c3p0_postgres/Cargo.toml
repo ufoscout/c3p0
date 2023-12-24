@@ -21,6 +21,7 @@ deadpool-postgres = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true }
 tokio-postgres = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 testcontainers = { workspace = true }

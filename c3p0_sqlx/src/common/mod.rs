@@ -1,12 +1,13 @@
 pub mod executor;
 
 use c3p0_common::{C3p0Error, JsonCodec, Model};
-use sqlx::{ColumnIndex, Database, Row};
+use sqlx::{ColumnIndex, Database, Row, Decode, Encode, Type};
 
 #[inline]
 pub fn to_model<
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-    CODEC: JsonCodec<DATA>,
+    Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Decode<'static, DB> + Encode<'static, DB> + Type<DB>,
+    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    CODEC: JsonCodec<Data>,
     R: Row<Database = DB>,
     IdIdx: ColumnIndex<R>,
     VersionIdx: ColumnIndex<R>,
@@ -22,7 +23,7 @@ pub fn to_model<
     create_epoch_millis_index: CreateEpochMillisIdx,
     update_epoch_millis_index: UpdateEpochMillisIdx,
     data_index: DataIdx,
-) -> Result<Model<DATA>, C3p0Error>
+) -> Result<Model<Id, Data>, C3p0Error>
 where
     for<'c> i32: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,
     for<'c> i64: sqlx::types::Type<DB> + sqlx::decode::Decode<'c, DB>,

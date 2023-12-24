@@ -1,9 +1,11 @@
 use c3p0_common::json::Queries;
-use c3p0_common::{C3p0Error, C3p0JsonBuilder, JsonCodec, Model};
+use c3p0_common::{C3p0Error, JsonCodec, Model};
 use core::fmt::Display;
 use tokio_postgres::row::RowIndex;
 use tokio_postgres::types::{FromSql, FromSqlOwned};
 use tokio_postgres::Row;
+
+use crate::PgC3p0JsonBuilder;
 
 pub fn into_c3p0_error(error: tokio_postgres::Error) -> C3p0Error {
     C3p0Error::DbError {
@@ -19,8 +21,9 @@ pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::err
 
 #[inline]
 pub fn to_model<
-    DATA: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-    CODEC: JsonCodec<DATA>,
+    Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + FromSqlOwned,
+    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    CODEC: JsonCodec<Data>,
     IdIdx: RowIndex + Display,
     VersionIdx: RowIndex + Display,
     CreateEpochMillisIdx: RowIndex + Display,
@@ -34,7 +37,7 @@ pub fn to_model<
     create_epoch_millis_index: CreateEpochMillisIdx,
     update_epoch_millis_index: UpdateEpochMillisIdx,
     data_index: DataIdx,
-) -> Result<Model<DATA>, Box<dyn std::error::Error>> {
+) -> Result<Model<Id, Data>, Box<dyn std::error::Error>> {
     let id = get_or_error(row, id_index)?;
     let version = get_or_error(row, version_index)?;
     let create_epoch_millis = get_or_error(row, create_epoch_millis_index)?;
@@ -60,7 +63,7 @@ pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
         })
 }
 
-pub fn build_pg_queries<C3P0>(json_builder: C3p0JsonBuilder<C3P0>) -> Queries {
+pub fn build_pg_queries<C3P0>(json_builder: PgC3p0JsonBuilder<C3P0>) -> Queries {
     let qualified_table_name = match &json_builder.schema_name {
         Some(schema_name) => format!(r#"{}."{}""#, schema_name, json_builder.table_name),
         None => json_builder.table_name.clone(),

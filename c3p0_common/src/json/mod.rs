@@ -1,13 +1,13 @@
-use crate::{C3p0Error, IdType, JsonCodec, Model, NewModel};
+use crate::{C3p0Error, JsonCodec, Model, NewModel};
 use async_trait::async_trait;
 
-pub mod builder;
 pub mod codec;
 pub mod model;
 
 #[async_trait]
-pub trait C3p0Json<Data, Codec>: Clone + Send + Sync
+pub trait C3p0Json<Id, Data, Codec>: Clone + Send + Sync
 where
+    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
     Codec: JsonCodec<Data>,
 {
@@ -22,39 +22,39 @@ where
 
     async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
-    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
+    async fn exists_by_id<'a, ID: Into<&'a Id> + Send>(
         &'a self,
         tx: &mut Self::Tx,
         id: ID,
     ) -> Result<bool, C3p0Error>;
 
-    async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Data>>, C3p0Error>;
+    async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Id, Data>>, C3p0Error>;
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
+    async fn fetch_one_optional_by_id<'a, ID: Into<&'a Id> + Send>(
         &'a self,
         tx: &mut Self::Tx,
         id: ID,
-    ) -> Result<Option<Model<Data>>, C3p0Error>;
+    ) -> Result<Option<Model<Id, Data>>, C3p0Error>;
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
+    async fn fetch_one_by_id<'a, ID: Into<&'a Id> + Send>(
         &'a self,
         tx: &mut Self::Tx,
         id: ID,
-    ) -> Result<Model<Data>, C3p0Error>;
+    ) -> Result<Model<Id, Data>, C3p0Error>;
 
-    async fn delete(&self, tx: &mut Self::Tx, obj: Model<Data>) -> Result<Model<Data>, C3p0Error>;
+    async fn delete(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error>;
 
     async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
-    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
+    async fn delete_by_id<'a, ID: Into<&'a Id> + Send>(
         &'a self,
         tx: &mut Self::Tx,
         id: ID,
     ) -> Result<u64, C3p0Error>;
 
-    async fn save(&self, tx: &mut Self::Tx, obj: NewModel<Data>) -> Result<Model<Data>, C3p0Error>;
+    async fn save(&self, tx: &mut Self::Tx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error>;
 
-    async fn update(&self, tx: &mut Self::Tx, obj: Model<Data>) -> Result<Model<Data>, C3p0Error>;
+    async fn update(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error>;
 }
 
 #[derive(Clone)]

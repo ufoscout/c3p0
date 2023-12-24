@@ -1,5 +1,7 @@
+use crate::SqlxSqliteC3p0JsonBuilder;
+
 pub fn build_sqlite_queries<C3P0>(
-    json_builder: c3p0_common::C3p0JsonBuilder<C3P0>,
+    json_builder: SqlxSqliteC3p0JsonBuilder<C3P0>,
 ) -> c3p0_common::json::Queries {
     let qualified_table_name = match &json_builder.schema_name {
         Some(schema_name) => format!(r#"{}."{}""#, schema_name, json_builder.table_name),
