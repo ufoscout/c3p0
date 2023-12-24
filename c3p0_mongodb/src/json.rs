@@ -231,16 +231,14 @@ where
                 update_epoch_millis: create_epoch_millis,
             };
             let result = db.collection::<ModelWithoutId<Data>>(&self.table_name).insert_one_with_session(&new_model, None, session).await.map_err(into_c3p0_error)?;
-            let obj_id: ObjectId = result.inserted_id.as_object_id().unwrap().clone();
-            unimplemented!()
-            // let id: Id = result.inserted_id.into();
-            // Model {
-            //     id,
-            //     version: new_model.version,
-            //     data: new_model.data,
-            //     create_epoch_millis: new_model.create_epoch_millis,
-            //     update_epoch_millis: new_model.update_epoch_millis,
-            // }
+            let id: Id = serde_json::from_value(result.inserted_id.into_relaxed_extjson())?;
+            Model {
+                id,
+                version: new_model.version,
+                data: new_model.data,
+                create_epoch_millis: new_model.create_epoch_millis,
+                update_epoch_millis: new_model.update_epoch_millis,
+            }
         };
 
         Ok(new_model)

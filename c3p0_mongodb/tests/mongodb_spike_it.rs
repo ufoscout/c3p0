@@ -70,27 +70,27 @@ async fn mongo_fetch_document() {
 }
 
 
-#[test]
-fn should_be_bson() {
-    let x = 42_i64;
-    doc! { "x": x };
-    test_bson(x);
+// #[test]
+// fn should_be_bson() {
+//     let x = 42_i64;
+//     doc! { "x": x };
+//     test_bson(x);
 
-    let x = ObjectId::new();
-    doc! { "x": x };
-    test_bson(x);
+//     let x = ObjectId::new();
+//     doc! { "x": x };
+//     test_bson(x);
 
-    let x = "hello world!";
-    doc! { "x": x };
-    test_bson(x);
-}
-
-// fn test_bson<T: serde::Serialize>(val: T) {
-//     doc! { "x": val };
+//     let x = "hello world!";
+//     doc! { "x": x };
+//     test_bson(x);
 // }
 
-fn test_bson<T>(val: T)
-where T: Into<Bson>
-{
-    doc! { "x": val.into() };
-}
+// // fn test_bson<T: serde::Serialize>(val: T) {
+// //     doc! { "x": val };
+// // }
+
+// fn test_bson<T>(val: T)
+// where T: Into<Bson> + TryFrom<Bson>
+// {
+//     doc! { "x": val.into() };
+// }

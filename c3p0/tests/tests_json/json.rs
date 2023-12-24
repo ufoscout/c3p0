@@ -365,7 +365,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
                     C3p0Error::OptimisticLockError { cause } => {
                         assert!(cause.contains(&table_name));
                         assert!(cause.contains(&format!(
-                            "id [{}], version [{}]",
+                            "id [{:?}], version [{}]",
                             saved_model.id, saved_model.version
                         )));
                     }
@@ -442,7 +442,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
                     C3p0Error::OptimisticLockError { cause } => {
                         assert!(cause.contains(&table_name));
                         assert!(cause.contains(&format!(
-                            "id [{}], version [{}]",
+                            "id [{:?}], version [{}]",
                             saved_model.id, saved_model.version
                         )));
                     }
