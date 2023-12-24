@@ -67,7 +67,7 @@ where
         self.count_all(tx).await.map(|_| ())
     }
 
-    async fn drop_table_if_exists(&self, tx: &mut MongodbTx, _cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists(&self, _tx: &mut MongodbTx, _cascade: bool) -> Result<(), C3p0Error> {
         // Cannot drop collection with session because it is not supported by mongodb
         Err(C3p0Error::OperationNotSupported { cause: "Cannot drop collection with session because it is not supported by mongodb".into() })
     }

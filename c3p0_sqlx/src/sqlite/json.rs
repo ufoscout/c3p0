@@ -1,5 +1,5 @@
 use crate::common::executor::{
-    batch_execute, delete, fetch_all_with_sql, fetch_one_optional_with_sql, fetch_one_with_sql,
+    delete, fetch_all_with_sql, fetch_one_optional_with_sql, fetch_one_with_sql,
     update, ResultWithRowCount,
 };
 use crate::common::to_model;
@@ -128,7 +128,11 @@ where
     }
 
     async fn create_table_if_not_exists(&self, tx: &mut Self::Tx) -> Result<(), C3p0Error> {
-        batch_execute(&self.queries.create_table_sql_query, tx.conn()).await
+        sqlx::query(&self.queries.create_table_sql_query)
+        .execute(tx.conn())
+        .await
+        .map_err(into_c3p0_error)
+        .map(|_| ())
     }
 
     async fn drop_table_if_exists(
@@ -141,7 +145,11 @@ where
         } else {
             &self.queries.drop_table_sql_query
         };
-        batch_execute(query, tx.conn()).await
+        sqlx::query(&query)
+        .execute(tx.conn())
+        .await
+        .map_err(into_c3p0_error)
+        .map(|_| ())
     }
 
     async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {

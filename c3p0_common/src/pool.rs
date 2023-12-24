@@ -20,8 +20,3 @@ pub trait C3p0Pool: Clone + Send + Sync {
         tx: F,
     ) -> Result<T, E>;
 }
-
-#[async_trait]
-pub trait SqlTx: Send {
-    async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error>;
-}

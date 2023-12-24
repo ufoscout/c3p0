@@ -79,11 +79,3 @@ impl MongodbTx {
         (&mut self.inner, &mut self.session)
     }
 }
-
-#[async_trait]
-impl SqlTx for MongodbTx {
-    async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        let ZERO = 0;
-        todo!("batch_execute")
-    }
-}

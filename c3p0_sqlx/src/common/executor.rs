@@ -11,20 +11,6 @@ pub trait ResultWithRowCount {
 }
 
 #[inline]
-pub async fn batch_execute<'e, 'q: 'e, E, DB>(query: &'q str, executor: E) -> Result<(), C3p0Error>
-where
-    DB: Database,
-    <DB as sqlx::database::HasArguments<'q>>::Arguments: sqlx::IntoArguments<'q, DB>,
-    E: Executor<'e, Database = DB>,
-{
-    executor
-        .execute(query)
-        .await
-        .map_err(into_c3p0_error)
-        .map(|_| ())
-}
-
-#[inline]
 pub async fn fetch_one_optional_with_sql<'e, 'q: 'e, A, E, DB, DATA, CODEC: JsonCodec<DATA>>(
     query: Query<'q, DB, A>,
     executor: E,

@@ -14,7 +14,7 @@ mod common {
     };
     pub use crate::sql::OrderBy;
 
-    pub use crate::pool::{C3p0Pool, SqlTx};
+    pub use crate::pool::C3p0Pool;
 }
 
 pub use crate::common::*;
