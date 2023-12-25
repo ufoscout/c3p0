@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-pub type VersionType = i32;
-pub type EpochMillisType = i64;
+use crate::DataType;
+
+use super::types::{VersionType, EpochMillisType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Model<Id, Data> {
@@ -13,10 +14,9 @@ pub struct Model<Id, Data> {
     pub data: Data,
 }
 
-impl<Id, Data> Model<Id, Data>
+impl<Id, Data: DataType> Model<Id, Data>
 where
     Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
 {
     pub fn into_new(self) -> NewModel<Data> {
         NewModel::new(self.data)
@@ -54,19 +54,14 @@ pub struct NewModel<Data>
     pub data: Data,
 }
 
-impl<Data> NewModel<Data>
-where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+impl<Data: DataType> NewModel<Data>
 {
     pub fn new(data: Data) -> Self {
         NewModel { version: 0, data }
     }
 }
 
-impl<Data> Default for NewModel<Data>
-where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Default,
-{
+impl<Data: DataType + Default> Default for NewModel<Data> {
     fn default() -> Self {
         NewModel::new(Data::default())
     }
@@ -74,7 +69,7 @@ where
 
 impl<Data> From<Data> for NewModel<Data>
 where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Data: DataType,
 {
     fn from(data: Data) -> Self {
         NewModel::new(data)

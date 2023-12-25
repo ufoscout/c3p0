@@ -114,15 +114,14 @@ impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + S
         }
     }
 
-    pub fn build<
-        Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
+    pub fn build<Data: DataType>(
         self,
     ) -> PgC3p0Json<Id, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
     pub fn build_with_codec<
-        Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
+        Data: DataType,
         CODEC: JsonCodec<Data>,
     >(
         self,
@@ -138,10 +137,9 @@ impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + S
 }
 
 #[derive(Clone)]
-pub struct PgC3p0Json<Id, Data, CODEC: JsonCodec<Data>>
+pub struct PgC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
     Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
@@ -149,10 +147,9 @@ where
     queries: Queries,
 }
 
-impl<Id, Data, CODEC: JsonCodec<Data>> PgC3p0Json<Id, Data, CODEC>
+impl<Id, Data: DataType, CODEC: JsonCodec<Data>> PgC3p0Json<Id, Data, CODEC>
 where
     Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + FromSqlOwned,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
@@ -205,10 +202,9 @@ where
 }
 
 #[async_trait]
-impl<Id, Data, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, Data, CODEC>
+impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, Data, CODEC>
 where
     Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + FromSqlOwned + ToSql + Display,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
 {
     type Tx = PgTx;
 

@@ -1,4 +1,4 @@
-use c3p0_common::{C3p0Error, JsonCodec, Model};
+use c3p0_common::{C3p0Error, JsonCodec, Model, DataType};
 use core::fmt::Display;
 use tokio_postgres::row::RowIndex;
 use tokio_postgres::types::{FromSql, FromSqlOwned};
@@ -11,7 +11,7 @@ pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::err
 #[inline]
 pub fn to_model<
     Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + FromSqlOwned,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Data: DataType,
     CODEC: JsonCodec<Data>,
     IdIdx: RowIndex + Display,
     VersionIdx: RowIndex + Display,

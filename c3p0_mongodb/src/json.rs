@@ -62,17 +62,13 @@ where
         }
     }
 
-    pub fn build<
-        Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin>(
+    pub fn build<Data: DataType>(
         self,
     ) -> MongodbC3p0Json<Id, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
-    pub fn build_with_codec<
-        Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin,
-        CODEC: JsonCodec<Data>,
-    >(
+    pub fn build_with_codec<Data: DataType, CODEC: JsonCodec<Data>>(
         self,
         codec: CODEC,
     ) -> MongodbC3p0Json<Id, Data, CODEC> {
@@ -86,10 +82,9 @@ where
 }
 
 #[derive(Clone)]
-pub struct MongodbC3p0Json<Id, Data, CODEC: JsonCodec<Data>>
+pub struct MongodbC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
     Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin + Into<Bson> + Debug,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin,
 {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
@@ -98,11 +93,9 @@ where
 }
 
 #[async_trait]
-impl<Id, Data, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for MongodbC3p0Json<Id, Data, CODEC>
+impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for MongodbC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Unpin + Sync + Into<Bson> + Debug,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin,
-{
+    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Unpin + Sync + Into<Bson> + Debug {
     type Tx = MongodbTx;
 
     fn codec(&self) -> &CODEC {

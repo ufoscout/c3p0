@@ -1,10 +1,10 @@
-use c3p0_common::{C3p0Error, JsonCodec, Model};
+use c3p0_common::{C3p0Error, JsonCodec, Model, DataType};
 use sqlx::{ColumnIndex, Database, Row, Decode, Type};
 
 #[inline]
 pub fn to_model<
     Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Data: DataType,
     CODEC: JsonCodec<Data>,
     R: Row<Database = DB>,
     IdIdx: ColumnIndex<R>,

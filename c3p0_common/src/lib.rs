@@ -8,7 +8,7 @@ mod common {
     pub use crate::error::C3p0Error;
     pub use crate::json::{
         codec::DefaultJsonCodec, codec::JsonCodec,
-        model::EpochMillisType, model::Model, model::NewModel, model::VersionType,
+        types::*, model::Model, model::NewModel,
         C3p0Json,
     };
     pub use crate::sql::OrderBy;

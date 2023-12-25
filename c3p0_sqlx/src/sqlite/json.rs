@@ -121,14 +121,14 @@ for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
     }
 
     pub fn build<
-        Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync>(
+        Data: DataType>(
         self,
     ) -> SqlxSqliteC3p0Json<Id, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
     pub fn build_with_codec<
-        Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
+        Data: DataType,
         CODEC: JsonCodec<Data>,
     >(
         self,
@@ -144,10 +144,9 @@ for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 }
 
 #[derive(Clone)]
-pub struct SqlxSqliteC3p0Json<Id, Data, CODEC: JsonCodec<Data>>
+pub struct SqlxSqliteC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
     Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
     for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     phantom_data: std::marker::PhantomData<Data>,
@@ -156,10 +155,9 @@ where
     queries: Queries,
 }
 
-impl<Id, Data, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Json<Id, Data, CODEC>
+impl<Id, Data: DataType, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Json<Id, Data, CODEC>
 where
     Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
     for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     pub fn queries(&self) -> &Queries {
@@ -224,10 +222,9 @@ where
 }
 
 #[async_trait]
-impl<Id, Data, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for SqlxSqliteC3p0Json<Id, Data, CODEC>
+impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for SqlxSqliteC3p0Json<Id, Data, CODEC>
 where
     Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
     for<'c> Id: Encode<'c, Db> + Decode<'c, Db>,
 {
     type Tx = SqliteTx;
