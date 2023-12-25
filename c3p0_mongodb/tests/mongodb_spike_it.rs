@@ -1,4 +1,4 @@
-use c3p0_common::*;
+use c3p0_common::{EpochMillisType, VersionType};
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use mongodb::{
     bson::{doc, Document},
@@ -29,6 +29,16 @@ pub async fn data(serial: bool) -> Data<'static, MaybeType> {
     DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
         .data(serial)
         .await
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, PartialEq)]
+pub struct Model<Id, Data> {
+    #[serde(rename = "_id")]
+    pub id: Id,
+    pub version: VersionType,
+    pub create_epoch_millis: EpochMillisType,
+    pub update_epoch_millis: EpochMillisType,
+    pub data: Data,
 }
 
 #[tokio::test]
