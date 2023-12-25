@@ -9,15 +9,15 @@ use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use sqlx::query::Query;
-use sqlx::{IntoArguments, Row, Encode, Decode, Type};
+use sqlx::{Decode, Encode, IntoArguments, Row, Type};
 
-pub trait PostgresIdType: IdType + Type<Db> 
+pub trait PostgresIdType: IdType + Type<Db>
 where
-for<'c> Self: Encode<'c, Db> + Decode<'c, Db> {}
+    for<'c> Self: Encode<'c, Db> + Decode<'c, Db>,
+{
+}
 
-impl<T: IdType + Type<Db>> PostgresIdType for T
-where
-for<'c> Self: Encode<'c, Db> + Decode<'c, Db> {}
+impl<T: IdType + Type<Db>> PostgresIdType for T where for<'c> Self: Encode<'c, Db> + Decode<'c, Db> {}
 
 /// A trait that allows the creation of an Id
 pub trait PostgresIdGenerator<Id>: Send + Sync {
@@ -70,8 +70,7 @@ impl SqlxPgC3p0JsonBuilder<i64> {
     }
 }
 
-impl <Id: PostgresIdType> SqlxPgC3p0JsonBuilder<Id> {
-
+impl<Id: PostgresIdType> SqlxPgC3p0JsonBuilder<Id> {
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
         self
@@ -124,17 +123,11 @@ impl <Id: PostgresIdType> SqlxPgC3p0JsonBuilder<Id> {
         }
     }
 
-    pub fn build<
-        Data: DataType>(
-        self,
-    ) -> SqlxPgC3p0Json<Id, Data, DefaultJsonCodec> {
+    pub fn build<Data: DataType>(self) -> SqlxPgC3p0Json<Id, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
-    pub fn build_with_codec<
-        Data: DataType,
-        CODEC: JsonCodec<Data>,
-    >(
+    pub fn build_with_codec<Data: DataType, CODEC: JsonCodec<Data>>(
         self,
         codec: CODEC,
     ) -> SqlxPgC3p0Json<Id, Data, CODEC> {
@@ -158,7 +151,7 @@ pub struct SqlxPgC3p0Json<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<D
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> SqlxPgC3p0Json<Id, Data, CODEC>
 where
     Id: IdType + Type<Db>,
-    for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
+    for<'c> Id: Encode<'c, Db> + Decode<'c, Db>,
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
@@ -178,12 +171,11 @@ where
         tx: &mut PgTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
-        sql
-        .fetch_optional(tx.conn())
-        .await
-        .map_err(into_c3p0_error)?
-        .map(|row| to_model(&self.codec, &row, 0, 1, 2, 3, 4))
-        .transpose()
+        sql.fetch_optional(tx.conn())
+            .await
+            .map_err(into_c3p0_error)?
+            .map(|row| to_model(&self.codec, &row, 0, 1, 2, 3, 4))
+            .transpose()
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -195,11 +187,10 @@ where
         tx: &mut PgTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        sql
-        .fetch_one(tx.conn())
-        .await
-        .map_err(into_c3p0_error)
-        .and_then(|row| to_model(self.codec(), &row, 0, 1, 2, 3, 4))
+        sql.fetch_one(tx.conn())
+            .await
+            .map_err(into_c3p0_error)
+            .and_then(|row| to_model(self.codec(), &row, 0, 1, 2, 3, 4))
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -211,18 +202,19 @@ where
         tx: &mut PgTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
-        sql
-        .fetch_all(tx.conn())
-        .await
-        .map_err(into_c3p0_error)?
-        .iter()
-        .map(|row| to_model(self.codec(), row, 0, 1, 2, 3, 4))
-        .collect::<Result<Vec<_>, C3p0Error>>()
+        sql.fetch_all(tx.conn())
+            .await
+            .map_err(into_c3p0_error)?
+            .iter()
+            .map(|row| to_model(self.codec(), row, 0, 1, 2, 3, 4))
+            .collect::<Result<Vec<_>, C3p0Error>>()
     }
 }
 
 #[async_trait]
-impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for SqlxPgC3p0Json<Id, Data, CODEC> {
+impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
+    for SqlxPgC3p0Json<Id, Data, CODEC>
+{
     type Tx = PgTx;
 
     fn codec(&self) -> &CODEC {
@@ -231,10 +223,11 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
 
     async fn create_table_if_not_exists(&self, tx: &mut Self::Tx) -> Result<(), C3p0Error> {
         sqlx::query(&self.queries.create_table_sql_query)
-        .execute(tx.conn())
-        .await
-        .map_err(into_c3p0_error)
-        .map(|_| ())    }
+            .execute(tx.conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
+    }
 
     async fn drop_table_if_exists(
         &self,
@@ -247,10 +240,10 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
             &self.queries.drop_table_sql_query
         };
         sqlx::query(&query)
-        .execute(tx.conn())
-        .await
-        .map_err(into_c3p0_error)
-        .map(|_| ())
+            .execute(tx.conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
     }
 
     async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
@@ -304,25 +297,29 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
         .await
     }
 
-    async fn delete(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn delete(
+        &self,
+        tx: &mut Self::Tx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let result = sqlx::query(&self.queries.delete_sql_query)
-        .bind(obj.id.clone())
-        .bind(obj.version)
-        .execute(tx.conn())
-        .await
-        .map_err(into_c3p0_error)?
-        .rows_affected();
+            .bind(obj.id.clone())
+            .bind(obj.version)
+            .execute(tx.conn())
+            .await
+            .map_err(into_c3p0_error)?
+            .rows_affected();
 
-    if result == 0 {
-        return Err(C3p0Error::OptimisticLockError {
-            cause: format!(
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError {
+                cause: format!(
                 "Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
                 &self.queries.qualified_table_name, &obj.id, &obj.version
             ),
-        });
-    }
+            });
+        }
 
-    Ok(obj)
+        Ok(obj)
     }
 
     async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
@@ -346,29 +343,33 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
             .map(|done| done.rows_affected())
     }
 
-    async fn save(&self, tx: &mut Self::Tx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn save(
+        &self,
+        tx: &mut Self::Tx,
+        obj: NewModel<Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec().data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
 
         let id = if let Some(id) = self.id_generator.generate_id() {
             sqlx::query(&self.queries.save_sql_query_with_id)
-            .bind(obj.version)
-            .bind(create_epoch_millis)
-            .bind(&json_data)
-            .bind(&id)
-            .fetch_one(tx.conn())
-            .await
-            .map_err(into_c3p0_error)?;
+                .bind(obj.version)
+                .bind(create_epoch_millis)
+                .bind(&json_data)
+                .bind(&id)
+                .fetch_one(tx.conn())
+                .await
+                .map_err(into_c3p0_error)?;
             id
         } else {
             sqlx::query(&self.queries.save_sql_query)
-            .bind(obj.version)
-            .bind(create_epoch_millis)
-            .bind(&json_data)
-            .fetch_one(tx.conn())
-            .await
-            .and_then(|row| row.try_get(0))
-            .map_err(into_c3p0_error)?
+                .bind(obj.version)
+                .bind(create_epoch_millis)
+                .bind(&json_data)
+                .fetch_one(tx.conn())
+                .await
+                .and_then(|row| row.try_get(0))
+                .map_err(into_c3p0_error)?
         };
 
         Ok(Model {
@@ -380,11 +381,15 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
         })
     }
 
-    async fn update(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn update(
+        &self,
+        tx: &mut Self::Tx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec.data_to_value(&obj.data)?;
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());
-    
+
         let result = {
             sqlx::query(&self.queries.update_sql_query)
                 .bind(updated_model.version)
@@ -397,7 +402,7 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
                 .map_err(into_c3p0_error)
                 .map(|done| done.rows_affected())?
         };
-    
+
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError {
                 cause: format!(
@@ -406,7 +411,7 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
                 ),
             });
         }
-    
+
         Ok(updated_model)
     }
 }

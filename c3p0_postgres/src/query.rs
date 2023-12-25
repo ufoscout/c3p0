@@ -1,5 +1,5 @@
-use c3p0_common::json::Queries;
 use crate::PgC3p0JsonBuilder;
+use c3p0_common::json::Queries;
 
 pub fn build_pg_queries<C3P0>(json_builder: PgC3p0JsonBuilder<C3P0>) -> Queries {
     let qualified_table_name = match &json_builder.schema_name {

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{DataType, IdType};
 
-use super::types::{VersionType, EpochMillisType};
+use super::types::{EpochMillisType, VersionType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Model<Id, Data> {
@@ -13,8 +13,7 @@ pub struct Model<Id, Data> {
     pub data: Data,
 }
 
-impl<Id: IdType, Data: DataType> Model<Id, Data>
-{
+impl<Id: IdType, Data: DataType> Model<Id, Data> {
     pub fn into_new(self) -> NewModel<Data> {
         NewModel::new(self.data)
     }
@@ -45,14 +44,12 @@ impl<Id: IdType, Data: DataType> Model<Id, Data>
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct NewModel<Data>
-{
+pub struct NewModel<Data> {
     pub version: VersionType,
     pub data: Data,
 }
 
-impl<Data: DataType> NewModel<Data>
-{
+impl<Data: DataType> NewModel<Data> {
     pub fn new(data: Data) -> Self {
         NewModel { version: 0, data }
     }

@@ -1,4 +1,4 @@
-use c3p0_common::{C3p0Error, JsonCodec, Model, DataType};
+use c3p0_common::{C3p0Error, DataType, JsonCodec, Model};
 use core::fmt::Display;
 use tokio_postgres::row::RowIndex;
 use tokio_postgres::types::{FromSql, FromSqlOwned};

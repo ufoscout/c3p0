@@ -1,5 +1,5 @@
-use c3p0_common::{C3p0Error, JsonCodec, Model, DataType, IdType};
-use sqlx::{ColumnIndex, Database, Row, Decode, Type};
+use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model};
+use sqlx::{ColumnIndex, Database, Decode, Row, Type};
 
 #[inline]
 pub fn to_model<

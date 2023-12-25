@@ -9,15 +9,15 @@ use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use sqlx::query::Query;
-use sqlx::{IntoArguments, Row, Encode, Decode, Type};
+use sqlx::{Decode, Encode, IntoArguments, Row, Type};
 
-pub trait SqliteIdType: IdType + Type<Db> 
+pub trait SqliteIdType: IdType + Type<Db>
 where
-for<'c> Self: Encode<'c, Db> + Decode<'c, Db> {}
+    for<'c> Self: Encode<'c, Db> + Decode<'c, Db>,
+{
+}
 
-impl<T: IdType + Type<Db>> SqliteIdType for T
-where
-for<'c> Self: Encode<'c, Db> + Decode<'c, Db> {}
+impl<T: IdType + Type<Db>> SqliteIdType for T where for<'c> Self: Encode<'c, Db> + Decode<'c, Db> {}
 
 /// A trait that allows the creation of an Id
 pub trait SqliteIdGenerator<Id>: Send + Sync {
@@ -70,8 +70,7 @@ impl SqlxSqliteC3p0JsonBuilder<i64> {
     }
 }
 
-impl <Id: SqliteIdType> SqlxSqliteC3p0JsonBuilder<Id> {
-
+impl<Id: SqliteIdType> SqlxSqliteC3p0JsonBuilder<Id> {
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
         self
@@ -124,17 +123,11 @@ impl <Id: SqliteIdType> SqlxSqliteC3p0JsonBuilder<Id> {
         }
     }
 
-    pub fn build<
-        Data: DataType>(
-        self,
-    ) -> SqlxSqliteC3p0Json<Id, Data, DefaultJsonCodec> {
+    pub fn build<Data: DataType>(self) -> SqlxSqliteC3p0Json<Id, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
-    pub fn build_with_codec<
-        Data: DataType,
-        CODEC: JsonCodec<Data>,
-    >(
+    pub fn build_with_codec<Data: DataType, CODEC: JsonCodec<Data>>(
         self,
         codec: CODEC,
     ) -> SqlxSqliteC3p0Json<Id, Data, CODEC> {
@@ -174,12 +167,11 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Jso
         tx: &mut SqliteTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
-        sql
-        .fetch_optional(tx.conn())
-        .await
-        .map_err(into_c3p0_error)?
-        .map(|row| to_model(&self.codec, &row, 0, 1, 2, 3, 4))
-        .transpose()
+        sql.fetch_optional(tx.conn())
+            .await
+            .map_err(into_c3p0_error)?
+            .map(|row| to_model(&self.codec, &row, 0, 1, 2, 3, 4))
+            .transpose()
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -191,11 +183,10 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Jso
         tx: &mut SqliteTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        sql
-        .fetch_one(tx.conn())
-        .await
-        .map_err(into_c3p0_error)
-        .and_then(|row| to_model(self.codec(), &row, 0, 1, 2, 3, 4))
+        sql.fetch_one(tx.conn())
+            .await
+            .map_err(into_c3p0_error)
+            .and_then(|row| to_model(self.codec(), &row, 0, 1, 2, 3, 4))
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -207,18 +198,19 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Jso
         tx: &mut SqliteTx,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
-        sql
-        .fetch_all(tx.conn())
-        .await
-        .map_err(into_c3p0_error)?
-        .iter()
-        .map(|row| to_model(self.codec(), row, 0, 1, 2, 3, 4))
-        .collect::<Result<Vec<_>, C3p0Error>>()
+        sql.fetch_all(tx.conn())
+            .await
+            .map_err(into_c3p0_error)?
+            .iter()
+            .map(|row| to_model(self.codec(), row, 0, 1, 2, 3, 4))
+            .collect::<Result<Vec<_>, C3p0Error>>()
     }
 }
 
 #[async_trait]
-impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for SqlxSqliteC3p0Json<Id, Data, CODEC> {
+impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
+    for SqlxSqliteC3p0Json<Id, Data, CODEC>
+{
     type Tx = SqliteTx;
 
     fn codec(&self) -> &CODEC {
@@ -227,10 +219,10 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data
 
     async fn create_table_if_not_exists(&self, tx: &mut Self::Tx) -> Result<(), C3p0Error> {
         sqlx::query(&self.queries.create_table_sql_query)
-        .execute(tx.conn())
-        .await
-        .map_err(into_c3p0_error)
-        .map(|_| ())
+            .execute(tx.conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
     }
 
     async fn drop_table_if_exists(
@@ -244,10 +236,10 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data
             &self.queries.drop_table_sql_query
         };
         sqlx::query(&query)
-        .execute(tx.conn())
-        .await
-        .map_err(into_c3p0_error)
-        .map(|_| ())
+            .execute(tx.conn())
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
     }
 
     async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
@@ -301,25 +293,29 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data
         .await
     }
 
-    async fn delete(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn delete(
+        &self,
+        tx: &mut Self::Tx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let result = sqlx::query(&self.queries.delete_sql_query)
-        .bind(obj.id.clone())
-        .bind(obj.version)
-        .execute(tx.conn())
-        .await
-        .map_err(into_c3p0_error)?
-        .rows_affected();
+            .bind(obj.id.clone())
+            .bind(obj.version)
+            .execute(tx.conn())
+            .await
+            .map_err(into_c3p0_error)?
+            .rows_affected();
 
-    if result == 0 {
-        return Err(C3p0Error::OptimisticLockError {
-            cause: format!(
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError {
+                cause: format!(
                 "Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
                 &self.queries.qualified_table_name, &obj.id, &obj.version
             ),
-        });
-    }
+            });
+        }
 
-    Ok(obj)
+        Ok(obj)
     }
 
     async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
@@ -343,7 +339,11 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data
             .map(|done| done.rows_affected())
     }
 
-    async fn save(&self, tx: &mut Self::Tx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn save(
+        &self,
+        tx: &mut Self::Tx,
+        obj: NewModel<Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec().data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
 
@@ -380,11 +380,15 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data
         })
     }
 
-    async fn update(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn update(
+        &self,
+        tx: &mut Self::Tx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec.data_to_value(&obj.data)?;
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());
-    
+
         let result = {
             sqlx::query(&self.queries.update_sql_query)
                 .bind(updated_model.version)
@@ -397,7 +401,7 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data
                 .map_err(into_c3p0_error)
                 .map(|done| done.rows_affected())?
         };
-    
+
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError {
                 cause: format!(
@@ -406,7 +410,7 @@ impl<Id: SqliteIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data
                 ),
             });
         }
-    
+
         Ok(updated_model)
     }
 }

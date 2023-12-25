@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use crate::*;
-use async_trait::async_trait;
-use ::mongodb::bson::oid::ObjectId;
 use ::mongodb::bson::doc;
+use ::mongodb::bson::oid::ObjectId;
+use ::mongodb::options::CountOptions;
+use async_trait::async_trait;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
-use ::mongodb::options::CountOptions;
 use serde_json::Value;
 
 pub trait MongodbIdType: IdType + Into<mongodb::bson::Bson> {}
@@ -51,10 +51,10 @@ impl MongodbC3p0JsonBuilder<ObjectId> {
     }
 }
 
-impl <Id> MongodbC3p0JsonBuilder<Id> 
+impl<Id> MongodbC3p0JsonBuilder<Id>
 where
     Id: MongodbIdType,
-{   
+{
     pub fn with_id_generator<NewId, T: 'static + IdGenerator<NewId> + Send + Sync>(
         self,
         id_generator: T,
@@ -65,9 +65,7 @@ where
         }
     }
 
-    pub fn build<Data: DataType>(
-        self,
-    ) -> MongodbC3p0Json<Id, Data, DefaultJsonCodec> {
+    pub fn build<Data: DataType>(self) -> MongodbC3p0Json<Id, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
@@ -96,9 +94,11 @@ where
 }
 
 #[async_trait]
-impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for MongodbC3p0Json<Id, Data, CODEC>
+impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
+    for MongodbC3p0Json<Id, Data, CODEC>
 where
-    Id: MongodbIdType {
+    Id: MongodbIdType,
+{
     type Tx = MongodbTx;
 
     fn codec(&self) -> &CODEC {
@@ -110,14 +110,24 @@ where
         self.count_all(tx).await.map(|_| ())
     }
 
-    async fn drop_table_if_exists(&self, _tx: &mut MongodbTx, _cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists(
+        &self,
+        _tx: &mut MongodbTx,
+        _cascade: bool,
+    ) -> Result<(), C3p0Error> {
         // Cannot drop collection with session because it is not supported by mongodb
-        Err(C3p0Error::OperationNotSupported { cause: "Cannot drop collection with session because it is not supported by mongodb".into() })
+        Err(C3p0Error::OperationNotSupported {
+            cause: "Cannot drop collection with session because it is not supported by mongodb"
+                .into(),
+        })
     }
 
     async fn count_all(&self, tx: &mut MongodbTx) -> Result<u64, C3p0Error> {
         let (db, session) = tx.db();
-        db.collection::<ModelWithId<Id>>(&self.table_name).count_documents_with_session(None, None, session).await.map_err(into_c3p0_error)
+        db.collection::<ModelWithId<Id>>(&self.table_name)
+            .count_documents_with_session(None, None, session)
+            .await
+            .map_err(into_c3p0_error)
     }
 
     async fn exists_by_id<'a, ID: Into<&'a Id> + Send>(
@@ -128,16 +138,29 @@ where
         let filter = doc! { "_id": id.into() };
         let options = CountOptions::builder().limit(1).build();
         let (db, session) = tx.db();
-        db.collection::<ModelWithId<Id>>(&self.table_name).count_documents_with_session(filter, options, session).await.map_err(into_c3p0_error).map(|count| count > 0)
+        db.collection::<ModelWithId<Id>>(&self.table_name)
+            .count_documents_with_session(filter, options, session)
+            .await
+            .map_err(into_c3p0_error)
+            .map(|count| count > 0)
     }
 
     async fn fetch_all(&self, tx: &mut MongodbTx) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
         let (db, session) = tx.db();
-        let mut cursor = db.collection::<ModelWithId<Id>>(&self.table_name).find_with_session(None, None, session).await.map_err(into_c3p0_error)?;
+        let mut cursor = db
+            .collection::<ModelWithId<Id>>(&self.table_name)
+            .find_with_session(None, None, session)
+            .await
+            .map_err(into_c3p0_error)?;
         let mut result = vec![];
         let codec = &self.codec;
         while cursor.advance(session).await.map_err(into_c3p0_error)? {
-            result.push(cursor.deserialize_current().map_err(into_c3p0_error).and_then(|model| model.to_model(codec))?);
+            result.push(
+                cursor
+                    .deserialize_current()
+                    .map_err(into_c3p0_error)
+                    .and_then(|model| model.to_model(codec))?,
+            );
         }
         Ok(result)
     }
@@ -151,7 +174,11 @@ where
             "_id": id.into()
         };
         let (db, session) = tx.db();
-        let model = db.collection::<ModelWithId<Id>>(&self.table_name).find_one_with_session(filter, None, session).await.map_err(into_c3p0_error)?;
+        let model = db
+            .collection::<ModelWithId<Id>>(&self.table_name)
+            .find_one_with_session(filter, None, session)
+            .await
+            .map_err(into_c3p0_error)?;
         if let Some(model) = model {
             Ok(Some(model.to_model(&self.codec)?))
         } else {
@@ -169,14 +196,21 @@ where
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
-    async fn delete(&self, tx: &mut MongodbTx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
-
+    async fn delete(
+        &self,
+        tx: &mut MongodbTx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let filter = doc! {
             "_id": obj.id.clone().into(),
             "version": obj.version
         };
         let (db, session) = tx.db();
-        let result = db.collection::<ModelWithId<Id>>(&self.table_name).delete_one_with_session(filter, None, session).await.map_err(into_c3p0_error)?;
+        let result = db
+            .collection::<ModelWithId<Id>>(&self.table_name)
+            .delete_one_with_session(filter, None, session)
+            .await
+            .map_err(into_c3p0_error)?;
 
         if result.deleted_count == 0 {
             return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
@@ -189,7 +223,11 @@ where
 
     async fn delete_all(&self, tx: &mut MongodbTx) -> Result<u64, C3p0Error> {
         let (db, session) = tx.db();
-        db.collection::<ModelWithId<Id>>(&self.table_name).delete_many_with_session(doc! {}, None, session).await.map_err(into_c3p0_error).map(|result| result.deleted_count)
+        db.collection::<ModelWithId<Id>>(&self.table_name)
+            .delete_many_with_session(doc! {}, None, session)
+            .await
+            .map_err(into_c3p0_error)
+            .map(|result| result.deleted_count)
     }
 
     async fn delete_by_id<'a, ID: Into<&'a Id> + Send>(
@@ -198,10 +236,18 @@ where
         id: ID,
     ) -> Result<u64, C3p0Error> {
         let (db, session) = tx.db();
-        db.collection::<ModelWithId<Id>>(&self.table_name).delete_one_with_session(doc! { "_id": id.into() }, None, session).await.map_err(into_c3p0_error).map(|result| result.deleted_count)
+        db.collection::<ModelWithId<Id>>(&self.table_name)
+            .delete_one_with_session(doc! { "_id": id.into() }, None, session)
+            .await
+            .map_err(into_c3p0_error)
+            .map(|result| result.deleted_count)
     }
 
-    async fn save(&self, tx: &mut MongodbTx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn save(
+        &self,
+        tx: &mut MongodbTx,
+        obj: NewModel<Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec().data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
 
@@ -215,7 +261,10 @@ where
                 create_epoch_millis,
                 update_epoch_millis: create_epoch_millis,
             };
-            db.collection::<ModelWithId<Id>>(&self.table_name).insert_one_with_session(&new_model, None, session).await.map_err(into_c3p0_error)?;
+            db.collection::<ModelWithId<Id>>(&self.table_name)
+                .insert_one_with_session(&new_model, None, session)
+                .await
+                .map_err(into_c3p0_error)?;
             new_model
         } else {
             let new_model = ModelWithoutId {
@@ -224,7 +273,11 @@ where
                 create_epoch_millis,
                 update_epoch_millis: create_epoch_millis,
             };
-            let result = db.collection::<ModelWithoutId>(&self.table_name).insert_one_with_session(&new_model, None, session).await.map_err(into_c3p0_error)?;
+            let result = db
+                .collection::<ModelWithoutId>(&self.table_name)
+                .insert_one_with_session(&new_model, None, session)
+                .await
+                .map_err(into_c3p0_error)?;
             let id: Id = serde_json::from_value(result.inserted_id.into_relaxed_extjson())?;
             ModelWithId {
                 id,
@@ -238,17 +291,26 @@ where
         Ok(new_model.to_model(&self.codec)?)
     }
 
-    async fn update(&self, tx: &mut MongodbTx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn update(
+        &self,
+        tx: &mut MongodbTx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());
         let updated_model = ModelWithId::from_model(updated_model, &self.codec)?;
 
         let (db, session) = tx.db();
-        let result = db.collection::<ModelWithId<Id>>(&self.table_name)
-            .replace_one_with_session(doc! { "_id": updated_model.id.clone().into(), "version": previous_version }, 
-            &updated_model, 
-            None, session)
-            .await.map_err(into_c3p0_error)?;
+        let result = db
+            .collection::<ModelWithId<Id>>(&self.table_name)
+            .replace_one_with_session(
+                doc! { "_id": updated_model.id.clone().into(), "version": previous_version },
+                &updated_model,
+                None,
+                session,
+            )
+            .await
+            .map_err(into_c3p0_error)?;
 
         if result.modified_count == 0 {
             return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot update data in table [{}] with id [{:?}], version [{}]: data was changed!",
@@ -270,7 +332,7 @@ struct ModelWithoutId {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct ModelWithId<Id> {
-    #[serde(rename = "_id")] 
+    #[serde(rename = "_id")]
     pub id: Id,
     pub version: VersionType,
     pub create_epoch_millis: EpochMillisType,
@@ -278,9 +340,11 @@ struct ModelWithId<Id> {
     pub data: Value,
 }
 
-impl <Id: MongodbIdType> ModelWithId<Id> {
-
-    fn to_model<Data: DataType, Codec: JsonCodec<Data>>(self, codec: &Codec) -> Result<Model<Id, Data>, C3p0Error> {
+impl<Id: MongodbIdType> ModelWithId<Id> {
+    fn to_model<Data: DataType, Codec: JsonCodec<Data>>(
+        self,
+        codec: &Codec,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         Ok(Model {
             id: self.id,
             version: self.version,
@@ -290,7 +354,10 @@ impl <Id: MongodbIdType> ModelWithId<Id> {
         })
     }
 
-    fn from_model<Data: DataType, Codec: JsonCodec<Data>>(model: Model<Id, Data>, codec: &Codec) -> Result<Self, C3p0Error> {
+    fn from_model<Data: DataType, Codec: JsonCodec<Data>>(
+        model: Model<Id, Data>,
+        codec: &Codec,
+    ) -> Result<Self, C3p0Error> {
         Ok(ModelWithId {
             id: model.id,
             version: model.version,

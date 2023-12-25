@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use crate::tokio_postgres::{row::Row, types::ToSql};
 use crate::*;
+use ::tokio_postgres::types::FromSqlOwned;
 use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
-use ::tokio_postgres::types::FromSqlOwned;
 
 pub trait PostgresIdType: IdType + FromSqlOwned + ToSql {}
 impl<T: IdType + FromSqlOwned + ToSql> PostgresIdType for T {}
@@ -62,8 +62,7 @@ impl PgC3p0JsonBuilder<i64> {
     }
 }
 
-impl <Id: PostgresIdType> PgC3p0JsonBuilder<Id> {
-
+impl<Id: PostgresIdType> PgC3p0JsonBuilder<Id> {
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
         self
@@ -116,16 +115,11 @@ impl <Id: PostgresIdType> PgC3p0JsonBuilder<Id> {
         }
     }
 
-    pub fn build<Data: DataType>(
-        self,
-    ) -> PgC3p0Json<Id, Data, DefaultJsonCodec> {
+    pub fn build<Data: DataType>(self) -> PgC3p0Json<Id, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
-    pub fn build_with_codec<
-        Data: DataType,
-        CODEC: JsonCodec<Data>,
-    >(
+    pub fn build_with_codec<Data: DataType, CODEC: JsonCodec<Data>>(
         self,
         codec: CODEC,
     ) -> PgC3p0Json<Id, Data, CODEC> {
@@ -139,16 +133,14 @@ impl <Id: PostgresIdType> PgC3p0JsonBuilder<Id> {
 }
 
 #[derive(Clone)]
-pub struct PgC3p0Json<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
-{
+pub struct PgC3p0Json<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
     codec: CODEC,
     queries: Queries,
 }
 
-impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> PgC3p0Json<Id, Data, CODEC>
-{
+impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> PgC3p0Json<Id, Data, CODEC> {
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
@@ -200,7 +192,8 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> PgC3p0Json<Id, 
 }
 
 #[async_trait]
-impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, Data, CODEC>
+impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
+    for PgC3p0Json<Id, Data, CODEC>
 {
     type Tx = PgTx;
 
@@ -267,7 +260,11 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
-    async fn delete(&self, tx: &mut PgTx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn delete(
+        &self,
+        tx: &mut PgTx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let result = tx
             .execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])
             .await?;
@@ -299,22 +296,20 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
         let create_epoch_millis = get_current_epoch_millis();
 
         let id = if let Some(id) = self.id_generator.generate_id() {
-            tx
-            .execute(
+            tx.execute(
                 &self.queries.save_sql_query_with_id,
                 &[&obj.version, &create_epoch_millis, &json_data, &id],
             )
             .await?;
             id
         } else {
-            tx
-            .fetch_one_value(
+            tx.fetch_one_value(
                 &self.queries.save_sql_query,
                 &[&obj.version, &create_epoch_millis, &json_data],
             )
             .await?
         };
-        
+
         Ok(Model {
             id,
             version: obj.version,
@@ -324,7 +319,11 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
         })
     }
 
-    async fn update(&self, tx: &mut PgTx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn update(
+        &self,
+        tx: &mut PgTx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec().data_to_value(&obj.data)?;
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());

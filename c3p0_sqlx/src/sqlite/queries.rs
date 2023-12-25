@@ -68,7 +68,7 @@ pub fn build_sqlite_queries<C3P0>(
             json_builder.data_field_name,
             json_builder.id_field_name,
         ),
-        
+
         update_sql_query: format!(
             "UPDATE {} SET {} = ?, {} = ?, {} = ? WHERE {} = ? AND {} = ?",
             qualified_table_name,

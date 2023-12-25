@@ -2,10 +2,17 @@
 
 use c3p0::mongodb::*;
 use c3p0::*;
-use c3p0_mongodb::mongodb::{Client, bson::oid::ObjectId};
+use c3p0_mongodb::mongodb::{bson::oid::ObjectId, Client};
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use rustainers::{compose::{ToRunnableComposeContainers, RunnableComposeContainersBuilder, TemporaryDirectory, ComposeContainers, TemporaryFile, RunnableComposeContainers}, WaitStrategy, ExposedPort, runner::Runner, PortError};
+use rustainers::{
+    compose::{
+        ComposeContainers, RunnableComposeContainers, RunnableComposeContainersBuilder,
+        TemporaryDirectory, TemporaryFile, ToRunnableComposeContainers,
+    },
+    runner::Runner,
+    ExposedPort, PortError, WaitStrategy,
+};
 
 pub type C3p0Impl = MongodbC3p0Pool;
 pub type Builder = MongodbC3p0JsonBuilder<ObjectId>;
@@ -19,7 +26,8 @@ pub type MaybeType = (MongodbC3p0Pool, ComposeContainers<MondodbReplicaSet>);
 async fn init() -> MaybeType {
     let image = MondodbReplicaSet::new().await;
     let runner = Runner::auto().unwrap();
-    let containers: ComposeContainers<MondodbReplicaSet> = runner.compose_start(image).await.unwrap();
+    let containers: ComposeContainers<MondodbReplicaSet> =
+        runner.compose_start(image).await.unwrap();
     let url = containers.url().await.unwrap();
     let client = Client::with_uri_str(&url).await.unwrap();
     let pool = MongodbC3p0Pool::new(client, "TEST_DB".to_owned());
@@ -51,12 +59,12 @@ pub mod db_specific {
     // }
 }
 
-pub struct MondodbReplicaSet{
+pub struct MondodbReplicaSet {
     temp_dir: TemporaryDirectory,
     port: ExposedPort,
 }
 
-impl MondodbReplicaSet{
+impl MondodbReplicaSet {
     async fn new() -> Self {
         let temp_dir = TemporaryDirectory::with_files(
             "componse-mongodb-replica-set",
@@ -91,17 +99,13 @@ impl MondodbReplicaSet{
         .expect("Should create temp_dir");
 
         let port = ExposedPort::new(27017);
-        Self {
-            temp_dir,
-            port,
-        }
+        Self { temp_dir, port }
     }
 
     async fn url(&self) -> Result<String, PortError> {
         let port = self.port.host_port().await?;
         Ok(format!("mongodb://127.0.0.1:{port}/"))
     }
-
 }
 
 impl ToRunnableComposeContainers for MondodbReplicaSet {

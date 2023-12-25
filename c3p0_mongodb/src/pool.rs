@@ -1,8 +1,8 @@
 use crate::*;
 
+use ::mongodb::{options::SessionOptions, Client, ClientSession, Database};
 use async_trait::async_trait;
 use c3p0_common::*;
-use ::mongodb::{Client, Database, options::SessionOptions, ClientSession};
 use std::future::Future;
 
 #[derive(Clone)]
@@ -37,12 +37,18 @@ impl C3p0Pool for MongodbC3p0Pool {
         &'a self,
         tx: F,
     ) -> Result<T, E> {
-
         let session_options = SessionOptions::builder()
             // .causal_consistency(true)
             .build();
-        let mut session = self.pool.start_session(session_options).await.map_err(into_c3p0_error)?;
-        session.start_transaction(None).await.map_err(into_c3p0_error)?;
+        let mut session = self
+            .pool
+            .start_session(session_options)
+            .await
+            .map_err(into_c3p0_error)?;
+        session
+            .start_transaction(None)
+            .await
+            .map_err(into_c3p0_error)?;
 
         let client = session.client();
         let database = client.database(&self.database);
@@ -57,15 +63,22 @@ impl C3p0Pool for MongodbC3p0Pool {
 
         match result {
             Ok(result) => {
-                transaction.session.commit_transaction().await.map_err(into_c3p0_error)?;
+                transaction
+                    .session
+                    .commit_transaction()
+                    .await
+                    .map_err(into_c3p0_error)?;
                 Ok(result)
             }
             Err(err) => {
-                transaction.session.abort_transaction().await.map_err(into_c3p0_error)?;
+                transaction
+                    .session
+                    .abort_transaction()
+                    .await
+                    .map_err(into_c3p0_error)?;
                 Err(err)
             }
         }
-
     }
 }
 

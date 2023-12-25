@@ -8,8 +8,7 @@ pub mod time;
 mod common {
     pub use crate::error::C3p0Error;
     pub use crate::json::{
-        codec::DefaultJsonCodec, codec::JsonCodec,
-        types::*, model::Model, model::NewModel,
+        codec::DefaultJsonCodec, codec::JsonCodec, model::Model, model::NewModel, types::*,
         C3p0Json,
     };
     pub use crate::sql::OrderBy;

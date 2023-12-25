@@ -1,4 +1,4 @@
-use crate::{C3p0Error, JsonCodec, Model, NewModel, DataType, IdType};
+use crate::{C3p0Error, DataType, IdType, JsonCodec, Model, NewModel};
 use async_trait::async_trait;
 
 pub mod codec;
@@ -43,7 +43,11 @@ where
         id: ID,
     ) -> Result<Model<Id, Data>, C3p0Error>;
 
-    async fn delete(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error>;
+    async fn delete(
+        &self,
+        tx: &mut Self::Tx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error>;
 
     async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
@@ -53,9 +57,17 @@ where
         id: ID,
     ) -> Result<u64, C3p0Error>;
 
-    async fn save(&self, tx: &mut Self::Tx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error>;
+    async fn save(
+        &self,
+        tx: &mut Self::Tx,
+        obj: NewModel<Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error>;
 
-    async fn update(&self, tx: &mut Self::Tx, obj: Model<Id, Data>) -> Result<Model<Id, Data>, C3p0Error>;
+    async fn update(
+        &self,
+        tx: &mut Self::Tx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error>;
 }
 
 #[derive(Clone)]
