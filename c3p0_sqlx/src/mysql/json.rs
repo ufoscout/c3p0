@@ -1,5 +1,4 @@
 use core::panic;
-use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::common::to_model;
@@ -64,7 +63,7 @@ impl SqlxMySqlC3p0JsonBuilder<i64> {
     }
 }
 
-impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug> SqlxMySqlC3p0JsonBuilder<Id>
+impl <Id: IdType + Type<Db>> SqlxMySqlC3p0JsonBuilder<Id>
 where
 for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
@@ -147,7 +146,7 @@ for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 #[derive(Clone)]
 pub struct SqlxMySqlC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
+    Id: IdType + Type<Db>,
 for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     phantom_data: std::marker::PhantomData<Data>,
@@ -158,7 +157,7 @@ for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
+    Id: IdType + Type<Db>,
 for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     pub fn queries(&self) -> &Queries {
@@ -225,7 +224,7 @@ for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 #[async_trait]
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for SqlxMySqlC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
+    Id: IdType + Type<Db>,
     for<'c> Id: Encode<'c, Db> + Decode<'c, Db>,
 {
     type Tx = MySqlTx;

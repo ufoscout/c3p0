@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::DataType;
+use crate::{DataType, IdType};
 
 use super::types::{VersionType, EpochMillisType};
 
@@ -14,9 +14,7 @@ pub struct Model<Id, Data> {
     pub data: Data,
 }
 
-impl<Id, Data: DataType> Model<Id, Data>
-where
-    Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+impl<Id: IdType, Data: DataType> Model<Id, Data>
 {
     pub fn into_new(self) -> NewModel<Data> {
         NewModel::new(self.data)

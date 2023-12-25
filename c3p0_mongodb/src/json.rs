@@ -50,7 +50,7 @@ impl MongodbC3p0JsonBuilder<ObjectId> {
 
 impl <Id> MongodbC3p0JsonBuilder<Id> 
 where
-    Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin + Into<Bson> + Debug,
+    Id: IdType + Into<Bson>,
 {   
     pub fn with_id_generator<NewId, T: 'static + IdGenerator<NewId> + Send + Sync>(
         self,
@@ -84,7 +84,7 @@ where
 #[derive(Clone)]
 pub struct MongodbC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
-    Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin + Into<Bson> + Debug,
+    Id: IdType + Into<Bson>,
 {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
@@ -95,7 +95,7 @@ where
 #[async_trait]
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for MongodbC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Unpin + Sync + Into<Bson> + Debug {
+    Id: IdType + Into<Bson> {
     type Tx = MongodbTx;
 
     fn codec(&self) -> &CODEC {

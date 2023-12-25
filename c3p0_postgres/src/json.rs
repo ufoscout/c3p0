@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::sync::Arc;
 
 use crate::tokio_postgres::{row::Row, types::ToSql};
@@ -60,7 +59,7 @@ impl PgC3p0JsonBuilder<i64> {
     }
 }
 
-impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync> PgC3p0JsonBuilder<Id> {
+impl <Id: IdType> PgC3p0JsonBuilder<Id> {
 
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
@@ -139,7 +138,7 @@ impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + S
 #[derive(Clone)]
 pub struct PgC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync,
+    Id: IdType,
 {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
@@ -149,7 +148,7 @@ where
 
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> PgC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + FromSqlOwned,
+    Id: IdType + FromSqlOwned,
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
@@ -204,7 +203,7 @@ where
 #[async_trait]
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + FromSqlOwned + ToSql + Display,
+    Id: IdType + FromSqlOwned + ToSql,
 {
     type Tx = PgTx;
 
@@ -277,7 +276,7 @@ where
             .await?;
 
         if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot delete data in table [{}] with id [{}], version [{}]: data was changed!",
+            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
                                                                         &self.queries.qualified_table_name, &obj.id, &obj.version
             )});
         }
@@ -347,7 +346,7 @@ where
             .await?;
 
         if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot update data in table [{}] with id [{}], version [{}]: data was changed!",
+            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot update data in table [{}] with id [{:?}], version [{}]: data was changed!",
                                                                         &self.queries.qualified_table_name, &updated_model.id, &previous_version
             )});
         }

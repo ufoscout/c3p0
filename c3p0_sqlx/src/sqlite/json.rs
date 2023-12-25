@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::common::to_model;
@@ -63,7 +62,7 @@ impl SqlxSqliteC3p0JsonBuilder<i64> {
     }
 }
 
-impl <Id: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug> SqlxSqliteC3p0JsonBuilder<Id>
+impl <Id: IdType + Type<Db>> SqlxSqliteC3p0JsonBuilder<Id>
 where
 for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
@@ -146,7 +145,7 @@ for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 #[derive(Clone)]
 pub struct SqlxSqliteC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
+    Id: IdType + Type<Db>,
     for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     phantom_data: std::marker::PhantomData<Data>,
@@ -157,7 +156,7 @@ where
 
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
+    Id: IdType + Type<Db>,
     for<'c> Id: Encode<'c, Db> + Decode<'c, Db>
 {
     pub fn queries(&self) -> &Queries {
@@ -224,7 +223,7 @@ where
 #[async_trait]
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for SqlxSqliteC3p0Json<Id, Data, CODEC>
 where
-    Id: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Type<Db> + Debug,
+    Id: IdType + Type<Db>,
     for<'c> Id: Encode<'c, Db> + Decode<'c, Db>,
 {
     type Tx = SqliteTx;
