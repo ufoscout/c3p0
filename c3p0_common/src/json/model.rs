@@ -6,7 +6,6 @@ use super::types::{VersionType, EpochMillisType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Model<Id, Data> {
-    #[serde(rename = "_id")] 
     pub id: Id,
     pub version: VersionType,
     pub create_epoch_millis: EpochMillisType,
