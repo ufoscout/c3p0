@@ -1,7 +1,6 @@
-use bson::{Bson, doc, oid::ObjectId};
 use c3p0_common::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
-use mongodb::Client;
+use mongodb::{Client, bson::{doc, Document}};
 use once_cell::sync::OnceCell;
 use testcontainers::{
     mongo::Mongo,
@@ -58,8 +57,8 @@ async fn mongo_fetch_document() {
 
         let coll = client.database("some_db").collection("some-coll");
 
-    let find_one_result: bson::Document = coll
-        .find_one(bson::doc! { "_id": 100 }, None)
+    let find_one_result: Document = coll
+        .find_one(doc! { "_id": 100 }, None)
         .await
         .unwrap()
         .unwrap();

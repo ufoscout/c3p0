@@ -16,7 +16,6 @@ version.workspace = true
 async-trait = { workspace = true }
 c3p0_common = { workspace = true, features = ["mongodb"] }
 
-bson = { workspace = true }
 log = { workspace = true }
 mongodb = { workspace = true }
 serde = { workspace = true }
