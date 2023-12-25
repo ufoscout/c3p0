@@ -159,7 +159,7 @@ where
                 cursor
                     .deserialize_current()
                     .map_err(into_c3p0_error)
-                    .and_then(|model| model.to_model(codec))?,
+                    .and_then(|model| model.into_model(codec))?,
             );
         }
         Ok(result)
@@ -180,7 +180,7 @@ where
             .await
             .map_err(into_c3p0_error)?;
         if let Some(model) = model {
-            Ok(Some(model.to_model(&self.codec)?))
+            Ok(Some(model.into_model(&self.codec)?))
         } else {
             Ok(None)
         }
@@ -288,7 +288,7 @@ where
             }
         };
 
-        Ok(new_model.to_model(&self.codec)?)
+        Ok(new_model.into_model(&self.codec)?)
     }
 
     async fn update(
@@ -318,7 +318,7 @@ where
             )});
         }
 
-        Ok(updated_model.to_model(&self.codec)?)
+        Ok(updated_model.into_model(&self.codec)?)
     }
 }
 
@@ -341,7 +341,7 @@ struct ModelWithId<Id> {
 }
 
 impl<Id: MongodbIdType> ModelWithId<Id> {
-    fn to_model<Data: DataType, Codec: JsonCodec<Data>>(
+    fn into_model<Data: DataType, Codec: JsonCodec<Data>>(
         self,
         codec: &Codec,
     ) -> Result<Model<Id, Data>, C3p0Error> {
