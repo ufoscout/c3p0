@@ -8,6 +8,9 @@ use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use ::mongodb::options::CountOptions;
 
+pub trait MongodbIdType: IdType + Into<mongodb::bson::Bson> {}
+impl<T: IdType + Into<mongodb::bson::Bson>> MongodbIdType for T {}
+
 /// A trait that allows the creation of an Id
 pub trait IdGenerator<Id>: Send + Sync {
     fn generate_id(&self) -> Option<Id>;
@@ -49,7 +52,7 @@ impl MongodbC3p0JsonBuilder<ObjectId> {
 
 impl <Id> MongodbC3p0JsonBuilder<Id> 
 where
-    Id: IdType,
+    Id: MongodbIdType,
 {   
     pub fn with_id_generator<NewId, T: 'static + IdGenerator<NewId> + Send + Sync>(
         self,
@@ -83,7 +86,7 @@ where
 #[derive(Clone)]
 pub struct MongodbC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
-    Id: IdType,
+    Id: MongodbIdType,
 {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
@@ -94,7 +97,7 @@ where
 #[async_trait]
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for MongodbC3p0Json<Id, Data, CODEC>
 where
-    Id: IdType {
+    Id: MongodbIdType {
     type Tx = MongodbTx;
 
     fn codec(&self) -> &CODEC {

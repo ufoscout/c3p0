@@ -8,6 +8,9 @@ use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use ::tokio_postgres::types::FromSqlOwned;
 
+pub trait PostgresIdType: IdType + FromSqlOwned + ToSql {}
+impl<T: IdType + FromSqlOwned + ToSql> PostgresIdType for T {}
+
 /// A trait that allows the creation of an Id
 pub trait IdGenerator<Id>: Send + Sync {
     fn generate_id(&self) -> Option<Id>;
@@ -59,7 +62,7 @@ impl PgC3p0JsonBuilder<i64> {
     }
 }
 
-impl <Id: IdType> PgC3p0JsonBuilder<Id> {
+impl <Id: PostgresIdType> PgC3p0JsonBuilder<Id> {
 
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
@@ -136,9 +139,7 @@ impl <Id: IdType> PgC3p0JsonBuilder<Id> {
 }
 
 #[derive(Clone)]
-pub struct PgC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
-where
-    Id: IdType,
+pub struct PgC3p0Json<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
 {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
@@ -146,9 +147,7 @@ where
     queries: Queries,
 }
 
-impl<Id, Data: DataType, CODEC: JsonCodec<Data>> PgC3p0Json<Id, Data, CODEC>
-where
-    Id: IdType + FromSqlOwned,
+impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> PgC3p0Json<Id, Data, CODEC>
 {
     pub fn queries(&self) -> &Queries {
         &self.queries
@@ -201,9 +200,7 @@ where
 }
 
 #[async_trait]
-impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, Data, CODEC>
-where
-    Id: IdType + FromSqlOwned + ToSql,
+impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, Data, CODEC>
 {
     type Tx = PgTx;
 
