@@ -14,7 +14,7 @@ version.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
-c3p0_common = { workspace = true }
+c3p0_common = { workspace = true, features = ["postgres"] }
 
 deadpool = { workspace = true }
 deadpool-postgres = { workspace = true } 

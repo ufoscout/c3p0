@@ -15,12 +15,12 @@ pub mod types {
         }
     }
 
-    pub trait MaybeIntoBson: Into<mongodb::bson::Bson> {}
-    impl<T: Into<mongodb::bson::Bson>> MaybeIntoBson for T {}
+    pub trait MaybeMongodb: Into<mongodb::bson::Bson> {}
+    impl<T: Into<mongodb::bson::Bson>> MaybeMongodb for T {}
 }
 
 #[cfg(not(feature = "mongodb"))]
 pub mod types {
-    pub trait MaybeIntoBson {}
-    impl<T> MaybeIntoBson for T where T: ?Sized {}
+    pub trait MaybeMongodb {}
+    impl<T> MaybeMongodb for T where T: ?Sized {}
 }
