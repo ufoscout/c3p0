@@ -1,10 +1,9 @@
-use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::*;
 use async_trait::async_trait;
 use bson::oid::ObjectId;
-use bson::{doc, Bson};
+use bson::doc;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use ::mongodb::options::CountOptions;
@@ -50,7 +49,7 @@ impl MongodbC3p0JsonBuilder<ObjectId> {
 
 impl <Id> MongodbC3p0JsonBuilder<Id> 
 where
-    Id: IdType + Into<Bson>,
+    Id: IdType,
 {   
     pub fn with_id_generator<NewId, T: 'static + IdGenerator<NewId> + Send + Sync>(
         self,
@@ -84,7 +83,7 @@ where
 #[derive(Clone)]
 pub struct MongodbC3p0Json<Id, Data: DataType, CODEC: JsonCodec<Data>>
 where
-    Id: IdType + Into<Bson>,
+    Id: IdType,
 {
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id>>,
@@ -95,7 +94,7 @@ where
 #[async_trait]
 impl<Id, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC> for MongodbC3p0Json<Id, Data, CODEC>
 where
-    Id: IdType + Into<Bson> {
+    Id: IdType {
     type Tx = MongodbTx;
 
     fn codec(&self) -> &CODEC {
