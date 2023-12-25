@@ -14,7 +14,7 @@ pub type MaybeType = (Client, Container<'static, Mongo>);
 
 async fn init() -> MaybeType {
     static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER.get_or_init(Cli::default).run(Mongo::default());
+    let node = DOCKER.get_or_init(Cli::default).run(Mongo);
 
     let host_port = node.get_host_port_ipv4(27017);
     let url = format!("mongodb://127.0.0.1:{host_port}/");

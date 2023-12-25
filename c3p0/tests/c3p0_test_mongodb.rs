@@ -71,7 +71,7 @@ impl MondodbReplicaSet {
             [TemporaryFile::builder()
                 .with_path("docker-compose.yaml")
                 .with_content(
-                    r##"
+                    r#"
                     version: "3.3"
 
                     services:
@@ -91,7 +91,7 @@ impl MondodbReplicaSet {
                           timeout: 5s
                           retries: 5
                
-                    "##,
+                    "#,
                 )
                 .build()],
         )

@@ -239,7 +239,7 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
         } else {
             &self.queries.drop_table_sql_query
         };
-        sqlx::query(&query)
+        sqlx::query(query)
             .execute(tx.conn())
             .await
             .map_err(into_c3p0_error)
