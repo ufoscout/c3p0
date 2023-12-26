@@ -15,7 +15,7 @@ use rustainers::{
 };
 
 pub type C3p0Impl = MongodbC3p0Pool;
-pub type Builder = MongodbC3p0JsonBuilder<ObjectId>;
+pub type Builder = MongodbC3p0JsonBuilder<ObjectId, ObjectId>;
 
 // mod tests;
 mod tests_json;
