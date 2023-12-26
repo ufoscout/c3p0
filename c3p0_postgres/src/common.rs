@@ -1,10 +1,10 @@
-use c3p0_common::{C3p0Error, DataType, JsonCodec, Model};
+use c3p0_common::{C3p0Error, DataType, JsonCodec, Model, VersionType};
 use core::fmt::Display;
 use tokio_postgres::row::RowIndex;
 use tokio_postgres::types::{FromSql, FromSqlOwned};
 use tokio_postgres::Row;
 
-use crate::PostgresIdType;
+use crate::{PostgresIdType, PostgresVersionType};
 
 pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
     Ok(row.try_get(0).map_err(|_| C3p0Error::ResultNotFoundError)?)
@@ -30,7 +30,8 @@ pub fn to_model<
     data_index: DataIdx,
 ) -> Result<Model<Id, Data>, Box<dyn std::error::Error>> {
     let id = get_or_error(row, id_index)?;
-    let version = get_or_error(row, version_index)?;
+    let version: PostgresVersionType = get_or_error(row, version_index)?;
+    let version = version as VersionType;
     let create_epoch_millis = get_or_error(row, create_epoch_millis_index)?;
     let update_epoch_millis = get_or_error(row, update_epoch_millis_index)?;
     let data = codec.data_from_value(get_or_error(row, data_index)?)?;

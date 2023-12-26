@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use serde::{de::DeserializeOwned, Serialize};
 
-pub type VersionType = i32;
+pub type VersionType = u32;
 pub type EpochMillisType = i64;
 
 pub trait DataType:

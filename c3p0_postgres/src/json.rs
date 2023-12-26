@@ -11,6 +11,8 @@ use c3p0_common::*;
 pub trait PostgresIdType: IdType + FromSqlOwned + ToSql {}
 impl<T: IdType + FromSqlOwned + ToSql> PostgresIdType for T {}
 
+pub type PostgresVersionType = i32;
+
 /// A trait that allows the creation of an Id
 pub trait IdGenerator<Id>: Send + Sync {
     fn generate_id(&self) -> Option<Id>;
@@ -266,7 +268,7 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
         obj: Model<Id, Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let result = tx
-            .execute(&self.queries.delete_sql_query, &[&obj.id, &obj.version])
+            .execute(&self.queries.delete_sql_query, &[&obj.id, &(obj.version as PostgresVersionType)])
             .await?;
 
         if result == 0 {
@@ -298,14 +300,14 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
         let id = if let Some(id) = self.id_generator.generate_id() {
             tx.execute(
                 &self.queries.save_sql_query_with_id,
-                &[&obj.version, &create_epoch_millis, &json_data, &id],
+                &[&(obj.version as PostgresVersionType), &create_epoch_millis, &json_data, &id],
             )
             .await?;
             id
         } else {
             tx.fetch_one_value(
                 &self.queries.save_sql_query,
-                &[&obj.version, &create_epoch_millis, &json_data],
+                &[&(obj.version as PostgresVersionType), &create_epoch_millis, &json_data],
             )
             .await?
         };
@@ -332,11 +334,11 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
             .execute(
                 &self.queries.update_sql_query,
                 &[
-                    &updated_model.version,
+                    &(updated_model.version as PostgresVersionType),
                     &updated_model.update_epoch_millis,
                     &json_data,
                     &updated_model.id,
-                    &previous_version,
+                    &(previous_version as PostgresVersionType),
                 ],
             )
             .await?;

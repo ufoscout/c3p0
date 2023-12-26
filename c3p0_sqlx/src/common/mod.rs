@@ -1,5 +1,7 @@
-use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model};
+use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model, VersionType};
 use sqlx::{ColumnIndex, Database, Decode, Row, Type};
+
+pub type SqlxVersionType = i32;
 
 #[inline]
 pub fn to_model<
@@ -34,11 +36,12 @@ where
         .map_err(|err| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for id index. Err: {:?}", err),
         })?;
-    let version = row
+    let version: SqlxVersionType = row
         .try_get(version_index)
         .map_err(|err| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for version index. Err: {:?}", err),
         })?;
+    let version = version as VersionType;
     let create_epoch_millis =
         row.try_get(create_epoch_millis_index)
             .map_err(|err| C3p0Error::RowMapperError {

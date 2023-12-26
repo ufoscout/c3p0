@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::common::to_model;
+use crate::common::{to_model, SqlxVersionType};
 use crate::error::into_c3p0_error;
 use crate::postgres::queries::build_pg_queries;
 use crate::postgres::{Db, DbRow, PgTx};
@@ -304,7 +304,7 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let result = sqlx::query(&self.queries.delete_sql_query)
             .bind(obj.id.clone())
-            .bind(obj.version)
+            .bind(obj.version as SqlxVersionType)
             .execute(tx.conn())
             .await
             .map_err(into_c3p0_error)?
@@ -353,7 +353,7 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
 
         let id = if let Some(id) = self.id_generator.generate_id() {
             sqlx::query(&self.queries.save_sql_query_with_id)
-                .bind(obj.version)
+                .bind(obj.version as SqlxVersionType)
                 .bind(create_epoch_millis)
                 .bind(&json_data)
                 .bind(&id)
@@ -363,7 +363,7 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
             id
         } else {
             sqlx::query(&self.queries.save_sql_query)
-                .bind(obj.version)
+                .bind(obj.version as SqlxVersionType)
                 .bind(create_epoch_millis)
                 .bind(&json_data)
                 .fetch_one(tx.conn())
@@ -392,11 +392,11 @@ impl<Id: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Da
 
         let result = {
             sqlx::query(&self.queries.update_sql_query)
-                .bind(updated_model.version)
+                .bind(updated_model.version as SqlxVersionType)
                 .bind(updated_model.update_epoch_millis)
                 .bind(json_data)
                 .bind(updated_model.id.clone())
-                .bind(previous_version)
+                .bind(previous_version as SqlxVersionType)
                 .execute(tx.conn())
                 .await
                 .map_err(into_c3p0_error)
