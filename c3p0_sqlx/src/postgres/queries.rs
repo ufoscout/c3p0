@@ -1,8 +1,12 @@
 use c3p0_common::IdType;
 
-use crate::{SqlxPgC3p0JsonBuilder, PostgresIdType, PostgresIdGenerator};
+use crate::{PostgresIdGenerator, PostgresIdType, SqlxPgC3p0JsonBuilder};
 
-pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType, Generator: PostgresIdGenerator<Id, DbId>>(
+pub fn build_pg_queries<
+    Id: IdType,
+    DbId: PostgresIdType,
+    Generator: PostgresIdGenerator<Id, DbId>,
+>(
     json_builder: SqlxPgC3p0JsonBuilder<Id, DbId, Generator>,
 ) -> c3p0_common::json::Queries {
     let qualified_table_name = match &json_builder.schema_name {

@@ -1,6 +1,6 @@
 use c3p0_common::IdType;
 
-use crate::{SqlxMySqlC3p0JsonBuilder, MySqlIdType, MySqlIdGenerator};
+use crate::{MySqlIdGenerator, MySqlIdType, SqlxMySqlC3p0JsonBuilder};
 
 pub fn build_mysql_queries<Id: IdType, DbId: MySqlIdType, Generator: MySqlIdGenerator<Id, DbId>>(
     json_builder: SqlxMySqlC3p0JsonBuilder<Id, DbId, Generator>,

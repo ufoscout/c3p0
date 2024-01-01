@@ -56,11 +56,17 @@ impl IdGenerator<uuid::Uuid, uuid::Uuid> for UuidIdGenerator {
         Some(uuid::Uuid::new_v4())
     }
 
-    fn from_id_to_db_id<'a>(&self, id: Cow<'a, uuid::Uuid>) -> Result<Cow<'a, uuid::Uuid>, C3p0Error> {
+    fn from_id_to_db_id<'a>(
+        &self,
+        id: Cow<'a, uuid::Uuid>,
+    ) -> Result<Cow<'a, uuid::Uuid>, C3p0Error> {
         Ok(id)
     }
 
-    fn from_db_id_to_id<'a>(&self, id: Cow<'a, uuid::Uuid>) -> Result<Cow<'a, uuid::Uuid>, C3p0Error> {
+    fn from_db_id_to_id<'a>(
+        &self,
+        id: Cow<'a, uuid::Uuid>,
+    ) -> Result<Cow<'a, uuid::Uuid>, C3p0Error> {
         Ok(id)
     }
 
@@ -107,7 +113,11 @@ impl MongodbC3p0JsonBuilder<ObjectId, ObjectId> {
 }
 
 impl<Id: IdType, DbId: MongodbIdType> MongodbC3p0JsonBuilder<Id, DbId> {
-    pub fn with_id_generator<NewId: IdType, NewDbId: MongodbIdType, T: 'static + IdGenerator<NewId, NewDbId> + Send + Sync>(
+    pub fn with_id_generator<
+        NewId: IdType,
+        NewDbId: MongodbIdType,
+        T: 'static + IdGenerator<NewId, NewDbId> + Send + Sync,
+    >(
         self,
         id_generator: T,
     ) -> MongodbC3p0JsonBuilder<NewId, NewDbId> {
@@ -135,7 +145,8 @@ impl<Id: IdType, DbId: MongodbIdType> MongodbC3p0JsonBuilder<Id, DbId> {
 }
 
 #[derive(Clone)]
-pub struct MongodbC3p0Json<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>> {
+pub struct MongodbC3p0Json<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>>
+{
     phantom_data: std::marker::PhantomData<Data>,
     id_generator: Arc<dyn IdGenerator<Id, DbId>>,
     codec: CODEC,
@@ -143,8 +154,9 @@ pub struct MongodbC3p0Json<Id: IdType, DbId: MongodbIdType, Data: DataType, CODE
 }
 
 #[async_trait]
-impl<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
-    for MongodbC3p0Json<Id, DbId, Data, CODEC> {
+impl<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>>
+    C3p0Json<Id, Data, CODEC> for MongodbC3p0Json<Id, DbId, Data, CODEC>
+{
     type Tx = MongodbTx;
 
     fn codec(&self) -> &CODEC {
@@ -181,7 +193,8 @@ impl<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>> C3
         tx: &mut MongodbTx,
         id: ID,
     ) -> Result<bool, C3p0Error> {
-        let filter = doc! { "_id": self.id_generator.from_id_to_db_id(Cow::Borrowed(id.into()))?.as_ref() };
+        let filter =
+            doc! { "_id": self.id_generator.from_id_to_db_id(Cow::Borrowed(id.into()))?.as_ref() };
         let options = CountOptions::builder().limit(1).build();
         let (db, session) = tx.db();
         db.collection::<ModelWithId<Id>>(&self.table_name)
@@ -226,7 +239,9 @@ impl<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>> C3
             .await
             .map_err(into_c3p0_error)?;
         if let Some(model) = model {
-            Ok(Some(model.into_model(self.id_generator.as_ref(), &self.codec)?))
+            Ok(Some(
+                model.into_model(self.id_generator.as_ref(), &self.codec)?,
+            ))
         } else {
             Ok(None)
         }
@@ -283,9 +298,13 @@ impl<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>> C3
     ) -> Result<u64, C3p0Error> {
         let (db, session) = tx.db();
         db.collection::<ModelWithId<DbId>>(&self.table_name)
-            .delete_one_with_session(doc! { 
-                "_id":  self.id_generator.from_id_to_db_id(Cow::Borrowed(id.into()))?.as_ref()
-            }, None, session)
+            .delete_one_with_session(
+                doc! {
+                    "_id":  self.id_generator.from_id_to_db_id(Cow::Borrowed(id.into()))?.as_ref()
+                },
+                None,
+                session,
+            )
             .await
             .map_err(into_c3p0_error)
             .map(|result| result.deleted_count)
@@ -346,7 +365,8 @@ impl<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>> C3
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());
-        let updated_model = ModelWithId::from_model(updated_model, self.id_generator.as_ref(), &self.codec)?;
+        let updated_model =
+            ModelWithId::from_model(updated_model, self.id_generator.as_ref(), &self.codec)?;
 
         let (db, session) = tx.db();
         let result = db
@@ -389,14 +409,15 @@ struct ModelWithId<DbId> {
 }
 
 impl<DbId: MongodbIdType> ModelWithId<DbId> {
-
     fn into_model<Id: IdType, Data: DataType, Codec: JsonCodec<Data>>(
         self,
         id_generator: &(dyn IdGenerator<Id, DbId>),
         codec: &Codec,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         Ok(Model {
-            id: id_generator.from_db_id_to_id(Cow::Owned(self.id))?.into_owned(),
+            id: id_generator
+                .from_db_id_to_id(Cow::Owned(self.id))?
+                .into_owned(),
             version: self.version,
             create_epoch_millis: self.create_epoch_millis,
             update_epoch_millis: self.update_epoch_millis,
@@ -410,7 +431,9 @@ impl<DbId: MongodbIdType> ModelWithId<DbId> {
         codec: &Codec,
     ) -> Result<Self, C3p0Error> {
         Ok(ModelWithId {
-            id: id_generator.from_id_to_db_id(Cow::Owned(model.id))?.into_owned(),
+            id: id_generator
+                .from_id_to_db_id(Cow::Owned(model.id))?
+                .into_owned(),
             version: model.version,
             create_epoch_millis: model.create_epoch_millis,
             update_epoch_millis: model.update_epoch_millis,

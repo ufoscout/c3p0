@@ -46,11 +46,17 @@ impl IdGenerator<uuid::Uuid, uuid::Uuid> for UuidIdGenerator {
         Some(uuid::Uuid::new_v4())
     }
 
-    fn from_id_to_db_id<'a>(&self, id: Cow<'a, uuid::Uuid>) -> Result<Cow<'a, uuid::Uuid>, C3p0Error> {
+    fn from_id_to_db_id<'a>(
+        &self,
+        id: Cow<'a, uuid::Uuid>,
+    ) -> Result<Cow<'a, uuid::Uuid>, C3p0Error> {
         Ok(id)
     }
 
-    fn from_db_id_to_id<'a>(&self, id: Cow<'a, uuid::Uuid>) -> Result<Cow<'a, uuid::Uuid>, C3p0Error> {
+    fn from_db_id_to_id<'a>(
+        &self,
+        id: Cow<'a, uuid::Uuid>,
+    ) -> Result<Cow<'a, uuid::Uuid>, C3p0Error> {
         Ok(id)
     }
 }
@@ -120,7 +126,11 @@ impl<Id: IdType, DbId: PostgresIdType> PgC3p0JsonBuilder<Id, DbId> {
         self
     }
 
-    pub fn with_id_generator<NewId: IdType, NewDbId: PostgresIdType, T: 'static + IdGenerator<NewId, NewDbId> + Send + Sync>(
+    pub fn with_id_generator<
+        NewId: IdType,
+        NewDbId: PostgresIdType,
+        T: 'static + IdGenerator<NewId, NewDbId> + Send + Sync,
+    >(
         self,
         id_generator: T,
     ) -> PgC3p0JsonBuilder<NewId, NewDbId> {
@@ -161,7 +171,9 @@ pub struct PgC3p0Json<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: J
     queries: Queries,
 }
 
-impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> PgC3p0Json<Id, DbId, Data, CODEC> {
+impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
+    PgC3p0Json<Id, DbId, Data, CODEC>
+{
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
@@ -213,8 +225,8 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> P
 }
 
 #[async_trait]
-impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
-    for PgC3p0Json<Id, DbId, Data, CODEC>
+impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
+    C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, DbId, Data, CODEC>
 {
     type Tx = PgTx;
 
@@ -249,7 +261,9 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C
         tx: &mut PgTx,
         id: ID,
     ) -> Result<bool, C3p0Error> {
-        let id = self.id_generator.from_id_to_db_id(Cow::Borrowed(id.into()))?;
+        let id = self
+            .id_generator
+            .from_id_to_db_id(Cow::Borrowed(id.into()))?;
         tx.fetch_one_value(&self.queries.exists_by_id_sql_query, &[id.as_ref()])
             .await
     }
@@ -266,7 +280,9 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C
         tx: &mut PgTx,
         id: ID,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
-        let id = self.id_generator.from_id_to_db_id(Cow::Borrowed(id.into()))?;
+        let id = self
+            .id_generator
+            .from_id_to_db_id(Cow::Borrowed(id.into()))?;
         tx.fetch_one_optional(&self.queries.find_by_id_sql_query, &[id.as_ref()], |row| {
             self.to_model(row)
         })
@@ -290,7 +306,10 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let id = self.id_generator.from_id_to_db_id(Cow::Borrowed(&obj.id))?;
         let result = tx
-            .execute(&self.queries.delete_sql_query, &[id.as_ref(), &(obj.version as PostgresVersionType)])
+            .execute(
+                &self.queries.delete_sql_query,
+                &[id.as_ref(), &(obj.version as PostgresVersionType)],
+            )
             .await?;
 
         if result == 0 {
@@ -311,7 +330,9 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C
         tx: &mut PgTx,
         id: ID,
     ) -> Result<u64, C3p0Error> {
-        let id = self.id_generator.from_id_to_db_id(Cow::Borrowed(id.into()))?;
+        let id = self
+            .id_generator
+            .from_id_to_db_id(Cow::Borrowed(id.into()))?;
         tx.execute(&self.queries.delete_by_id_sql_query, &[id.as_ref()])
             .await
     }
@@ -323,20 +344,32 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C
         let id = if let Some(id) = self.id_generator.generate_id() {
             tx.execute(
                 &self.queries.save_sql_query_with_id,
-                &[&(obj.version as PostgresVersionType), &create_epoch_millis, &json_data, &id],
+                &[
+                    &(obj.version as PostgresVersionType),
+                    &create_epoch_millis,
+                    &json_data,
+                    &id,
+                ],
             )
             .await?;
             id
         } else {
             tx.fetch_one_value(
                 &self.queries.save_sql_query,
-                &[&(obj.version as PostgresVersionType), &create_epoch_millis, &json_data],
+                &[
+                    &(obj.version as PostgresVersionType),
+                    &create_epoch_millis,
+                    &json_data,
+                ],
             )
             .await?
         };
 
         Ok(Model {
-            id: self.id_generator.from_db_id_to_id(Cow::Owned(id))?.into_owned(),
+            id: self
+                .id_generator
+                .from_db_id_to_id(Cow::Owned(id))?
+                .into_owned(),
             version: obj.version,
             data: obj.data,
             create_epoch_millis,
@@ -352,7 +385,9 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C
         let json_data = &self.codec.data_to_value(&obj.data)?;
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());
-        let updated_model_id = self.id_generator.from_id_to_db_id(Cow::Borrowed(&updated_model.id))?;
+        let updated_model_id = self
+            .id_generator
+            .from_id_to_db_id(Cow::Borrowed(&updated_model.id))?;
         let result = tx
             .execute(
                 &self.queries.update_sql_query,

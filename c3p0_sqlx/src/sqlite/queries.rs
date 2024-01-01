@@ -1,8 +1,12 @@
 use c3p0_common::IdType;
 
-use crate::{SqlxSqliteC3p0JsonBuilder, SqliteIdType, SqliteIdGenerator};
+use crate::{SqliteIdGenerator, SqliteIdType, SqlxSqliteC3p0JsonBuilder};
 
-pub fn build_sqlite_queries<Id: IdType, DbId: SqliteIdType, Generator: SqliteIdGenerator<Id, DbId>>(
+pub fn build_sqlite_queries<
+    Id: IdType,
+    DbId: SqliteIdType,
+    Generator: SqliteIdGenerator<Id, DbId>,
+>(
     json_builder: SqlxSqliteC3p0JsonBuilder<Id, DbId, Generator>,
 ) -> c3p0_common::json::Queries {
     let qualified_table_name = match &json_builder.schema_name {

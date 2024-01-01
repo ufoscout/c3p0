@@ -48,11 +48,11 @@ where
             cause: format!("Row contains no values for id index. Err: {:?}", err),
         })?;
     let id = id_generator.from_db_id_to_id(Cow::Owned(id))?.into_owned();
-    let version: SqlxVersionType = row
-        .try_get(version_index)
-        .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for version index. Err: {:?}", err),
-        })?;
+    let version: SqlxVersionType =
+        row.try_get(version_index)
+            .map_err(|err| C3p0Error::RowMapperError {
+                cause: format!("Row contains no values for version index. Err: {:?}", err),
+            })?;
     let version = version as VersionType;
     let create_epoch_millis =
         row.try_get(create_epoch_millis_index)

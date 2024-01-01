@@ -1,11 +1,11 @@
-use c3p0_common::{C3p0Error, DataType, JsonCodec, Model, VersionType, IdType};
+use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model, VersionType};
 use core::fmt::Display;
 use std::borrow::Cow;
 use tokio_postgres::row::RowIndex;
 use tokio_postgres::types::{FromSql, FromSqlOwned};
 use tokio_postgres::Row;
 
-use crate::{PostgresIdType, PostgresVersionType, IdGenerator};
+use crate::{IdGenerator, PostgresIdType, PostgresVersionType};
 
 pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::error::Error>> {
     Ok(row.try_get(0).map_err(|_| C3p0Error::ResultNotFoundError)?)

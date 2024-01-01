@@ -1,7 +1,9 @@
 use crate::{PgC3p0JsonBuilder, PostgresIdType};
 use c3p0_common::{json::Queries, IdType};
 
-pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType>(json_builder: PgC3p0JsonBuilder<Id, DbId>) -> Queries {
+pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType>(
+    json_builder: PgC3p0JsonBuilder<Id, DbId>,
+) -> Queries {
     let qualified_table_name = match &json_builder.schema_name {
         Some(schema_name) => format!(r#"{}."{}""#, schema_name, json_builder.table_name),
         None => json_builder.table_name.clone(),
