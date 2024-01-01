@@ -404,7 +404,7 @@ impl<Id: IdType, DbId: PostgresIdType, Generator: PostgresIdGenerator<Id, DbId>,
         };
 
         Ok(Model {
-            id,
+            id: self.id_generator.from_db_id_to_id(Cow::Owned(id))?.into_owned(),
             version: obj.version,
             data: obj.data,
             create_epoch_millis,

@@ -65,6 +65,7 @@ impl IdGenerator<uuid::Uuid, uuid::Uuid> for UuidIdGenerator {
     }
 
     fn from_inserted_id(&self, inserted_id: mongodb::bson::Bson) -> Result<uuid::Uuid, C3p0Error> {
+        let REMOVE_ME = 0;
         match inserted_id {
             mongodb::bson::Bson::Binary(binary) => {
                 if let mongodb::bson::spec::BinarySubtype::Uuid = binary.subtype {
