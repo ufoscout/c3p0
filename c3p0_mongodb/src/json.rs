@@ -70,26 +70,7 @@ impl IdGenerator<uuid::Uuid, uuid::Uuid> for UuidIdGenerator {
         Ok(id)
     }
 
-    fn from_inserted_id(&self, inserted_id: mongodb::bson::Bson) -> Result<uuid::Uuid, C3p0Error> {
-        let REMOVE_ME = 0;
-        match inserted_id {
-            mongodb::bson::Bson::Binary(binary) => {
-                if let mongodb::bson::spec::BinarySubtype::Uuid = binary.subtype {
-                    return binary
-                        .bytes
-                        .try_into()
-                        .map_err(|err| C3p0Error::RowMapperError {
-                            cause: format!("Cannot convert inserted id to Uuid: {:?}", err),
-                        });
-                }
-            }
-            mongodb::bson::Bson::String(string) => {
-                return uuid::Uuid::parse_str(&string).map_err(|err| C3p0Error::RowMapperError {
-                    cause: format!("Cannot convert inserted id to Uuid: {:?}", err),
-                });
-            }
-            _ => {}
-        };
+    fn from_inserted_id(&self, _inserted_id: mongodb::bson::Bson) -> Result<uuid::Uuid, C3p0Error> {
         Err(C3p0Error::RowMapperError {
             cause: "Cannot convert inserted id to Uuid: Unexpected type".into(),
         })

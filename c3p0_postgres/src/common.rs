@@ -11,6 +11,7 @@ pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::err
     Ok(row.try_get(0).map_err(|_| C3p0Error::ResultNotFoundError)?)
 }
 
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn to_model<
     Id: IdType,
