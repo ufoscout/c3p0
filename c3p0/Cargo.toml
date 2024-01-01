@@ -14,8 +14,8 @@ version.workspace = true
 [dependencies]
 c3p0_common = { workspace = true }
 
-#in_memory feature
-c3p0_in_memory = { workspace = true, optional = true }
+# mongodb feature
+c3p0_mongodb = { workspace = true, optional = true }
 
 # postgres feature
 c3p0_postgres = { workspace = true, optional = true }
@@ -27,16 +27,17 @@ c3p0_sqlx = { workspace = true, optional = true }
 maybe-single = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }
+rustainers = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 testcontainers = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
-
+uuid = { workspace = true }
 
 [features]
 default = []
-in_memory = ["c3p0_in_memory"]
+mongodb = ["c3p0_mongodb"]
 postgres = ["c3p0_postgres"]
 sqlx_mysql = ["c3p0_sqlx/mysql"]
 sqlx_postgres = ["c3p0_sqlx/postgres"]

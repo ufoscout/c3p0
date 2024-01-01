@@ -1,14 +1,15 @@
-use crate::{C3p0Error, ForUpdate, IdType, JsonCodec, Model, NewModel};
+use crate::{C3p0Error, DataType, IdType, JsonCodec, Model, NewModel};
 use async_trait::async_trait;
 
-pub mod builder;
 pub mod codec;
 pub mod model;
+pub mod types;
 
 #[async_trait]
-pub trait C3p0Json<Data, Codec>: Clone + Send + Sync
+pub trait C3p0Json<Id, Data, Codec>: Clone + Send + Sync
 where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Id: IdType,
+    Data: DataType,
     Codec: JsonCodec<Data>,
 {
     type Tx;
@@ -22,59 +23,51 @@ where
 
     async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
-    async fn exists_by_id<'a, ID: Into<&'a IdType> + Send>(
+    async fn exists_by_id<'a, ID: Into<&'a Id> + Send>(
         &'a self,
         tx: &mut Self::Tx,
         id: ID,
     ) -> Result<bool, C3p0Error>;
 
-    async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Data>>, C3p0Error>;
+    async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Id, Data>>, C3p0Error>;
 
-    async fn fetch_all_for_update(
+    async fn fetch_one_optional_by_id<'a, ID: Into<&'a Id> + Send>(
+        &'a self,
+        tx: &mut Self::Tx,
+        id: ID,
+    ) -> Result<Option<Model<Id, Data>>, C3p0Error>;
+
+    async fn fetch_one_by_id<'a, ID: Into<&'a Id> + Send>(
+        &'a self,
+        tx: &mut Self::Tx,
+        id: ID,
+    ) -> Result<Model<Id, Data>, C3p0Error>;
+
+    async fn delete(
         &self,
         tx: &mut Self::Tx,
-        for_update: &ForUpdate,
-    ) -> Result<Vec<Model<Data>>, C3p0Error>;
-
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-    ) -> Result<Option<Model<Data>>, C3p0Error>;
-
-    async fn fetch_one_optional_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Option<Model<Data>>, C3p0Error>;
-
-    async fn fetch_one_by_id<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-    ) -> Result<Model<Data>, C3p0Error>;
-
-    async fn fetch_one_by_id_for_update<'a, ID: Into<&'a IdType> + Send>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: ID,
-        for_update: &ForUpdate,
-    ) -> Result<Model<Data>, C3p0Error>;
-
-    async fn delete(&self, tx: &mut Self::Tx, obj: Model<Data>) -> Result<Model<Data>, C3p0Error>;
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error>;
 
     async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
-    async fn delete_by_id<'a, ID: Into<&'a IdType> + Send>(
+    async fn delete_by_id<'a, ID: Into<&'a Id> + Send>(
         &'a self,
         tx: &mut Self::Tx,
         id: ID,
     ) -> Result<u64, C3p0Error>;
 
-    async fn save(&self, tx: &mut Self::Tx, obj: NewModel<Data>) -> Result<Model<Data>, C3p0Error>;
+    async fn save(
+        &self,
+        tx: &mut Self::Tx,
+        obj: NewModel<Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error>;
 
-    async fn update(&self, tx: &mut Self::Tx, obj: Model<Data>) -> Result<Model<Data>, C3p0Error>;
+    async fn update(
+        &self,
+        tx: &mut Self::Tx,
+        obj: Model<Id, Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error>;
 }
 
 #[derive(Clone)]
@@ -101,6 +94,7 @@ pub struct Queries {
     pub delete_by_id_sql_query: String,
 
     pub save_sql_query: String,
+    pub save_sql_query_with_id: String,
 
     pub update_sql_query: String,
 

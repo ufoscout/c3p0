@@ -1,35 +1,28 @@
 use serde::{Deserialize, Serialize};
 
-pub type IdType = i64;
-pub type VersionType = i32;
-pub type EpochMillisType = i64;
+use crate::{DataType, IdType};
+
+use super::types::{EpochMillisType, VersionType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct Model<Data>
-where
-    Data: Clone + serde::ser::Serialize + Send,
-{
-    pub id: IdType,
+pub struct Model<Id, Data> {
+    pub id: Id,
     pub version: VersionType,
     pub create_epoch_millis: EpochMillisType,
     pub update_epoch_millis: EpochMillisType,
-    #[serde(bound(deserialize = "Data: serde::Deserialize<'de>"))]
     pub data: Data,
 }
 
-impl<Data> Model<Data>
-where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-{
+impl<Id: IdType, Data: DataType> Model<Id, Data> {
     pub fn into_new(self) -> NewModel<Data> {
         NewModel::new(self.data)
     }
 
     pub fn from_new(
-        id: IdType,
+        id: Id,
         create_epoch_millis: EpochMillisType,
         model: NewModel<Data>,
-    ) -> Model<Data> {
+    ) -> Model<Id, Data> {
         Model {
             id,
             version: model.version,
@@ -39,7 +32,7 @@ where
         }
     }
 
-    pub fn into_new_version(self, update_epoch_millis: EpochMillisType) -> Model<Data> {
+    pub fn into_new_version(self, update_epoch_millis: EpochMillisType) -> Model<Id, Data> {
         Model {
             id: self.id,
             version: self.version + 1,
@@ -50,38 +43,19 @@ where
     }
 }
 
-impl<'a, Data> From<&'a Model<Data>> for &'a IdType
-where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-{
-    fn from(model: &'a Model<Data>) -> Self {
-        &model.id
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct NewModel<Data>
-where
-    Data: Clone + serde::ser::Serialize,
-{
+pub struct NewModel<Data> {
     pub version: VersionType,
-    #[serde(bound(deserialize = "Data: serde::Deserialize<'de>"))]
     pub data: Data,
 }
 
-impl<Data> NewModel<Data>
-where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
-{
+impl<Data: DataType> NewModel<Data> {
     pub fn new(data: Data) -> Self {
         NewModel { version: 0, data }
     }
 }
 
-impl<Data> Default for NewModel<Data>
-where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Default,
-{
+impl<Data: DataType + Default> Default for NewModel<Data> {
     fn default() -> Self {
         NewModel::new(Data::default())
     }
@@ -89,7 +63,7 @@ where
 
 impl<Data> From<Data> for NewModel<Data>
 where
-    Data: Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send,
+    Data: DataType,
 {
     fn from(data: Data) -> Self {
         NewModel::new(data)
@@ -116,7 +90,7 @@ mod test {
         };
 
         let serialize = serde_json::to_string(&model)?;
-        let deserialize: Model<SimpleData> = serde_json::from_str(&serialize)?;
+        let deserialize: Model<i64, SimpleData> = serde_json::from_str(&serialize)?;
 
         assert_eq!(model.id, deserialize.id);
         assert_eq!(model.version, deserialize.version);

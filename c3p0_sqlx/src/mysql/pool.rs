@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use c3p0_common::*;
 use std::future::Future;
 
-use crate::common::executor::batch_execute;
 use crate::error::into_c3p0_error;
 use crate::mysql::Db;
 use sqlx::{MySqlConnection, Pool, Transaction};
@@ -66,12 +65,5 @@ pub struct MySqlTx {
 impl MySqlTx {
     pub fn conn(&mut self) -> &mut MySqlConnection {
         &mut self.inner
-    }
-}
-
-#[async_trait]
-impl SqlTx for MySqlTx {
-    async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        batch_execute(sql, self.conn()).await
     }
 }

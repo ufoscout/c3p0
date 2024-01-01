@@ -20,14 +20,9 @@ deadpool = { workspace = true }
 deadpool-postgres = { workspace = true } 
 log = { workspace = true }
 serde = { workspace = true }
-tokio-postgres = { workspace = true }
+tokio-postgres = { workspace = true, features = ["with-uuid-1"]}
+uuid = { workspace = true }
 
 [dev-dependencies]
 testcontainers = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-
-
-[features]
-default = []
-
-spike_tests = []

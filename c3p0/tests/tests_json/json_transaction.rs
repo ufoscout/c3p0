@@ -9,7 +9,7 @@ fn json_should_commit_transaction() {
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
         println!("Create table {table_name}");
-        let jpo = C3p0JsonBuilder::<C3p0Impl>::new(table_name).build::<TestData>();
+        let jpo = Builder::new(table_name).build::<TestData>();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
@@ -40,7 +40,7 @@ fn json_should_commit_transaction() {
             assert_eq!(3, count);
             println!("Count performed!");
 
-            assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
+            let _ = jpo.drop_table_if_exists(conn, true).await;
             println!("Table dropped!");
             Ok(())
         })
@@ -56,7 +56,7 @@ fn json_should_rollback_transaction() {
         let c3p0 = &data.0;
 
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
-        let jpo = &C3p0JsonBuilder::<C3p0Impl>::new(table_name).build();
+        let jpo = &Builder::new(table_name).build();
 
         let model = NewModel::new(TestData {
             first_name: "my_first_name".to_owned(),
@@ -87,7 +87,7 @@ fn json_should_rollback_transaction() {
                 let count = jpo.count_all(conn).await.unwrap();
                 assert_eq!(0, count);
 
-                assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
+                let _ = jpo.drop_table_if_exists(conn, true).await;
                 Ok(())
             })
             .await

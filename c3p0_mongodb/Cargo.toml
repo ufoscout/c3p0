@@ -1,5 +1,5 @@
 [package]
-name = "c3p0_in_memory"
+name = "c3p0_mongodb"
 description = "A good friend for r2d2"
 readme = "../README.md"
 
@@ -13,16 +13,17 @@ version.workspace = true
 
 
 [dependencies]
-c3p0_common = { workspace = true }
 async-trait = { workspace = true }
+c3p0_common = { workspace = true }
+
+log = { workspace = true }
+mongodb = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tokio = { workspace = true, features = ["sync"] }
+uuid = { workspace = true }
 
 [dev-dependencies]
-serde = { workspace = true, features = ["derive"] }
-tokio = { workspace = true, features = ["macros", "rt"] }
-
-[features]
-default = []
-
+once_cell = { workspace = true }
+maybe-single = { workspace = true }
+testcontainers = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

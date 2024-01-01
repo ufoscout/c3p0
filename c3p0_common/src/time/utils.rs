@@ -1,6 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::json::model::EpochMillisType;
+use crate::json::types::EpochMillisType;
 
 /// Returns the current unix timestamp in millis
 pub fn get_current_epoch_millis() -> EpochMillisType {

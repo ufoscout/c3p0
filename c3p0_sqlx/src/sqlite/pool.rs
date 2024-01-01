@@ -1,4 +1,3 @@
-use crate::common::executor::batch_execute;
 use crate::error::into_c3p0_error;
 use crate::sqlite::Db;
 use async_trait::async_trait;
@@ -63,12 +62,5 @@ pub struct SqliteTx {
 impl SqliteTx {
     pub fn conn(&mut self) -> &mut SqliteConnection {
         &mut self.inner
-    }
-}
-
-#[async_trait]
-impl SqlTx for SqliteTx {
-    async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
-        batch_execute(sql, self.conn()).await
     }
 }

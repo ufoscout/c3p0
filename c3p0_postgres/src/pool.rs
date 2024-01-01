@@ -60,14 +60,11 @@ pub struct PgTx {
     inner: &'static Transaction<'static>,
 }
 
-#[async_trait]
-impl SqlTx for PgTx {
-    async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
+impl PgTx {
+    pub async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         self.inner.batch_execute(sql).await.map_err(into_c3p0_error)
     }
-}
 
-impl PgTx {
     pub async fn execute(
         &mut self,
         sql: &str,
@@ -109,7 +106,7 @@ impl PgTx {
             .query(&stmt, params)
             .await
             .map_err(into_c3p0_error)?
-            .get(0)
+            .first()
             .map(mapper)
             .transpose()
             .map_err(|err| C3p0Error::RowMapperError {
