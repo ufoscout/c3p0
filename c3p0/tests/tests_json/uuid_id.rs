@@ -25,6 +25,9 @@ fn basic_crud() -> Result<(), C3p0Error> {
             println!("saved_model {:?}", saved_model);
             // assert!(saved_model.id >= 0);
 
+            assert_eq!(1, jpo.count_all(conn).await.unwrap());
+            println!("{:?}", jpo.fetch_all(conn).await.unwrap());
+
             let found_model = jpo
                 .fetch_one_optional_by_id(conn, &saved_model.id)
                 .await
