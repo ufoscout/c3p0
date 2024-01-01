@@ -16,6 +16,11 @@ use rustainers::{
 
 pub type C3p0Impl = MongodbC3p0Pool;
 pub type Builder = MongodbC3p0JsonBuilder<ObjectId, ObjectId>;
+pub type UuidBuilder = MongodbC3p0JsonBuilder<uuid::Uuid, uuid::Uuid>;
+
+pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
+    MongodbC3p0JsonBuilder::new(table_name).with_id_generator(UuidIdGenerator {})
+}
 
 // mod tests;
 mod tests_json;
@@ -48,15 +53,6 @@ pub mod db_specific {
     pub fn db_type() -> utils::DbType {
         utils::DbType::Mongodb
     }
-
-    // pub fn row_to_string(row: &Row) -> Result<String, Box<dyn std::error::Error>> {
-    //     let value: String = row.get(0);
-    //     Ok(value)
-    // }
-
-    // pub fn build_insert_query(table_name: &str) -> String {
-    //     format!(r"INSERT INTO {} (name) VALUES ($1)", table_name)
-    // }
 }
 
 pub struct MondodbReplicaSet {

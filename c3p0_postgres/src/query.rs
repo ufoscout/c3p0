@@ -84,7 +84,7 @@ pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType>(
         create_table_sql_query: format!(
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
-                    {} bigserial primary key,
+                    {} {} primary key,
                     {} int not null,
                     {} bigint not null,
                     {} bigint not null,
@@ -93,6 +93,7 @@ pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType>(
                 "#,
             qualified_table_name,
             json_builder.id_field_name,
+            json_builder.id_generator.create_statement_column_type(),
             json_builder.version_field_name,
             json_builder.create_epoch_millis_field_name,
             json_builder.update_epoch_millis_field_name,

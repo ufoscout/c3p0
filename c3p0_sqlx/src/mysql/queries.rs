@@ -62,7 +62,7 @@ pub fn build_mysql_queries<Id: IdType, DbId: MySqlIdType, Generator: MySqlIdGene
         ),
 
         save_sql_query_with_id: format!(
-            "INSERT INTO {} ({}, {}, {}, {}, {}) VALUES (?, ?, ?, ?)",
+            "INSERT INTO {} ({}, {}, {}, {}, {}) VALUES (?, ?, ?, ?, ?)",
             qualified_table_name,
             json_builder.version_field_name,
             json_builder.create_epoch_millis_field_name,
@@ -84,7 +84,7 @@ pub fn build_mysql_queries<Id: IdType, DbId: MySqlIdType, Generator: MySqlIdGene
         create_table_sql_query: format!(
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
-                    {} BIGINT primary key NOT NULL AUTO_INCREMENT,
+                    {} {},
                     {} int not null,
                     {} bigint not null,
                     {} bigint not null,
@@ -93,6 +93,7 @@ pub fn build_mysql_queries<Id: IdType, DbId: MySqlIdType, Generator: MySqlIdGene
                 "#,
             qualified_table_name,
             json_builder.id_field_name,
+            json_builder.id_generator.create_statement_column_type(),
             json_builder.version_field_name,
             json_builder.create_epoch_millis_field_name,
             json_builder.update_epoch_millis_field_name,

@@ -16,6 +16,11 @@ use std::time::Duration;
 
 pub type C3p0Impl = PgC3p0Pool;
 pub type Builder = PgC3p0JsonBuilder<u64, i64>;
+pub type UuidBuilder = PgC3p0JsonBuilder<uuid::Uuid, uuid::Uuid>;
+
+pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
+    PgC3p0JsonBuilder::new(table_name).with_id_generator(UuidIdGenerator {})
+}
 
 mod tests;
 mod tests_json;

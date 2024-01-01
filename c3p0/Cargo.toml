@@ -33,7 +33,7 @@ serde_json = { workspace = true }
 testcontainers = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
-
+uuid = { workspace = true }
 
 [features]
 default = []

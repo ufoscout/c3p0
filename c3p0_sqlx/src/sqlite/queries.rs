@@ -66,7 +66,7 @@ pub fn build_sqlite_queries<
         ),
 
         save_sql_query_with_id: format!(
-            "INSERT INTO {} ({}, {}, {}, {}, {}) VALUES (?, ?, ?, ?)",
+            "INSERT INTO {} ({}, {}, {}, {}, {}) VALUES (?, ?, ?, ?, ?)",
             qualified_table_name,
             json_builder.version_field_name,
             json_builder.create_epoch_millis_field_name,
@@ -88,7 +88,7 @@ pub fn build_sqlite_queries<
         create_table_sql_query: format!(
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
-                    {} integer primary key autoincrement,
+                    {} {},
                     {} integer not null,
                     {} integer not null,
                     {} integer not null,
@@ -97,6 +97,7 @@ pub fn build_sqlite_queries<
                 "#,
             qualified_table_name,
             json_builder.id_field_name,
+            json_builder.id_generator.create_statement_column_type(),
             json_builder.version_field_name,
             json_builder.create_epoch_millis_field_name,
             json_builder.update_epoch_millis_field_name,
