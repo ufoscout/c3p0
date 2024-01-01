@@ -15,6 +15,7 @@ pub trait IdGenerator<Id: IdType, DbId: IdType> {
 pub fn to_model<
     Id: IdType,
     DbId: IdType,
+    Generator: IdGenerator<Id, DbId>,
     Data: DataType,
     CODEC: JsonCodec<Data>,
     R: Row<Database = DB>,
@@ -26,7 +27,7 @@ pub fn to_model<
     DB: Database,
 >(
     codec: &CODEC,
-    id_generator: &(dyn IdGenerator<Id, DbId>),
+    id_generator: &Generator,
     row: &R,
     id_index: IdIdx,
     version_index: VersionIdx,

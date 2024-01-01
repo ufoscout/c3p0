@@ -295,7 +295,7 @@ impl<Id: IdType, DbId: MongodbIdType, Data: DataType, CODEC: JsonCodec<Data>> C3
         tx: &mut MongodbTx,
         obj: NewModel<Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        let json_data = self.codec().data_to_value(&obj.data)?;
+        let json_data = self.codec.data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
 
         let (db, session) = tx.db();

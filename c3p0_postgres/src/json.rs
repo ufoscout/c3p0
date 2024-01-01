@@ -317,7 +317,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C
     }
 
     async fn save(&self, tx: &mut PgTx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
-        let json_data = self.codec().data_to_value(&obj.data)?;
+        let json_data = &self.codec.data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
 
         let id = if let Some(id) = self.id_generator.generate_id() {
@@ -349,10 +349,10 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> C
         tx: &mut PgTx,
         obj: Model<Id, Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        let json_data = self.codec().data_to_value(&obj.data)?;
+        let json_data = &self.codec.data_to_value(&obj.data)?;
         let previous_version = obj.version;
         let updated_model = obj.into_new_version(get_current_epoch_millis());
-        let updated_model_id = self.id_generator.from_id_to_db_id(Cow::Borrowed(&updated_model.id))?; 
+        let updated_model_id = self.id_generator.from_id_to_db_id(Cow::Borrowed(&updated_model.id))?;
         let result = tx
             .execute(
                 &self.queries.update_sql_query,
