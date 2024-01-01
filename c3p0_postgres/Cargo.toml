@@ -20,7 +20,7 @@ deadpool = { workspace = true }
 deadpool-postgres = { workspace = true } 
 log = { workspace = true }
 serde = { workspace = true }
-tokio-postgres = { workspace = true }
+tokio-postgres = { workspace = true, features = ["with-uuid-1"]}
 uuid = { workspace = true }
 
 [dev-dependencies]
