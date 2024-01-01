@@ -7,10 +7,11 @@ pub type SqlxVersionType = i32;
 
 pub trait IdGenerator<Id: IdType, DbId: IdType> {
     fn generate_id(&self) -> Option<DbId>;
-    fn from_id_to_db_id<'a>(&self, id: Cow<'a, Id>) -> Result<Cow<'a, DbId>, C3p0Error>;
-    fn from_db_id_to_id<'a>(&self, id: Cow<'a, DbId>) -> Result<Cow<'a, Id>, C3p0Error>;
+    fn id_to_db_id<'a>(&self, id: Cow<'a, Id>) -> Result<Cow<'a, DbId>, C3p0Error>;
+    fn db_id_to_id<'a>(&self, id: Cow<'a, DbId>) -> Result<Cow<'a, Id>, C3p0Error>;
 }
 
+#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn to_model<
     Id: IdType,
@@ -47,7 +48,7 @@ where
         .map_err(|err| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for id index. Err: {:?}", err),
         })?;
-    let id = id_generator.from_db_id_to_id(Cow::Owned(id))?.into_owned();
+    let id = id_generator.db_id_to_id(Cow::Owned(id))?.into_owned();
     let version: SqlxVersionType =
         row.try_get(version_index)
             .map_err(|err| C3p0Error::RowMapperError {

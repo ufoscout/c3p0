@@ -34,7 +34,7 @@ pub fn to_model<
     data_index: DataIdx,
 ) -> Result<Model<Id, Data>, Box<dyn std::error::Error>> {
     let id: DbId = get_or_error(row, id_index)?;
-    let id = id_generator.from_db_id_to_id(Cow::Owned(id))?.into_owned();
+    let id = id_generator.db_id_to_id(Cow::Owned(id))?.into_owned();
     let version: PostgresVersionType = get_or_error(row, version_index)?;
     let version = version as VersionType;
     let create_epoch_millis = get_or_error(row, create_epoch_millis_index)?;

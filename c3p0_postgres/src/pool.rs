@@ -106,7 +106,7 @@ impl PgTx {
             .query(&stmt, params)
             .await
             .map_err(into_c3p0_error)?
-            .get(0)
+            .first()
             .map(mapper)
             .transpose()
             .map_err(|err| C3p0Error::RowMapperError {
