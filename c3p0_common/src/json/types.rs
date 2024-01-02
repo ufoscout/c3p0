@@ -25,22 +25,26 @@ pub trait IdType:
     + Send
     + Sync
     + Unpin
-    + crate::database::mongodb::types::MaybeMongodb
-    + crate::database::postgres::types::MaybePostgres
+    + PartialEq
+    + Eq
+    + PartialOrd
+    + Ord
 {
 }
 
 impl<
         T: 'static
-            + Clone
-            + Serialize
-            + DeserializeOwned
-            + Debug
-            + Send
-            + Sync
-            + Unpin
-            + crate::database::mongodb::types::MaybeMongodb
-            + crate::database::postgres::types::MaybePostgres,
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + Debug
+        + Send
+        + Sync
+        + Unpin
+        + PartialEq
+        + Eq
+        + PartialOrd
+        + Ord
     > IdType for T
 {
 }
