@@ -24,6 +24,6 @@ uuid = { workspace = true }
 
 [features]
 default = ["sqlx/runtime-tokio-rustls"]
-mysql = ["sqlx/mysql"]
+# mysql = ["sqlx/mysql"]
 postgres = ["sqlx/postgres"]
-sqlite = ["sqlx/sqlite"]
+# sqlite = ["sqlx/sqlite"]

@@ -1,22 +1,25 @@
 use std::borrow::Cow;
 
 use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model, VersionType};
-use sqlx::{ColumnIndex, Database, Decode, Row, Type};
+use sqlx::{ColumnIndex, Database, Decode, Encode, Row, Type};
 
 pub type SqlxVersionType = i32;
 
-pub trait IdGenerator<Id: IdType, DbId: IdType> {
-    fn generate_id(&self) -> Option<DbId>;
-    fn id_to_db_id<'a>(&self, id: Cow<'a, Id>) -> Result<Cow<'a, DbId>, C3p0Error>;
-    fn db_id_to_id<'a>(&self, id: Cow<'a, DbId>) -> Result<Cow<'a, Id>, C3p0Error>;
+pub trait IdGenerator<Id: IdType> {
+    type DataB: Database;
+
+    fn generate_id(&self) -> Option<Id>;
+    // fn id_to_db_id<'a>(&self, id: Cow<'a, Id>) -> Result<Cow<'a, DbId>, C3p0Error>;
+    // fn db_id_to_id<'a>(&self, id: Cow<'a, DbId>) -> Result<Cow<'a, Id>, C3p0Error>;
+    fn id_from_row<R: Row<Database = Self::DataB>, IdIdx: ColumnIndex<R>>(&self, row: &R, index: IdIdx) -> Result<Id, C3p0Error>;
+    fn id_to_param<'a>(&self, id: Cow<'a, Id>) -> Result<impl Send + Encode<'a, Self::DataB> + Type<Self::DataB>, C3p0Error>;
 }
 
 #[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn to_model<
     Id: IdType,
-    DbId: IdType,
-    Generator: IdGenerator<Id, DbId>,
+    Generator: IdGenerator<Id, DataB = DB>,
     Data: DataType,
     CODEC: JsonCodec<Data>,
     R: Row<Database = DB>,
@@ -37,18 +40,14 @@ pub fn to_model<
     data_index: DataIdx,
 ) -> Result<Model<Id, Data>, C3p0Error>
 where
-    for<'c> DbId: Type<DB> + Decode<'c, DB>,
     for<'c> i32: Type<DB> + Decode<'c, DB>,
     for<'c> i64: Type<DB> + Decode<'c, DB>,
     for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
     //<DB as HasArguments<'_>>::Arguments
 {
-    let id: DbId = row
-        .try_get(id_index)
-        .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for id index. Err: {:?}", err),
-        })?;
-    let id = id_generator.db_id_to_id(Cow::Owned(id))?.into_owned();
+    
+    let id = id_generator.id_from_row(row, id_index)?;
+
     let version: SqlxVersionType =
         row.try_get(version_index)
             .map_err(|err| C3p0Error::RowMapperError {
