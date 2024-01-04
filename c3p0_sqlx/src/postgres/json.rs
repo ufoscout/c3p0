@@ -9,15 +9,8 @@ use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use sqlx::query::Query;
-use sqlx::{Decode, Encode, IntoArguments, Row, Type};
+use sqlx::{Encode, IntoArguments, Row, Type};
 
-pub trait PostgresIdType: IdType + Type<Db>
-where
-    for<'c> Self: Encode<'c, Db> + Decode<'c, Db>,
-{
-}
-
-impl<T: IdType + Type<Db>> PostgresIdType for T where for<'c> Self: Encode<'c, Db> + Decode<'c, Db> {}
 
 /// A trait that allows the creation of an Id
 pub trait PostgresIdGenerator<Id: IdType>:
