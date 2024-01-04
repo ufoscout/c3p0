@@ -17,9 +17,6 @@ c3p0_common = { workspace = true }
 # mongodb feature
 c3p0_mongodb = { workspace = true, optional = true }
 
-# postgres feature
-c3p0_postgres = { workspace = true, optional = true }
-
 # sqlx feature
 c3p0_sqlx = { workspace = true, optional = true }
 
@@ -38,7 +35,6 @@ uuid = { workspace = true }
 [features]
 default = []
 mongodb = ["c3p0_mongodb"]
-postgres = ["c3p0_postgres"]
 sqlx_mysql = ["c3p0_sqlx/mysql"]
 sqlx_postgres = ["c3p0_sqlx/postgres"]
 sqlx_sqlite = ["c3p0_sqlx/sqlite"]

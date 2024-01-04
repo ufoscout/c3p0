@@ -15,7 +15,6 @@ pub trait IdGenerator<Id: IdType>: Send + Sync {
     fn generate_id(&self) -> Option<Id>;
     fn id_to_db_id<'a>(&self, id: Cow<'a, Id>) -> Result<Bson, C3p0Error>;
     fn db_id_to_id(&self, id: &Bson) -> Result<Id, C3p0Error>;
-    // fn inserted_id_to_db_id(&self, inserted_id: mongodb::bson::Bson) -> Result<DbId, C3p0Error>;
 }
 
 /// An IdGenerator that uses the auto-increment feature of the database
