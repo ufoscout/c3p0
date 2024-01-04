@@ -3,7 +3,7 @@
 use c3p0::mongodb::*;
 use c3p0::*;
 use c3p0_mongodb::mongodb::{
-    bson::{self, oid::ObjectId},
+    bson::oid::ObjectId,
     Client,
 };
 use maybe_single::tokio::{Data, MaybeSingleAsync};
@@ -18,8 +18,8 @@ use rustainers::{
 };
 
 pub type C3p0Impl = MongodbC3p0Pool;
-pub type Builder = MongodbC3p0JsonBuilder<ObjectId, ObjectId>;
-pub type UuidBuilder = MongodbC3p0JsonBuilder<uuid::Uuid, bson::Uuid>;
+pub type Builder = MongodbC3p0JsonBuilder<ObjectId>;
+pub type UuidBuilder = MongodbC3p0JsonBuilder<uuid::Uuid>;
 
 pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
     MongodbC3p0JsonBuilder::new(table_name).with_id_generator(UuidIdGenerator {})
