@@ -23,11 +23,7 @@ where
 
     async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
-    async fn exists_by_id<'a>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: &'a Id,
-    ) -> Result<bool, C3p0Error>;
+    async fn exists_by_id<'a>(&'a self, tx: &mut Self::Tx, id: &'a Id) -> Result<bool, C3p0Error>;
 
     async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Id, Data>>, C3p0Error>;
 
@@ -51,11 +47,7 @@ where
 
     async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
-    async fn delete_by_id<'a>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: &'a Id,
-    ) -> Result<u64, C3p0Error>;
+    async fn delete_by_id<'a>(&'a self, tx: &mut Self::Tx, id: &'a Id) -> Result<u64, C3p0Error>;
 
     async fn save(
         &self,

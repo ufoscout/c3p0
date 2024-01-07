@@ -37,8 +37,8 @@ where
     usize: ColumnIndex<R>,
     for<'c> i32: Type<DB> + Decode<'c, DB>,
     for<'c> i64: Type<DB> + Decode<'c, DB>,
-    for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB> {
-
+    for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
+{
     to_model_with_index(codec, id_generator, row, 0, 1, 2, 3, 4)
 }
 

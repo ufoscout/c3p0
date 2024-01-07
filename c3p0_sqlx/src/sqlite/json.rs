@@ -223,16 +223,18 @@ pub struct SqlxSqliteC3p0Json<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>
 }
 
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Json<Id, Data, CODEC> {
-
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
 
     /// Builds a query and binds the id to the first positional parameter
-    pub fn query_with_id<'a>(&self, sql: &'a str, id: &'a Id) -> Query<'a, Db, <Db as HasArguments<'a>>::Arguments> {
+    pub fn query_with_id<'a>(
+        &self,
+        sql: &'a str,
+        id: &'a Id,
+    ) -> Query<'a, Db, <Db as HasArguments<'a>>::Arguments> {
         let query = sqlx::query(sql);
-        self.id_generator
-            .id_to_query(id, query)
+        self.id_generator.id_to_query(id, query)
     }
 
     #[inline]
@@ -333,11 +335,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id<'a>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: &'a Id,
-    ) -> Result<bool, C3p0Error> {
+    async fn exists_by_id<'a>(&'a self, tx: &mut Self::Tx, id: &'a Id) -> Result<bool, C3p0Error> {
         self.query_with_id(&self.queries.exists_by_id_sql_query, id)
             .fetch_one(tx.conn())
             .await
@@ -373,7 +371,8 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         tx: &mut Self::Tx,
         obj: Model<Id, Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        let result = self.query_with_id(&self.queries.delete_sql_query, &obj.id)
+        let result = self
+            .query_with_id(&self.queries.delete_sql_query, &obj.id)
             .bind(obj.version)
             .execute(tx.conn())
             .await
@@ -400,11 +399,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|done| done.rows_affected())
     }
 
-    async fn delete_by_id<'a>(
-        &'a self,
-        tx: &mut Self::Tx,
-        id: &'a Id,
-    ) -> Result<u64, C3p0Error> {
+    async fn delete_by_id<'a>(&'a self, tx: &mut Self::Tx, id: &'a Id) -> Result<u64, C3p0Error> {
         self.query_with_id(&self.queries.delete_by_id_sql_query, id)
             .execute(tx.conn())
             .await
