@@ -35,6 +35,6 @@ uuid = { workspace = true }
 [features]
 default = []
 mongodb = ["c3p0_mongodb"]
-sqlx_mysql = ["c3p0_sqlx/mysql"]
+# sqlx_mysql = ["c3p0_sqlx/mysql"]
 sqlx_postgres = ["c3p0_sqlx/postgres"]
-sqlx_sqlite = ["c3p0_sqlx/sqlite"]
+# sqlx_sqlite = ["c3p0_sqlx/sqlite"]
