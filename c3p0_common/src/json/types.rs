@@ -34,17 +34,17 @@ pub trait IdType:
 
 impl<
         T: 'static
-        + Clone
-        + Serialize
-        + DeserializeOwned
-        + Debug
-        + Send
-        + Sync
-        + Unpin
-        + PartialEq
-        + Eq
-        + PartialOrd
-        + Ord
+            + Clone
+            + Serialize
+            + DeserializeOwned
+            + Debug
+            + Send
+            + Sync
+            + Unpin
+            + PartialEq
+            + Eq
+            + PartialOrd
+            + Ord,
     > IdType for T
 {
 }

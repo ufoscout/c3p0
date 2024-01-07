@@ -2,10 +2,7 @@
 
 use c3p0::mongodb::*;
 use c3p0::*;
-use c3p0_mongodb::mongodb::{
-    bson::oid::ObjectId,
-    Client,
-};
+use c3p0_mongodb::mongodb::{bson::oid::ObjectId, Client};
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use rustainers::{

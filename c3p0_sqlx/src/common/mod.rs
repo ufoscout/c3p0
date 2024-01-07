@@ -1,5 +1,5 @@
 use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model, VersionType};
-use sqlx::{ColumnIndex, Database, Decode, Row, Type, query::Query, database::HasArguments};
+use sqlx::{database::HasArguments, query::Query, ColumnIndex, Database, Decode, Row, Type};
 
 pub type SqlxVersionType = i32;
 
@@ -9,8 +9,16 @@ pub trait IdGenerator<Id: IdType>: Send + Sync + 'static {
 
     fn create_statement_column_type(&self) -> &str;
     fn generate_id(&self) -> Option<Id>;
-    fn id_to_query<'a>(&self, id: &'a Id, query: Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>) -> Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>;
-    fn id_from_row(&self, row: &Self::Row, index: &(dyn sqlx::ColumnIndex<Self::Row>)) -> Result<Id, C3p0Error>;
+    fn id_to_query<'a>(
+        &self,
+        id: &'a Id,
+        query: Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>,
+    ) -> Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>;
+    fn id_from_row(
+        &self,
+        row: &Self::Row,
+        index: &(dyn sqlx::ColumnIndex<Self::Row>),
+    ) -> Result<Id, C3p0Error>;
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -41,7 +49,6 @@ where
     for<'c> i64: Type<DB> + Decode<'c, DB>,
     for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
 {
-    
     let id = id_generator.id_from_row(row, &id_index)?;
 
     let version: SqlxVersionType =
