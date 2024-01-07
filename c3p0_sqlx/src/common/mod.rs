@@ -21,9 +21,30 @@ pub trait IdGenerator<Id: IdType>: Send + Sync + 'static {
     ) -> Result<Id, C3p0Error>;
 }
 
-#[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn to_model<
+    Id: IdType,
+    Data: DataType,
+    CODEC: JsonCodec<Data>,
+    R: Row<Database = DB>,
+    DB: Database,
+>(
+    codec: &CODEC,
+    id_generator: &(dyn IdGenerator<Id, Db = DB, Row = R>),
+    row: &R,
+) -> Result<Model<Id, Data>, C3p0Error>
+where
+    usize: ColumnIndex<R>,
+    for<'c> i32: Type<DB> + Decode<'c, DB>,
+    for<'c> i64: Type<DB> + Decode<'c, DB>,
+    for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB> {
+
+    to_model_with_index(codec, id_generator, row, 0, 1, 2, 3, 4)
+}
+
+#[allow(clippy::too_many_arguments)]
+#[inline]
+pub fn to_model_with_index<
     Id: IdType,
     Data: DataType,
     CODEC: JsonCodec<Data>,

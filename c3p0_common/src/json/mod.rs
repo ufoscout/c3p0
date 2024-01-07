@@ -23,24 +23,24 @@ where
 
     async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
-    async fn exists_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn exists_by_id<'a>(
         &'a self,
         tx: &mut Self::Tx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<bool, C3p0Error>;
 
     async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Id, Data>>, C3p0Error>;
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn fetch_one_optional_by_id<'a>(
         &'a self,
         tx: &mut Self::Tx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error>;
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn fetch_one_by_id<'a>(
         &'a self,
         tx: &mut Self::Tx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<Model<Id, Data>, C3p0Error>;
 
     async fn delete(
@@ -51,10 +51,10 @@ where
 
     async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
 
-    async fn delete_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn delete_by_id<'a>(
         &'a self,
         tx: &mut Self::Tx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<u64, C3p0Error>;
 
     async fn save(

@@ -164,12 +164,12 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map_err(into_c3p0_error)
     }
 
-    async fn exists_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn exists_by_id<'a>(
         &'a self,
         tx: &mut MongodbTx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<bool, C3p0Error> {
-        let filter = doc! { "_id": self.id_generator.id_to_db_id(Cow::Borrowed(id.into()))? };
+        let filter = doc! { "_id": self.id_generator.id_to_db_id(Cow::Borrowed(id))? };
         let options = CountOptions::builder().limit(1).build();
         let (db, session) = tx.db();
         db.collection::<ModelWithId>(&self.table_name)
@@ -199,13 +199,13 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         Ok(result)
     }
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn fetch_one_optional_by_id<'a>(
         &'a self,
         tx: &mut MongodbTx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
         let filter = doc! {
-            "_id": self.id_generator.id_to_db_id(Cow::Borrowed(id.into()))?
+            "_id": self.id_generator.id_to_db_id(Cow::Borrowed(id))?
         };
         let (db, session) = tx.db();
         let model = db
@@ -222,10 +222,10 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         }
     }
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn fetch_one_by_id<'a>(
         &'a self,
         tx: &mut MongodbTx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         self.fetch_one_optional_by_id(tx, id)
             .await
@@ -266,16 +266,16 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|result| result.deleted_count)
     }
 
-    async fn delete_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn delete_by_id<'a>(
         &'a self,
         tx: &mut MongodbTx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<u64, C3p0Error> {
         let (db, session) = tx.db();
         db.collection::<ModelWithId>(&self.table_name)
             .delete_one_with_session(
                 doc! {
-                    "_id":  self.id_generator.id_to_db_id(Cow::Borrowed(id.into()))?
+                    "_id":  self.id_generator.id_to_db_id(Cow::Borrowed(id))?
                 },
                 None,
                 session,

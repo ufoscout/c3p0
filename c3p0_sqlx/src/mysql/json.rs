@@ -228,9 +228,16 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
         &self.queries
     }
 
+    /// Builds a query and binds the id to the first positional parameter
+    pub fn query_with_id<'a>(&self, sql: &'a str, id: &'a Id) -> Query<'a, Db, <Db as HasArguments<'a>>::Arguments> {
+        let query = sqlx::query(sql);
+        self.id_generator
+            .id_to_query(id, query)
+    }
+
     #[inline]
     pub fn to_model(&self, row: &DbRow) -> Result<Model<Id, Data>, C3p0Error> {
-        to_model(&self.codec, self.id_generator.upcast(), row, 0, 1, 2, 3, 4)
+        to_model(&self.codec, self.id_generator.upcast(), row)
     }
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
@@ -245,7 +252,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
         sql.fetch_optional(tx.conn())
             .await
             .map_err(into_c3p0_error)?
-            .map(|row| to_model(&self.codec, self.id_generator.upcast(), &row, 0, 1, 2, 3, 4))
+            .map(|row| to_model(&self.codec, self.id_generator.upcast(), &row))
             .transpose()
     }
 
@@ -261,7 +268,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
         sql.fetch_one(tx.conn())
             .await
             .map_err(into_c3p0_error)
-            .and_then(|row| to_model(&self.codec, self.id_generator.upcast(), &row, 0, 1, 2, 3, 4))
+            .and_then(|row| to_model(&self.codec, self.id_generator.upcast(), &row))
     }
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
@@ -277,7 +284,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
             .await
             .map_err(into_c3p0_error)?
             .iter()
-            .map(|row| to_model(&self.codec, self.id_generator.upcast(), row, 0, 1, 2, 3, 4))
+            .map(|row| to_model(&self.codec, self.id_generator.upcast(), row))
             .collect::<Result<Vec<_>, C3p0Error>>()
     }
 }
@@ -326,14 +333,12 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn exists_by_id<'a>(
         &'a self,
         tx: &mut Self::Tx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<bool, C3p0Error> {
-        let query = sqlx::query(&self.queries.exists_by_id_sql_query);
-        self.id_generator
-            .id_to_query(id.into(), query)
+        self.query_with_id(&self.queries.exists_by_id_sql_query, id)
             .fetch_one(tx.conn())
             .await
             .and_then(|row| row.try_get(0))
@@ -345,25 +350,21 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .await
     }
 
-    async fn fetch_one_optional_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn fetch_one_optional_by_id<'a>(
         &'a self,
         tx: &mut Self::Tx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
-        let query = sqlx::query(&self.queries.find_by_id_sql_query);
-        let query = self.id_generator.id_to_query(id.into(), query);
-
+        let query = self.query_with_id(&self.queries.find_by_id_sql_query, id);
         self.fetch_one_optional_with_sql(tx, query).await
     }
 
-    async fn fetch_one_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn fetch_one_by_id<'a>(
         &'a self,
         tx: &mut Self::Tx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        let query = sqlx::query(&self.queries.find_by_id_sql_query);
-        let query = self.id_generator.id_to_query(id.into(), query);
-
+        let query = self.query_with_id(&self.queries.find_by_id_sql_query, id);
         self.fetch_one_with_sql(tx, query).await
     }
 
@@ -372,10 +373,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         tx: &mut Self::Tx,
         obj: Model<Id, Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        let query = sqlx::query(&self.queries.delete_sql_query);
-        let result = self
-            .id_generator
-            .id_to_query(&obj.id, query)
+        let result = self.query_with_id(&self.queries.delete_sql_query, &obj.id)
             .bind(obj.version)
             .execute(tx.conn())
             .await
@@ -402,14 +400,12 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|done| done.rows_affected())
     }
 
-    async fn delete_by_id<'a, ID: Into<&'a Id> + Send>(
+    async fn delete_by_id<'a>(
         &'a self,
         tx: &mut Self::Tx,
-        id: ID,
+        id: &'a Id,
     ) -> Result<u64, C3p0Error> {
-        let query = sqlx::query(&self.queries.delete_by_id_sql_query);
-        self.id_generator
-            .id_to_query(id.into(), query)
+        self.query_with_id(&self.queries.delete_by_id_sql_query, id)
             .execute(tx.conn())
             .await
             .map_err(into_c3p0_error)
