@@ -11,7 +11,7 @@ use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use sqlx::database::HasArguments;
 use sqlx::query::Query;
-use sqlx::{Encode, IntoArguments, Row, Type};
+use sqlx::{IntoArguments, Row};
 
 /// An IdGenerator that uses the auto-increment feature of the database
 #[derive(Debug, Clone)]

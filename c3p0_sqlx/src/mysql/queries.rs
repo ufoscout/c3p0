@@ -1,9 +1,9 @@
 use c3p0_common::IdType;
 
-use crate::{MySqlIdGenerator, SqlxMySqlC3p0JsonBuilder};
+use crate::SqlxMySqlC3p0JsonBuilder;
 
-pub fn build_mysql_queries<Id: IdType, Generator: MySqlIdGenerator<Id>>(
-    json_builder: SqlxMySqlC3p0JsonBuilder<Id, Generator>,
+pub fn build_mysql_queries<Id: IdType>(
+    json_builder: SqlxMySqlC3p0JsonBuilder<Id>,
 ) -> c3p0_common::json::Queries {
     let qualified_table_name = match &json_builder.schema_name {
         Some(schema_name) => format!(r#"{}."{}""#, schema_name, json_builder.table_name),
