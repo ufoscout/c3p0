@@ -179,13 +179,13 @@ impl<Id: IdType> SqlxMySqlC3p0JsonBuilder<Id> {
         self
     }
 
-    pub fn with_id_generator<NewId: IdType, NewGenerator: MySqlIdGenerator<NewId>>(
+    pub fn with_id_generator<NewId: IdType>(
         self,
-        id_generator: NewGenerator,
+        id_generator: Arc<dyn MySqlIdGenerator<NewId>>,
     ) -> SqlxMySqlC3p0JsonBuilder<NewId> {
         SqlxMySqlC3p0JsonBuilder {
             phantom_id: std::marker::PhantomData,
-            id_generator: Arc::new(id_generator),
+            id_generator,
             id_field_name: self.id_field_name,
             version_field_name: self.version_field_name,
             create_epoch_millis_field_name: self.create_epoch_millis_field_name,

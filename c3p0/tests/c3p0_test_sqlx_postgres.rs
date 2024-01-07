@@ -1,5 +1,7 @@
 #![cfg(feature = "sqlx_postgres")]
 
+use std::sync::Arc;
+
 use c3p0::sqlx::sqlx::postgres::*;
 use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::*;
@@ -15,7 +17,7 @@ pub type Builder = SqlxPgC3p0JsonBuilder<u64>;
 pub type UuidBuilder = SqlxPgC3p0JsonBuilder<uuid::Uuid>;
 
 pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
-    SqlxPgC3p0JsonBuilder::new(table_name).with_id_generator(PostgresUuidIdGenerator {})
+    SqlxPgC3p0JsonBuilder::new(table_name).with_id_generator(Arc::new(PostgresUuidIdGenerator {}))
 }
 
 //mod tests;
