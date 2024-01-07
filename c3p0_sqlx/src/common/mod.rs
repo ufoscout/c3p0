@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model, VersionType};
 use sqlx::{ColumnIndex, Database, Decode, Row, Type, query::Query, database::HasArguments};
 
@@ -11,7 +9,7 @@ pub trait IdGenerator<Id: IdType>: Send + Sync + 'static {
 
     fn create_statement_column_type(&self) -> &str;
     fn generate_id(&self) -> Option<Id>;
-    fn id_to_query<'a>(&self, id: Cow<'a, Id>, query: Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>) -> Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>;
+    fn id_to_query<'a>(&self, id: &'a Id, query: Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>) -> Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>;
     fn id_from_row(&self, row: &Self::Row, index: &(dyn sqlx::ColumnIndex<Self::Row>)) -> Result<Id, C3p0Error>;
 }
 
