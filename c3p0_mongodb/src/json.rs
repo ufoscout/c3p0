@@ -165,7 +165,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map_err(into_c3p0_error)
     }
 
-    async fn exists_by_id<'a>(&'a self, tx: &mut MongodbTx, id: &'a Id) -> Result<bool, C3p0Error> {
+    async fn exists_by_id(&self, tx: &mut MongodbTx, id: &Id) -> Result<bool, C3p0Error> {
         let filter = doc! { "_id": self.id_generator.id_to_db_id(Cow::Borrowed(id))? };
         let options = CountOptions::builder().limit(1).build();
         let (db, session) = tx.db();
@@ -196,10 +196,10 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         Ok(result)
     }
 
-    async fn fetch_one_optional_by_id<'a>(
-        &'a self,
+    async fn fetch_one_optional_by_id(
+        &self,
         tx: &mut MongodbTx,
-        id: &'a Id,
+        id: &Id,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
         let filter = doc! {
             "_id": self.id_generator.id_to_db_id(Cow::Borrowed(id))?
@@ -219,10 +219,10 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         }
     }
 
-    async fn fetch_one_by_id<'a>(
-        &'a self,
+    async fn fetch_one_by_id(
+        &self,
         tx: &mut MongodbTx,
-        id: &'a Id,
+        id: &Id,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         self.fetch_one_optional_by_id(tx, id)
             .await
@@ -263,7 +263,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|result| result.deleted_count)
     }
 
-    async fn delete_by_id<'a>(&'a self, tx: &mut MongodbTx, id: &'a Id) -> Result<u64, C3p0Error> {
+    async fn delete_by_id(&self, tx: &mut MongodbTx, id: &Id) -> Result<u64, C3p0Error> {
         let (db, session) = tx.db();
         db.collection::<ModelWithId>(&self.table_name)
             .delete_one_with_session(

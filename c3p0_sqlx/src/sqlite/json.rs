@@ -335,7 +335,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id<'a>(&'a self, tx: &mut Self::Tx, id: &'a Id) -> Result<bool, C3p0Error> {
+    async fn exists_by_id(&self, tx: &mut Self::Tx, id: &Id) -> Result<bool, C3p0Error> {
         self.query_with_id(&self.queries.exists_by_id_sql_query, id)
             .fetch_one(tx.conn())
             .await
@@ -348,19 +348,19 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .await
     }
 
-    async fn fetch_one_optional_by_id<'a>(
-        &'a self,
+    async fn fetch_one_optional_by_id(
+        &self,
         tx: &mut Self::Tx,
-        id: &'a Id,
+        id: &Id,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
         let query = self.query_with_id(&self.queries.find_by_id_sql_query, id);
         self.fetch_one_optional_with_sql(tx, query).await
     }
 
-    async fn fetch_one_by_id<'a>(
-        &'a self,
+    async fn fetch_one_by_id(
+        &self,
         tx: &mut Self::Tx,
-        id: &'a Id,
+        id: &Id,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let query = self.query_with_id(&self.queries.find_by_id_sql_query, id);
         self.fetch_one_with_sql(tx, query).await
@@ -399,7 +399,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|done| done.rows_affected())
     }
 
-    async fn delete_by_id<'a>(&'a self, tx: &mut Self::Tx, id: &'a Id) -> Result<u64, C3p0Error> {
+    async fn delete_by_id(&self, tx: &mut Self::Tx, id: &Id) -> Result<u64, C3p0Error> {
         self.query_with_id(&self.queries.delete_by_id_sql_query, id)
             .execute(tx.conn())
             .await
