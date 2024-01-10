@@ -259,12 +259,8 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id<'a>(
-        &'a self,
-        tx: &mut PgTx,
-        id: &'a Id,
-    ) -> Result<bool, C3p0Error> {
-        let id = self.id_generator.id_to_db_id(Cow::Borrowed(id.into()))?;
+    async fn exists_by_id<'a>(&'a self, tx: &mut PgTx, id: &'a Id) -> Result<bool, C3p0Error> {
+        let id = self.id_generator.id_to_db_id(Cow::Borrowed(id))?;
         tx.fetch_one_value(&self.queries.exists_by_id_sql_query, &[id.as_ref()])
             .await
     }
@@ -281,7 +277,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
         tx: &mut PgTx,
         id: &'a Id,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
-        let id = self.id_generator.id_to_db_id(Cow::Borrowed(id.into()))?;
+        let id = self.id_generator.id_to_db_id(Cow::Borrowed(id))?;
         tx.fetch_one_optional(&self.queries.find_by_id_sql_query, &[id.as_ref()], |row| {
             self.to_model(row)
         })
@@ -324,12 +320,8 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
         tx.execute(&self.queries.delete_all_sql_query, &[]).await
     }
 
-    async fn delete_by_id<'a>(
-        &'a self,
-        tx: &mut PgTx,
-        id: &'a Id,
-    ) -> Result<u64, C3p0Error> {
-        let id = self.id_generator.id_to_db_id(Cow::Borrowed(id.into()))?;
+    async fn delete_by_id<'a>(&'a self, tx: &mut PgTx, id: &'a Id) -> Result<u64, C3p0Error> {
+        let id = self.id_generator.id_to_db_id(Cow::Borrowed(id))?;
         tx.execute(&self.queries.delete_by_id_sql_query, &[id.as_ref()])
             .await
     }
