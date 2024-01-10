@@ -1,5 +1,7 @@
 #![cfg(feature = "sqlx_sqlite")]
 
+use std::sync::Arc;
+
 use c3p0::sqlx::sqlx::sqlite::*;
 use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::*;
@@ -12,7 +14,7 @@ pub type Builder = SqlxSqliteC3p0JsonBuilder<u64>;
 pub type UuidBuilder = SqlxSqliteC3p0JsonBuilder<uuid::Uuid>;
 
 pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
-    SqlxSqliteC3p0JsonBuilder::new(table_name).with_id_generator(SqliteUuidIdGenerator {})
+    SqlxSqliteC3p0JsonBuilder::new(table_name).with_id_generator(Arc::new(SqliteUuidIdGenerator {}))
 }
 
 //mod tests;

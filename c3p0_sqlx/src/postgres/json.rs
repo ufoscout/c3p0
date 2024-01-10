@@ -167,15 +167,14 @@ impl<Id: IdType> SqlxPgC3p0JsonBuilder<Id> {
     }
 
     pub fn with_id_generator<
-        NewId: IdType,
-        NewGenerator: PostgresIdGenerator<NewId>,
+        NewId: IdType
     >(
         self,
-        id_generator: NewGenerator,
+        id_generator: Arc<dyn PostgresIdGenerator<NewId>>,
     ) -> SqlxPgC3p0JsonBuilder<NewId> {
         SqlxPgC3p0JsonBuilder {
             phantom_id: std::marker::PhantomData,
-            id_generator: Arc::new(id_generator),
+            id_generator,
             id_field_name: self.id_field_name,
             version_field_name: self.version_field_name,
             create_epoch_millis_field_name: self.create_epoch_millis_field_name,

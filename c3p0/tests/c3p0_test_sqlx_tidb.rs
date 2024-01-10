@@ -1,5 +1,7 @@
 #![cfg(feature = "sqlx_mysql")]
 
+use std::sync::Arc;
+
 use c3p0::sqlx::sqlx::mysql::*;
 use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::*;
@@ -16,7 +18,7 @@ pub type Builder = SqlxMySqlC3p0JsonBuilder<u64>;
 pub type UuidBuilder = SqlxMySqlC3p0JsonBuilder<uuid::Uuid>;
 
 pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
-    SqlxMySqlC3p0JsonBuilder::new(table_name).with_id_generator(MySqlUuidIdGenerator {})
+    SqlxMySqlC3p0JsonBuilder::new(table_name).with_id_generator(Arc::new(MySqlUuidIdGenerator {}))
 }
 
 //mod tests;

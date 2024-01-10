@@ -94,12 +94,12 @@ impl MongodbC3p0JsonBuilder<ObjectId> {
 }
 
 impl<Id: IdType> MongodbC3p0JsonBuilder<Id> {
-    pub fn with_id_generator<NewId: IdType, T: 'static + IdGenerator<NewId> + Send + Sync>(
+    pub fn with_id_generator<NewId: IdType>(
         self,
-        id_generator: T,
+        id_generator: Arc<dyn IdGenerator<NewId>>,
     ) -> MongodbC3p0JsonBuilder<NewId> {
         MongodbC3p0JsonBuilder {
-            id_generator: Arc::new(id_generator),
+            id_generator,
             table_name: self.table_name,
         }
     }

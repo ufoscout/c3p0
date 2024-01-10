@@ -1,5 +1,7 @@
 #![cfg(feature = "mongodb")]
 
+use std::sync::Arc;
+
 use c3p0::mongodb::*;
 use c3p0::*;
 use c3p0_mongodb::mongodb::{bson::oid::ObjectId, Client};
@@ -19,7 +21,7 @@ pub type Builder = MongodbC3p0JsonBuilder<ObjectId>;
 pub type UuidBuilder = MongodbC3p0JsonBuilder<uuid::Uuid>;
 
 pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
-    MongodbC3p0JsonBuilder::new(table_name).with_id_generator(UuidIdGenerator {})
+    MongodbC3p0JsonBuilder::new(table_name).with_id_generator(Arc::new(UuidIdGenerator {}))
 }
 
 // mod tests;
