@@ -322,7 +322,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             }
         };
 
-        Ok(new_model.into_model(self.id_generator.as_ref(), &self.codec)?)
+        new_model.into_model(self.id_generator.as_ref(), &self.codec)
     }
 
     async fn update(
@@ -354,7 +354,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             )});
         }
 
-        Ok(updated_model.into_model(self.id_generator.as_ref(), &self.codec)?)
+        updated_model.into_model(self.id_generator.as_ref(), &self.codec)
     }
 }
 
