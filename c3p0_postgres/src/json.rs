@@ -284,11 +284,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
         .await
     }
 
-    async fn fetch_one_by_id(
-        &self,
-        tx: &mut PgTx,
-        id: &Id,
-    ) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn fetch_one_by_id(&self, tx: &mut PgTx, id: &Id) -> Result<Model<Id, Data>, C3p0Error> {
         self.fetch_one_optional_by_id(tx, id)
             .await
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
