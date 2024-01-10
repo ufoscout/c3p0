@@ -3,7 +3,6 @@ use crate::tokio_postgres::row::Row;
 use crate::tokio_postgres::types::{FromSqlOwned, ToSql};
 use crate::*;
 
-use async_trait::async_trait;
 use c3p0_common::*;
 use std::future::Future;
 
@@ -24,7 +23,6 @@ impl From<Pool> for PgC3p0Pool {
     }
 }
 
-#[async_trait]
 impl C3p0Pool for PgC3p0Pool {
     type Tx = PgTx;
 

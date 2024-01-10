@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use c3p0_common::*;
 use std::future::Future;
 
@@ -27,7 +26,6 @@ impl From<Pool<Db>> for SqlxPgC3p0Pool {
     }
 }
 
-#[async_trait]
 impl C3p0Pool for SqlxPgC3p0Pool {
     type Tx = PgTx;
 

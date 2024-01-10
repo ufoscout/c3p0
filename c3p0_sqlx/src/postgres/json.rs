@@ -4,7 +4,6 @@ use crate::common::{to_model, IdGenerator, SqlxVersionType};
 use crate::error::into_c3p0_error;
 use crate::postgres::queries::build_pg_queries;
 use crate::postgres::{Db, DbRow, PgTx};
-use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
@@ -266,7 +265,6 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxPgC3p0Json<Id, Data
     }
 }
 
-#[async_trait]
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
     for SqlxPgC3p0Json<Id, Data, CODEC>
 {

@@ -4,7 +4,6 @@ use crate::common::{to_model, IdGenerator};
 use crate::error::into_c3p0_error;
 use crate::mysql::queries::build_mysql_queries;
 use crate::mysql::{Db, DbRow, MySqlTx};
-use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
@@ -292,7 +291,6 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
     }
 }
 
-#[async_trait]
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
     for SqlxMySqlC3p0Json<Id, Data, CODEC>
 {

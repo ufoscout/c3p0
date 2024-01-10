@@ -1,7 +1,6 @@
 use crate::*;
 
 use ::mongodb::{options::SessionOptions, Client, ClientSession, Database};
-use async_trait::async_trait;
 use c3p0_common::*;
 use std::future::Future;
 
@@ -23,7 +22,6 @@ impl From<(Client, String)> for MongodbC3p0Pool {
     }
 }
 
-#[async_trait]
 impl C3p0Pool for MongodbC3p0Pool {
     type Tx = MongodbTx;
 

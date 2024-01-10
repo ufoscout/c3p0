@@ -1,11 +1,11 @@
+use std::future::Future;
+
 use crate::{C3p0Error, DataType, IdType, JsonCodec, Model, NewModel};
-use async_trait::async_trait;
 
 pub mod codec;
 pub mod model;
 pub mod types;
 
-#[async_trait]
 pub trait C3p0Json<Id, Data, Codec>: Clone + Send + Sync
 where
     Id: IdType,
@@ -16,50 +16,50 @@ where
 
     fn codec(&self) -> &Codec;
 
-    async fn create_table_if_not_exists(&self, tx: &mut Self::Tx) -> Result<(), C3p0Error>;
+    fn create_table_if_not_exists(&self, tx: &mut Self::Tx) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
-    async fn drop_table_if_exists(&self, tx: &mut Self::Tx, cascade: bool)
-        -> Result<(), C3p0Error>;
+    fn drop_table_if_exists(&self, tx: &mut Self::Tx, cascade: bool)
+        -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
-    async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
+    fn count_all(&self, tx: &mut Self::Tx) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
-    async fn exists_by_id(&self, tx: &mut Self::Tx, id: &Id) -> Result<bool, C3p0Error>;
+    fn exists_by_id(&self, tx: &mut Self::Tx, id: &Id) -> impl Future<Output = Result<bool, C3p0Error>> + Send;
 
-    async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Id, Data>>, C3p0Error>;
+    fn fetch_all(&self, tx: &mut Self::Tx) -> impl Future<Output = Result<Vec<Model<Id, Data>>, C3p0Error>> + Send;
 
-    async fn fetch_one_optional_by_id(
+    fn fetch_one_optional_by_id(
         &self,
         tx: &mut Self::Tx,
         id: &Id,
-    ) -> Result<Option<Model<Id, Data>>, C3p0Error>;
+    ) -> impl Future<Output = Result<Option<Model<Id, Data>>, C3p0Error>> + Send;
 
-    async fn fetch_one_by_id(
+    fn fetch_one_by_id(
         &self,
         tx: &mut Self::Tx,
         id: &Id,
-    ) -> Result<Model<Id, Data>, C3p0Error>;
+    ) -> impl Future<Output = Result<Model<Id, Data>, C3p0Error>> + Send;
 
-    async fn delete(
+    fn delete(
         &self,
         tx: &mut Self::Tx,
         obj: Model<Id, Data>,
-    ) -> Result<Model<Id, Data>, C3p0Error>;
+    ) -> impl Future<Output = Result<Model<Id, Data>, C3p0Error>> + Send;
 
-    async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error>;
+    fn delete_all(&self, tx: &mut Self::Tx) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
-    async fn delete_by_id(&self, tx: &mut Self::Tx, id: &Id) -> Result<u64, C3p0Error>;
+    fn delete_by_id(&self, tx: &mut Self::Tx, id: &Id) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
-    async fn save(
+    fn save(
         &self,
         tx: &mut Self::Tx,
         obj: NewModel<Data>,
-    ) -> Result<Model<Id, Data>, C3p0Error>;
+    ) -> impl Future<Output = Result<Model<Id, Data>, C3p0Error>> + Send;
 
-    async fn update(
+    fn update(
         &self,
         tx: &mut Self::Tx,
         obj: Model<Id, Data>,
-    ) -> Result<Model<Id, Data>, C3p0Error>;
+    ) -> impl Future<Output = Result<Model<Id, Data>, C3p0Error>> + Send;
 }
 
 #[derive(Clone)]

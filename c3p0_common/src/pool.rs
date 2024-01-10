@@ -1,15 +1,12 @@
 use crate::error::C3p0Error;
 
-use async_trait::async_trait;
 use std::future::Future;
 
-#[async_trait]
+
 pub trait C3p0Pool: Clone + Send + Sync {
     type Tx;
 
-    //    async fn connection(&self) -> Result<Self::CONN, C3p0Error>;
-
-    async fn transaction<
+    fn transaction<
         'a,
         T: Send,
         E: Send + From<C3p0Error>,
@@ -18,5 +15,5 @@ pub trait C3p0Pool: Clone + Send + Sync {
     >(
         &'a self,
         tx: F,
-    ) -> Result<T, E>;
+    ) -> impl Future<Output = Result<T, E>> + Send;
 }

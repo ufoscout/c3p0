@@ -4,7 +4,6 @@ use std::sync::Arc;
 use crate::tokio_postgres::{row::Row, types::ToSql};
 use crate::*;
 use ::tokio_postgres::types::FromSqlOwned;
-use async_trait::async_trait;
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
@@ -227,7 +226,6 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
     }
 }
 
-#[async_trait]
 impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
     C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, DbId, Data, CODEC>
 {

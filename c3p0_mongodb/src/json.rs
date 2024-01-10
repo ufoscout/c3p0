@@ -5,7 +5,6 @@ use crate::*;
 use ::mongodb::bson::oid::ObjectId;
 use ::mongodb::bson::{doc, Bson};
 use ::mongodb::options::CountOptions;
-use async_trait::async_trait;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use serde_json::Value;
@@ -130,7 +129,6 @@ pub struct MongodbC3p0Json<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> {
     table_name: String,
 }
 
-#[async_trait]
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
     for MongodbC3p0Json<Id, Data, CODEC>
 {

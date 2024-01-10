@@ -1,6 +1,5 @@
 use crate::error::into_c3p0_error;
 use crate::sqlite::Db;
-use async_trait::async_trait;
 use c3p0_common::*;
 use sqlx::{Pool, SqliteConnection, Transaction};
 use std::future::Future;
@@ -26,7 +25,6 @@ impl From<Pool<Db>> for SqlxSqliteC3p0Pool {
     }
 }
 
-#[async_trait]
 impl C3p0Pool for SqlxSqliteC3p0Pool {
     type Tx = SqliteTx;
 

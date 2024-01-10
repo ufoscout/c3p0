@@ -13,7 +13,6 @@ version.workspace = true
 
 
 [dependencies]
-async-trait = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
