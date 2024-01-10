@@ -2,7 +2,6 @@ use crate::error::C3p0Error;
 
 use std::future::Future;
 
-
 pub trait C3p0Pool: Clone + Send + Sync {
     type Tx;
 

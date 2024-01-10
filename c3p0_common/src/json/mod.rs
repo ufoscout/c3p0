@@ -16,16 +16,29 @@ where
 
     fn codec(&self) -> &Codec;
 
-    fn create_table_if_not_exists(&self, tx: &mut Self::Tx) -> impl Future<Output = Result<(), C3p0Error>> + Send;
+    fn create_table_if_not_exists(
+        &self,
+        tx: &mut Self::Tx,
+    ) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
-    fn drop_table_if_exists(&self, tx: &mut Self::Tx, cascade: bool)
-        -> impl Future<Output = Result<(), C3p0Error>> + Send;
+    fn drop_table_if_exists(
+        &self,
+        tx: &mut Self::Tx,
+        cascade: bool,
+    ) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
     fn count_all(&self, tx: &mut Self::Tx) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
-    fn exists_by_id(&self, tx: &mut Self::Tx, id: &Id) -> impl Future<Output = Result<bool, C3p0Error>> + Send;
+    fn exists_by_id(
+        &self,
+        tx: &mut Self::Tx,
+        id: &Id,
+    ) -> impl Future<Output = Result<bool, C3p0Error>> + Send;
 
-    fn fetch_all(&self, tx: &mut Self::Tx) -> impl Future<Output = Result<Vec<Model<Id, Data>>, C3p0Error>> + Send;
+    fn fetch_all(
+        &self,
+        tx: &mut Self::Tx,
+    ) -> impl Future<Output = Result<Vec<Model<Id, Data>>, C3p0Error>> + Send;
 
     fn fetch_one_optional_by_id(
         &self,
@@ -47,7 +60,11 @@ where
 
     fn delete_all(&self, tx: &mut Self::Tx) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
-    fn delete_by_id(&self, tx: &mut Self::Tx, id: &Id) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
+    fn delete_by_id(
+        &self,
+        tx: &mut Self::Tx,
+        id: &Id,
+    ) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     fn save(
         &self,

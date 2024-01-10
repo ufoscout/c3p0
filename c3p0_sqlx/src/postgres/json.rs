@@ -166,9 +166,7 @@ impl<Id: IdType> SqlxPgC3p0JsonBuilder<Id> {
         self
     }
 
-    pub fn with_id_generator<
-        NewId: IdType
-    >(
+    pub fn with_id_generator<NewId: IdType>(
         self,
         id_generator: Arc<dyn PostgresIdGenerator<NewId>>,
     ) -> SqlxPgC3p0JsonBuilder<NewId> {
