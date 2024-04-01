@@ -1,4 +1,4 @@
-![crates.io](https://img.shields.io/crates/v/c3p0.svg)
+[![crates.io](https://img.shields.io/crates/v/c3p0.svg)](https://crates.io/crates/c3p0)
 ![Build Status](https://github.com/ufoscout/c3p0/actions/workflows/build_and_test.yml/badge.svg)
 [![codecov](https://codecov.io/gh/ufoscout/c3p0/branch/master/graph/badge.svg)](https://codecov.io/gh/ufoscout/c3p0)
 
