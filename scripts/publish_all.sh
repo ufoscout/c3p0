@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
-
-## exit if something fails
+#!/usr/bin/env sh
 set -e
+set -x
+export RUST_BACKTRACE=full
 
 declare -a publish_list=(
     "c3p0_common"
