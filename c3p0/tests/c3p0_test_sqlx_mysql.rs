@@ -38,7 +38,6 @@ async fn init() -> MaybeType {
         .with_env_var("MYSQL_PASSWORD", "mysql")
         .with_env_var("MYSQL_ROOT_PASSWORD", "mysql");
 
-
     let node = mysql_image.start().await;
 
     let options = MySqlConnectOptions::new()

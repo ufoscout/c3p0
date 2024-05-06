@@ -29,7 +29,6 @@ mod utils;
 pub type MaybeType = (C3p0Impl, ContainerAsync<Postgres>);
 
 async fn init() -> MaybeType {
-
     let node = Postgres::default().start().await;
 
     let mut config = deadpool::postgres::Config {
