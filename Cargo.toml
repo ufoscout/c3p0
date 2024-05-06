@@ -26,13 +26,13 @@ c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.70.0" }
 
 rand = "0.8"
 rustainers = "0.12"
-testcontainers = { package = "testcontainers-modules", version = "0.3", features = ["mysql", "mongo", "postgres"] }
+testcontainers = { package = "testcontainers-modules", version = "0.4", features = ["mysql", "mongo", "postgres"] }
 tokio = { version = "1" }
 log = "0.4"
 serde = "1.0"
 serde_json = "1.0"
 sqlx = { version = "0.7", default-features = false, features = [ "json" ] }
-deadpool = { version = "0.11", features = ["rt_tokio_1"] }
+deadpool = { version = "0.12", features = ["rt_tokio_1"] }
 deadpool-postgres = "0.13" 
 tokio-postgres = { version = "0.7", features = ["with-serde_json-1"] }
 maybe-single = { version = "0.16", features =["tokio"] }

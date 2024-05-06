@@ -8,9 +8,9 @@ use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
-use testcontainers::testcontainers::clients::Cli;
 use testcontainers::testcontainers::core::WaitFor;
-use testcontainers::testcontainers::Container;
+use testcontainers::testcontainers::runners::AsyncRunner;
+use testcontainers::testcontainers::ContainerAsync;
 use testcontainers::testcontainers::GenericImage;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
@@ -25,7 +25,7 @@ pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
 mod tests_json;
 mod utils;
 
-pub type MaybeType = (C3p0Impl, Container<'static, GenericImage>);
+pub type MaybeType = (C3p0Impl, ContainerAsync<GenericImage>);
 
 async fn init() -> MaybeType {
     let tidb_version = "v3.0.3";
@@ -33,15 +33,14 @@ async fn init() -> MaybeType {
         WaitFor::message_on_stdout(r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#),
     );
 
-    static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER.get_or_init(Cli::default).run(tidb_image);
+    let node = tidb_image.start().await;
 
     let options = MySqlConnectOptions::new()
         .username("root")
         //.password("mysql")
         .database("mysql")
         .host("127.0.0.1")
-        .port(node.get_host_port_ipv4(4000))
+        .port(node.get_host_port_ipv4(4000).await)
         .ssl_mode(MySqlSslMode::Disabled);
 
     let pool = MySqlPool::connect_with(options).await.unwrap();

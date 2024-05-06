@@ -9,7 +9,7 @@ use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::{
     postgres::Postgres,
-    testcontainers::{clients::Cli, Container},
+    testcontainers::{runners::AsyncRunner, ContainerAsync},
 };
 
 use std::time::Duration;
@@ -26,18 +26,18 @@ mod tests;
 mod tests_json;
 mod utils;
 
-pub type MaybeType = (C3p0Impl, Container<'static, Postgres>);
+pub type MaybeType = (C3p0Impl, ContainerAsync<Postgres>);
 
 async fn init() -> MaybeType {
-    static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER.get_or_init(Cli::default).run(Postgres::default());
+
+    let node = Postgres::default().start().await;
 
     let mut config = deadpool::postgres::Config {
         user: Some("postgres".to_owned()),
         password: Some("postgres".to_owned()),
         dbname: Some("postgres".to_owned()),
         host: Some("127.0.0.1".to_string()),
-        port: Some(node.get_host_port_ipv4(5432)),
+        port: Some(node.get_host_port_ipv4(5432).await),
         ..Default::default()
     };
 

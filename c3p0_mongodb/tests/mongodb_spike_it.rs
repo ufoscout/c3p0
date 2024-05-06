@@ -7,16 +7,15 @@ use mongodb::{
 use once_cell::sync::OnceCell;
 use testcontainers::{
     mongo::Mongo,
-    testcontainers::{clients::Cli, Container},
+    testcontainers::{runners::AsyncRunner, ContainerAsync},
 };
 
-pub type MaybeType = (Client, Container<'static, Mongo>);
+pub type MaybeType = (Client, ContainerAsync<Mongo>);
 
 async fn init() -> MaybeType {
-    static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER.get_or_init(Cli::default).run(Mongo);
+    let node = Mongo.start().await;
 
-    let host_port = node.get_host_port_ipv4(27017);
+    let host_port = node.get_host_port_ipv4(27017).await;
     let url = format!("mongodb://127.0.0.1:{host_port}/");
 
     let client = Client::with_uri_str(&url).await.unwrap();

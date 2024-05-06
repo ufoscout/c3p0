@@ -9,8 +9,8 @@ use c3p0::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use once_cell::sync::OnceCell;
 use testcontainers::postgres::Postgres;
-use testcontainers::testcontainers::clients::Cli;
-use testcontainers::testcontainers::Container;
+use testcontainers::testcontainers::runners::AsyncRunner;
+use testcontainers::testcontainers::ContainerAsync;
 
 pub type C3p0Impl = SqlxPgC3p0Pool;
 pub type Builder = SqlxPgC3p0JsonBuilder<u64>;
@@ -24,18 +24,18 @@ pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
 mod tests_json;
 mod utils;
 
-pub type MaybeType = (C3p0Impl, Container<'static, Postgres>);
+pub type MaybeType = (C3p0Impl, ContainerAsync<Postgres>);
 
 async fn init() -> MaybeType {
-    static DOCKER: OnceCell<Cli> = OnceCell::new();
-    let node = DOCKER.get_or_init(Cli::default).run(Postgres::default());
+
+    let node = Postgres::default().start().await;
 
     let options = PgConnectOptions::new()
         .username("postgres")
         .password("postgres")
         .database("postgres")
         .host("127.0.0.1")
-        .port(node.get_host_port_ipv4(5432));
+        .port(node.get_host_port_ipv4(5432).await);
 
     let pool = PgPool::connect_with(options).await.unwrap();
 
