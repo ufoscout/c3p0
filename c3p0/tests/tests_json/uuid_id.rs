@@ -113,7 +113,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
 
             tokio::time::sleep(Duration::from_millis(10)).await;
 
-            saved_model.data.first_name = "second_first_name".to_owned();
+            "second_first_name".clone_into(&mut saved_model.data.first_name);
             let mut updated_model = jpo.update(conn, saved_model.clone()).await.unwrap();
             assert_eq!(saved_model.id, updated_model.id);
             assert_eq!(saved_model.version + 1, updated_model.version);
@@ -128,7 +128,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             tokio::time::sleep(Duration::from_millis(10)).await;
 
             let previous_update_epoch_millis = updated_model.update_epoch_millis;
-            updated_model.data.last_name = "second_last_name".to_owned();
+            "second_last_name".clone_into(&mut updated_model.data.last_name);
             updated_model = jpo.update(conn, updated_model.clone()).await.unwrap();
             assert_eq!(saved_model.id, updated_model.id);
             assert_eq!(saved_model.version + 2, updated_model.version);
@@ -183,7 +183,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
 
             let mut saved_model = jpo.save(conn, model.clone()).await.unwrap();
 
-            saved_model.data.first_name = "second_first_name".to_owned();
+            "second_first_name".clone_into(&mut saved_model.data.first_name);
             assert!(jpo.update(conn, saved_model.clone()).await.is_ok());
 
             let expected_error = jpo.update(conn, saved_model.clone()).await;
