@@ -43,9 +43,9 @@ impl C3p0Pool for PgC3p0Pool {
 
         // ToDo: To avoid this unsafe we need GAT
         let mut transaction = PgTx {
-            inner: (unsafe { ::std::mem::transmute(&native_transaction) }),
+            inner: (unsafe { ::std::mem::transmute::<&deadpool_postgres::Transaction<'_>, &deadpool_postgres::Transaction<'_>>(&native_transaction) }),
         };
-        let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
+        let ref_transaction = unsafe { ::std::mem::transmute::<&mut PgTx, &mut PgTx>(&mut transaction) };
         let result = { (tx)(ref_transaction).await? };
 
         native_transaction.commit().await.map_err(into_c3p0_error)?;
