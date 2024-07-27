@@ -1,13 +1,13 @@
 #![cfg(feature = "sqlx_mysql")]
 
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 use c3p0::sqlx::sqlx::mysql::*;
 use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
-use once_cell::sync::OnceCell;
 use testcontainers::testcontainers::core::WaitFor;
 use testcontainers::testcontainers::runners::AsyncRunner;
 use testcontainers::testcontainers::ContainerAsync;
@@ -51,7 +51,7 @@ async fn init() -> MaybeType {
 }
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
-    static DATA: OnceCell<MaybeSingleAsync<MaybeType>> = OnceCell::new();
+    static DATA: OnceLock<MaybeSingleAsync<MaybeType>> = OnceLock::new();
     DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
         .data(serial)
         .await

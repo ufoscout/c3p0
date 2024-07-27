@@ -6,13 +6,12 @@ use c3p0::postgres::*;
 use c3p0::*;
 use c3p0_postgres::deadpool::Runtime;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
-use once_cell::sync::OnceCell;
 use testcontainers::{
     postgres::Postgres,
     testcontainers::{runners::AsyncRunner, ContainerAsync},
 };
 
-use std::time::Duration;
+use std::{sync::OnceLock, time::Duration};
 
 pub type C3p0Impl = PgC3p0Pool;
 pub type Builder = PgC3p0JsonBuilder<u64, i64>;
@@ -52,7 +51,7 @@ async fn init() -> MaybeType {
 }
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
-    static DATA: OnceCell<MaybeSingleAsync<MaybeType>> = OnceCell::new();
+    static DATA: OnceLock<MaybeSingleAsync<MaybeType>> = OnceLock::new();
     DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
         .data(serial)
         .await

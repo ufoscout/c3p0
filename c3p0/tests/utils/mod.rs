@@ -1,4 +1,5 @@
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
+
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -31,7 +32,7 @@ pub struct TestData {
 }
 
 pub fn test<F: std::future::Future>(f: F) -> F::Output {
-    static RT: OnceCell<tokio::runtime::Runtime> = OnceCell::new();
+    static RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
     RT.get_or_init(|| {
         tokio::runtime::Builder::new_multi_thread()
             .enable_all()

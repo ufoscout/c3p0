@@ -1,13 +1,13 @@
 #![cfg(feature = "sqlx_sqlite")]
 
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 use c3p0::sqlx::sqlx::sqlite::*;
 use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
-use once_cell::sync::OnceCell;
 
 pub type C3p0Impl = SqlxSqliteC3p0Pool;
 pub type Builder = SqlxSqliteC3p0JsonBuilder<u64>;
@@ -42,7 +42,7 @@ async fn init() -> MaybeType {
 }
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
-    static DATA: OnceCell<MaybeSingleAsync<MaybeType>> = OnceCell::new();
+    static DATA: OnceLock<MaybeSingleAsync<MaybeType>> = OnceLock::new();
     DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
         .data(serial)
         .await
