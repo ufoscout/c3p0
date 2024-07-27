@@ -20,7 +20,7 @@ do
     echo $LINE_SEPARATOR
 
     cargo publish
-    sleep 20
+    sleep 2
     cd ..
     rc=$?
     if [[ $rc -ne 0 ]] ; then
