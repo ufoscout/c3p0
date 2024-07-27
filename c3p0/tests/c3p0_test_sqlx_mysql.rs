@@ -12,6 +12,7 @@ use testcontainers::testcontainers::core::WaitFor;
 use testcontainers::testcontainers::runners::AsyncRunner;
 use testcontainers::testcontainers::ContainerAsync;
 use testcontainers::testcontainers::GenericImage;
+use testcontainers::testcontainers::ImageExt;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
 pub type Builder = SqlxMySqlC3p0JsonBuilder<u64>;
@@ -38,14 +39,14 @@ async fn init() -> MaybeType {
         .with_env_var("MYSQL_PASSWORD", "mysql")
         .with_env_var("MYSQL_ROOT_PASSWORD", "mysql");
 
-    let node = mysql_image.start().await;
+    let node = mysql_image.start().await.unwrap();
 
     let options = MySqlConnectOptions::new()
         .username("mysql")
         .password("mysql")
         .database("mysql")
         .host("127.0.0.1")
-        .port(node.get_host_port_ipv4(3306).await)
+        .port(node.get_host_port_ipv4(3306).await.unwrap())
         .ssl_mode(MySqlSslMode::Disabled);
 
     let pool = MySqlPool::connect_with(options).await.unwrap();

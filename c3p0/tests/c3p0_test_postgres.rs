@@ -29,14 +29,14 @@ mod utils;
 pub type MaybeType = (C3p0Impl, ContainerAsync<Postgres>);
 
 async fn init() -> MaybeType {
-    let node = Postgres::default().start().await;
+    let node = Postgres::default().start().await.unwrap();
 
     let mut config = deadpool::postgres::Config {
         user: Some("postgres".to_owned()),
         password: Some("postgres".to_owned()),
         dbname: Some("postgres".to_owned()),
         host: Some("127.0.0.1".to_string()),
-        port: Some(node.get_host_port_ipv4(5432).await),
+        port: Some(node.get_host_port_ipv4(5432).await.unwrap()),
         ..Default::default()
     };
 

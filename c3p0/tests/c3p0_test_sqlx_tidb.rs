@@ -33,14 +33,14 @@ async fn init() -> MaybeType {
         WaitFor::message_on_stdout(r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#),
     );
 
-    let node = tidb_image.start().await;
+    let node = tidb_image.start().await.unwrap();
 
     let options = MySqlConnectOptions::new()
         .username("root")
         //.password("mysql")
         .database("mysql")
         .host("127.0.0.1")
-        .port(node.get_host_port_ipv4(4000).await)
+        .port(node.get_host_port_ipv4(4000).await.unwrap())
         .ssl_mode(MySqlSslMode::Disabled);
 
     let pool = MySqlPool::connect_with(options).await.unwrap();

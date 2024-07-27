@@ -1,5 +1,5 @@
 use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model, VersionType};
-use sqlx::{database::HasArguments, query::Query, ColumnIndex, Database, Decode, Row, Type};
+use sqlx::{query::Query, ColumnIndex, Database, Decode, Row, Type};
 
 pub type SqlxVersionType = i32;
 
@@ -12,8 +12,8 @@ pub trait IdGenerator<Id: IdType>: Send + Sync + 'static {
     fn id_to_query<'a>(
         &self,
         id: &'a Id,
-        query: Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>,
-    ) -> Query<'a, Self::Db, <Self::Db as HasArguments<'a>>::Arguments>;
+        query: Query<'a, Self::Db, <Self::Db as Database>::Arguments<'a>>,
+    ) -> Query<'a, Self::Db, <Self::Db as Database>::Arguments<'a>>;
     fn id_from_row(
         &self,
         row: &Self::Row,
