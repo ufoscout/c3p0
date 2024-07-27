@@ -5,7 +5,6 @@ export RUST_BACKTRACE=full
 
 declare -a publish_list=(
     "c3p0_common"
-    "c3p0_mongodb"
     "c3p0_postgres"
     "c3p0_sqlx"
     "c3p0"
