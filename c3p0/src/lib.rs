@@ -1,9 +1,5 @@
 pub use c3p0_common::*;
 
-#[cfg(feature = "mongodb")]
-pub mod mongodb {
-    pub use c3p0_mongodb::*;
-}
 #[cfg(feature = "postgres")]
 pub mod postgres {
     pub use c3p0_postgres::*;
