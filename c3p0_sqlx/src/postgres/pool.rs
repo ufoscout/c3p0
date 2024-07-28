@@ -47,7 +47,8 @@ impl C3p0Pool for SqlxPgC3p0Pool {
         };
 
         // ToDo: To avoid this unsafe we need GAT
-        let ref_transaction = unsafe { ::std::mem::transmute::<&mut PgTx, &mut PgTx>(&mut transaction) };
+        let ref_transaction =
+            unsafe { ::std::mem::transmute::<&mut PgTx, &mut PgTx>(&mut transaction) };
 
         let result = { (tx)(ref_transaction).await? };
 
