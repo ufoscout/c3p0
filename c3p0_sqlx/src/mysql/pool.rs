@@ -46,7 +46,7 @@ impl C3p0Pool for SqlxMySqlC3p0Pool {
         let mut transaction = MySqlTx {
             inner: native_transaction,
         };
-        let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
+        let ref_transaction = unsafe { ::std::mem::transmute::<&mut MySqlTx, &mut MySqlTx>(&mut transaction) };
 
         let result = { (tx)(ref_transaction).await? };
 

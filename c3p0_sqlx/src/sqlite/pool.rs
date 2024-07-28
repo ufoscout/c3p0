@@ -45,7 +45,7 @@ impl C3p0Pool for SqlxSqliteC3p0Pool {
         let mut transaction = SqliteTx {
             inner: native_transaction,
         };
-        let ref_transaction = unsafe { ::std::mem::transmute(&mut transaction) };
+        let ref_transaction = unsafe { ::std::mem::transmute::<&mut SqliteTx, &mut SqliteTx>(&mut transaction) };
         let result = { (tx)(ref_transaction).await? };
 
         transaction.inner.commit().await.map_err(into_c3p0_error)?;
