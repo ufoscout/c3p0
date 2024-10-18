@@ -23,7 +23,6 @@ c3p0_sqlx = { workspace = true, optional = true }
 [dev-dependencies]
 maybe-single = { workspace = true }
 rand = { workspace = true }
-rustainers = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 testcontainers = { workspace = true }

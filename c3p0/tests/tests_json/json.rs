@@ -6,7 +6,7 @@ use std::time::Duration;
 #[test]
 fn should_create_and_drop_table() -> Result<(), C3p0Error> {
     test(async {
-        if [DbType::InMemory, DbType::Mongodb].contains(&db_specific::db_type()) {
+        if [DbType::InMemory].contains(&db_specific::db_type()) {
             return Ok(());
         }
 

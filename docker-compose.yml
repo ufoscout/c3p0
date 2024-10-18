@@ -9,19 +9,3 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
-
-
-  mongodb:
-    image: mongo:7
-    container_name: mongodb
-    ports:
-      - '27017:27017'
-    command: mongod --replSet rs0
-    # the healthcheck is used to initialize the replica set
-    healthcheck:
-      test: |
-        mongosh --eval "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }"
-      start_period: 0s
-      interval: 500ms
-      timeout: 5s
-      retries: 5
