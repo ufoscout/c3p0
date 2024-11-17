@@ -10,17 +10,17 @@ members = [
 [workspace.package]
 edition = "2021"
 license = "MIT"
-version = "0.71.0"
+version = "0.71.1"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
 keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 
 [workspace.dependencies]
-c3p0_common = { path = "./c3p0_common", version = "0.71.0" }
-c3p0 = { path = "./c3p0", version = "0.71.0" }
-c3p0_postgres = { path = "./c3p0_postgres", version = "0.71.0" }
-c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.71.0" }
+c3p0_common = { path = "./c3p0_common", version = "0.71.1" }
+c3p0 = { path = "./c3p0", version = "0.71.1" }
+c3p0_postgres = { path = "./c3p0_postgres", version = "0.71.1" }
+c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.71.1" }
 
 rand = "0.8"
 testcontainers = { package = "testcontainers-modules", version = "0.11", features = ["mysql", "postgres"] }
