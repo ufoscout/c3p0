@@ -28,7 +28,7 @@ mod utils;
 pub type MaybeType = (C3p0Impl, ContainerAsync<GenericImage>);
 
 async fn init() -> MaybeType {
-    let tidb_version = "v3.0.3";
+    let tidb_version = "v8.5.0";
     let tidb_image = GenericImage::new("pingcap/tidb", tidb_version).with_wait_for(
         WaitFor::message_on_stdout(r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#),
     );

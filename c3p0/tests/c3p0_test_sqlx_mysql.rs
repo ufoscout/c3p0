@@ -8,11 +8,9 @@ use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
-use testcontainers::testcontainers::core::WaitFor;
 use testcontainers::testcontainers::runners::AsyncRunner;
 use testcontainers::testcontainers::ContainerAsync;
-use testcontainers::testcontainers::GenericImage;
-use testcontainers::testcontainers::ImageExt;
+use testcontainers::mysql::Mysql;
 
 pub type C3p0Impl = SqlxMySqlC3p0Pool;
 pub type Builder = SqlxMySqlC3p0JsonBuilder<u64>;
@@ -26,25 +24,15 @@ pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
 mod tests_json;
 mod utils;
 
-pub type MaybeType = (C3p0Impl, ContainerAsync<GenericImage>);
+pub type MaybeType = (C3p0Impl, ContainerAsync<Mysql>);
 
 async fn init() -> MaybeType {
-    let mysql_version = "5.7.25";
-    let mysql_image = GenericImage::new("mysql", mysql_version)
-        .with_wait_for(WaitFor::message_on_stderr(
-            format!("Version: '{}'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  MySQL Community Server (GPL)", mysql_version),
-        ))
-        .with_env_var("MYSQL_DATABASE", "mysql")
-        .with_env_var("MYSQL_USER", "mysql")
-        .with_env_var("MYSQL_PASSWORD", "mysql")
-        .with_env_var("MYSQL_ROOT_PASSWORD", "mysql");
-
-    let node = mysql_image.start().await.unwrap();
+    let node = Mysql::default().start().await.unwrap();
 
     let options = MySqlConnectOptions::new()
-        .username("mysql")
-        .password("mysql")
-        .database("mysql")
+        // .username("mysql")
+        // .password("mysql")
+        .database("test")
         .host("127.0.0.1")
         .port(node.get_host_port_ipv4(3306).await.unwrap())
         .ssl_mode(MySqlSslMode::Disabled);
