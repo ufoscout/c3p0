@@ -6,6 +6,7 @@ pub mod postgres {
 }
 
 #[cfg(any(
+    feature = "sqlx",
     feature = "sqlx_mysql",
     feature = "sqlx_postgres",
     feature = "sqlx_sqlite"
