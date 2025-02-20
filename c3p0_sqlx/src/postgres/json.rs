@@ -235,7 +235,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxPgC3p0Json<Id, Data
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        tx: &mut PgTx,
+        tx: &mut PgTx<'_>,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
         sql.fetch_optional(tx.conn())
@@ -251,7 +251,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxPgC3p0Json<Id, Data
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        tx: &mut PgTx,
+        tx: &mut PgTx<'_>,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         sql.fetch_one(tx.conn())
@@ -266,7 +266,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxPgC3p0Json<Id, Data
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        tx: &mut PgTx,
+        tx: &mut PgTx<'_>,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
         sql.fetch_all(tx.conn())
@@ -281,13 +281,13 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxPgC3p0Json<Id, Data
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
     for SqlxPgC3p0Json<Id, Data, CODEC>
 {
-    type Tx = PgTx;
+    type Tx<'a> = PgTx<'a>;
 
     fn codec(&self) -> &CODEC {
         &self.codec
     }
 
-    async fn create_table_if_not_exists(&self, tx: &mut Self::Tx) -> Result<(), C3p0Error> {
+    async fn create_table_if_not_exists(&self, tx: &mut Self::Tx<'_>) -> Result<(), C3p0Error> {
         sqlx::query(&self.queries.create_table_sql_query)
             .execute(tx.conn())
             .await
@@ -297,7 +297,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn drop_table_if_exists(
         &self,
-        tx: &mut Self::Tx,
+        tx: &mut Self::Tx<'_>,
         cascade: bool,
     ) -> Result<(), C3p0Error> {
         let query = if cascade {
@@ -312,7 +312,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|_| ())
     }
 
-    async fn count_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
+    async fn count_all(&self, tx: &mut Self::Tx<'_>) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.count_all_sql_query)
             .fetch_one(tx.conn())
             .await
@@ -321,7 +321,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id(&self, tx: &mut Self::Tx, id: &Id) -> Result<bool, C3p0Error> {
+    async fn exists_by_id(&self, tx: &mut Self::Tx<'_>, id: &Id) -> Result<bool, C3p0Error> {
         self.query_with_id(&self.queries.exists_by_id_sql_query, id)
             .fetch_one(tx.conn())
             .await
@@ -329,14 +329,14 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map_err(into_c3p0_error)
     }
 
-    async fn fetch_all(&self, tx: &mut Self::Tx) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
+    async fn fetch_all(&self, tx: &mut Self::Tx<'_>) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
         self.fetch_all_with_sql(tx, sqlx::query(&self.queries.find_all_sql_query))
             .await
     }
 
     async fn fetch_one_optional_by_id(
         &self,
-        tx: &mut Self::Tx,
+        tx: &mut Self::Tx<'_>,
         id: &Id,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
         let query = self.query_with_id(&self.queries.find_by_id_sql_query, id);
@@ -345,7 +345,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn fetch_one_by_id(
         &self,
-        tx: &mut Self::Tx,
+        tx: &mut Self::Tx<'_>,
         id: &Id,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let query = self.query_with_id(&self.queries.find_by_id_sql_query, id);
@@ -354,7 +354,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn delete(
         &self,
-        tx: &mut Self::Tx,
+        tx: &mut Self::Tx<'_>,
         obj: Model<Id, Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let result = self
@@ -377,7 +377,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         Ok(obj)
     }
 
-    async fn delete_all(&self, tx: &mut Self::Tx) -> Result<u64, C3p0Error> {
+    async fn delete_all(&self, tx: &mut Self::Tx<'_>) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.delete_all_sql_query)
             .execute(tx.conn())
             .await
@@ -385,7 +385,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             .map(|done| done.rows_affected())
     }
 
-    async fn delete_by_id(&self, tx: &mut Self::Tx, id: &Id) -> Result<u64, C3p0Error> {
+    async fn delete_by_id(&self, tx: &mut Self::Tx<'_>, id: &Id) -> Result<u64, C3p0Error> {
         self.query_with_id(&self.queries.delete_by_id_sql_query, id)
             .execute(tx.conn())
             .await
@@ -395,7 +395,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn save(
         &self,
-        tx: &mut Self::Tx,
+        tx: &mut Self::Tx<'_>,
         obj: NewModel<Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = &self.codec.data_to_value(&obj.data)?;
@@ -434,7 +434,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn update(
         &self,
-        tx: &mut Self::Tx,
+        tx: &mut Self::Tx<'_>,
         obj: Model<Id, Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = self.codec.data_to_value(&obj.data)?;

@@ -1,5 +1,4 @@
 use c3p0_common::*;
-use std::future::Future;
 
 use crate::error::into_c3p0_error;
 use crate::postgres::Db;
@@ -27,16 +26,14 @@ impl From<Pool<Db>> for SqlxPgC3p0Pool {
 }
 
 impl C3p0Pool for SqlxPgC3p0Pool {
-    type Tx = PgTx;
+    type Tx<'a> = PgTx<'a>;
 
-    async fn transaction<
-        'a,
+        async fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(&'a mut Self::Tx) -> Fut,
-        Fut: Send + Future<Output = Result<T, E>>,
+        F: Send + AsyncFnOnce(&mut Self::Tx<'_>) -> Result<T, E>,
     >(
-        &'a self,
+        &self,
         tx: F,
     ) -> Result<T, E> {
         let native_transaction: Transaction<'static, Db> =
@@ -46,11 +43,7 @@ impl C3p0Pool for SqlxPgC3p0Pool {
             inner: native_transaction,
         };
 
-        // ToDo: To avoid this unsafe we need GAT
-        let ref_transaction =
-            unsafe { ::std::mem::transmute::<&mut PgTx, &mut PgTx>(&mut transaction) };
-
-        let result = { (tx)(ref_transaction).await? };
+        let result = { (tx)(&mut transaction).await? };
 
         transaction.inner.commit().await.map_err(into_c3p0_error)?;
 
@@ -58,11 +51,11 @@ impl C3p0Pool for SqlxPgC3p0Pool {
     }
 }
 
-pub struct PgTx {
-    inner: Transaction<'static, Db>,
+pub struct PgTx<'a> {
+    inner: Transaction<'a, Db>,
 }
 
-impl PgTx {
+impl PgTx<'_> {
     pub fn conn(&mut self) -> &mut PgConnection {
         &mut self.inner
     }
