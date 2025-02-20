@@ -7,7 +7,7 @@ fn should_execute_and_fetch() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
 
             assert!(conn
@@ -76,7 +76,7 @@ fn should_execute_and_fetch_option() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             assert!(conn
                 .execute(
@@ -130,7 +130,7 @@ fn should_batch_execute() -> Result<(), C3p0Error> {
     test(async {
         let data = data(false).await;
         let pool = &data.0;
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
 
             let insert = &format!(
@@ -159,7 +159,7 @@ fn should_fetch_values() -> Result<(), C3p0Error> {
         let table_name = &format!("TEST_TABLE_{}", rand_string(8));
 
         let result: Result<_, C3p0Error> = pool
-            .transaction(|conn| async {
+            .transaction(async |conn| {
                 assert!(conn
                     .batch_execute(&format!(
                         "CREATE TABLE {} ( name varchar(255) )",

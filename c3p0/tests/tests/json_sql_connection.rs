@@ -7,7 +7,7 @@ fn should_fetch_by_sql() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(table_name.clone()).build();
 

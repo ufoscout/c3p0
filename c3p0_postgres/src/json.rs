@@ -191,7 +191,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_one_optional_with_sql(
         &self,
-        tx: &mut PgTx,
+        tx: &mut PgTx<'_>,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
@@ -205,7 +205,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_one_with_sql(
         &self,
-        tx: &mut PgTx,
+        tx: &mut PgTx<'_>,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Model<Id, Data>, C3p0Error> {
@@ -218,7 +218,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_all_with_sql(
         &self,
-        tx: &mut PgTx,
+        tx: &mut PgTx<'_>,
         sql: &str,
         params: &[&(dyn ToSql + Sync)],
     ) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
@@ -229,19 +229,19 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
 impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
     C3p0Json<Id, Data, CODEC> for PgC3p0Json<Id, DbId, Data, CODEC>
 {
-    type Tx = PgTx;
+    type Tx<'a> = PgTx<'a>;
 
     fn codec(&self) -> &CODEC {
         &self.codec
     }
 
-    async fn create_table_if_not_exists(&self, tx: &mut PgTx) -> Result<(), C3p0Error> {
+    async fn create_table_if_not_exists(&self, tx: &mut Self::Tx<'_>) -> Result<(), C3p0Error> {
         tx.execute(&self.queries.create_table_sql_query, &[])
             .await?;
         Ok(())
     }
 
-    async fn drop_table_if_exists(&self, tx: &mut PgTx, cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists(&self, tx: &mut Self::Tx<'_>, cascade: bool) -> Result<(), C3p0Error> {
         let query = if cascade {
             &self.queries.drop_table_sql_query_cascade
         } else {
@@ -251,19 +251,19 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
         Ok(())
     }
 
-    async fn count_all(&self, tx: &mut PgTx) -> Result<u64, C3p0Error> {
+    async fn count_all(&self, tx: &mut Self::Tx<'_>) -> Result<u64, C3p0Error> {
         tx.fetch_one_value(&self.queries.count_all_sql_query, &[])
             .await
             .map(|val: i64| val as u64)
     }
 
-    async fn exists_by_id(&self, tx: &mut PgTx, id: &Id) -> Result<bool, C3p0Error> {
+    async fn exists_by_id(&self, tx: &mut Self::Tx<'_>, id: &Id) -> Result<bool, C3p0Error> {
         let id = self.id_generator.id_to_db_id(Cow::Borrowed(id))?;
         tx.fetch_one_value(&self.queries.exists_by_id_sql_query, &[id.as_ref()])
             .await
     }
 
-    async fn fetch_all(&self, tx: &mut PgTx) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
+    async fn fetch_all(&self, tx: &mut Self::Tx<'_>) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
         tx.fetch_all(&self.queries.find_all_sql_query, &[], |row| {
             self.to_model(row)
         })
@@ -272,7 +272,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
 
     async fn fetch_one_optional_by_id(
         &self,
-        tx: &mut PgTx,
+        tx: &mut Self::Tx<'_>,
         id: &Id,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
         let id = self.id_generator.id_to_db_id(Cow::Borrowed(id))?;
@@ -282,7 +282,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
         .await
     }
 
-    async fn fetch_one_by_id(&self, tx: &mut PgTx, id: &Id) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn fetch_one_by_id(&self, tx: &mut Self::Tx<'_>, id: &Id) -> Result<Model<Id, Data>, C3p0Error> {
         self.fetch_one_optional_by_id(tx, id)
             .await
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
@@ -290,7 +290,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
 
     async fn delete(
         &self,
-        tx: &mut PgTx,
+        tx: &mut Self::Tx<'_>,
         obj: Model<Id, Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let id = self.id_generator.id_to_db_id(Cow::Borrowed(&obj.id))?;
@@ -310,21 +310,21 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
         Ok(obj)
     }
 
-    async fn delete_all(&self, tx: &mut PgTx) -> Result<u64, C3p0Error> {
+    async fn delete_all(&self, tx: &mut Self::Tx<'_>) -> Result<u64, C3p0Error> {
         tx.execute(&self.queries.delete_all_sql_query, &[]).await
     }
 
-    async fn delete_by_id(&self, tx: &mut PgTx, id: &Id) -> Result<u64, C3p0Error> {
+    async fn delete_by_id(&self, tx: &mut Self::Tx<'_>, id: &Id) -> Result<u64, C3p0Error> {
         let id = self.id_generator.id_to_db_id(Cow::Borrowed(id))?;
         tx.execute(&self.queries.delete_by_id_sql_query, &[id.as_ref()])
             .await
     }
 
-    async fn save(&self, tx: &mut PgTx, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn save(&self, tx: &mut Self::Tx<'_>, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = &self.codec.data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
 
-        let id = if let Some(id) = self.id_generator.generate_id() {
+        let id = match self.id_generator.generate_id() { Some(id) => {
             tx.execute(
                 &self.queries.save_sql_query_with_id,
                 &[
@@ -336,7 +336,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
             )
             .await?;
             id
-        } else {
+        } _ => {
             tx.fetch_one_value(
                 &self.queries.save_sql_query,
                 &[
@@ -346,7 +346,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
                 ],
             )
             .await?
-        };
+        }};
 
         Ok(Model {
             id: self.id_generator.db_id_to_id(Cow::Owned(id))?.into_owned(),
@@ -359,7 +359,7 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
 
     async fn update(
         &self,
-        tx: &mut PgTx,
+        tx: &mut Self::Tx<'_>,
         obj: Model<Id, Data>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = &self.codec.data_to_value(&obj.data)?;

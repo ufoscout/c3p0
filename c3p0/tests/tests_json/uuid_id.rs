@@ -9,7 +9,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = new_uuid_builder(&table_name).build();
 
@@ -60,7 +60,7 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = new_uuid_builder(&table_name).build();
 
@@ -90,7 +90,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = new_uuid_builder(&table_name).build();
 
@@ -169,7 +169,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = new_uuid_builder(&table_name).build();
 
@@ -216,7 +216,7 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = new_uuid_builder(&table_name).build();
 
@@ -249,7 +249,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = new_uuid_builder(&table_name).build();
 

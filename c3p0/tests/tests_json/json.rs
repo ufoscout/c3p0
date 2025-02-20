@@ -21,21 +21,21 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
             last_name: "my_last_name".to_owned(),
         });
 
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
             assert!(jpo.drop_table_if_exists(conn, false).await.is_ok());
             Ok(())
         })
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
         })
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
             println!("first {:?}", jpo.create_table_if_not_exists(conn).await);
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
@@ -50,14 +50,14 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
             assert!(jpo.save(conn, model_clone).await.is_err());
             Ok(())
         })
         .await?;
 
         let model_clone = model.clone();
-        pool.transaction::<_, C3p0Error, _, _>(|conn| async {
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
             println!("second {:?}", jpo.create_table_if_not_exists(conn).await);
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
@@ -76,7 +76,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(table_name).build();
 
@@ -124,7 +124,7 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(table_name).build();
 
@@ -158,7 +158,7 @@ fn should_delete_all() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(table_name).build();
 
@@ -192,7 +192,7 @@ fn should_count() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(table_name).build();
 
@@ -230,7 +230,7 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(table_name).build();
 
@@ -260,7 +260,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(table_name).build();
 
@@ -339,7 +339,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(&table_name).build();
 
@@ -385,7 +385,7 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(table_name).build();
 
@@ -418,7 +418,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
             let jpo = Builder::new(&table_name).build();
 
