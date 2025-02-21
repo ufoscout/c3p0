@@ -27,6 +27,9 @@ jobs:
         with:
           components: clippy, rustfmt
 
+      - name: Install Just command runner
+        uses: extractions/setup-just@v1
+        
       - name: check rust code style
         run: |
           just check_code
