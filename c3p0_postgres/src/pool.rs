@@ -53,7 +53,7 @@ pub struct PgTx<'a> {
     inner: Transaction<'a>,
 }
 
-impl<'a> PgTx<'a> {
+impl PgTx<'_> {
     pub async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         self.inner.batch_execute(sql).await.map_err(into_c3p0_error)
     }
