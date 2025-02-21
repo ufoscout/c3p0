@@ -1,7 +1,6 @@
 use std::sync::OnceLock;
 
-use rand::Rng;
-use rand::distributions::Alphanumeric;
+use rand::{distr::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 
 pub mod codec;
@@ -17,7 +16,7 @@ pub enum DbType {
 }
 
 pub fn rand_string(len: usize) -> String {
-    rand::thread_rng()
+    rand::rng()
         .sample_iter(&Alphanumeric)
         .map(char::from)
         .take(len)
