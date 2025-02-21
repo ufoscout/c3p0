@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::common::{to_model, IdGenerator, SqlxVersionType};
+use crate::common::{IdGenerator, SqlxVersionType, to_model};
 use crate::error::into_c3p0_error;
 use crate::postgres::queries::build_pg_queries;
 use crate::postgres::{Db, DbRow};
@@ -368,9 +368,9 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError {
                 cause: format!(
-                "Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
-                &self.queries.qualified_table_name, &obj.id, &obj.version
-            ),
+                    "Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
+                    &self.queries.qualified_table_name, &obj.id, &obj.version
+                ),
             });
         }
 

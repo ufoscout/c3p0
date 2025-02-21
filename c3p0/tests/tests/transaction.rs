@@ -11,8 +11,8 @@ fn should_commit_transaction() {
 
         let result: Result<_, C3p0Error> = c3p0
             .transaction(async |conn| {
-                assert!(conn
-                    .execute(
+                assert!(
+                    conn.execute(
                         &format!(
                             r"CREATE TABLE {} (
                              name varchar(255)
@@ -22,7 +22,8 @@ fn should_commit_transaction() {
                         &[]
                     )
                     .await
-                    .is_ok());
+                    .is_ok()
+                );
 
                 conn.execute(
                     &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
@@ -56,10 +57,11 @@ fn should_commit_transaction() {
                     .unwrap();
                 assert_eq!(3, count);
 
-                assert!(conn
-                    .execute(&format!(r"DROP TABLE {}", table_name), &[])
-                    .await
-                    .is_ok());
+                assert!(
+                    conn.execute(&format!(r"DROP TABLE {}", table_name), &[])
+                        .await
+                        .is_ok()
+                );
                 Ok(())
             })
             .await
@@ -78,15 +80,16 @@ fn should_rollback_transaction() {
 
         let result_create_table: Result<(), C3p0Error> = c3p0
             .transaction(async |conn| {
-                assert!(conn
-                    .batch_execute(&format!(
+                assert!(
+                    conn.batch_execute(&format!(
                         r"CREATE TABLE {} (
                              name varchar(255)
                           )",
                         table_name
                     ))
                     .await
-                    .is_ok());
+                    .is_ok()
+                );
                 Ok(())
             })
             .await;
@@ -126,10 +129,11 @@ fn should_rollback_transaction() {
                     .unwrap();
                 assert_eq!(0, count);
 
-                assert!(conn
-                    .execute(&format!(r"DROP TABLE IF EXISTS {}", table_name), &[])
-                    .await
-                    .is_ok());
+                assert!(
+                    conn.execute(&format!(r"DROP TABLE IF EXISTS {}", table_name), &[])
+                        .await
+                        .is_ok()
+                );
                 Ok(())
             })
             .await
@@ -162,7 +166,7 @@ fn transaction_should_return_internal_error() {
         let c3p0: C3p0Impl = pool.clone();
 
         let result: Result<(), _> = c3p0
-            .transaction(async |_| { Err(CustomError::InnerError) })
+            .transaction(async |_| Err(CustomError::InnerError))
             .await;
 
         assert!(result.is_err());

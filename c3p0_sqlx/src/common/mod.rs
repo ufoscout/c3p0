@@ -1,5 +1,5 @@
 use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model, VersionType};
-use sqlx::{query::Query, ColumnIndex, Database, Decode, Row, Type};
+use sqlx::{ColumnIndex, Database, Decode, Row, Type, query::Query};
 
 pub type SqlxVersionType = i32;
 

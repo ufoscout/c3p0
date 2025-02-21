@@ -1,9 +1,9 @@
 use c3p0_common::{C3p0Error, DataType, IdType, JsonCodec, Model, VersionType};
 use core::fmt::Display;
 use std::borrow::Cow;
+use tokio_postgres::Row;
 use tokio_postgres::row::RowIndex;
 use tokio_postgres::types::{FromSql, FromSqlOwned};
-use tokio_postgres::Row;
 
 use crate::{IdGenerator, PostgresIdType, PostgresVersionType};
 

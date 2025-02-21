@@ -1,7 +1,7 @@
 use std::sync::OnceLock;
 
-use rand::distributions::Alphanumeric;
 use rand::Rng;
+use rand::distributions::Alphanumeric;
 use serde::{Deserialize, Serialize};
 
 pub mod codec;

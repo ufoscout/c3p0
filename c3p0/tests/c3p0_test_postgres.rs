@@ -1,14 +1,14 @@
 #![cfg(feature = "postgres")]
 
 use c3p0::postgres::deadpool;
-pub use c3p0::postgres::tokio_postgres::{row::Row, NoTls};
+pub use c3p0::postgres::tokio_postgres::{NoTls, row::Row};
 use c3p0::postgres::*;
 use c3p0::*;
 use c3p0_postgres::deadpool::Runtime;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use testcontainers::{
     postgres::Postgres,
-    testcontainers::{runners::AsyncRunner, ContainerAsync},
+    testcontainers::{ContainerAsync, runners::AsyncRunner},
 };
 
 use std::{sync::OnceLock, time::Duration};

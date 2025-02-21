@@ -241,7 +241,11 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
         Ok(())
     }
 
-    async fn drop_table_if_exists(&self, tx: &mut Self::Tx<'_>, cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists(
+        &self,
+        tx: &mut Self::Tx<'_>,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
         let query = if cascade {
             &self.queries.drop_table_sql_query_cascade
         } else {
@@ -282,7 +286,11 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
         .await
     }
 
-    async fn fetch_one_by_id(&self, tx: &mut Self::Tx<'_>, id: &Id) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn fetch_one_by_id(
+        &self,
+        tx: &mut Self::Tx<'_>,
+        id: &Id,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         self.fetch_one_optional_by_id(tx, id)
             .await
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
@@ -302,9 +310,12 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
             .await?;
 
         if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
-                                                                        &self.queries.qualified_table_name, &obj.id, &obj.version
-            )});
+            return Err(C3p0Error::OptimisticLockError {
+                cause: format!(
+                    "Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
+                    &self.queries.qualified_table_name, &obj.id, &obj.version
+                ),
+            });
         }
 
         Ok(obj)
@@ -320,33 +331,40 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
             .await
     }
 
-    async fn save(&self, tx: &mut Self::Tx<'_>, obj: NewModel<Data>) -> Result<Model<Id, Data>, C3p0Error> {
+    async fn save(
+        &self,
+        tx: &mut Self::Tx<'_>,
+        obj: NewModel<Data>,
+    ) -> Result<Model<Id, Data>, C3p0Error> {
         let json_data = &self.codec.data_to_value(&obj.data)?;
         let create_epoch_millis = get_current_epoch_millis();
 
-        let id = match self.id_generator.generate_id() { Some(id) => {
-            tx.execute(
-                &self.queries.save_sql_query_with_id,
-                &[
-                    &(obj.version as PostgresVersionType),
-                    &create_epoch_millis,
-                    &json_data,
-                    &id,
-                ],
-            )
-            .await?;
-            id
-        } _ => {
-            tx.fetch_one_value(
-                &self.queries.save_sql_query,
-                &[
-                    &(obj.version as PostgresVersionType),
-                    &create_epoch_millis,
-                    &json_data,
-                ],
-            )
-            .await?
-        }};
+        let id = match self.id_generator.generate_id() {
+            Some(id) => {
+                tx.execute(
+                    &self.queries.save_sql_query_with_id,
+                    &[
+                        &(obj.version as PostgresVersionType),
+                        &create_epoch_millis,
+                        &json_data,
+                        &id,
+                    ],
+                )
+                .await?;
+                id
+            }
+            _ => {
+                tx.fetch_one_value(
+                    &self.queries.save_sql_query,
+                    &[
+                        &(obj.version as PostgresVersionType),
+                        &create_epoch_millis,
+                        &json_data,
+                    ],
+                )
+                .await?
+            }
+        };
 
         Ok(Model {
             id: self.id_generator.db_id_to_id(Cow::Owned(id))?.into_owned(),
@@ -382,9 +400,12 @@ impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
             .await?;
 
         if result == 0 {
-            return Err(C3p0Error::OptimisticLockError{ cause: format!("Cannot update data in table [{}] with id [{:?}], version [{}]: data was changed!",
-                                                                        &self.queries.qualified_table_name, &updated_model.id, &previous_version
-            )});
+            return Err(C3p0Error::OptimisticLockError {
+                cause: format!(
+                    "Cannot update data in table [{}] with id [{:?}], version [{}]: data was changed!",
+                    &self.queries.qualified_table_name, &updated_model.id, &previous_version
+                ),
+            });
         }
 
         Ok(updated_model)

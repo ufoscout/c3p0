@@ -119,7 +119,7 @@ fn json_transaction_should_return_internal_error() {
         let c3p0 = &data.0;
 
         let result: Result<(), _> = c3p0
-            .transaction(async |_| { Err(CustomError::InnerError) })
+            .transaction(async |_| Err(CustomError::InnerError))
             .await;
 
         assert!(result.is_err());

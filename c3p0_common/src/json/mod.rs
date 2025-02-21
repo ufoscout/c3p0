@@ -27,7 +27,10 @@ where
         cascade: bool,
     ) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
-    fn count_all(&self, tx: &mut Self::Tx<'_>) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
+    fn count_all(
+        &self,
+        tx: &mut Self::Tx<'_>,
+    ) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     fn exists_by_id(
         &self,
@@ -58,7 +61,10 @@ where
         obj: Model<Id, Data>,
     ) -> impl Future<Output = Result<Model<Id, Data>, C3p0Error>> + Send;
 
-    fn delete_all(&self, tx: &mut Self::Tx<'_>) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
+    fn delete_all(
+        &self,
+        tx: &mut Self::Tx<'_>,
+    ) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     fn delete_by_id(
         &self,

@@ -35,8 +35,7 @@ impl C3p0Pool for SqlxSqliteC3p0Pool {
         &self,
         tx: F,
     ) -> Result<T, E> {
-        let mut transaction =
-            self.pool.begin().await.map_err(into_c3p0_error)?;
+        let mut transaction = self.pool.begin().await.map_err(into_c3p0_error)?;
 
         let result = (tx)(&mut transaction).await?;
 

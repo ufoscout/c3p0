@@ -10,8 +10,8 @@ fn should_execute_and_fetch() -> Result<(), C3p0Error> {
         pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
 
-            assert!(conn
-                .execute(
+            assert!(
+                conn.execute(
                     &format!(
                         r"CREATE TABLE {} (
                              name varchar(255)
@@ -21,7 +21,8 @@ fn should_execute_and_fetch() -> Result<(), C3p0Error> {
                     &[]
                 )
                 .await
-                .is_ok());
+                .is_ok()
+            );
 
             assert_eq!(
                 0,
@@ -60,10 +61,11 @@ fn should_execute_and_fetch() -> Result<(), C3p0Error> {
                 .await;
             assert!(fetch_result_2.is_err());
 
-            assert!(conn
-                .execute(&format!(r"DROP TABLE {}", table_name), &[])
-                .await
-                .is_ok());
+            assert!(
+                conn.execute(&format!(r"DROP TABLE {}", table_name), &[])
+                    .await
+                    .is_ok()
+            );
             Ok(())
         })
         .await
@@ -78,8 +80,8 @@ fn should_execute_and_fetch_option() -> Result<(), C3p0Error> {
 
         pool.transaction(async |conn| {
             let table_name = format!("TEST_TABLE_{}", rand_string(8));
-            assert!(conn
-                .execute(
+            assert!(
+                conn.execute(
                     &format!(
                         r"CREATE TABLE {} (
                              name varchar(255)
@@ -89,7 +91,8 @@ fn should_execute_and_fetch_option() -> Result<(), C3p0Error> {
                     &[]
                 )
                 .await
-                .is_ok());
+                .is_ok()
+            );
 
             let insert = &db_specific::build_insert_query(&table_name);
 
@@ -115,10 +118,11 @@ fn should_execute_and_fetch_option() -> Result<(), C3p0Error> {
             assert!(fetch_result.is_ok());
             assert_eq!(None, fetch_result.unwrap());
 
-            assert!(conn
-                .execute(&format!(r"DROP TABLE {}", table_name), &[])
-                .await
-                .is_ok());
+            assert!(
+                conn.execute(&format!(r"DROP TABLE {}", table_name), &[])
+                    .await
+                    .is_ok()
+            );
             Ok(())
         })
         .await
@@ -160,13 +164,14 @@ fn should_fetch_values() -> Result<(), C3p0Error> {
 
         let result: Result<_, C3p0Error> = pool
             .transaction(async |conn| {
-                assert!(conn
-                    .batch_execute(&format!(
+                assert!(
+                    conn.batch_execute(&format!(
                         "CREATE TABLE {} ( name varchar(255) )",
                         table_name
                     ))
                     .await
-                    .is_ok());
+                    .is_ok()
+                );
 
                 let all_string = conn
                     .fetch_all_values::<String>(&format!("SELECT * FROM {}", table_name), &[])
@@ -224,10 +229,11 @@ fn should_fetch_values() -> Result<(), C3p0Error> {
                     .await;
                 assert!(one_i64.is_err());
 
-                assert!(conn
-                    .batch_execute(&format!("DROP TABLE {}", table_name))
-                    .await
-                    .is_ok());
+                assert!(
+                    conn.batch_execute(&format!("DROP TABLE {}", table_name))
+                        .await
+                        .is_ok()
+                );
 
                 Ok(())
             })

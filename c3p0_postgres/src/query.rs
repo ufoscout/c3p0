@@ -1,5 +1,5 @@
 use crate::{PgC3p0JsonBuilder, PostgresIdType};
-use c3p0_common::{json::Queries, IdType};
+use c3p0_common::{IdType, json::Queries};
 
 pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType>(
     json_builder: PgC3p0JsonBuilder<Id, DbId>,

@@ -32,32 +32,28 @@ impl C3p0Pool for PgC3p0Pool {
     >(
         &self,
         tx: F,
-    ) -> Result<T, E>{
-
+    ) -> Result<T, E> {
         let mut conn = self.pool.get().await.map_err(deadpool_into_c3p0_error)?;
-        
-        let native_transaction =
-        conn.transaction().await.map_err(into_c3p0_error)?;
-        
+
+        let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
+
         let mut transaction = PgTx {
             inner: native_transaction,
         };
 
         let result = { (tx)(&mut transaction).await? };
-        
+
         transaction.inner.commit().await.map_err(into_c3p0_error)?;
-        
+
         Ok(result)
-
-
-   }
+    }
 }
 
 pub struct PgTx<'a> {
     inner: Transaction<'a>,
 }
 
-impl <'a> PgTx<'a> {
+impl<'a> PgTx<'a> {
     pub async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         self.inner.batch_execute(sql).await.map_err(into_c3p0_error)
     }
