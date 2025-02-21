@@ -3,12 +3,12 @@ use std::sync::Arc;
 use crate::common::{to_model, IdGenerator};
 use crate::error::into_c3p0_error;
 use crate::mysql::queries::build_mysql_queries;
-use crate::mysql::{Db, DbRow, MySqlTx};
+use crate::mysql::{Db, DbRow};
 use c3p0_common::json::Queries;
 use c3p0_common::time::utils::get_current_epoch_millis;
 use c3p0_common::*;
 use sqlx::query::Query;
-use sqlx::{Database, IntoArguments, Row};
+use sqlx::{Database, IntoArguments, MySqlConnection, Row};
 
 /// A trait that allows the creation of an Id
 pub trait MySqlIdGenerator<Id: IdType>: IdGenerator<Id, Db = Db, Row = DbRow> {
@@ -247,10 +247,10 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        tx: &mut MySqlTx<'_>,
+        tx: &mut MySqlConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Option<Model<Id, Data>>, C3p0Error> {
-        sql.fetch_optional(tx.conn())
+        sql.fetch_optional(tx)
             .await
             .map_err(into_c3p0_error)?
             .map(|row| to_model(&self.codec, self.id_generator.upcast(), &row))
@@ -263,10 +263,10 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        tx: &mut MySqlTx<'_>,
+        tx: &mut MySqlConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Model<Id, Data>, C3p0Error> {
-        sql.fetch_one(tx.conn())
+        sql.fetch_one(tx)
             .await
             .map_err(into_c3p0_error)
             .and_then(|row| to_model(&self.codec, self.id_generator.upcast(), &row))
@@ -278,10 +278,10 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
     /// - must declare the ID, VERSION and Data fields in this exact order
     pub async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Db>>(
         &self,
-        tx: &mut MySqlTx<'_>,
+        tx: &mut MySqlConnection,
         sql: Query<'a, Db, A>,
     ) -> Result<Vec<Model<Id, Data>>, C3p0Error> {
-        sql.fetch_all(tx.conn())
+        sql.fetch_all(tx)
             .await
             .map_err(into_c3p0_error)?
             .iter()
@@ -293,7 +293,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, D
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODEC>
     for SqlxMySqlC3p0Json<Id, Data, CODEC>
 {
-    type Tx<'a> = MySqlTx<'a>;
+    type Tx<'a> = MySqlConnection;
 
     fn codec(&self) -> &CODEC {
         &self.codec
@@ -301,7 +301,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn create_table_if_not_exists(&self, tx: &mut Self::Tx<'_>) -> Result<(), C3p0Error> {
         sqlx::query(&self.queries.create_table_sql_query)
-            .execute(tx.conn())
+            .execute(tx)
             .await
             .map_err(into_c3p0_error)
             .map(|_| ())
@@ -318,7 +318,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             &self.queries.drop_table_sql_query
         };
         sqlx::query(query)
-            .execute(tx.conn())
+            .execute(tx)
             .await
             .map_err(into_c3p0_error)
             .map(|_| ())
@@ -326,7 +326,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn count_all(&self, tx: &mut Self::Tx<'_>) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.count_all_sql_query)
-            .fetch_one(tx.conn())
+            .fetch_one(tx)
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
@@ -335,7 +335,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn exists_by_id(&self, tx: &mut Self::Tx<'_>, id: &Id) -> Result<bool, C3p0Error> {
         self.query_with_id(&self.queries.exists_by_id_sql_query, id)
-            .fetch_one(tx.conn())
+            .fetch_one(tx)
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
@@ -372,7 +372,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
         let result = self
             .query_with_id(&self.queries.delete_sql_query, &obj.id)
             .bind(obj.version)
-            .execute(tx.conn())
+            .execute(tx)
             .await
             .map_err(into_c3p0_error)?
             .rows_affected();
@@ -391,7 +391,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn delete_all(&self, tx: &mut Self::Tx<'_>) -> Result<u64, C3p0Error> {
         sqlx::query(&self.queries.delete_all_sql_query)
-            .execute(tx.conn())
+            .execute(tx)
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
@@ -399,7 +399,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
 
     async fn delete_by_id(&self, tx: &mut Self::Tx<'_>, id: &Id) -> Result<u64, C3p0Error> {
         self.query_with_id(&self.queries.delete_by_id_sql_query, id)
-            .execute(tx.conn())
+            .execute(tx)
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
@@ -421,7 +421,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
                 .bind(json_data);
             self.id_generator
                 .id_to_query(&id, query)
-                .execute(tx.conn())
+                .execute(tx)
                 .await
                 .map_err(into_c3p0_error)?;
             id
@@ -431,7 +431,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
                 .bind(create_epoch_millis)
                 .bind(create_epoch_millis)
                 .bind(json_data)
-                .execute(tx.conn())
+                .execute(tx)
                 .await
                 .map(|done| done.last_insert_id())
                 .map_err(into_c3p0_error)?;
@@ -464,7 +464,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> C3p0Json<Id, Data, CODE
             self.id_generator
                 .id_to_query(&updated_model.id, query)
                 .bind(previous_version)
-                .execute(tx.conn())
+                .execute(tx)
                 .await
                 .map_err(into_c3p0_error)
                 .map(|done| done.rows_affected())?

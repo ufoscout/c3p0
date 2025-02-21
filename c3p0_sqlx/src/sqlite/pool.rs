@@ -1,7 +1,7 @@
 use crate::error::into_c3p0_error;
 use crate::sqlite::Db;
 use c3p0_common::*;
-use sqlx::{Pool, SqliteConnection, Transaction};
+use sqlx::{Pool, Transaction};
 
 #[derive(Clone)]
 pub struct SqlxSqliteC3p0Pool {
@@ -25,7 +25,7 @@ impl From<Pool<Db>> for SqlxSqliteC3p0Pool {
 }
 
 impl C3p0Pool for SqlxSqliteC3p0Pool {
-    type Tx<'a> = SqliteTx<'a>;
+    type Tx<'a> = Transaction<'a, Db>;
 
     async fn transaction<
         T: Send,
@@ -35,25 +35,12 @@ impl C3p0Pool for SqlxSqliteC3p0Pool {
         &self,
         tx: F,
     ) -> Result<T, E> {
-        let native_transaction: Transaction<'static, Db> =
+        let mut transaction =
             self.pool.begin().await.map_err(into_c3p0_error)?;
 
-        let mut transaction = SqliteTx {
-            inner: native_transaction,
-        };
-        let result = { (tx)(&mut transaction).await? };
+        let result = (tx)(&mut transaction).await?;
 
-        transaction.inner.commit().await.map_err(into_c3p0_error)?;
+        transaction.commit().await.map_err(into_c3p0_error)?;
         Ok(result)
-    }
-}
-
-pub struct SqliteTx<'a> {
-    inner: Transaction<'a, Db>,
-}
-
-impl SqliteTx<'_> {
-    pub fn conn(&mut self) -> &mut SqliteConnection {
-        &mut self.inner
     }
 }

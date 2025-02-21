@@ -2,7 +2,7 @@ use c3p0_common::*;
 
 use crate::error::into_c3p0_error;
 use crate::mysql::Db;
-use sqlx::{MySqlConnection, Pool, Transaction};
+use sqlx::{Pool, Transaction};
 
 #[derive(Clone)]
 pub struct SqlxMySqlC3p0Pool {
@@ -26,7 +26,7 @@ impl From<Pool<Db>> for SqlxMySqlC3p0Pool {
 }
 
 impl C3p0Pool for SqlxMySqlC3p0Pool {
-    type Tx<'a> = MySqlTx<'a>;
+    type Tx<'a> = Transaction<'a, Db>;
 
     async fn transaction<
         T: Send,
@@ -36,27 +36,13 @@ impl C3p0Pool for SqlxMySqlC3p0Pool {
         &self,
         tx: F,
     ) -> Result<T, E> {
-        let native_transaction: Transaction<'static, Db> =
+        let mut transaction =
             self.pool.begin().await.map_err(into_c3p0_error)?;
 
-        let mut transaction = MySqlTx {
-            inner: native_transaction,
-        };
+        let result = (tx)(&mut transaction).await?;
 
-        let result = { (tx)(&mut transaction).await? };
-
-        transaction.inner.commit().await.map_err(into_c3p0_error)?;
+        transaction.commit().await.map_err(into_c3p0_error)?;
 
         Ok(result)
-    }
-}
-
-pub struct MySqlTx<'a> {
-    inner: Transaction<'a, Db>,
-}
-
-impl MySqlTx<'_> {
-    pub fn conn(&mut self) -> &mut MySqlConnection {
-        &mut self.inner
     }
 }
