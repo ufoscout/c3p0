@@ -4,7 +4,6 @@ use crate::tokio_postgres::types::{FromSqlOwned, ToSql};
 use crate::*;
 
 use c3p0_common::*;
-use std::future::Future;
 
 #[derive(Clone)]
 pub struct PgC3p0Pool {
@@ -24,47 +23,37 @@ impl From<Pool> for PgC3p0Pool {
 }
 
 impl C3p0Pool for PgC3p0Pool {
-    type Tx = PgTx;
+    type Tx<'a> = PgTx<'a>;
 
     async fn transaction<
-        'a,
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + FnOnce(&'a mut Self::Tx) -> Fut,
-        Fut: Send + Future<Output = Result<T, E>>,
+        F: Send + AsyncFnOnce(&mut Self::Tx<'_>) -> Result<T, E>,
     >(
-        &'a self,
+        &self,
         tx: F,
     ) -> Result<T, E> {
         let mut conn = self.pool.get().await.map_err(deadpool_into_c3p0_error)?;
 
-        let native_transaction: Transaction<'_> =
-            conn.transaction().await.map_err(into_c3p0_error)?;
+        let native_transaction = conn.transaction().await.map_err(into_c3p0_error)?;
 
-        // ToDo: To avoid this unsafe we need GAT
         let mut transaction = PgTx {
-            inner: (unsafe {
-                ::std::mem::transmute::<
-                    &deadpool_postgres::Transaction<'_>,
-                    &deadpool_postgres::Transaction<'_>,
-                >(&native_transaction)
-            }),
+            inner: native_transaction,
         };
-        let ref_transaction =
-            unsafe { ::std::mem::transmute::<&mut PgTx, &mut PgTx>(&mut transaction) };
-        let result = { (tx)(ref_transaction).await? };
 
-        native_transaction.commit().await.map_err(into_c3p0_error)?;
+        let result = { (tx)(&mut transaction).await? };
+
+        transaction.inner.commit().await.map_err(into_c3p0_error)?;
 
         Ok(result)
     }
 }
 
-pub struct PgTx {
-    inner: &'static Transaction<'static>,
+pub struct PgTx<'a> {
+    inner: Transaction<'a>,
 }
 
-impl PgTx {
+impl PgTx<'_> {
     pub async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         self.inner.batch_execute(sql).await.map_err(into_c3p0_error)
     }

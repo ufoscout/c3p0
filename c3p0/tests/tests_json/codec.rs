@@ -9,7 +9,7 @@ fn should_upgrade_structs_on_load() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        pool.transaction(|conn| async {
+        pool.transaction(async |conn| {
             let table_name = format!("USER_TABLE_{}", rand_string(8));
 
             let jpo_v1 = Builder::new(&table_name).build_with_codec(UserVersionCoded1 {});

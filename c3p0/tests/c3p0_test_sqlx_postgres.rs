@@ -3,14 +3,14 @@
 use std::sync::Arc;
 use std::sync::OnceLock;
 
-use c3p0::sqlx::sqlx::postgres::*;
 use c3p0::sqlx::sqlx::Row;
+use c3p0::sqlx::sqlx::postgres::*;
 use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};
 use testcontainers::postgres::Postgres;
-use testcontainers::testcontainers::runners::AsyncRunner;
 use testcontainers::testcontainers::ContainerAsync;
+use testcontainers::testcontainers::runners::AsyncRunner;
 
 pub type C3p0Impl = SqlxPgC3p0Pool;
 pub type Builder = SqlxPgC3p0JsonBuilder<u64>;

@@ -1,4 +1,4 @@
-use crate::{error::C3p0Error, DataType};
+use crate::{DataType, error::C3p0Error};
 use serde_json::Value;
 
 pub trait JsonCodec<Data: DataType>: Clone + Send + Sync {

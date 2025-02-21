@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 pub type VersionType = u32;
 pub type EpochMillisType = i64;
@@ -10,9 +10,8 @@ pub trait DataType:
 {
 }
 
-impl<
-        T: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin,
-    > DataType for T
+impl<T: 'static + Clone + serde::ser::Serialize + serde::de::DeserializeOwned + Send + Sync + Unpin>
+    DataType for T
 {
 }
 
@@ -33,18 +32,18 @@ pub trait IdType:
 }
 
 impl<
-        T: 'static
-            + Clone
-            + Serialize
-            + DeserializeOwned
-            + Debug
-            + Send
-            + Sync
-            + Unpin
-            + PartialEq
-            + Eq
-            + PartialOrd
-            + Ord,
-    > IdType for T
+    T: 'static
+        + Clone
+        + Serialize
+        + DeserializeOwned
+        + Debug
+        + Send
+        + Sync
+        + Unpin
+        + PartialEq
+        + Eq
+        + PartialOrd
+        + Ord,
+> IdType for T
 {
 }

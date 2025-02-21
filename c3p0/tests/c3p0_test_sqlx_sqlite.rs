@@ -3,8 +3,8 @@
 use std::sync::Arc;
 use std::sync::OnceLock;
 
-use c3p0::sqlx::sqlx::sqlite::*;
 use c3p0::sqlx::sqlx::Row;
+use c3p0::sqlx::sqlx::sqlite::*;
 use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_single::tokio::{Data, MaybeSingleAsync};

@@ -20,7 +20,7 @@ fn json_should_commit_transaction() {
 
         let jpo_ref = &jpo;
         let result: Result<(), C3p0Error> = c3p0
-            .transaction(|conn| async {
+            .transaction(async |conn| {
                 assert!(jpo_ref.create_table_if_not_exists(conn).await.is_ok());
                 println!("Table created!");
                 assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
@@ -35,7 +35,7 @@ fn json_should_commit_transaction() {
 
         assert!(result.is_ok());
 
-        c3p0.transaction::<_, C3p0Error, _, _>(|conn| async {
+        c3p0.transaction::<_, C3p0Error, _>(async |conn| {
             let count = jpo.count_all(conn).await.unwrap();
             assert_eq!(3, count);
             println!("Count performed!");
@@ -64,7 +64,7 @@ fn json_should_rollback_transaction() {
         });
 
         let result_create_table: Result<(), C3p0Error> = c3p0
-            .transaction(|conn| async {
+            .transaction(async |conn| {
                 assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
                 Ok(())
             })
@@ -72,7 +72,7 @@ fn json_should_rollback_transaction() {
         assert!(result_create_table.is_ok());
 
         let result: Result<(), C3p0Error> = c3p0
-            .transaction(|conn| async {
+            .transaction(async |conn| {
                 assert!(jpo.save(conn, model.clone()).await.is_ok());
                 assert!(jpo.save(conn, model.clone()).await.is_ok());
                 assert!(jpo.save(conn, model.clone()).await.is_ok());
@@ -83,7 +83,7 @@ fn json_should_rollback_transaction() {
         assert!(result.is_err());
 
         {
-            c3p0.transaction::<_, C3p0Error, _, _>(|conn| async {
+            c3p0.transaction::<_, C3p0Error, _>(async |conn| {
                 let count = jpo.count_all(conn).await.unwrap();
                 assert_eq!(0, count);
 
@@ -119,7 +119,7 @@ fn json_transaction_should_return_internal_error() {
         let c3p0 = &data.0;
 
         let result: Result<(), _> = c3p0
-            .transaction(|_| async { Err(CustomError::InnerError) })
+            .transaction(async |_| Err(CustomError::InnerError))
             .await;
 
         assert!(result.is_err());
