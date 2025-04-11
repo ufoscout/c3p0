@@ -5,7 +5,7 @@ pub use c3p0::postgres::tokio_postgres::{NoTls, row::Row};
 use c3p0::postgres::*;
 use c3p0::*;
 use c3p0_postgres::deadpool::Runtime;
-use maybe_single::tokio::{Data, MaybeSingleAsync};
+use maybe_once::tokio::{Data, MaybeOnceAsync};
 use testcontainers::{
     postgres::Postgres,
     testcontainers::{ContainerAsync, runners::AsyncRunner},
@@ -51,8 +51,8 @@ async fn init() -> MaybeType {
 }
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
-    static DATA: OnceLock<MaybeSingleAsync<MaybeType>> = OnceLock::new();
-    DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
+    static DATA: OnceLock<MaybeOnceAsync<MaybeType>> = OnceLock::new();
+    DATA.get_or_init(|| MaybeOnceAsync::new(|| Box::pin(init())))
         .data(serial)
         .await
 }

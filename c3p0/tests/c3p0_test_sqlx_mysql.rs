@@ -7,7 +7,7 @@ use c3p0::sqlx::sqlx::Row;
 use c3p0::sqlx::sqlx::mysql::*;
 use c3p0::sqlx::*;
 use c3p0::*;
-use maybe_single::tokio::{Data, MaybeSingleAsync};
+use maybe_once::tokio::{Data, MaybeOnceAsync};
 use testcontainers::mysql::Mysql;
 use testcontainers::testcontainers::ContainerAsync;
 use testcontainers::testcontainers::runners::AsyncRunner;
@@ -45,8 +45,8 @@ async fn init() -> MaybeType {
 }
 
 pub async fn data(serial: bool) -> Data<'static, MaybeType> {
-    static DATA: OnceLock<MaybeSingleAsync<MaybeType>> = OnceLock::new();
-    DATA.get_or_init(|| MaybeSingleAsync::new(|| Box::pin(init())))
+    static DATA: OnceLock<MaybeOnceAsync<MaybeType>> = OnceLock::new();
+    DATA.get_or_init(|| MaybeOnceAsync::new(|| Box::pin(init())))
         .data(serial)
         .await
 }
