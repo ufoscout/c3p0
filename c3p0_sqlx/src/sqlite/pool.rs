@@ -10,7 +10,6 @@ pub struct SqlxSqliteC3p0Pool {
 }
 
 impl SqlxSqliteC3p0Pool {
-
     /// Creates a new SqlxSqliteC3p0Pool from a Sqlx Pool
     pub fn new(pool: Pool<Db>) -> Self {
         SqlxSqliteC3p0Pool { pool }

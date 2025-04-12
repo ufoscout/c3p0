@@ -12,7 +12,6 @@ pub struct PgC3p0Pool {
 }
 
 impl PgC3p0Pool {
-
     /// Creates a new PgC3p0Pool from a deadpool Pool
     pub fn new(pool: Pool) -> Self {
         PgC3p0Pool { pool }
@@ -57,7 +56,6 @@ pub struct PgTx<'a> {
 }
 
 impl PgTx<'_> {
-
     /// Executes a batch of SQL statements
     pub async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         self.inner.batch_execute(sql).await.map_err(into_c3p0_error)

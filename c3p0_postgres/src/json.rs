@@ -81,7 +81,6 @@ pub struct PgC3p0JsonBuilder<Id: IdType, DbId: PostgresIdType> {
 }
 
 impl PgC3p0JsonBuilder<u64, i64> {
-
     /// Creates a new PgC3p0JsonBuilder for a table with the given name
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
@@ -99,7 +98,6 @@ impl PgC3p0JsonBuilder<u64, i64> {
 }
 
 impl<Id: IdType, DbId: PostgresIdType> PgC3p0JsonBuilder<Id, DbId> {
-
     /// Sets the id field name
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
@@ -194,7 +192,6 @@ pub struct PgC3p0Json<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: J
 impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
     PgC3p0Json<Id, DbId, Data, CODEC>
 {
-
     /// Returns the Postgres specific queries for this C3p0Json
     pub fn queries(&self) -> &Queries {
         &self.queries

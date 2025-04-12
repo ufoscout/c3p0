@@ -11,7 +11,6 @@ pub struct SqlxPgC3p0Pool {
 }
 
 impl SqlxPgC3p0Pool {
-
     /// Creates a new SqlxPgC3p0Pool from a Sqlx Pool
     pub fn new(pool: Pool<Db>) -> Self {
         SqlxPgC3p0Pool { pool }

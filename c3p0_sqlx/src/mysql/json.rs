@@ -125,7 +125,6 @@ pub struct SqlxMySqlC3p0JsonBuilder<Id: IdType> {
 }
 
 impl SqlxMySqlC3p0JsonBuilder<u64> {
-
     /// Creates a new SqlxMySqlC3p0JsonBuilder for a table with the given name
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
@@ -144,7 +143,6 @@ impl SqlxMySqlC3p0JsonBuilder<u64> {
 }
 
 impl<Id: IdType> SqlxMySqlC3p0JsonBuilder<Id> {
-
     /// Sets the id field name
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
@@ -236,7 +234,6 @@ pub struct SqlxMySqlC3p0Json<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>>
 }
 
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxMySqlC3p0Json<Id, Data, CODEC> {
-
     /// Returns the queries used by this C3p0Json
     pub fn queries(&self) -> &Queries {
         &self.queries

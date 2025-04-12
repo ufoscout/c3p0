@@ -21,7 +21,6 @@ pub struct Model<Id, Data> {
 }
 
 impl<Id: IdType, Data: DataType> Model<Id, Data> {
-
     /// Converts the current `Model` instance into a `NewModel` instance,
     /// resetting the version to the initial state while retaining the data.
     pub fn into_new(self) -> NewModel<Data> {
@@ -80,8 +79,7 @@ pub struct NewModel<Data> {
 }
 
 impl<Data: DataType> NewModel<Data> {
-
-    /// Creates a new `NewModel` instance from a `Data` value. 
+    /// Creates a new `NewModel` instance from a `Data` value.
     /// Sets the version to 0.
     pub fn new(data: Data) -> Self {
         NewModel { version: 0, data }

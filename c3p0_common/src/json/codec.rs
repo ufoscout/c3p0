@@ -3,9 +3,10 @@ use serde_json::Value;
 
 /// A JSON codec for a specific data type.
 pub trait JsonCodec<Data: DataType>: Clone + Send + Sync {
-
     /// Returns the default codec.
-    fn default() -> DefaultJsonCodec { DefaultJsonCodec{} }
+    fn default() -> DefaultJsonCodec {
+        DefaultJsonCodec {}
+    }
 
     /// Deserialize a JSON value into a `Data` value.
     fn data_from_value(&self, value: Value) -> Result<Data, C3p0Error>;
@@ -13,7 +14,6 @@ pub trait JsonCodec<Data: DataType>: Clone + Send + Sync {
     /// Serialize a `Data` value into a JSON value.
     fn data_to_value(&self, data: &Data) -> Result<Value, C3p0Error>;
 }
-
 
 /// Default JSON codec.
 #[derive(Clone, Default)]

@@ -113,7 +113,6 @@ pub struct SqlxPgC3p0JsonBuilder<Id: IdType> {
 }
 
 impl SqlxPgC3p0JsonBuilder<u64> {
-
     /// Creates a new builder for the SqlxPostgresC3p0Json
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
@@ -132,7 +131,6 @@ impl SqlxPgC3p0JsonBuilder<u64> {
 }
 
 impl<Id: IdType> SqlxPgC3p0JsonBuilder<Id> {
-
     /// Sets the id field name
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
@@ -224,7 +222,6 @@ pub struct SqlxPgC3p0Json<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> {
 }
 
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxPgC3p0Json<Id, Data, CODEC> {
-
     /// Returns the queries used by this C3p0Json
     pub fn queries(&self) -> &Queries {
         &self.queries
