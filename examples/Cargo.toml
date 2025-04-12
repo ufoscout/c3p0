@@ -1,0 +1,17 @@
+[package]
+name = "c3p0_example"
+
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+version.workspace = true
+
+
+[dependencies]
+c3p0 = { workspace = true, features = ["sqlx_postgres"] }
+serde = { workspace = true }
+testcontainers = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

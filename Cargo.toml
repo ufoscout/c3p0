@@ -5,6 +5,7 @@ members = [
     "c3p0_postgres",
     "c3p0_sqlx",
     "c3p0",
+    "examples",
 ]
 
 [workspace.package]
