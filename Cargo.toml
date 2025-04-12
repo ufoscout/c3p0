@@ -24,6 +24,7 @@ c3p0 = { path = "./c3p0", version = "0.72.2" }
 c3p0_postgres = { path = "./c3p0_postgres", version = "0.72.2" }
 c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.72.2" }
 
+include-utils = { version = "0.2.4", features = ["workspace"] }
 rand = "0.9"
 testcontainers = { package = "testcontainers-modules", version = "0.11", features = ["mysql", "postgres"] }
 tokio = { version = "1" }
