@@ -5,12 +5,15 @@ use crate::*;
 
 use c3p0_common::*;
 
+/// A C3p0Pool implementation for Postgres
 #[derive(Clone)]
 pub struct PgC3p0Pool {
     pool: Pool,
 }
 
 impl PgC3p0Pool {
+
+    /// Creates a new PgC3p0Pool from a deadpool Pool
     pub fn new(pool: Pool) -> Self {
         PgC3p0Pool { pool }
     }
@@ -54,10 +57,13 @@ pub struct PgTx<'a> {
 }
 
 impl PgTx<'_> {
+
+    /// Executes a batch of SQL statements
     pub async fn batch_execute(&mut self, sql: &str) -> Result<(), C3p0Error> {
         self.inner.batch_execute(sql).await.map_err(into_c3p0_error)
     }
 
+    /// Executes a SQL statement
     pub async fn execute(
         &mut self,
         sql: &str,
@@ -69,6 +75,7 @@ impl PgTx<'_> {
             .map_err(into_c3p0_error)
     }
 
+    /// Fetches a single value with a custom sql query and parameters
     pub async fn fetch_one_value<T: FromSqlOwned>(
         &mut self,
         sql: &str,
@@ -77,6 +84,7 @@ impl PgTx<'_> {
         self.fetch_one(sql, params, to_value_mapper).await
     }
 
+    /// Fetches a single row with a custom sql query and parameters
     pub async fn fetch_one<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
@@ -88,6 +96,7 @@ impl PgTx<'_> {
             .and_then(|result| result.ok_or(C3p0Error::ResultNotFoundError))
     }
 
+    /// Fetches a single row with a custom sql query and parameters
     pub async fn fetch_one_optional<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
@@ -107,6 +116,7 @@ impl PgTx<'_> {
             })
     }
 
+    /// Fetches multiple rows with a custom sql query and parameters
     pub async fn fetch_all<T, F: Fn(&Row) -> Result<T, Box<dyn std::error::Error>>>(
         &mut self,
         sql: &str,
@@ -126,6 +136,7 @@ impl PgTx<'_> {
             })
     }
 
+    /// Fetches multiple values with a custom sql query and parameters
     pub async fn fetch_all_values<T: FromSqlOwned>(
         &mut self,
         sql: &str,

@@ -4,16 +4,20 @@ use crate::error::into_c3p0_error;
 use crate::postgres::Db;
 use sqlx::{Pool, Transaction};
 
+/// A C3p0Pool implementation for Postgres
 #[derive(Clone)]
 pub struct SqlxPgC3p0Pool {
     pool: Pool<Db>,
 }
 
 impl SqlxPgC3p0Pool {
+
+    /// Creates a new SqlxPgC3p0Pool from a Sqlx Pool
     pub fn new(pool: Pool<Db>) -> Self {
         SqlxPgC3p0Pool { pool }
     }
 
+    /// Returns the underlying Sqlx Pool
     pub fn pool(&self) -> &Pool<Db> {
         &self.pool
     }

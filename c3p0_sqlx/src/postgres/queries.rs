@@ -2,6 +2,7 @@ use c3p0_common::IdType;
 
 use crate::SqlxPgC3p0JsonBuilder;
 
+/// Builds the queries for a Postgres C3p0Json
 pub fn build_pg_queries<Id: IdType>(
     json_builder: SqlxPgC3p0JsonBuilder<Id>,
 ) -> c3p0_common::json::Queries {

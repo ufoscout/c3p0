@@ -3,17 +3,25 @@ use sqlx::{ColumnIndex, Database, Decode, Row, Type, query::Query};
 
 pub type SqlxVersionType = i32;
 
+/// A trait that allows the creation of an Id
 pub trait IdGenerator<Id: IdType>: Send + Sync + 'static {
     type Db: Database;
     type Row: Row<Database = Self::Db>;
 
+    /// Returns the type of the column that will be used to store the Id
     fn create_statement_column_type(&self) -> &str;
+
+    /// Returns the generated Id
     fn generate_id(&self) -> Option<Id>;
+
+    /// Binds the Id to the query
     fn id_to_query<'a>(
         &self,
         id: &'a Id,
         query: Query<'a, Self::Db, <Self::Db as Database>::Arguments<'a>>,
     ) -> Query<'a, Self::Db, <Self::Db as Database>::Arguments<'a>>;
+
+    /// Extracts the Id from the row
     fn id_from_row(
         &self,
         row: &Self::Row,
@@ -21,6 +29,7 @@ pub trait IdGenerator<Id: IdType>: Send + Sync + 'static {
     ) -> Result<Id, C3p0Error>;
 }
 
+/// Converts a row to a Model
 #[inline]
 pub fn to_model<
     Id: IdType,
@@ -42,6 +51,7 @@ where
     to_model_with_index(codec, id_generator, row, 0, 1, 2, 3, 4)
 }
 
+/// Converts a row to a Model
 #[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn to_model_with_index<

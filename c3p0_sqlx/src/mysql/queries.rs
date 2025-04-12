@@ -2,6 +2,7 @@ use c3p0_common::IdType;
 
 use crate::SqlxMySqlC3p0JsonBuilder;
 
+/// Builds the queries for a MySql C3p0Json
 pub fn build_mysql_queries<Id: IdType>(
     json_builder: SqlxMySqlC3p0JsonBuilder<Id>,
 ) -> c3p0_common::json::Queries {

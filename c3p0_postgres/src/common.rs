@@ -11,6 +11,22 @@ pub fn to_value_mapper<T: FromSqlOwned>(row: &Row) -> Result<T, Box<dyn std::err
     Ok(row.try_get(0).map_err(|_| C3p0Error::ResultNotFoundError)?)
 }
 
+    /// Converts a Row into a Model using the given index positions.
+    ///
+    /// - `codec`: The codec to use for serializing and deserializing the data.
+    /// - `id_generator`: The id generator to use for converting the DbId to an Id.
+    /// - `row`: The Row to convert to a Model.
+    /// - `id_index`: The index of the id in the row.
+    /// - `version_index`: The index of the version in the row.
+    /// - `create_epoch_millis_index`: The index of the create epoch millis in the row.
+    /// - `update_epoch_millis_index`: The index of the update epoch millis in the row.
+    /// - `data_index`: The index of the data in the row.
+    ///
+    /// Returns a Model with the converted id, version, create and update epoch millis,
+    /// and data.
+    ///
+    /// Errors if any of the positions are out of bounds, or if the id generator errors.
+    ///
 #[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn to_model<
@@ -49,6 +65,13 @@ pub fn to_model<
     })
 }
 
+/// Attempts to retrieve a value of type `T` from the given `row` at the specified `index`.
+///
+/// - `row`: The database row from which to retrieve the value.
+/// - `index`: The index in the row at which the value is expected to be found.
+///
+/// Returns the value of type `T` if successful, or a `C3p0Error::RowMapperError` if the value
+/// cannot be retrieved, including details about the index and the encountered error.
 #[inline]
 pub fn get_or_error<'a, I: RowIndex + Display, T: FromSql<'a>>(
     row: &'a Row,

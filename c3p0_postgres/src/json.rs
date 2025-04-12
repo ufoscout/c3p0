@@ -15,9 +15,13 @@ pub type PostgresVersionType = i32;
 
 /// A trait that allows the creation of an Id
 pub trait IdGenerator<Id: IdType, DbId: PostgresIdType>: Send + Sync {
+    /// Returns the column type for the id in the create statement
     fn create_statement_column_type(&self) -> &str;
+    /// Generates a new id
     fn generate_id(&self) -> Option<DbId>;
+    /// Converts an Id to a DbId
     fn id_to_db_id<'a>(&self, id: Cow<'a, Id>) -> Result<Cow<'a, DbId>, C3p0Error>;
+    /// Converts a DbId to an Id
     fn db_id_to_id<'a>(&self, id: Cow<'a, DbId>) -> Result<Cow<'a, Id>, C3p0Error>;
 }
 
@@ -63,6 +67,7 @@ impl IdGenerator<uuid::Uuid, uuid::Uuid> for UuidIdGenerator {
     }
 }
 
+/// A builder for a PgC3p0Json
 #[derive(Clone)]
 pub struct PgC3p0JsonBuilder<Id: IdType, DbId: PostgresIdType> {
     pub id_generator: Arc<dyn IdGenerator<Id, DbId>>,
@@ -76,6 +81,8 @@ pub struct PgC3p0JsonBuilder<Id: IdType, DbId: PostgresIdType> {
 }
 
 impl PgC3p0JsonBuilder<u64, i64> {
+
+    /// Creates a new PgC3p0JsonBuilder for a table with the given name
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
         PgC3p0JsonBuilder {
@@ -92,16 +99,20 @@ impl PgC3p0JsonBuilder<u64, i64> {
 }
 
 impl<Id: IdType, DbId: PostgresIdType> PgC3p0JsonBuilder<Id, DbId> {
+
+    /// Sets the id field name
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
         self
     }
 
+    /// Sets the version field name
     pub fn with_version_field_name<T: Into<String>>(mut self, version_field_name: T) -> Self {
         self.version_field_name = version_field_name.into();
         self
     }
 
+    /// Sets the create_epoch_millis field name
     pub fn with_create_epoch_millis_field_name<T: Into<String>>(
         mut self,
         create_epoch_millis_field_name: T,
@@ -110,6 +121,7 @@ impl<Id: IdType, DbId: PostgresIdType> PgC3p0JsonBuilder<Id, DbId> {
         self
     }
 
+    /// Sets the update_epoch_millis field name
     pub fn with_update_epoch_millis_field_name<T: Into<String>>(
         mut self,
         update_epoch_millis_field_name: T,
@@ -118,16 +130,19 @@ impl<Id: IdType, DbId: PostgresIdType> PgC3p0JsonBuilder<Id, DbId> {
         self
     }
 
+    /// Sets the data field name
     pub fn with_data_field_name<T: Into<String>>(mut self, data_field_name: T) -> Self {
         self.data_field_name = data_field_name.into();
         self
     }
 
+    /// Sets the schema name
     pub fn with_schema_name<O: Into<Option<String>>>(mut self, schema_name: O) -> Self {
         self.schema_name = schema_name.into();
         self
     }
 
+    /// Sets the id generator
     pub fn with_id_generator<
         NewId: IdType,
         NewDbId: PostgresIdType,
@@ -148,10 +163,12 @@ impl<Id: IdType, DbId: PostgresIdType> PgC3p0JsonBuilder<Id, DbId> {
         }
     }
 
+    /// Builds a PgC3p0Json
     pub fn build<Data: DataType>(self) -> PgC3p0Json<Id, DbId, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
+    /// Builds a PgC3p0Json with the given codec
     pub fn build_with_codec<Data: DataType, CODEC: JsonCodec<Data>>(
         self,
         codec: CODEC,
@@ -165,6 +182,7 @@ impl<Id: IdType, DbId: PostgresIdType> PgC3p0JsonBuilder<Id, DbId> {
     }
 }
 
+/// A C3p0Json implementation for Postgres
 #[derive(Clone)]
 pub struct PgC3p0Json<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>> {
     phantom_data: std::marker::PhantomData<Data>,
@@ -176,10 +194,13 @@ pub struct PgC3p0Json<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: J
 impl<Id: IdType, DbId: PostgresIdType, Data: DataType, CODEC: JsonCodec<Data>>
     PgC3p0Json<Id, DbId, Data, CODEC>
 {
+
+    /// Returns the Postgres specific queries for this C3p0Json
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
 
+    /// Converts a Postgres row to a Model
     #[inline]
     pub fn to_model(&self, row: &Row) -> Result<Model<Id, Data>, Box<dyn std::error::Error>> {
         to_model(&self.codec, self.id_generator.as_ref(), row, 0, 1, 2, 3, 4)

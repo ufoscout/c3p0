@@ -109,6 +109,7 @@ impl IdGenerator<uuid::Uuid> for SqliteUuidIdGenerator {
     }
 }
 
+/// A builder for SqlxSqliteC3p0Json
 #[derive(Clone)]
 pub struct SqlxSqliteC3p0JsonBuilder<Id: IdType> {
     phantom_id: std::marker::PhantomData<Id>,
@@ -123,6 +124,8 @@ pub struct SqlxSqliteC3p0JsonBuilder<Id: IdType> {
 }
 
 impl SqlxSqliteC3p0JsonBuilder<u64> {
+
+    /// Creates a new SqlxSqliteC3p0JsonBuilder for a table with the given name
     pub fn new<T: Into<String>>(table_name: T) -> Self {
         let table_name = table_name.into();
         SqlxSqliteC3p0JsonBuilder {
@@ -140,16 +143,20 @@ impl SqlxSqliteC3p0JsonBuilder<u64> {
 }
 
 impl<Id: IdType> SqlxSqliteC3p0JsonBuilder<Id> {
+
+    /// Sets the id field name
     pub fn with_id_field_name<T: Into<String>>(mut self, id_field_name: T) -> Self {
         self.id_field_name = id_field_name.into();
         self
     }
 
+    /// Sets the version field name
     pub fn with_version_field_name<T: Into<String>>(mut self, version_field_name: T) -> Self {
         self.version_field_name = version_field_name.into();
         self
     }
 
+    /// Sets the create epoch millis field name
     pub fn with_create_epoch_millis_field_name<T: Into<String>>(
         mut self,
         create_epoch_millis_field_name: T,
@@ -158,6 +165,7 @@ impl<Id: IdType> SqlxSqliteC3p0JsonBuilder<Id> {
         self
     }
 
+    /// Sets the update epoch millis field name
     pub fn with_update_epoch_millis_field_name<T: Into<String>>(
         mut self,
         update_epoch_millis_field_name: T,
@@ -166,16 +174,19 @@ impl<Id: IdType> SqlxSqliteC3p0JsonBuilder<Id> {
         self
     }
 
+    /// Sets the data field name
     pub fn with_data_field_name<T: Into<String>>(mut self, data_field_name: T) -> Self {
         self.data_field_name = data_field_name.into();
         self
     }
 
+    /// Sets the schema name
     pub fn with_schema_name<O: Into<Option<String>>>(mut self, schema_name: O) -> Self {
         self.schema_name = schema_name.into();
         self
     }
 
+    /// Sets the id generator
     pub fn with_id_generator<NewId: IdType>(
         self,
         id_generator: Arc<dyn SqliteIdGenerator<NewId>>,
@@ -193,10 +204,12 @@ impl<Id: IdType> SqlxSqliteC3p0JsonBuilder<Id> {
         }
     }
 
+    /// Builds a SqlxSqliteC3p0Json
     pub fn build<Data: DataType>(self) -> SqlxSqliteC3p0Json<Id, Data, DefaultJsonCodec> {
         self.build_with_codec(DefaultJsonCodec {})
     }
 
+    /// Builds a SqlxSqliteC3p0Json
     pub fn build_with_codec<Data: DataType, CODEC: JsonCodec<Data>>(
         self,
         codec: CODEC,
@@ -211,6 +224,7 @@ impl<Id: IdType> SqlxSqliteC3p0JsonBuilder<Id> {
     }
 }
 
+/// A C3p0Json implementation for Sqlx Sqlite
 #[derive(Clone)]
 pub struct SqlxSqliteC3p0Json<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> {
     phantom_data: std::marker::PhantomData<Data>,
@@ -221,6 +235,8 @@ pub struct SqlxSqliteC3p0Json<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>
 }
 
 impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Json<Id, Data, CODEC> {
+
+    /// Returns the queries used by this C3p0Json
     pub fn queries(&self) -> &Queries {
         &self.queries
     }
@@ -235,6 +251,7 @@ impl<Id: IdType, Data: DataType, CODEC: JsonCodec<Data>> SqlxSqliteC3p0Json<Id, 
         self.id_generator.id_to_query(id, query)
     }
 
+    /// Converts a row to a model
     #[inline]
     pub fn to_model(&self, row: &DbRow) -> Result<Model<Id, Data>, C3p0Error> {
         to_model(&self.codec, self.id_generator.upcast(), row)

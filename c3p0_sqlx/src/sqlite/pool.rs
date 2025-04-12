@@ -3,16 +3,20 @@ use crate::sqlite::Db;
 use c3p0_common::*;
 use sqlx::{Pool, Transaction};
 
+/// A C3p0Pool implementation for Sqlite
 #[derive(Clone)]
 pub struct SqlxSqliteC3p0Pool {
     pool: Pool<Db>,
 }
 
 impl SqlxSqliteC3p0Pool {
+
+    /// Creates a new SqlxSqliteC3p0Pool from a Sqlx Pool
     pub fn new(pool: Pool<Db>) -> Self {
         SqlxSqliteC3p0Pool { pool }
     }
 
+    /// Returns the underlying Sqlx Pool
     pub fn pool(&self) -> &Pool<Db> {
         &self.pool
     }
