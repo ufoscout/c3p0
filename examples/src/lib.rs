@@ -52,7 +52,7 @@ async fn postgres_sqlx_example() {
     let jpo = SqlxPgC3p0JsonBuilder::new("user_data").build::<UserData>();
 
     // Open a transaction to the database.
-    // C3p0 will commit or rollback the transaction automatically. 
+    // C3p0 will commit or rollback the transaction automatically.
     // The transaction will be committed if the result is Ok, otherwise it will be rolled back.
     let result: Result<_, C3p0Error> = c3p0
         .transaction(async |tx| {
