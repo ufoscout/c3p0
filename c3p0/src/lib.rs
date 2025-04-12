@@ -1,3 +1,5 @@
+#![doc = include_str!("../../README.md")]
+
 pub use c3p0_common::*;
 
 #[cfg(feature = "postgres")]

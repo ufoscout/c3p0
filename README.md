@@ -2,8 +2,8 @@
 ![Build Status](https://github.com/ufoscout/c3p0/actions/workflows/build_and_test.yml/badge.svg)
 [![codecov](https://codecov.io/gh/ufoscout/c3p0/branch/master/graph/badge.svg)](https://codecov.io/gh/ufoscout/c3p0)
 
-# "A pleasure to meet you. I am C-3p0, JSON-DB Relations."
 
+# "A pleasure to meet you. I am C-3p0, JSON-DB Relations."
 
 __C3p0__: "Hello, I don't believe we have been introduced.
      A pleasure to meet you. I am C-3p0, JSON-DB Relations."
@@ -12,47 +12,33 @@ Are you playing with Postgres and you like it?
 
 Do you think JSON is excellent, but it could be better handled in your DB code?
 
-whether you prefer [rust-postgres](https://github.com/sfackler/rust-postgres) or 
-[Diesel](https://github.com/diesel-rs/diesel), 
+whether you like [tokio-postgres](https://crates.io/crates/tokio-postgres) or 
+[Sqlx](https://crates.io/crates/sqlx), 
 C3p0 brings you a set of tools to simplify JSON integration in your database workflow.
 
-So, if you would like to:
+So, if you would like to be able to fetch/delete/insert/update JSON object interactively with your Sql DB like it was a NoSQL DB, then keep reading!
 
-- use any `serde_json::Serializable` struct as a valid field in your _Diesel_ models
-- seamlessly integrate any `serde_json::Serializable` struct in your _rust-postgres_ code 
-- automatically upgrade your schema in _rust-postgres_ as in _Diesel migration_  
-
-then keep reading!
 
 ## What C3p0 is not
 
-Even when it offers a high-level interface to perform basic CRUD operations,
-it is not an ORM nor an alternative to Diesel or similar products.
+Although it provides a high-level interface for basic CRUD operations, _C3p0_ is neither an ORM nor a replacement for one—or for any similar tool. In fact, _C3p0_ is not an ORM at all. It allows storing and retrieving JSON objects from the database, but it does not manage cross-table relationships. Each object type is stored in its own dedicated table, using a single column of JSON type.
 
 __C3p0__: "I see, Sir Luke".
 
 Great!
 
 
-## How it works 
+## What C3p0 is
 
-_C3p0_ is composed of a set of independent small Rust libraries for:
- - simplifying JSON-Postgres interactions
- - facilitating general schema management
-
-_C3p0_ components:
-- [c3p0_diesel_macro](c3p0_diesel_macro/README.md)
-- [c3p0_pg](c3p0_pg/README.md)
-- [c3p0_pg_migrate](c3p0_pg_migrate/README.md)
-
-_C3p0_ components not ready yet:
-- [c3p0_diesel](c3p0_diesel/README.md) This will be the
-equivalent *c3p0_pg* build on _Diesel_. 
+_C3p0_ is a library designed for integrating JSON data with relational databases. It offers the following capabilities:
+- Performs basic CRUD operations on JSON objects
+- Automatically generates the necessary SQL queries to interact with database tables, without relying on macros
+- Supports PostgreSQL (via tokio-postgres or sqlx), as well as MySQL and SQLite (via sqlx)
 
 
 ## Prerequisites
 
-You must have Rust version 1.33 or later installed.
+It uses async closures, so it requires at least Rust version 1.85.
 
 
 ## History
@@ -69,7 +55,7 @@ __C3p0__: "they're using a very primitive dialect".
 Indeed.
 
 On the contrary, our interest in the Rust programming language has kept growing over time;
-so, experimented with it and, finally, migrated some critical portions of our code to Rust.
+so, we experimented with it more and more and, finally, migrated some critical portions of our code to Rust.
 
 Just said, we love it.
 
@@ -77,9 +63,7 @@ We believe that Rust is a better overall language.
 
 __C3p0__: "The city's central computer told you?"
  
-Yes! It allows us
-to achieve better resource usage,
-to avoid the garbage collector and the virtual machine,
+Yes! It allows us to achieve better resource usage, to avoid the garbage collector and the virtual machine,
 and, at the same time, to get a better and safer concurrency level.
 
 
@@ -91,3 +75,25 @@ __C3p0__: "Every time he employs that phrase, my circuitry becomes erratic!"
 __Han__: ???
 
 __C3p0__: "Artoo says that the chances of survival are 725 to 1".
+
+By the way, regardless of what Artoo said, we've survived using it in production since 2018.
+
+
+## Example of usage
+
+```rust
+use c3p0::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let db = C3p0::new("postgres://postgres:postgres@localhost:5432/postgres").await.unwrap();
+    let json = db.get("users", "1").await.unwrap();
+    println!("{}", json);
+    db.delete("users", "1").await.unwrap();
+    db.insert("users", "1", json).await.unwrap();
+    db.update("users", "1", json).await.unwrap();
+    let json = db.get("users", "1").await.unwrap();
+    println!("{}", json);
+}
+
+```
