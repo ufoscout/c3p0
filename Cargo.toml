@@ -36,7 +36,6 @@ maybe-once = { version = "0.17", features =["tokio"] }
 thiserror = "2.0"
 uuid = { version = "1", features = ["serde", "v4"] }
 
-anyhow = "1"
 static_assertions = "1"
 
 [profile.dev]

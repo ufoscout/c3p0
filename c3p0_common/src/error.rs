@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+/// An error type for C3p0.
 #[derive(Error, Debug)]
 pub enum C3p0Error {
     #[error("InternalError: {cause}")]

@@ -1,3 +1,5 @@
+
+/// An enum to represent the order by of a query.
 #[derive(Clone, Debug, PartialEq)]
 pub enum OrderBy {
     Asc,

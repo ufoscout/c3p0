@@ -4,20 +4,39 @@ use crate::{DataType, IdType};
 
 use super::types::{EpochMillisType, VersionType};
 
+/// A model for a database table.
+/// This is used to retrieve and update an entry in a database table.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Model<Id, Data> {
+    /// The unique identifier of the model.
     pub id: Id,
+    /// The version of the model used for optimistic locking.
     pub version: VersionType,
+    /// The epoch millis when the model was created.
     pub create_epoch_millis: EpochMillisType,
+    /// The epoch millis when the model was last updated.
     pub update_epoch_millis: EpochMillisType,
+    /// The data of the model.
     pub data: Data,
 }
 
 impl<Id: IdType, Data: DataType> Model<Id, Data> {
+
+    /// Converts the current `Model` instance into a `NewModel` instance,
+    /// resetting the version to the initial state while retaining the data.
     pub fn into_new(self) -> NewModel<Data> {
         NewModel::new(self.data)
     }
 
+    /// Creates a new `Model` instance from a `NewModel` instance.
+    ///
+    /// - `id`: The unique identifier of the model.
+    /// - `create_epoch_millis`: The epoch millis when the model was created.
+    /// - `model`: The `NewModel` instance to create the `Model` instance from.
+    ///
+    /// Returns a `Model` instance with the version set to the initial state,
+    /// the create and update epoch millis set to the given `create_epoch_millis`,
+    /// and the data set to the data of the `model` parameter.
     pub fn from_new(
         id: Id,
         create_epoch_millis: EpochMillisType,
@@ -32,6 +51,15 @@ impl<Id: IdType, Data: DataType> Model<Id, Data> {
         }
     }
 
+    /// Creates a new `Model` instance from the current `Model` instance,
+    /// incrementing the version by one and updating the update epoch millis
+    /// to the given `update_epoch_millis`.
+    ///
+    /// - `update_epoch_millis`: The epoch millis when the model was last updated.
+    ///
+    /// Returns a `Model` instance with the version incremented by one,
+    /// the create epoch millis unchanged, the update epoch millis set to
+    /// the given `update_epoch_millis`, and the data unchanged.
     pub fn into_new_version(self, update_epoch_millis: EpochMillisType) -> Model<Id, Data> {
         Model {
             id: self.id,
@@ -43,6 +71,8 @@ impl<Id: IdType, Data: DataType> Model<Id, Data> {
     }
 }
 
+/// A new model for a database table.
+/// This is used to create a new entry in a database table.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct NewModel<Data> {
     pub version: VersionType,
@@ -50,6 +80,9 @@ pub struct NewModel<Data> {
 }
 
 impl<Data: DataType> NewModel<Data> {
+
+    /// Creates a new `NewModel` instance from a `Data` value. 
+    /// Sets the version to 0.
     pub fn new(data: Data) -> Self {
         NewModel { version: 0, data }
     }
