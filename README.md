@@ -8,8 +8,6 @@
 __C3p0__: "Hello, I don't believe we have been introduced.
      A pleasure to meet you. I am C-3p0, JSON-DB Relations."
 
-Are you playing with Postgres and you like it? 
-
 Do you think JSON is excellent, but it could be better handled in your DB code?
 
 whether you like [tokio-postgres](https://crates.io/crates/tokio-postgres) or 
@@ -33,7 +31,7 @@ Great!
 _C3p0_ is a library designed for integrating JSON data with relational databases. It offers the following capabilities:
 - Performs basic CRUD operations on JSON objects
 - Automatically generates the necessary SQL queries to interact with database tables, without relying on macros
-- Supports PostgreSQL (via tokio-postgres or sqlx), as well as MySQL and SQLite (via sqlx)
+- Supports PostgreSQL (via `tokio-postgres` or `sqlx`), as well as MySQL and SQLite (via `sqlx`)
 
 
 ## Prerequisites
@@ -81,7 +79,7 @@ By the way, regardless of what Artoo said, we've survived using it in production
 
 ## Example of usage
 
-Here is an example of how to use C3p0 with sqlx and a Postgres database:
+Here is an example of how to use _C3p0_ with sqlx and a Postgres database:
 
 ```rust
 use c3p0::sqlx::{
@@ -137,7 +135,9 @@ async fn postgres_sqlx_example() {
     // Create a C3p0Json to manage the UserData model using the table "user_data"
     let jpo = SqlxPgC3p0JsonBuilder::new("user_data").build::<UserData>();
 
-    // Open a transaction to the database
+    // Open a transaction to the database.
+    // C3p0 will commit or rollback the transaction automatically. 
+    // The transaction will be committed if the result is Ok, otherwise it will be rolled back.
     let result: Result<_, C3p0Error> = c3p0
         .transaction(async |tx| {
             // Create the table if it doesn't exist. Usually this would be done in a migration
