@@ -38,6 +38,8 @@ pub enum C3p0Error {
         cause: String,
         source: Box<C3p0Error>,
     },
+    #[error("CorruptedDbMigrationState: {cause}")]
+    CorruptedDbMigrationState { cause: String },
     #[error("OperationNotSupported: {cause}")]
     OperationNotSupported { cause: String },
 }

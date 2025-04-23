@@ -25,3 +25,7 @@ uuid = { workspace = true }
 [dev-dependencies]
 testcontainers = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[features]
+default = []
+migrate = ["c3p0_common/migrate"]

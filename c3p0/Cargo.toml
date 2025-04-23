@@ -37,6 +37,7 @@ uuid = { workspace = true }
 
 [features]
 default = []
+migrate = ["c3p0_postgres?/migrate"]
 postgres = ["c3p0_postgres"]
 sqlx = ["c3p0_sqlx"]
 sqlx_mysql = ["sqlx", "c3p0_sqlx/mysql"]

@@ -18,5 +18,15 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
+# feature migrate
+include_dir = { workspace = true, optional = true }
+md-5 = { workspace = true, optional = true }
+same-file = { workspace = true, optional = true }
+walkdir = { workspace = true, optional = true }
+
 [dev-dependencies]
 static_assertions = { workspace = true }
+
+[features]
+default = []
+migrate = ["include_dir", "md-5", "same-file", "walkdir"]
