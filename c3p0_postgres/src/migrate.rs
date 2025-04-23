@@ -25,11 +25,7 @@ impl C3p0Migrator for PgMigrator {
     type C3P0 = PgC3p0Pool;
     type C3P0Json = PgC3p0Json<u64, i64, MigrationData, DefaultJsonCodec>;
 
-    fn build_cp30_json(
-        &self,
-        table: String,
-        schema: Option<String>,
-    ) -> Self::C3P0Json {
+    fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json {
         PgC3p0JsonBuilder::<u64, i64>::new(table)
             .with_schema_name(schema)
             .build()

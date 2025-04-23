@@ -76,20 +76,28 @@ mod test {
         assert_eq!(2, migrations.migrations.len());
 
         assert_eq!("00010_create_test_data", migrations.migrations[0].id);
-        assert!(migrations.migrations[0]
-            .up
-            .contains("create table TEST_TABLE"));
-        assert!(migrations.migrations[0]
-            .down
-            .contains("DROP TABLE TEST_TABLE;"));
+        assert!(
+            migrations.migrations[0]
+                .up
+                .contains("create table TEST_TABLE")
+        );
+        assert!(
+            migrations.migrations[0]
+                .down
+                .contains("DROP TABLE TEST_TABLE;")
+        );
 
         assert_eq!("00011_insert_test_data", migrations.migrations[1].id);
-        assert!(migrations.migrations[1]
-            .up
-            .contains("INSERT INTO TEST_TABLE (id, name) VALUES ('one', 'one');"));
-        assert!(migrations.migrations[1]
-            .down
-            .contains("delete from TEST_TABLE;"));
+        assert!(
+            migrations.migrations[1]
+                .up
+                .contains("INSERT INTO TEST_TABLE (id, name) VALUES ('one', 'one');")
+        );
+        assert!(
+            migrations.migrations[1]
+                .down
+                .contains("delete from TEST_TABLE;")
+        );
     }
 
     #[test]
@@ -125,11 +133,15 @@ mod test {
         assert_eq!(1, migrations.migrations.len());
 
         assert_eq!("00010_create_test_data", migrations.migrations[0].id);
-        assert!(migrations.migrations[0]
-            .up
-            .contains("create table TEST_TABLE"));
-        assert!(migrations.migrations[0]
-            .down
-            .contains("DROP TABLE TEST_TABLE;"));
+        assert!(
+            migrations.migrations[0]
+                .up
+                .contains("create table TEST_TABLE")
+        );
+        assert!(
+            migrations.migrations[0]
+                .down
+                .contains("DROP TABLE TEST_TABLE;")
+        );
     }
 }

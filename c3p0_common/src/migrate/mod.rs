@@ -1,6 +1,6 @@
 use crate::error::C3p0Error;
 use crate::json::model::Model;
-use crate::migrate::sql_migration::{to_sql_migrations, SqlMigration};
+use crate::migrate::sql_migration::{SqlMigration, to_sql_migrations};
 use log::*;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +13,7 @@ pub mod include_dir {
 }
 
 use crate::{C3p0Json, C3p0Pool, DefaultJsonCodec, NewModel};
-pub use migration::{from_embed, from_fs, Migration, Migrations};
+pub use migration::{Migration, Migrations, from_embed, from_fs};
 
 pub const C3P0_MIGRATE_TABLE_DEFAULT: &str = "C3P0_MIGRATE_SCHEMA_HISTORY";
 pub const C3P0_INIT_MIGRATION_ID: &str = "C3P0_INIT_MIGRATION";
@@ -79,29 +79,31 @@ pub enum MigrationType {
 
 pub trait C3p0Migrator: Clone + Send + Sync {
     type Tx<'a>;
-    type C3P0: for <'a> C3p0Pool<Tx<'a> = Self::Tx<'a>>;
-    type C3P0Json: for <'a> C3p0Json<u64, MigrationData, DefaultJsonCodec, Tx<'a> = Self::Tx<'a>>;
+    type C3P0: for<'a> C3p0Pool<Tx<'a> = Self::Tx<'a>>;
+    type C3P0Json: for<'a> C3p0Json<u64, MigrationData, DefaultJsonCodec, Tx<'a> = Self::Tx<'a>>;
 
     fn build_cp30_json(&self, table: String, schema: Option<String>) -> Self::C3P0Json;
 
-    fn batch_execute(&self, sql: &str, conn: &mut Self::Tx<'_>) -> impl Future<Output = Result<(), C3p0Error>> + Send;
+    fn batch_execute(
+        &self,
+        sql: &str,
+        conn: &mut Self::Tx<'_>,
+    ) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
     fn lock_table(
         &self,
         c3p0_json: &Self::C3P0Json,
         conn: &mut Self::Tx<'_>,
-    )  -> impl Future<Output = Result<(), C3p0Error>> + Send;
+    ) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
     fn lock_first_migration_row(
         &self,
         c3p0_json: &Self::C3P0Json,
         conn: &mut Self::Tx<'_>,
-    )  -> impl Future<Output = Result<(), C3p0Error>> + Send;
+    ) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 }
 
-pub struct C3p0Migrate<
-    Migrator: C3p0Migrator,
-> {
+pub struct C3p0Migrate<Migrator: C3p0Migrator> {
     table: String,
     schema: Option<String>,
     migrations: Vec<SqlMigration>,
@@ -109,8 +111,7 @@ pub struct C3p0Migrate<
     migrator: Migrator,
 }
 
-impl<Migrator: C3p0Migrator>    C3p0Migrate<Migrator>
-{
+impl<Migrator: C3p0Migrator> C3p0Migrate<Migrator> {
     pub fn new(
         table: String,
         schema: Option<String>,
@@ -136,8 +137,7 @@ impl<Migrator: C3p0Migrator>    C3p0Migrate<Migrator>
         self.pre_migration(&c3p0_json)
             .await
             .map_err(|err| C3p0Error::MigrationError {
-                cause: "C3p0Migrate - Failed to execute pre-migration DB preparation."
-                    .to_string(),
+                cause: "C3p0Migrate - Failed to execute pre-migration DB preparation.".to_string(),
                 source: Box::new(err),
             })?;
 
@@ -184,10 +184,13 @@ impl<Migrator: C3p0Migrator>    C3p0Migrate<Migrator>
         {
             let result = self
                 .c3p0
-                .transaction(async |conn| { c3p0_json.create_table_if_not_exists(conn).await })
+                .transaction(async |conn| c3p0_json.create_table_if_not_exists(conn).await)
                 .await;
             if let Err(err) = result {
-                warn!("C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {:?}", err);
+                warn!(
+                    "C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {:?}",
+                    err
+                );
             };
         }
 
@@ -215,15 +218,16 @@ impl<Migrator: C3p0Migrator>    C3p0Migrate<Migrator>
                 continue;
             }
 
-            self.migrator.batch_execute(&migration.up.sql, conn).await.map_err(|err| {
-                C3p0Error::MigrationError {
+            self.migrator
+                .batch_execute(&migration.up.sql, conn)
+                .await
+                .map_err(|err| C3p0Error::MigrationError {
                     cause: format!(
                         "C3p0Migrate - Failed to execute migration with id [{}].",
                         &migration.id
                     ),
                     source: Box::new(err),
-                }
-            })?;
+                })?;
 
             c3p0_json
                 .save(
