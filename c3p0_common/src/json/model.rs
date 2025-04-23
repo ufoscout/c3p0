@@ -13,8 +13,10 @@ pub struct Model<Id, Data> {
     /// The version of the model used for optimistic locking.
     pub version: VersionType,
     /// The epoch millis when the model was created.
+    #[serde(default)]
     pub create_epoch_millis: EpochMillisType,
     /// The epoch millis when the model was last updated.
+    #[serde(default)]
     pub update_epoch_millis: EpochMillisType,
     /// The data of the model.
     pub data: Data,
