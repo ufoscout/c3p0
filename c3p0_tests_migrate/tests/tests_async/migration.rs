@@ -84,7 +84,7 @@ async fn should_execute_migrations() -> Result<(), C3p0Error> {
             assert_eq!(3, status.len());
             assert_eq!(
                 "C3P0_INIT_MIGRATION",
-                status.get(0).unwrap().data.migration_id
+                status.first().unwrap().data.migration_id
             );
             assert_eq!("first", status.get(1).unwrap().data.migration_id);
             assert_eq!("second", status.get(2).unwrap().data.migration_id);
@@ -126,7 +126,7 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
             assert_eq!(2, status.len());
             assert_eq!(
                 "C3P0_INIT_MIGRATION",
-                status.get(0).unwrap().data.migration_id
+                status.first().unwrap().data.migration_id
             );
             assert_eq!("first", status.get(1).unwrap().data.migration_id);
 

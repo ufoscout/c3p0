@@ -71,7 +71,7 @@ mod test {
                     md5: "7e8ab3d9327f4f1a80e2b9de1acc35c0".to_owned(),
                 }
             },
-            migrations.get(0).unwrap()
+            migrations.first().unwrap()
         );
 
         assert_eq!(
