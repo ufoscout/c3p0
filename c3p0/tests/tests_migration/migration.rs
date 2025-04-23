@@ -3,7 +3,7 @@ use crate::*;
 
 #[tokio::test]
 async fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), C3p0Error> {
-    let node = new_connection().await;
+    let node = init().await;
 
     let migrate = C3p0MigrateBuilder::new(node.0.clone())
         .with_migrations(vec![])
@@ -13,7 +13,7 @@ async fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), 
 
     node.0
         .transaction(async |conn| {
-            let jpo = C3p0JsonBuilder::new(C3P0_MIGRATE_TABLE_DEFAULT).build::<MigrationData>();
+            let jpo = Builder::new(C3P0_MIGRATE_TABLE_DEFAULT).build::<MigrationData>();
             assert!(jpo.count_all(conn).await.is_ok());
             assert!(jpo.drop_table_if_exists(conn, true).await.is_ok());
             Ok(())
@@ -23,7 +23,7 @@ async fn should_create_the_c3p0_migrate_table_with_default_name() -> Result<(), 
 
 #[tokio::test]
 async fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), C3p0Error> {
-    let node = new_connection().await;
+    let node = init().await;
 
     let custom_name = &format!("c3p0_custom_name_{}", rand_string(8));
 
@@ -36,7 +36,7 @@ async fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), C
 
     node.0
         .transaction(async |conn| {
-            let jpo = C3p0JsonBuilder::new(custom_name).build::<MigrationData>();
+            let jpo = Builder::new(custom_name).build::<MigrationData>();
             assert!(jpo.count_all(conn).await.is_ok());
             Ok(())
         })
@@ -45,7 +45,7 @@ async fn should_create_the_c3p0_migrate_table_with_custom_name() -> Result<(), C
 
 #[tokio::test]
 async fn should_execute_migrations() -> Result<(), C3p0Error> {
-    let node = new_connection().await;
+    let node = init().await;
 
     let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
     let first_table_name = &format!("first_table_{}", rand_string(8));
@@ -71,10 +71,9 @@ async fn should_execute_migrations() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(async |conn| {
-            let jpo_migration_table =
-                C3p0JsonBuilder::new(migration_table_name).build::<MigrationData>();
-            let jpo_first_table = C3p0JsonBuilder::new(first_table_name).build::<MigrationData>();
-            let jpo_second_table = C3p0JsonBuilder::new(second_table_name).build::<MigrationData>();
+            let jpo_migration_table = Builder::new(migration_table_name).build::<MigrationData>();
+            let jpo_first_table = Builder::new(first_table_name).build::<MigrationData>();
+            let jpo_second_table = Builder::new(second_table_name).build::<MigrationData>();
 
             assert!(jpo_migration_table.count_all(conn).await.is_ok());
             assert!(jpo_first_table.count_all(conn).await.is_ok());
@@ -96,7 +95,7 @@ async fn should_execute_migrations() -> Result<(), C3p0Error> {
 
 #[tokio::test]
 async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
-    let node = new_connection().await;
+    let node = init().await;
 
     let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
     let first_table_name = &format!("first_table_{}", rand_string(8));
@@ -115,9 +114,8 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(async |conn| {
-            let jpo_migration_table =
-                C3p0JsonBuilder::new(migration_table_name).build::<MigrationData>();
-            let jpo_first_table = C3p0JsonBuilder::new(first_table_name).build::<MigrationData>();
+            let jpo_migration_table = Builder::new(migration_table_name).build::<MigrationData>();
+            let jpo_first_table = Builder::new(first_table_name).build::<MigrationData>();
 
             assert!(jpo_migration_table.count_all(conn).await.is_ok());
             assert!(jpo_first_table.count_all(conn).await.is_ok());
@@ -141,7 +139,7 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
 //         return Ok(());
 //     }
 
-//         let node = new_connection().await;
+//         let node = init().await;
 //     let c3p0 = node.0.clone();
 
 //     let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
@@ -199,11 +197,11 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
 
 #[tokio::test]
 async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
-    let node = new_connection().await;
+    let node = init().await;
     let c3p0 = node.0.clone();
 
     let migrate = C3p0MigrateBuilder::new(c3p0.clone())
-        .with_migrations(from_fs("./tests/migrations_00")?)
+        .with_migrations(from_fs("./tests/tests_migration/migrations_00")?)
         .build();
 
     migrate.migrate().await?;
@@ -211,7 +209,7 @@ async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(async |conn| {
-            let jpo = C3p0JsonBuilder::new("TEST_TABLE").build::<MigrationData>();
+            let jpo = Builder::new("TEST_TABLE").build::<MigrationData>();
 
             assert_eq!(3, jpo.count_all(conn).await.unwrap());
 
@@ -227,11 +225,11 @@ async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
 }
 
 const MIGRATIONS: include_dir::Dir =
-    include_dir::include_dir!("$CARGO_MANIFEST_DIR/tests/migrations_00");
+    include_dir::include_dir!("$CARGO_MANIFEST_DIR/tests/tests_migration/migrations_00");
 
 #[tokio::test]
 async fn should_read_embedded_migrations() -> Result<(), C3p0Error> {
-    let node = new_connection().await;
+    let node = init().await;
     let c3p0 = node.0.clone();
 
     let migrate = C3p0MigrateBuilder::new(c3p0.clone())
@@ -243,7 +241,7 @@ async fn should_read_embedded_migrations() -> Result<(), C3p0Error> {
 
     node.0
         .transaction(async |conn| {
-            let jpo = C3p0JsonBuilder::new("TEST_TABLE").build::<MigrationData>();
+            let jpo = Builder::new("TEST_TABLE").build::<MigrationData>();
 
             assert_eq!(3, jpo.count_all(conn).await.unwrap());
 
