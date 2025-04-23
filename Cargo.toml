@@ -41,6 +41,11 @@ uuid = { version = "1", features = ["serde", "v4"] }
 
 static_assertions = "1"
 
+include_dir = { version = "0.7", default-features = false }
+md-5 = { version = "0.10", default-features = false }
+same-file = { version = "1" }
+walkdir = { version = "2.3" }
+
 [profile.dev]
 # debug = false
 

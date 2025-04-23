@@ -21,3 +21,8 @@ pub mod deadpool {
         pub use deadpool_postgres::*;
     }
 }
+
+#[cfg(feature = "migrate")]
+mod migrate;
+#[cfg(feature = "migrate")]
+pub use migrate::*;

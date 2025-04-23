@@ -23,6 +23,8 @@ pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
 
 mod tests;
 mod tests_json;
+#[cfg(feature = "migrate")]
+mod tests_migration;
 mod utils;
 
 pub type MaybeType = (C3p0Impl, ContainerAsync<Postgres>);
