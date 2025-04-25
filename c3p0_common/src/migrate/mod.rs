@@ -79,7 +79,12 @@ pub enum MigrationType {
 
 pub trait C3p0Migrator: Clone + Send + Sync {
     type C3P0: C3p0Pool;
-    type C3P0Json: for<'a> C3p0Json<u64, MigrationData, DefaultJsonCodec, Tx<'a> = <<Self as C3p0Migrator>::C3P0 as C3p0Pool>::Tx<'a>>;
+    type C3P0Json: for<'a> C3p0Json<
+            u64,
+            MigrationData,
+            DefaultJsonCodec,
+            Tx<'a> = <<Self as C3p0Migrator>::C3P0 as C3p0Pool>::Tx<'a>,
+        >;
 
     fn cp30_json(&self) -> &Self::C3P0Json;
 
@@ -101,18 +106,13 @@ pub trait C3p0Migrator: Clone + Send + Sync {
 }
 
 pub struct C3p0Migrate<Migrator: C3p0Migrator> {
-
     migrations: Vec<SqlMigration>,
     c3p0: Migrator::C3P0,
     migrator: Migrator,
 }
 
 impl<Migrator: C3p0Migrator> C3p0Migrate<Migrator> {
-    pub fn new(
-        migrations: Vec<SqlMigration>,
-        c3p0: Migrator::C3P0,
-        migrator: Migrator,
-    ) -> Self {
+    pub fn new(migrations: Vec<SqlMigration>, c3p0: Migrator::C3P0, migrator: Migrator) -> Self {
         Self {
             migrations,
             c3p0,
@@ -121,7 +121,6 @@ impl<Migrator: C3p0Migrator> C3p0Migrate<Migrator> {
     }
 
     pub async fn migrate(&self) -> Result<(), C3p0Error> {
-
         // Pre Migration
         self.pre_migration()
             .await
@@ -133,9 +132,7 @@ impl<Migrator: C3p0Migrator> C3p0Migrate<Migrator> {
         // Start Migration
         self.c3p0
             .transaction(async |conn| {
-                self.migrator
-                    .lock_first_migration_row(conn)
-                    .await?;
+                self.migrator.lock_first_migration_row(conn).await?;
                 Ok(self.start_migration(conn).await?)
             })
             .await
@@ -168,7 +165,12 @@ impl<Migrator: C3p0Migrator> C3p0Migrate<Migrator> {
         {
             let result = self
                 .c3p0
-                .transaction(async |conn| self.migrator.cp30_json().create_table_if_not_exists(conn).await)
+                .transaction(async |conn| {
+                    self.migrator
+                        .cp30_json()
+                        .create_table_if_not_exists(conn)
+                        .await
+                })
                 .await;
             if let Err(err) = result {
                 warn!(
@@ -212,7 +214,8 @@ impl<Migrator: C3p0Migrator> C3p0Migrate<Migrator> {
                     source: Box::new(err),
                 })?;
 
-                self.migrator.cp30_json()
+            self.migrator
+                .cp30_json()
                 .save(
                     conn,
                     NewModel::new(MigrationData {

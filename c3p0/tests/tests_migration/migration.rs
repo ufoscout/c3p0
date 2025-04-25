@@ -139,7 +139,7 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
         return Ok(());
     }
 
-        let node = init().await;
+    let node = init().await;
     let c3p0 = node.0.clone();
 
     let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));

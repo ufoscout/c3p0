@@ -31,8 +31,8 @@ impl PgC3p0MigrateBuilder for C3p0MigrateBuilder<PgC3p0Pool> {
             self.c3p0,
             PgMigrator {
                 c3p0_json: PgC3p0JsonBuilder::<u64, i64>::new(self.table)
-                .with_schema_name(self.schema)
-                .build(),
+                    .with_schema_name(self.schema)
+                    .build(),
             },
         )
     }
@@ -51,7 +51,11 @@ impl C3p0Migrator for PgMigrator {
         &self.c3p0_json
     }
 
-    async fn batch_execute(&self, sql: &str, conn: &mut <<Self as C3p0Migrator>::C3P0 as C3p0Pool>::Tx<'_>) -> Result<(), C3p0Error> {
+    async fn batch_execute(
+        &self,
+        sql: &str,
+        conn: &mut <<Self as C3p0Migrator>::C3P0 as C3p0Pool>::Tx<'_>,
+    ) -> Result<(), C3p0Error> {
         conn.batch_execute(sql).await
     }
 
@@ -90,11 +94,7 @@ pub struct PgC3p0Migrate {
 }
 
 impl PgC3p0Migrate {
-    pub fn new(
-        migrations: Vec<SqlMigration>,
-        c3p0: PgC3p0Pool,
-        migrator: PgMigrator,
-    ) -> Self {
+    pub fn new(migrations: Vec<SqlMigration>, c3p0: PgC3p0Pool, migrator: PgMigrator) -> Self {
         Self {
             migrations,
             c3p0,
@@ -103,7 +103,6 @@ impl PgC3p0Migrate {
     }
 
     pub async fn migrate(&self) -> Result<(), C3p0Error> {
-
         // Pre Migration
         self.pre_migration()
             .await
@@ -115,9 +114,7 @@ impl PgC3p0Migrate {
         // Start Migration
         self.c3p0
             .transaction(async |conn| {
-                self.migrator
-                    .lock_first_migration_row(conn)
-                    .await?;
+                self.migrator.lock_first_migration_row(conn).await?;
                 Ok(self.start_migration(conn).await?)
             })
             .await
@@ -134,10 +131,7 @@ impl PgC3p0Migrate {
         self.migrator.cp30_json().fetch_all(conn).await
     }
 
-    async fn create_migration_zero(
-        &self,
-        conn: &mut PgTx<'_>,
-    ) -> Result<(), C3p0Error> {
+    async fn create_migration_zero(&self, conn: &mut PgTx<'_>) -> Result<(), C3p0Error> {
         let c3p0_json = self.migrator.cp30_json();
         let count = c3p0_json.count_all(conn).await?;
         if count == 0 {
@@ -150,7 +144,12 @@ impl PgC3p0Migrate {
         {
             let result = self
                 .c3p0
-                .transaction(async |conn| self.migrator.cp30_json().create_table_if_not_exists(conn).await)
+                .transaction(async |conn| {
+                    self.migrator
+                        .cp30_json()
+                        .create_table_if_not_exists(conn)
+                        .await
+                })
                 .await;
             if let Err(err) = result {
                 warn!(
@@ -169,10 +168,7 @@ impl PgC3p0Migrate {
             .await
     }
 
-    async fn start_migration(
-        &self,
-        conn: &mut PgTx<'_>,
-    ) -> Result<(), C3p0Error> {
+    async fn start_migration(&self, conn: &mut PgTx<'_>) -> Result<(), C3p0Error> {
         let migration_history = self.fetch_migrations_history(conn).await?;
         let migration_history = clean_history(migration_history)?;
 
@@ -194,7 +190,8 @@ impl PgC3p0Migrate {
                     source: Box::new(err),
                 })?;
 
-                self.migrator.cp30_json()
+            self.migrator
+                .cp30_json()
                 .save(
                     conn,
                     NewModel::new(MigrationData {
