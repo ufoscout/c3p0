@@ -186,7 +186,7 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
             assert_eq!(2, status.len());
             assert_eq!(
                 "C3P0_INIT_MIGRATION",
-                status.get(0).unwrap().data.migration_id
+                status.first().unwrap().data.migration_id
             );
             assert_eq!("first", status.get(1).unwrap().data.migration_id);
 
