@@ -133,67 +133,67 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
         .await
 }
 
-// #[tokio::test]
-// async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
-//     if db_specific::db_type() != crate::utils::DbType::Pg {
-//         return Ok(());
-//     }
+#[tokio::test]
+async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
+    if db_specific::db_type() != crate::utils::DbType::Pg {
+        return Ok(());
+    }
 
-//         let node = init().await;
-//     let c3p0 = node.0.clone();
+        let node = init().await;
+    let c3p0 = node.0.clone();
 
-//     let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
-//     let first_table_name = &format!("first_table_{}", rand_string(8));
+    let migration_table_name = &format!("c3p0_custom_name_{}", rand_string(8));
+    let first_table_name = &format!("first_table_{}", rand_string(8));
 
-//     let migrate = std::sync::Arc::new(
-//         C3p0MigrateBuilder::new(c3p0.clone())
-//             .with_table_name(migration_table_name)
-//             .with_migrations(vec![Migration {
-//                 id: "first".to_owned(),
-//                 up: format!("create table {} (id int)", first_table_name),
-//                 down: "".to_owned(),
-//             }])
-//             .build(),
-//     );
+    let migrate = std::sync::Arc::new(
+        C3p0MigrateBuilder::new(c3p0.clone())
+            .with_table_name(migration_table_name)
+            .with_migrations(vec![Migration {
+                id: "first".to_owned(),
+                up: format!("create table {} (id int)", first_table_name),
+                down: "".to_owned(),
+            }])
+            .build(),
+    );
 
-//     let mut threads = vec![];
+    let mut threads = vec![];
 
-//     for _i in 1..50 {
-//         let migrate = migrate.clone();
+    for _i in 1..50 {
+        let migrate = migrate.clone();
 
-//         let handle = tokio::spawn(async move {
-//             //println!("Thread [{:?}] - {} started", std::thread::current().id(), i);
-//             let result = migrate.migrate().await;
-//             println!(
-//                 "Thread [{:?}] - completed: {:?}",
-//                 std::thread::current().id(),
-//                 result
-//             );
-//             assert!(result.is_ok());
-//         });
-//         threads.push(handle);
-//     }
+        let handle = tokio::spawn(async move {
+            //println!("Thread [{:?}] - {} started", std::thread::current().id(), i);
+            let result = migrate.migrate().await;
+            println!(
+                "Thread [{:?}] - completed: {:?}",
+                std::thread::current().id(),
+                result
+            );
+            assert!(result.is_ok());
+        });
+        threads.push(handle);
+    }
 
-//     for handle in threads {
-//         let result = tokio::join!(handle);
-//         println!("thread result: \n{:?}", result);
-//         result.0.unwrap();
-//     }
+    for handle in threads {
+        let result = tokio::join!(handle);
+        println!("thread result: \n{:?}", result);
+        result.0.unwrap();
+    }
 
-//     node.0
-//         .transaction(async |conn| {
-//             let status = migrate.get_migrations_history(conn).await.unwrap();
-//             assert_eq!(2, status.len());
-//             assert_eq!(
-//                 "C3P0_INIT_MIGRATION",
-//                 status.get(0).unwrap().data.migration_id
-//             );
-//             assert_eq!("first", status.get(1).unwrap().data.migration_id);
+    node.0
+        .transaction(async |conn| {
+            let status = migrate.get_migrations_history(conn).await.unwrap();
+            assert_eq!(2, status.len());
+            assert_eq!(
+                "C3P0_INIT_MIGRATION",
+                status.get(0).unwrap().data.migration_id
+            );
+            assert_eq!("first", status.get(1).unwrap().data.migration_id);
 
-//             Ok(())
-//         })
-//         .await
-// }
+            Ok(())
+        })
+        .await
+}
 
 #[tokio::test]
 async fn should_read_migrations_from_files() -> Result<(), C3p0Error> {
