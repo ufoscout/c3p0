@@ -11,7 +11,7 @@ members = [
 [workspace.package]
 edition = "2024"
 license = "MIT"
-version = "0.72.5"
+version = "0.72.6"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
 keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
@@ -19,10 +19,10 @@ authors = ["Francesco Cina <ufoscout@gmail.com>"]
 readme = "./README.md"
 
 [workspace.dependencies]
-c3p0_common = { path = "./c3p0_common", version = "0.72.5" }
-c3p0 = { path = "./c3p0", version = "0.72.5" }
-c3p0_postgres = { path = "./c3p0_postgres", version = "0.72.5" }
-c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.72.5" }
+c3p0_common = { path = "./c3p0_common", version = "0.72.6" }
+c3p0 = { path = "./c3p0", version = "0.72.6" }
+c3p0_postgres = { path = "./c3p0_postgres", version = "0.72.6" }
+c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.72.6" }
 
 include-utils = { version = "0.2.4", features = ["workspace"] }
 rand = "0.9"
