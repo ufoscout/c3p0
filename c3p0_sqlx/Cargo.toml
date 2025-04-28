@@ -23,6 +23,7 @@ uuid = { workspace = true }
 
 [features]
 default = ["sqlx/runtime-tokio-rustls"]
+migrate = ["sqlx/macros", "sqlx/migrate"]
 mysql = ["sqlx/mysql"]
 postgres = ["sqlx/postgres"]
 sqlite = ["sqlx/sqlite"]
