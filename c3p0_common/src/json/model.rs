@@ -158,7 +158,7 @@ mod test {
             update_epoch_millis: 0,
         };
 
-        println!("Debug model: {:?}", model);
+        println!("Debug model: {model:?}");
     }
 
     #[test]
@@ -167,7 +167,7 @@ mod test {
             name: "test".to_owned(),
         });
 
-        println!("Debug model: {:?}", model);
+        println!("Debug model: {model:?}");
     }
 
     #[test]

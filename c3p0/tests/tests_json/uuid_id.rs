@@ -22,7 +22,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
             });
 
             let saved_model = jpo.save(conn, model.clone()).await.unwrap();
-            println!("saved_model {:?}", saved_model);
+            println!("saved_model {saved_model:?}");
             // assert!(saved_model.id >= 0);
 
             assert_eq!(1, jpo.count_all(conn).await.unwrap());
@@ -194,7 +194,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
                 Err(e) => match e {
                     C3p0Error::OptimisticLockError { cause } => {
                         assert!(cause.contains(&table_name));
-                        println!("cause {}", cause);
+                        println!("cause {cause}");
                         assert!(cause.contains(&format!(
                             "id [{:?}], version [{}]",
                             saved_model.id, saved_model.version

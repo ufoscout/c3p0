@@ -68,7 +68,7 @@ async fn postgres_sqlx_example() {
 
             // Save the new UserData object to the database
             let create_user = jpo.save(tx, user_data.into()).await.unwrap();
-            println!("Saved user data: {:?}", create_user);
+            println!("Saved user data: {create_user:?}");
 
             // Get the saved UserData object from the database
             let fetch_user = jpo.fetch_one_by_id(tx, &create_user.id).await.unwrap();

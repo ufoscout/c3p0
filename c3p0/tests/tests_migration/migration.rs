@@ -56,12 +56,12 @@ async fn should_execute_migrations() -> Result<(), C3p0Error> {
         .with_migrations(vec![
             Migration {
                 id: "first".to_owned(),
-                up: format!("create table {} (id int)", first_table_name),
+                up: format!("create table {first_table_name} (id int)"),
                 down: "".to_owned(),
             },
             Migration {
                 id: "second".to_owned(),
-                up: format!("create table {} (id int)", second_table_name),
+                up: format!("create table {second_table_name} (id int)"),
                 down: "".to_owned(),
             },
         ])
@@ -104,7 +104,7 @@ async fn should_not_execute_same_migrations_twice() -> Result<(), C3p0Error> {
         .with_table_name(migration_table_name)
         .with_migrations(vec![Migration {
             id: "first".to_owned(),
-            up: format!("create table {} (id int)", first_table_name),
+            up: format!("create table {first_table_name} (id int)"),
             down: "".to_owned(),
         }])
         .build();
@@ -150,7 +150,7 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
             .with_table_name(migration_table_name)
             .with_migrations(vec![Migration {
                 id: "first".to_owned(),
-                up: format!("create table {} (id int)", first_table_name),
+                up: format!("create table {first_table_name} (id int)"),
                 down: "".to_owned(),
             }])
             .build(),
@@ -176,7 +176,7 @@ async fn should_handle_parallel_executions() -> Result<(), C3p0Error> {
 
     for handle in threads {
         let result = tokio::join!(handle);
-        println!("thread result: \n{:?}", result);
+        println!("thread result: \n{result:?}");
         result.0.unwrap();
     }
 

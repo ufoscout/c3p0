@@ -14,10 +14,9 @@ fn should_commit_transaction() {
                 assert!(
                     conn.execute(
                         &format!(
-                            r"CREATE TABLE {} (
+                            r"CREATE TABLE {table_name} (
                              name varchar(255)
-                          )",
-                            table_name
+                          )"
                         ),
                         &[]
                     )
@@ -26,19 +25,19 @@ fn should_commit_transaction() {
                 );
 
                 conn.execute(
-                    &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
+                    &format!(r"INSERT INTO {table_name} (name) VALUES ('one')"),
                     &[],
                 )
                 .await
                 .unwrap();
                 conn.execute(
-                    &format!(r"INSERT INTO {} (name) VALUES ('two')", table_name),
+                    &format!(r"INSERT INTO {table_name} (name) VALUES ('two')"),
                     &[],
                 )
                 .await
                 .unwrap();
                 conn.execute(
-                    &format!(r"INSERT INTO {} (name) VALUES ('three')", table_name),
+                    &format!(r"INSERT INTO {table_name} (name) VALUES ('three')"),
                     &[],
                 )
                 .await
@@ -52,13 +51,13 @@ fn should_commit_transaction() {
         {
             pool.transaction::<_, C3p0Error, _>(async |conn| {
                 let count = conn
-                    .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
+                    .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {table_name}"), &[])
                     .await
                     .unwrap();
                 assert_eq!(3, count);
 
                 assert!(
-                    conn.execute(&format!(r"DROP TABLE {}", table_name), &[])
+                    conn.execute(&format!(r"DROP TABLE {table_name}"), &[])
                         .await
                         .is_ok()
                 );
@@ -82,10 +81,9 @@ fn should_rollback_transaction() {
             .transaction(async |conn| {
                 assert!(
                     conn.batch_execute(&format!(
-                        r"CREATE TABLE {} (
+                        r"CREATE TABLE {table_name} (
                              name varchar(255)
-                          )",
-                        table_name
+                          )"
                     ))
                     .await
                     .is_ok()
@@ -98,19 +96,19 @@ fn should_rollback_transaction() {
         let result: Result<(), C3p0Error> = c3p0
             .transaction(async |conn| {
                 conn.execute(
-                    &format!(r"INSERT INTO {} (name) VALUES ('one')", table_name),
+                    &format!(r"INSERT INTO {table_name} (name) VALUES ('one')"),
                     &[],
                 )
                 .await
                 .unwrap();
                 conn.execute(
-                    &format!(r"INSERT INTO {} (name) VALUES ('two')", table_name),
+                    &format!(r"INSERT INTO {table_name} (name) VALUES ('two')"),
                     &[],
                 )
                 .await
                 .unwrap();
                 conn.execute(
-                    &format!(r"INSERT INTO {} (name) VALUES ('three')", table_name),
+                    &format!(r"INSERT INTO {table_name} (name) VALUES ('three')"),
                     &[],
                 )
                 .await
@@ -124,13 +122,13 @@ fn should_rollback_transaction() {
         {
             pool.transaction::<_, C3p0Error, _>(async |conn| {
                 let count = conn
-                    .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {}", table_name), &[])
+                    .fetch_one_value::<i64>(&format!(r"SELECT COUNT(*) FROM {table_name}"), &[])
                     .await
                     .unwrap();
                 assert_eq!(0, count);
 
                 assert!(
-                    conn.execute(&format!(r"DROP TABLE IF EXISTS {}", table_name), &[])
+                    conn.execute(&format!(r"DROP TABLE IF EXISTS {table_name}"), &[])
                         .await
                         .is_ok()
                 );

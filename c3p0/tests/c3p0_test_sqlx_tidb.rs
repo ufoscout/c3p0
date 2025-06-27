@@ -71,6 +71,6 @@ pub mod db_specific {
     }
 
     pub fn build_insert_query(table_name: &str) -> String {
-        format!(r"INSERT INTO {} (name) VALUES (?)", table_name)
+        format!(r"INSERT INTO {table_name} (name) VALUES (?)")
     }
 }

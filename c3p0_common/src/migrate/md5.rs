@@ -5,7 +5,7 @@ pub fn calculate_md5(source: &str) -> String {
     let mut md5 = Md5::default();
     md5.update(source);
     let md5_result_hex = md5.finalize();
-    format!("{:x}", md5_result_hex)
+    format!("{md5_result_hex:x}")
 }
 
 #[cfg(test)]

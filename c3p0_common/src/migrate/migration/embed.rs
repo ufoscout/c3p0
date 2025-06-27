@@ -34,7 +34,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0Error> {
             .get_file(&up_filename)
             .and_then(|file| file.contents_utf8())
             .ok_or_else(|| C3p0Error::IoError {
-                cause: format!("Error reading file [{}].", up_filename),
+                cause: format!("Error reading file [{up_filename}]."),
             })?;
 
         let down_filename = format!("{}/down.sql", entry.path().display());
@@ -42,7 +42,7 @@ pub fn from_embed(dir: &Dir) -> Result<Migrations, C3p0Error> {
             .get_file(&down_filename)
             .and_then(|file| file.contents_utf8())
             .ok_or_else(|| C3p0Error::IoError {
-                cause: format!("Error reading file [{}].", down_filename),
+                cause: format!("Error reading file [{down_filename}]."),
             })?;
 
         migrations.push(Migration {

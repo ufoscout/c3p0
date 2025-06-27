@@ -21,7 +21,7 @@ pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType>(
     );
 
     Queries {
-        count_all_sql_query: format!("SELECT COUNT(*) FROM {}", qualified_table_name,),
+        count_all_sql_query: format!("SELECT COUNT(*) FROM {qualified_table_name}",),
 
         exists_by_id_sql_query: format!(
             "SELECT EXISTS (SELECT 1 FROM {} WHERE {} = $1)",
@@ -45,7 +45,7 @@ pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType>(
             qualified_table_name, json_builder.id_field_name, json_builder.version_field_name,
         ),
 
-        delete_all_sql_query: format!("DELETE FROM {}", qualified_table_name,),
+        delete_all_sql_query: format!("DELETE FROM {qualified_table_name}",),
 
         delete_by_id_sql_query: format!(
             "DELETE FROM {} WHERE {} = $1",
@@ -101,15 +101,13 @@ pub fn build_pg_queries<Id: IdType, DbId: PostgresIdType>(
             json_builder.data_field_name
         ),
 
-        drop_table_sql_query: format!("DROP TABLE IF EXISTS {}", qualified_table_name),
+        drop_table_sql_query: format!("DROP TABLE IF EXISTS {qualified_table_name}"),
         drop_table_sql_query_cascade: format!(
-            "DROP TABLE IF EXISTS {} CASCADE",
-            qualified_table_name
+            "DROP TABLE IF EXISTS {qualified_table_name} CASCADE"
         ),
 
         lock_table_sql_query: Some(format!(
-            "LOCK TABLE {} IN ACCESS EXCLUSIVE MODE",
-            qualified_table_name
+            "LOCK TABLE {qualified_table_name} IN ACCESS EXCLUSIVE MODE"
         )),
 
         qualified_table_name,

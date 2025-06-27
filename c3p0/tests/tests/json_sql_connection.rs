@@ -23,7 +23,7 @@ fn should_fetch_by_sql() -> Result<(), C3p0Error> {
             let one = jpo
                 .fetch_one_optional_with_sql(
                     conn,
-                    &format!("select id, version, create_epoch_millis, update_epoch_millis, data from {}", table_name),
+                    &format!("select id, version, create_epoch_millis, update_epoch_millis, data from {table_name}"),
                     &[],
                 )
                 .await
@@ -33,7 +33,7 @@ fn should_fetch_by_sql() -> Result<(), C3p0Error> {
             let all = jpo
                 .fetch_all_with_sql(
                     conn,
-                    &format!("select id, version, create_epoch_millis, update_epoch_millis, data from {}", table_name),
+                    &format!("select id, version, create_epoch_millis, update_epoch_millis, data from {table_name}"),
                     &[],
                 )
                 .await

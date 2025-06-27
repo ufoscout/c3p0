@@ -85,28 +85,26 @@ where
     let version: SqlxVersionType =
         row.try_get(version_index)
             .map_err(|err| C3p0Error::RowMapperError {
-                cause: format!("Row contains no values for version index. Err: {:?}", err),
+                cause: format!("Row contains no values for version index. Err: {err:?}"),
             })?;
     let version = version as VersionType;
     let create_epoch_millis =
         row.try_get(create_epoch_millis_index)
             .map_err(|err| C3p0Error::RowMapperError {
                 cause: format!(
-                    "Row contains no values for create_epoch_millis index. Err: {:?}",
-                    err
+                    "Row contains no values for create_epoch_millis index. Err: {err:?}"
                 ),
             })?;
     let update_epoch_millis =
         row.try_get(update_epoch_millis_index)
             .map_err(|err| C3p0Error::RowMapperError {
                 cause: format!(
-                    "Row contains no values for update_epoch_millis index. Err: {:?}",
-                    err
+                    "Row contains no values for update_epoch_millis index. Err: {err:?}"
                 ),
             })?;
     let data = codec.data_from_value(row.try_get(data_index).map_err(|err| {
         C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for data index. Err: {:?}", err),
+            cause: format!("Row contains no values for data index. Err: {err:?}"),
         }
     })?)?;
     Ok(Model {

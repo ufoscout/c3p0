@@ -110,7 +110,7 @@ impl PgTx<'_> {
             .map(mapper)
             .transpose()
             .map_err(|err| C3p0Error::RowMapperError {
-                cause: format!("{:?}", err),
+                cause: format!("{err:?}"),
             })
     }
 
@@ -130,7 +130,7 @@ impl PgTx<'_> {
             .map(mapper)
             .collect::<Result<Vec<T>, Box<dyn std::error::Error>>>()
             .map_err(|err| C3p0Error::RowMapperError {
-                cause: format!("{:?}", err),
+                cause: format!("{err:?}"),
             })
     }
 
