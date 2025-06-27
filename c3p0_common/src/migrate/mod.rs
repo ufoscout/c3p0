@@ -174,8 +174,7 @@ impl<Migrator: C3p0Migrator> C3p0Migrate<Migrator> {
                 .await;
             if let Err(err) = result {
                 warn!(
-                    "C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {:?}",
-                    err
+                    "C3p0Migrate - Create table process completed with error. This 'COULD' be fine if another process attempted the same operation concurrently. Err: {err:?}",
                 );
             };
         }
