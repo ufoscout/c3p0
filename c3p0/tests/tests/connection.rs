@@ -162,11 +162,9 @@ fn should_fetch_values() -> Result<(), C3p0Error> {
         let result: Result<_, C3p0Error> = pool
             .transaction(async |conn| {
                 assert!(
-                    conn.batch_execute(&format!(
-                        "CREATE TABLE {table_name} ( name varchar(255) )"
-                    ))
-                    .await
-                    .is_ok()
+                    conn.batch_execute(&format!("CREATE TABLE {table_name} ( name varchar(255) )"))
+                        .await
+                        .is_ok()
                 );
 
                 let all_string = conn
