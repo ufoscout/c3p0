@@ -11,7 +11,6 @@ use crate::record::row_to_record_with_index;
 use crate::time::get_current_epoch_millis;
 use crate::{error::C3p0Error, record::{Data, NewRecord, Record, DbRead, DbWrite}};
 
-
 impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
 
     async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Postgres>>(
@@ -170,6 +169,46 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
             .await
             .map_err(into_c3p0_error)
             .map(|done| done.rows_affected())
+    }
+    
+    async fn update(
+        mut self,
+        tx: &mut PgConnection,
+    ) -> Result<Record<DATA>, C3p0Error> {
+        static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!("UPDATE {} SET version = $1, update_epoch_millis = $2, data = $3 WHERE id = $4 AND version = $5",DATA::TABLE_NAME));
+
+        let data_encoded = DATA::CODEC::encode(self.data);
+        let json_data = serde_json::to_value(&data_encoded)?;
+        let previous_version = self.version;
+
+        self.data = DATA::CODEC::decode(data_encoded);
+        self.version = self.version + 1;
+        self.update_epoch_millis = get_current_epoch_millis();
+
+                let result = {
+            sqlx::query(query)
+                .bind(self.version)
+                .bind(self.update_epoch_millis)
+                .bind(json_data)
+                .bind(self.id as i64)
+                .bind(previous_version)
+                .execute(tx)
+                .await
+                .map_err(into_c3p0_error)
+                .map(|done| done.rows_affected())?
+        };
+
+        if result == 0 {
+            return Err(C3p0Error::OptimisticLockError {
+                cause: format!(
+                    "Cannot update data in table [{}] with id [{:?}], version [{}]: data was changed!",
+                    DATA::TABLE_NAME, self.id, &previous_version
+                ),
+            });
+        }
+
+        Ok(self)
     }
 
 }

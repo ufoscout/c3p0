@@ -168,6 +168,10 @@ pub trait DbRead<DB: Database, DATA: Data> {
 
     fn delete_by_id(tx: &mut DB::Connection, id: u64) -> impl Future<Output = Result<u64, C3p0Error>>;
 
+    fn update(
+        self,
+        tx: &mut DB::Connection,
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 }
 
 pub trait DbWrite<DB: Database, DATA: Data> {
