@@ -18,6 +18,10 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 static_assertions = { workspace = true }
+maybe-once = { workspace = true }
+rand = { workspace = true }
+testcontainers = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 
 [features]
 default = ["sqlx/runtime-tokio-rustls"]
