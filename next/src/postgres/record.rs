@@ -81,7 +81,7 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
                         static QUERY: OnceLock::<String> = OnceLock::new();
         let query = QUERY.get_or_init(|| format!(
             "{} ORDER BY id ASC",
-            Record::<DATA>::select_query_base(),
+            select_query_base(DATA::TABLE_NAME),
         ));
 
         Self::fetch_all_with_sql(tx, sqlx::query(query))
@@ -95,7 +95,7 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
                                 static QUERY: OnceLock::<String> = OnceLock::new();
         let query = QUERY.get_or_init(|| format!(
             "{} WHERE id = $1 LIMIT 1",
-            Record::<DATA>::select_query_base(),
+            select_query_base(DATA::TABLE_NAME),
         ));
 
         let query =         sqlx::query(query)
@@ -110,7 +110,7 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
                                 static QUERY: OnceLock::<String> = OnceLock::new();
         let query = QUERY.get_or_init(|| format!(
             "{} WHERE id = $1 LIMIT 1",
-            Record::<DATA>::select_query_base(),
+            select_query_base(DATA::TABLE_NAME),
         ));
 
         let query =         sqlx::query(query)
@@ -253,3 +253,11 @@ impl <DATA: Data> DbWrite<Postgres, DATA> for NewRecord<DATA> {
     }
 
 }
+
+/// Returns a SQL query string to select all columns from the database table.
+    fn select_query_base(table_name: &str) -> String {
+        format!(
+            "SELECT id, version, create_epoch_millis, update_epoch_millis, data FROM {}",
+            table_name
+        )
+    }

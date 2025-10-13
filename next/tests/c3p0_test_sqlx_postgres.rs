@@ -1,27 +1,18 @@
 #![cfg(feature = "postgres")]
 
-use std::sync::Arc;
 use std::sync::OnceLock;
 
-use c3p0::sqlx::sqlx::Row;
-use c3p0::sqlx::sqlx::postgres::*;
-use c3p0::sqlx::*;
-use c3p0::*;
+use next::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
+use sqlx::postgres::PgConnectOptions;
 use testcontainers::postgres::Postgres;
 use testcontainers::testcontainers::ContainerAsync;
 use testcontainers::testcontainers::runners::AsyncRunner;
 
-pub type C3p0Impl = SqlxPgC3p0Pool;
-pub type Builder = SqlxPgC3p0JsonBuilder<u64>;
-pub type UuidBuilder = SqlxPgC3p0JsonBuilder<uuid::Uuid>;
-
-pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
-    SqlxPgC3p0JsonBuilder::new(table_name).with_id_generator(Arc::new(PostgresUuidIdGenerator {}))
-}
+pub type C3p0Impl = PgC3p0Pool;
 
 //mod tests;
-mod tests_json;
+mod tests;
 mod utils;
 
 pub type MaybeType = (C3p0Impl, ContainerAsync<Postgres>);
@@ -38,7 +29,7 @@ async fn init() -> MaybeType {
 
     let pool = PgPool::connect_with(options).await.unwrap();
 
-    let pool = SqlxPgC3p0Pool::new(pool);
+    let pool = PgC3p0Pool::new(pool);
 
     (pool, node)
 }
@@ -51,6 +42,8 @@ pub async fn data(serial: bool) -> Data<'static, MaybeType> {
 }
 
 pub mod db_specific {
+
+    use sqlx::postgres::PgRow;
 
     use super::*;
 

@@ -29,7 +29,7 @@ pub struct TestData {
     pub last_name: String,
 }
 
-pub fn test<F: std::future::Future>(f: F) -> F::Output {
+pub fn run_test<F: std::future::Future>(f: F) -> F::Output {
     static RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
     RT.get_or_init(|| {
         tokio::runtime::Builder::new_multi_thread()

@@ -1,11 +1,17 @@
-use c3p0::*;
+use next::*;
 
 use crate::utils::{codec::*, *};
 use crate::*;
 
+const RAND_NUM: u64 = const_random::const_random!(u64);
+const RAND_TABLE_NAME: &str = const_format::concatcp!("TEST_TABLE", RAND_NUM);
+
 #[test]
 fn should_upgrade_structs_on_load() -> Result<(), C3p0Error> {
-    test(async {
+
+    
+
+    run_test(async {
         let data = data(false).await;
         let pool = &data.0;
 

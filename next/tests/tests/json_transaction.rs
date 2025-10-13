@@ -3,7 +3,7 @@ use crate::*;
 
 #[test]
 fn json_should_commit_transaction() {
-    test(async {
+    run_test(async {
         let data = data(false).await;
         let c3p0 = &data.0;
 
@@ -51,7 +51,7 @@ fn json_should_commit_transaction() {
 
 #[test]
 fn json_should_rollback_transaction() {
-    test(async {
+    run_test(async {
         let data = data(false).await;
         let c3p0 = &data.0;
 
@@ -114,7 +114,7 @@ fn json_transaction_should_return_internal_error() {
         }
     }
 
-    test(async {
+    run_test(async {
         let data = data(false).await;
         let c3p0 = &data.0;
 

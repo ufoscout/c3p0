@@ -57,66 +57,6 @@ where
     }
 }
 
-impl<DATA: Data> Record<DATA> {
-
-
-    /// Returns a SQL query string to select all columns from the database table.
-    pub(crate) fn select_query_base() -> String {
-        format!(
-            "SELECT id, version, create_epoch_millis, update_epoch_millis, data FROM {}",
-            DATA::TABLE_NAME
-        )
-    }
-    
-    /// Converts the current `Record` instance into a `NewRecord` instance,
-    /// resetting the version to the initial state while retaining the data.
-    pub(crate) fn into_new(self) -> NewRecord<DATA> {
-        NewRecord::new(self.data)
-    }
-
-    /// Creates a new `Record` instance from a `NewRecord` instance.
-    ///
-    /// - `id`: The unique identifier of the model.
-    /// - `create_epoch_millis`: The epoch millis when the model was created.
-    /// - `model`: The `NewRecord` instance to create the `Record` instance from.
-    ///
-    /// Returns a `Record` instance with the version set to the initial state,
-    /// the create and update epoch millis set to the given `create_epoch_millis`,
-    /// and the data set to the data of the `model` parameter.
-    pub(crate) fn from_new(
-        id: u64,
-        create_epoch_millis: i64,
-        model: NewRecord<DATA>,
-    ) -> Record<DATA> {
-        Record {
-            id,
-            version: 0,
-            create_epoch_millis,
-            update_epoch_millis: create_epoch_millis,
-            data: model.data,
-        }
-    }
-
-    /// Creates a new `Record` instance from the current `Record` instance,
-    /// incrementing the version by one and updating the update epoch millis
-    /// to the given `update_epoch_millis`.
-    ///
-    /// - `update_epoch_millis`: The epoch millis when the model was last updated.
-    ///
-    /// Returns a `Record` instance with the version incremented by one,
-    /// the create epoch millis unchanged, the update epoch millis set to
-    /// the given `update_epoch_millis`, and the data unchanged.
-    pub(crate) fn into_new_version(self, update_epoch_millis: i64) -> Record<DATA> {
-        Record {
-            id: self.id,
-            version: self.version + 1,
-            create_epoch_millis: self.create_epoch_millis,
-            update_epoch_millis,
-            data: self.data,
-        }
-    }
-}
-
 pub trait DbRead<DB: Database, DATA: Data> {
 
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
