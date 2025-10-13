@@ -58,6 +58,16 @@ where
 }
 
 impl<DATA: Data> Record<DATA> {
+
+
+    /// Returns a SQL query string to select all columns from the database table.
+    pub(crate) fn select_query_base() -> String {
+        format!(
+            "SELECT id, version, create_epoch_millis, update_epoch_millis, data FROM {}",
+            DATA::TABLE_NAME
+        )
+    }
+    
     /// Converts the current `Record` instance into a `NewRecord` instance,
     /// resetting the version to the initial state while retaining the data.
     pub(crate) fn into_new(self) -> NewRecord<DATA> {

@@ -49,7 +49,13 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn count_all(tx: &mut PgConnection) -> Result<u64, C3p0Error> {
-        sqlx::query(&self.queries.count_all_sql_query)
+        static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!(
+            "SELECT COUNT(*) FROM {}",
+            DATA::TABLE_NAME,
+        ));
+
+        sqlx::query(&query)
             .fetch_one(tx)
             .await
             .and_then(|row| row.try_get(0))
@@ -58,7 +64,14 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn exists_by_id(tx: &mut PgConnection, id: u64) -> Result<bool, C3p0Error> {
-        Self::query_with_id(&self.queries.exists_by_id_sql_query, id)
+                static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!(
+            "SELECT EXISTS (SELECT 1 FROM {} WHERE id = $1)",
+            DATA::TABLE_NAME,
+        ));
+
+        sqlx::query(query)
+            .bind(id as i64)
             .fetch_one(tx)
             .await
             .and_then(|row| row.try_get(0))
@@ -66,7 +79,13 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn fetch_all(tx: &mut PgConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Self::fetch_all_with_sql(tx, sqlx::query(&self.queries.find_all_sql_query))
+                        static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!(
+            "{} ORDER BY id ASC",
+            Record::<DATA>::select_query_base(),
+        ));
+
+        Self::fetch_all_with_sql(tx, sqlx::query(query))
             .await
     }
 
@@ -74,7 +93,14 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         tx: &mut PgConnection,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        let query = self.query_with_id(&self.queries.find_by_id_sql_query, id);
+                                static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!(
+            "{} WHERE id = $1 LIMIT 1",
+            Record::<DATA>::select_query_base(),
+        ));
+
+        let query =         sqlx::query(query)
+            .bind(id as i64);
         Self::fetch_one_optional_with_sql(tx, query).await
     }
 
@@ -82,7 +108,14 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         tx: &mut PgConnection,
         id: u64,
     ) -> Result<Record<DATA>, C3p0Error> {
-        let query = self.query_with_id(&self.queries.find_by_id_sql_query, id);
+                                static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!(
+            "{} WHERE id = $1 LIMIT 1",
+            Record::<DATA>::select_query_base(),
+        ));
+
+        let query =         sqlx::query(query)
+            .bind(id as i64);
         Self::fetch_one_with_sql(tx, query).await
     }
 
@@ -90,9 +123,15 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         self,
         tx: &mut PgConnection,
     ) -> Result<Record<DATA>, C3p0Error> {
-        let result = self
-            .query_with_id(&self.queries.delete_sql_query, &obj.id)
-            .bind(obj.version as SqlxVersionType)
+        static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!(
+            "DELETE FROM {} WHERE id = $1 AND version = $2",
+            DATA::TABLE_NAME,
+        ));
+
+        let result = sqlx::query(query)
+            .bind(self.id as i64)
+            .bind(self.version)
             .execute(tx)
             .await
             .map_err(into_c3p0_error)?
@@ -102,16 +141,19 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
             return Err(C3p0Error::OptimisticLockError {
                 cause: format!(
                     "Cannot delete data in table [{}] with id [{:?}], version [{}]: data was changed!",
-                    &self.queries.qualified_table_name, &obj.id, &obj.version
+                    DATA::TABLE_NAME, self.id, self.version
                 ),
             });
         }
 
-        Ok(obj)
+        Ok(self)
     }
 
     async fn delete_all(tx: &mut PgConnection) -> Result<u64, C3p0Error> {
-        sqlx::query(&self.queries.delete_all_sql_query)
+        static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!("DELETE FROM {}",DATA::TABLE_NAME));
+
+        sqlx::query(query)
             .execute(tx)
             .await
             .map_err(into_c3p0_error)
@@ -119,7 +161,11 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn delete_by_id(tx: &mut PgConnection, id: u64) -> Result<u64, C3p0Error> {
-        self.query_with_id(&self.queries.delete_by_id_sql_query, id)
+        static QUERY: OnceLock::<String> = OnceLock::new();
+        let query = QUERY.get_or_init(|| format!("DELETE FROM {} WHERE id = $1",DATA::TABLE_NAME));
+
+        sqlx::query(query)
+            .bind(id as i64)
             .execute(tx)
             .await
             .map_err(into_c3p0_error)
