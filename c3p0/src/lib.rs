@@ -2,11 +2,6 @@
 
 pub use c3p0_common::*;
 
-#[cfg(feature = "postgres")]
-pub mod postgres {
-    pub use c3p0_postgres::*;
-}
-
 #[cfg(any(
     feature = "sqlx",
     feature = "sqlx_mysql",

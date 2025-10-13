@@ -4,9 +4,6 @@ pub mod pool;
 pub mod sql;
 pub mod time;
 
-#[cfg(feature = "migrate")]
-mod migrate;
-
 mod common {
     pub use crate::error::C3p0Error;
     pub use crate::json::{
@@ -17,13 +14,6 @@ mod common {
 
     pub use crate::pool::C3p0Pool;
 
-    #[cfg(feature = "migrate")]
-    pub use crate::migrate::{
-        C3P0_INIT_MIGRATION_ID, C3P0_MIGRATE_TABLE_DEFAULT, C3p0Migrate, C3p0MigrateBuilder,
-        C3p0Migrator, Migration, MigrationData, MigrationModel, MigrationType, Migrations,
-        build_migration_zero, check_if_migration_already_applied, clean_history, from_embed,
-        from_fs, include_dir, sql_migration::SqlMigration, sql_migration::to_sql_migrations,
-    };
 }
 
 pub use crate::common::*;

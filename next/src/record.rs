@@ -13,6 +13,14 @@ pub struct Record<DATA: Data> {
     pub data: DATA
 }
 
+pub trait TxRead<Tx, DATA> {
+    fn select(&self, tx: &Tx) -> Option<DATA>;
+}
+
+pub trait TxWrite<Tx, DATA> {
+    fn save(&self, tx: &Tx) -> Option<DATA>;
+}
+
 impl <DATA: Data> Record<DATA> {
     pub fn new(id: DATA::ID, data: DATA) -> Self {
         Self { id, data }
