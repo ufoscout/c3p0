@@ -1,34 +1,33 @@
 use crate::error::C3p0Error;
 use crate::{error::into_c3p0_error, pool::C3p0Pool};
-use crate::sqlite::Db;
-use sqlx::{Pool, Transaction};
+use sqlx::{Pool, Sqlite, Transaction};
 
 /// A C3p0Pool implementation for Sqlite
 #[derive(Clone)]
-pub struct SqlxSqliteC3p0Pool {
-    pool: Pool<Db>,
+pub struct SqliteC3p0Pool {
+    pool: Pool<Sqlite>,
 }
 
-impl SqlxSqliteC3p0Pool {
+impl SqliteC3p0Pool {
     /// Creates a new SqlxSqliteC3p0Pool from a Sqlx Pool
-    pub fn new(pool: Pool<Db>) -> Self {
-        SqlxSqliteC3p0Pool { pool }
+    pub fn new(pool: Pool<Sqlite>) -> Self {
+        SqliteC3p0Pool { pool }
     }
 
     /// Returns the underlying Sqlx Pool
-    pub fn pool(&self) -> &Pool<Db> {
+    pub fn pool(&self) -> &Pool<Sqlite> {
         &self.pool
     }
 }
 
-impl From<Pool<Db>> for SqlxSqliteC3p0Pool {
-    fn from(pool: Pool<Db>) -> Self {
-        SqlxSqliteC3p0Pool::new(pool)
+impl From<Pool<Sqlite>> for SqliteC3p0Pool {
+    fn from(pool: Pool<Sqlite>) -> Self {
+        SqliteC3p0Pool::new(pool)
     }
 }
 
-impl C3p0Pool for SqlxSqliteC3p0Pool {
-    type Tx<'a> = Transaction<'a, Db>;
+impl C3p0Pool for SqliteC3p0Pool {
+    type Tx<'a> = Transaction<'a, Sqlite>;
 
     async fn transaction<
         T: Send,

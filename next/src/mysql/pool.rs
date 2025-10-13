@@ -1,35 +1,34 @@
 
 use crate::error::C3p0Error;
 use crate::{error::into_c3p0_error, pool::C3p0Pool};
-use crate::mysql::Db;
-use sqlx::{Pool, Transaction};
+use sqlx::{MySql, Pool, Transaction};
 
 /// A C3p0Pool implementation for MySql
 #[derive(Clone)]
-pub struct SqlxMySqlC3p0Pool {
-    pool: Pool<Db>,
+pub struct MySqlC3p0Pool {
+    pool: Pool<MySql>,
 }
 
-impl SqlxMySqlC3p0Pool {
+impl MySqlC3p0Pool {
     /// Creates a new SqlxMySqlC3p0Pool from a Sqlx Pool
-    pub fn new(pool: Pool<Db>) -> Self {
-        SqlxMySqlC3p0Pool { pool }
+    pub fn new(pool: Pool<MySql>) -> Self {
+        MySqlC3p0Pool { pool }
     }
 
     /// Returns the underlying Sqlx Pool
-    pub fn pool(&self) -> &Pool<Db> {
+    pub fn pool(&self) -> &Pool<MySql> {
         &self.pool
     }
 }
 
-impl From<Pool<Db>> for SqlxMySqlC3p0Pool {
-    fn from(pool: Pool<Db>) -> Self {
-        SqlxMySqlC3p0Pool::new(pool)
+impl From<Pool<MySql>> for MySqlC3p0Pool {
+    fn from(pool: Pool<MySql>) -> Self {
+        MySqlC3p0Pool::new(pool)
     }
 }
 
-impl C3p0Pool for SqlxMySqlC3p0Pool {
-    type Tx<'a> = Transaction<'a, Db>;
+impl C3p0Pool for MySqlC3p0Pool {
+    type Tx<'a> = Transaction<'a, MySql>;
 
     async fn transaction<
         T: Send,

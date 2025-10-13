@@ -1,33 +1,33 @@
 
-use crate::{error::{into_c3p0_error, C3p0Error}, pool::C3p0Pool, postgres::Db};
-use sqlx::{Pool, Transaction};
+use crate::{error::{into_c3p0_error, C3p0Error}, pool::C3p0Pool};
+use sqlx::{Pool, Postgres, Transaction};
 
 /// A C3p0Pool implementation for Postgres
 #[derive(Clone)]
-pub struct SqlxPgC3p0Pool {
-    pool: Pool<Db>,
+pub struct PgC3p0Pool {
+    pool: Pool<Postgres>,
 }
 
-impl SqlxPgC3p0Pool {
+impl PgC3p0Pool {
     /// Creates a new SqlxPgC3p0Pool from a Sqlx Pool
-    pub fn new(pool: Pool<Db>) -> Self {
-        SqlxPgC3p0Pool { pool }
+    pub fn new(pool: Pool<Postgres>) -> Self {
+        PgC3p0Pool { pool }
     }
 
     /// Returns the underlying Sqlx Pool
-    pub fn pool(&self) -> &Pool<Db> {
+    pub fn pool(&self) -> &Pool<Postgres> {
         &self.pool
     }
 }
 
-impl From<Pool<Db>> for SqlxPgC3p0Pool {
-    fn from(pool: Pool<Db>) -> Self {
-        SqlxPgC3p0Pool::new(pool)
+impl From<Pool<Postgres>> for PgC3p0Pool {
+    fn from(pool: Pool<Postgres>) -> Self {
+        PgC3p0Pool::new(pool)
     }
 }
 
-impl C3p0Pool for SqlxPgC3p0Pool {
-    type Tx<'a> = Transaction<'a, Db>;
+impl C3p0Pool for PgC3p0Pool {
+    type Tx<'a> = Transaction<'a, Postgres>;
 
     async fn transaction<
         T: Send,
