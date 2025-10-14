@@ -69,7 +69,7 @@ pub trait Tx {
     fn fetch_one_by_id<DATA: DataType>(
         &mut self,
         id: u64,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 
     /// Deletes the entry with the given id.
     fn delete<DATA: DataType>(
@@ -96,5 +96,5 @@ pub trait Tx {
     fn save<DATA: DataType>(
         &mut self,
         record: NewRecord<DATA>,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 }

@@ -109,7 +109,7 @@ pub trait DbRead<DB: Database, DATA: DataType> {
     fn fetch_one_by_id(
         tx: &mut DB::Connection,
         id: u64,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 
     /// Deletes the entry with the given id.
     fn delete(
@@ -140,7 +140,7 @@ pub trait DbWrite<DB: Database, DATA: DataType> {
     fn save(
         self,
         tx: &mut DB::Connection,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 }
 
 /// Converts a row to a Model
