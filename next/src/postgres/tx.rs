@@ -1,9 +1,50 @@
 use sqlx::{PgConnection, Postgres};
 
-use crate::{C3p0Error, Data, DbRead, DbWrite, NewRecord, Record, Tx};
-
+use crate::{error::into_c3p0_error, C3p0Error, Data, DbRead, DbWrite, NewRecord, Record, Tx};
 
 impl Tx<Postgres> for PgConnection {
+
+    async fn create_table_if_not_exists<DATA: Data>(&mut self) -> Result<(), C3p0Error> {
+        let query = format!(
+            r#"
+                CREATE TABLE IF NOT EXISTS {} (
+                    id bigserial primary key,
+                    version int not null,
+                    create_epoch_millis bigint not null,
+                    update_epoch_millis bigint not null,
+                    data JSONB
+                )
+                "#,
+            DATA::TABLE_NAME,
+        );
+
+        sqlx::query(&query)
+            .execute(self)
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
+    }
+    
+    async fn drop_table_if_exists<DATA: Data>(
+        &mut self,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
+        let query = if cascade {
+            format!(
+            "DROP TABLE IF EXISTS {} CASCADE", DATA::TABLE_NAME
+        )
+        } else {
+            format!(
+            "DROP TABLE IF EXISTS {}", DATA::TABLE_NAME
+        )
+        };
+        sqlx::query(&query)
+            .execute(self)
+            .await
+            .map_err(into_c3p0_error)
+            .map(|_| ())
+    }
+
     async fn fetch_all_with_sql<'a, DATA: Data, A: 'a + Send + sqlx::IntoArguments<'a, Postgres>>(
         &mut self,
         sql: sqlx::query::Query<'a, Postgres, A>,
@@ -73,4 +114,5 @@ impl Tx<Postgres> for PgConnection {
     async fn save<DATA: Data>(&mut self, record: NewRecord<DATA>) -> Result<Record<DATA>, C3p0Error> {
         record.save(self).await
     }
+
 }

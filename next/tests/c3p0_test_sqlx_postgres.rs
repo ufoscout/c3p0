@@ -4,7 +4,8 @@ use std::sync::OnceLock;
 
 use next::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
-use sqlx::postgres::PgConnectOptions;
+use ::sqlx::postgres::PgConnectOptions;
+use ::sqlx::PgPool;
 use testcontainers::postgres::Postgres;
 use testcontainers::testcontainers::ContainerAsync;
 use testcontainers::testcontainers::runners::AsyncRunner;
@@ -43,7 +44,7 @@ pub async fn data(serial: bool) -> Data<'static, MaybeType> {
 
 pub mod db_specific {
 
-    use sqlx::postgres::PgRow;
+    use ::sqlx::{Row, postgres::PgRow};
 
     use super::*;
 

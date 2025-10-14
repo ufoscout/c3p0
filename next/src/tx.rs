@@ -5,6 +5,13 @@ use crate::{C3p0Error, Data, NewRecord, Record};
 
 pub trait Tx<DB: Database> {
 
+    fn create_table_if_not_exists<DATA: Data>(&mut self) -> impl Future<Output = Result<(), C3p0Error>>;
+
+    fn drop_table_if_exists<DATA: Data>(
+        &mut self,
+        cascade: bool,
+    ) -> impl Future<Output = Result<(), C3p0Error>>;
+
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT

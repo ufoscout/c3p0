@@ -14,7 +14,9 @@ pub mod mysql;
 #[cfg(feature = "sqlite")]
 pub mod sqlite;
 
-pub use sqlx::*;
+pub mod sqlx{
+    pub use sqlx::*;
+}
 pub use codec::Codec;
 pub use error::C3p0Error;
 pub use pool::C3p0Pool;

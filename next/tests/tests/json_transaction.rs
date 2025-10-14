@@ -11,7 +11,7 @@ fn json_should_commit_transaction() {
         println!("Create table {table_name}");
         let jpo = Builder::new(table_name).build::<TestData>();
 
-        let model = NewModel::new(TestData {
+        let model = NewRecord::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
@@ -24,11 +24,11 @@ fn json_should_commit_transaction() {
                 assert!(jpo_ref.create_table_if_not_exists(conn).await.is_ok());
                 println!("Table created!");
                 assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
-                println!("Model saved 1!");
+                println!("Record saved 1!");
                 assert!(jpo_ref.save(conn, model.clone()).await.is_ok());
-                println!("Model saved 2!");
+                println!("Record saved 2!");
                 assert!(jpo_ref.save(conn, model_clone.clone()).await.is_ok());
-                println!("Model saved 3!");
+                println!("Record saved 3!");
                 Ok(())
             })
             .await;
@@ -58,7 +58,7 @@ fn json_should_rollback_transaction() {
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
         let jpo = &Builder::new(table_name).build();
 
-        let model = NewModel::new(TestData {
+        let model = NewRecord::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });

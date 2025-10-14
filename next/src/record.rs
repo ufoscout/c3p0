@@ -10,7 +10,7 @@ pub trait Data: Sized + Send + Sync {
 
 /// A model for a database table.
 /// This is used to retrieve and update an entry in a database table.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Record<DATA: Data> {
     /// The unique identifier of the model.
     pub id: u64,
@@ -29,6 +29,7 @@ pub struct Record<DATA: Data> {
 
 /// A new model for a database table.
 /// This is used to create a new entry in a database table.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct NewRecord<DATA> {
     pub data: DATA
 }

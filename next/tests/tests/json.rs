@@ -16,7 +16,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         let table_name = format!("TEST_TABLE_{}", rand_string(8));
         let jpo = &Builder::new(table_name).build();
 
-        let model = NewModel::new(TestData {
+        let model = NewRecord::new(TestData {
             first_name: "my_first_name".to_owned(),
             last_name: "my_last_name".to_owned(),
         });
@@ -83,7 +83,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
@@ -131,7 +131,7 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
@@ -164,7 +164,7 @@ fn should_delete_all() -> Result<(), C3p0Error> {
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
@@ -201,7 +201,7 @@ fn should_count() -> Result<(), C3p0Error> {
 
             assert_eq!(0, jpo.count_all(conn).await.unwrap());
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
@@ -236,7 +236,7 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
 
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
@@ -267,7 +267,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
@@ -346,7 +346,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
@@ -392,7 +392,7 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
@@ -425,7 +425,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
             assert!(jpo.create_table_if_not_exists(conn).await.is_ok());
             jpo.delete_all(conn).await.unwrap();
 
-            let model = NewModel::new(TestData {
+            let model = NewRecord::new(TestData {
                 first_name: "my_first_name".to_owned(),
                 last_name: "my_last_name".to_owned(),
             });
