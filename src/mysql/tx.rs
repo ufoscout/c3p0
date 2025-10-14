@@ -1,9 +1,9 @@
 use sqlx::{MySql, MySqlConnection};
 
-use crate::{C3p0Error, Data, DbRead, DbWrite, NewRecord, Record, Tx, error::into_c3p0_error};
+use crate::{C3p0Error, DataType, DbRead, DbWrite, NewRecord, Record, Tx, error::into_c3p0_error};
 
 impl Tx<MySql> for MySqlConnection {
-    async fn create_table_if_not_exists<DATA: Data>(&mut self) -> Result<(), C3p0Error> {
+    async fn create_table_if_not_exists<DATA: DataType>(&mut self) -> Result<(), C3p0Error> {
         let query = format!(
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
@@ -24,7 +24,7 @@ impl Tx<MySql> for MySqlConnection {
             .map(|_| ())
     }
 
-    async fn drop_table_if_exists<DATA: Data>(&mut self, cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists<DATA: DataType>(&mut self, cascade: bool) -> Result<(), C3p0Error> {
         let query = if cascade {
             format!("DROP TABLE IF EXISTS {} CASCADE", DATA::TABLE_NAME)
         } else {
@@ -37,7 +37,7 @@ impl Tx<MySql> for MySqlConnection {
             .map(|_| ())
     }
 
-    async fn fetch_all_with_sql<'a, DATA: Data, A: 'a + Send + sqlx::IntoArguments<'a, MySql>>(
+    async fn fetch_all_with_sql<'a, DATA: DataType, A: 'a + Send + sqlx::IntoArguments<'a, MySql>>(
         &mut self,
         sql: sqlx::query::Query<'a, MySql, A>,
     ) -> Result<Vec<Record<DATA>>, C3p0Error> {
@@ -46,7 +46,7 @@ impl Tx<MySql> for MySqlConnection {
 
     async fn fetch_one_optional_with_sql<
         'a,
-        DATA: Data,
+        DATA: DataType,
         A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
     >(
         &mut self,
@@ -55,59 +55,59 @@ impl Tx<MySql> for MySqlConnection {
         <Record<DATA> as DbRead<MySql, DATA>>::fetch_one_optional_with_sql(self, sql).await
     }
 
-    async fn fetch_one_with_sql<'a, DATA: Data, A: 'a + Send + sqlx::IntoArguments<'a, MySql>>(
+    async fn fetch_one_with_sql<'a, DATA: DataType, A: 'a + Send + sqlx::IntoArguments<'a, MySql>>(
         &mut self,
         sql: sqlx::query::Query<'a, MySql, A>,
     ) -> Result<Record<DATA>, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::fetch_one_with_sql(self, sql).await
     }
 
-    async fn count_all<DATA: Data>(&mut self) -> Result<u64, C3p0Error> {
+    async fn count_all<DATA: DataType>(&mut self) -> Result<u64, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::count_all(self).await
     }
 
-    async fn exists_by_id<DATA: Data>(&mut self, id: u64) -> Result<bool, C3p0Error> {
+    async fn exists_by_id<DATA: DataType>(&mut self, id: u64) -> Result<bool, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::exists_by_id(self, id).await
     }
 
-    async fn fetch_all<DATA: Data>(&mut self) -> Result<Vec<Record<DATA>>, C3p0Error> {
+    async fn fetch_all<DATA: DataType>(&mut self) -> Result<Vec<Record<DATA>>, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::fetch_all(self).await
     }
 
-    async fn fetch_one_optional_by_id<DATA: Data>(
+    async fn fetch_one_optional_by_id<DATA: DataType>(
         &mut self,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
-    async fn fetch_one_by_id<DATA: Data>(&mut self, id: u64) -> Result<Record<DATA>, C3p0Error> {
+    async fn fetch_one_by_id<DATA: DataType>(&mut self, id: u64) -> Result<Record<DATA>, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::fetch_one_by_id(self, id).await
     }
 
-    async fn delete<DATA: Data>(
+    async fn delete<DATA: DataType>(
         &mut self,
         record: Record<DATA>,
     ) -> Result<Record<DATA>, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::delete(record, self).await
     }
 
-    async fn delete_all<DATA: Data>(&mut self) -> Result<u64, C3p0Error> {
+    async fn delete_all<DATA: DataType>(&mut self) -> Result<u64, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::delete_all(self).await
     }
 
-    async fn delete_by_id<DATA: Data>(&mut self, id: u64) -> Result<u64, C3p0Error> {
+    async fn delete_by_id<DATA: DataType>(&mut self, id: u64) -> Result<u64, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::delete_by_id(self, id).await
     }
 
-    async fn update<DATA: Data>(
+    async fn update<DATA: DataType>(
         &mut self,
         record: Record<DATA>,
     ) -> Result<Record<DATA>, C3p0Error> {
         <Record<DATA> as DbRead<MySql, DATA>>::update(record, self).await
     }
 
-    async fn save<DATA: Data>(
+    async fn save<DATA: DataType>(
         &mut self,
         record: NewRecord<DATA>,
     ) -> Result<Record<DATA>, C3p0Error> {

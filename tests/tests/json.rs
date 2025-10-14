@@ -12,7 +12,7 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -94,7 +94,7 @@ fn basic_crud() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -151,7 +151,7 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -194,7 +194,7 @@ fn should_delete_all() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -237,7 +237,7 @@ fn should_count() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -284,7 +284,7 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -323,7 +323,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -414,7 +414,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -445,7 +445,7 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
                 Ok(_) => panic!(),
                 Err(e) => match e {
                     C3p0Error::OptimisticLockError { cause } => {
-                        assert!(cause.contains(<TestData as c3p0::Data>::TABLE_NAME));
+                        assert!(cause.contains(<TestData as c3p0::DataType>::TABLE_NAME));
                         assert!(cause.contains(&format!(
                             "id [{:?}], version [{}]",
                             saved_model.id, saved_model.version
@@ -469,7 +469,7 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -511,7 +511,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         pub last_name: String,
     }
 
-    impl c3p0::Data for TestData {
+    impl c3p0::DataType for TestData {
         const TABLE_NAME: &'static str =
             const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
@@ -540,7 +540,7 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
                 Ok(_) => panic!(),
                 Err(e) => match e {
                     C3p0Error::OptimisticLockError { cause } => {
-                        assert!(cause.contains(<TestData as c3p0::Data>::TABLE_NAME));
+                        assert!(cause.contains(<TestData as c3p0::DataType>::TABLE_NAME));
                         assert!(cause.contains(&format!(
                             "id [{:?}], version [{}]",
                             saved_model.id, saved_model.version

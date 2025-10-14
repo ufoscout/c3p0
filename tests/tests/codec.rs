@@ -64,7 +64,7 @@ struct UserVersion1 {
     pub email: String,
 }
 
-impl c3p0::Data for UserVersion1 {
+impl c3p0::DataType for UserVersion1 {
     const TABLE_NAME: &'static str = const_format::concatcp!("CODEC_TEST_TABLE", RAND);
     type CODEC = Versioning1;
 }
@@ -76,7 +76,7 @@ struct UserVersion2 {
     pub age: u32,
 }
 
-impl c3p0::Data for UserVersion2 {
+impl c3p0::DataType for UserVersion2 {
     const TABLE_NAME: &'static str = const_format::concatcp!("CODEC_TEST_TABLE", RAND);
     type CODEC = Versioning2;
 }

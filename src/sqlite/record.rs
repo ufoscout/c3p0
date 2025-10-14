@@ -4,7 +4,7 @@ use crate::record::row_to_record_with_index;
 use crate::time::get_current_epoch_millis;
 use crate::{
     error::C3p0Error,
-    record::{Data, DbRead, DbWrite, NewRecord, Record},
+    record::{DataType, DbRead, DbWrite, NewRecord, Record},
 };
 use sqlx::IntoArguments;
 use sqlx::Row;
@@ -12,7 +12,7 @@ use sqlx::Sqlite;
 use sqlx::SqliteConnection;
 use sqlx::query::Query;
 
-impl<DATA: Data> DbRead<Sqlite, DATA> for Record<DATA> {
+impl<DATA: DataType> DbRead<Sqlite, DATA> for Record<DATA> {
     async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Sqlite>>(
         tx: &mut SqliteConnection,
         sql: Query<'a, Sqlite, A>,
@@ -194,7 +194,7 @@ impl<DATA: Data> DbRead<Sqlite, DATA> for Record<DATA> {
     }
 }
 
-impl<DATA: Data> DbWrite<Sqlite, DATA> for NewRecord<DATA> {
+impl<DATA: DataType> DbWrite<Sqlite, DATA> for NewRecord<DATA> {
     async fn save(self, tx: &mut SqliteConnection) -> Result<Record<DATA>, C3p0Error> {
         let query = format!(
             "INSERT INTO {} (version, create_epoch_millis, update_epoch_millis, data) VALUES (?, ?, ?, ?)",

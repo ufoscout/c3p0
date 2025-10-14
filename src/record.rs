@@ -3,7 +3,7 @@ use sqlx::{ColumnIndex, Database, Decode, IntoArguments, Row, Type, query::Query
 
 use crate::{codec::Codec, error::C3p0Error};
 
-pub trait Data: Sized + Send + Sync {
+pub trait DataType: Sized + Send + Sync {
     const TABLE_NAME: &'static str;
     type CODEC: Codec<Self>;
 }
@@ -11,7 +11,7 @@ pub trait Data: Sized + Send + Sync {
 /// A model for a database table.
 /// This is used to retrieve and update an entry in a database table.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Record<DATA: Data> {
+pub struct Record<DATA: DataType> {
     /// The unique identifier of the model.
     pub id: u64,
     /// The version of the model used for optimistic locking.
@@ -33,7 +33,7 @@ pub struct NewRecord<DATA> {
     pub data: DATA,
 }
 
-impl<DATA: Data> NewRecord<DATA> {
+impl<DATA: DataType> NewRecord<DATA> {
     /// Creates a new `NewRecord` instance from a `Data` value.
     /// Sets the version to 0.
     pub fn new(data: DATA) -> Self {
@@ -41,7 +41,7 @@ impl<DATA: Data> NewRecord<DATA> {
     }
 }
 
-impl<DATA: Data + Default> Default for NewRecord<DATA> {
+impl<DATA: DataType + Default> Default for NewRecord<DATA> {
     fn default() -> Self {
         NewRecord::new(DATA::default())
     }
@@ -49,14 +49,14 @@ impl<DATA: Data + Default> Default for NewRecord<DATA> {
 
 impl<DATA> From<DATA> for NewRecord<DATA>
 where
-    DATA: Data,
+    DATA: DataType,
 {
     fn from(data: DATA) -> Self {
         NewRecord::new(data)
     }
 }
 
-pub trait DbRead<DB: Database, DATA: Data> {
+pub trait DbRead<DB: Database, DATA: DataType> {
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
@@ -123,7 +123,7 @@ pub trait DbRead<DB: Database, DATA: Data> {
     ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 }
 
-pub trait DbWrite<DB: Database, DATA: Data> {
+pub trait DbWrite<DB: Database, DATA: DataType> {
     fn save(
         self,
         tx: &mut DB::Connection,
@@ -134,7 +134,7 @@ pub trait DbWrite<DB: Database, DATA: Data> {
 #[allow(clippy::too_many_arguments)]
 #[inline]
 pub fn row_to_record_with_index<
-    DATA: Data,
+    DATA: DataType,
     R: Row<Database = DB>,
     IdIdx: ColumnIndex<R>,
     VersionIdx: ColumnIndex<R>,

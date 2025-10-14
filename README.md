@@ -86,7 +86,7 @@ Here is an example of how to use _C3p0_ with sqlx and a Postgres database:
 mod with_postgres {
 
     use c3p0::{
-        sqlx::{postgres::PgConnectOptions, PgPool}, C3p0Error, C3p0Pool, Data, PgC3p0Pool, Tx
+        sqlx::{postgres::PgConnectOptions, PgPool}, C3p0Error, C3p0Pool, DataType, PgC3p0Pool, Tx
     };
     use serde::{Deserialize, Serialize};
     use testcontainers::{
@@ -128,7 +128,7 @@ mod with_postgres {
     }
 
     /// Implement the Data trait for the UserData model using the table "user_data"
-    impl Data for UserData {
+    impl DataType for UserData {
         const TABLE_NAME: &'static str = "user_data";
         type CODEC = Self;
     }
