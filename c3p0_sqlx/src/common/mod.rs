@@ -25,7 +25,7 @@ pub trait IdGenerator<Id: IdType>: Send + Sync + 'static {
     fn id_from_row(
         &self,
         row: &Self::Row,
-        index: &(dyn sqlx::ColumnIndex<Self::Row>),
+        index: &dyn sqlx::ColumnIndex<Self::Row>,
     ) -> Result<Id, C3p0Error>;
 }
 
@@ -39,7 +39,7 @@ pub fn to_model<
     DB: Database,
 >(
     codec: &CODEC,
-    id_generator: &(dyn IdGenerator<Id, Db = DB, Row = R>),
+    id_generator: &dyn IdGenerator<Id, Db = DB, Row = R>,
     row: &R,
 ) -> Result<Model<Id, Data>, C3p0Error>
 where
@@ -67,7 +67,7 @@ pub fn to_model_with_index<
     DB: Database,
 >(
     codec: &CODEC,
-    id_generator: &(dyn IdGenerator<Id, Db = DB, Row = R>),
+    id_generator: &dyn IdGenerator<Id, Db = DB, Row = R>,
     row: &R,
     id_index: IdIdx,
     version_index: VersionIdx,

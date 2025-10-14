@@ -172,7 +172,7 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         let previous_version = self.version;
 
         self.data = DATA::CODEC::decode(data_encoded);
-        self.version = self.version + 1;
+        self.version += 1;
         self.update_epoch_millis = get_current_epoch_millis();
 
                 let result = {
