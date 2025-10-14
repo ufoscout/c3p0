@@ -13,7 +13,6 @@ use sqlx::Row;
 use sqlx::query::Query;
 
 impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
-    
     async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, MySql>>(
         tx: &mut MySqlConnection,
         sql: Query<'a, MySql, A>,

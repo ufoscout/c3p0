@@ -13,7 +13,6 @@ use sqlx::SqliteConnection;
 use sqlx::query::Query;
 
 impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
-    
     async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Sqlite>>(
         tx: &mut SqliteConnection,
         sql: Query<'a, Sqlite, A>,

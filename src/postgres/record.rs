@@ -13,7 +13,6 @@ use sqlx::Row;
 use sqlx::query::Query;
 
 impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
-    
     async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Postgres>>(
         tx: &mut PgConnection,
         sql: Query<'a, Postgres, A>,

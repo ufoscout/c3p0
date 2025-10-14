@@ -3,7 +3,6 @@ use sqlx::{Sqlite, SqliteConnection};
 use crate::{C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, error::into_c3p0_error};
 
 impl Tx for SqliteConnection {
-
     type DB = Sqlite;
 
     async fn create_table_if_not_exists<DATA: DataType>(&mut self) -> Result<(), C3p0Error> {
@@ -27,7 +26,10 @@ impl Tx for SqliteConnection {
             .map(|_| ())
     }
 
-    async fn drop_table_if_exists<DATA: DataType>(&mut self, _cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists<DATA: DataType>(
+        &mut self,
+        _cascade: bool,
+    ) -> Result<(), C3p0Error> {
         let query = format!("DROP TABLE IF EXISTS {}", DATA::TABLE_NAME);
         sqlx::query(&query)
             .execute(self)
@@ -36,7 +38,11 @@ impl Tx for SqliteConnection {
             .map(|_| ())
     }
 
-    async fn fetch_all_with_sql<'a, DATA: DataType, A: 'a + Send + sqlx::IntoArguments<'a, Sqlite>>(
+    async fn fetch_all_with_sql<
+        'a,
+        DATA: DataType,
+        A: 'a + Send + sqlx::IntoArguments<'a, Sqlite>,
+    >(
         &mut self,
         sql: sqlx::query::Query<'a, Sqlite, A>,
     ) -> Result<Vec<Record<DATA>>, C3p0Error> {
@@ -54,7 +60,11 @@ impl Tx for SqliteConnection {
         <Record<DATA> as DbOps<Sqlite, DATA>>::fetch_one_optional_with_sql(self, sql).await
     }
 
-    async fn fetch_one_with_sql<'a, DATA: DataType, A: 'a + Send + sqlx::IntoArguments<'a, Sqlite>>(
+    async fn fetch_one_with_sql<
+        'a,
+        DATA: DataType,
+        A: 'a + Send + sqlx::IntoArguments<'a, Sqlite>,
+    >(
         &mut self,
         sql: sqlx::query::Query<'a, Sqlite, A>,
     ) -> Result<Record<DATA>, C3p0Error> {
@@ -80,7 +90,10 @@ impl Tx for SqliteConnection {
         <Record<DATA> as DbOps<Sqlite, DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
-    async fn fetch_one_by_id<DATA: DataType>(&mut self, id: u64) -> Result<Record<DATA>, C3p0Error> {
+    async fn fetch_one_by_id<DATA: DataType>(
+        &mut self,
+        id: u64,
+    ) -> Result<Record<DATA>, C3p0Error> {
         <Record<DATA> as DbOps<Sqlite, DATA>>::fetch_one_by_id(self, id).await
     }
 

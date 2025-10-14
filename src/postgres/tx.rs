@@ -3,9 +3,8 @@ use sqlx::{PgConnection, Postgres};
 use crate::{C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, error::into_c3p0_error};
 
 impl Tx for PgConnection {
-
     type DB = Postgres;
-    
+
     async fn create_table_if_not_exists<DATA: DataType>(&mut self) -> Result<(), C3p0Error> {
         let query = format!(
             r#"
@@ -27,7 +26,10 @@ impl Tx for PgConnection {
             .map(|_| ())
     }
 
-    async fn drop_table_if_exists<DATA: DataType>(&mut self, cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists<DATA: DataType>(
+        &mut self,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
         let query = if cascade {
             format!("DROP TABLE IF EXISTS {} CASCADE", DATA::TABLE_NAME)
         } else {
@@ -92,7 +94,10 @@ impl Tx for PgConnection {
         <Record<DATA> as DbOps<Postgres, DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
-    async fn fetch_one_by_id<DATA: DataType>(&mut self, id: u64) -> Result<Record<DATA>, C3p0Error> {
+    async fn fetch_one_by_id<DATA: DataType>(
+        &mut self,
+        id: u64,
+    ) -> Result<Record<DATA>, C3p0Error> {
         <Record<DATA> as DbOps<Postgres, DATA>>::fetch_one_by_id(self, id).await
     }
 

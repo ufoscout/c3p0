@@ -3,7 +3,6 @@ use sqlx::{MySql, MySqlConnection};
 use crate::{C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, error::into_c3p0_error};
 
 impl Tx for MySqlConnection {
-
     type DB = MySql;
 
     async fn create_table_if_not_exists<DATA: DataType>(&mut self) -> Result<(), C3p0Error> {
@@ -27,7 +26,10 @@ impl Tx for MySqlConnection {
             .map(|_| ())
     }
 
-    async fn drop_table_if_exists<DATA: DataType>(&mut self, cascade: bool) -> Result<(), C3p0Error> {
+    async fn drop_table_if_exists<DATA: DataType>(
+        &mut self,
+        cascade: bool,
+    ) -> Result<(), C3p0Error> {
         let query = if cascade {
             format!("DROP TABLE IF EXISTS {} CASCADE", DATA::TABLE_NAME)
         } else {
@@ -40,7 +42,11 @@ impl Tx for MySqlConnection {
             .map(|_| ())
     }
 
-    async fn fetch_all_with_sql<'a, DATA: DataType, A: 'a + Send + sqlx::IntoArguments<'a, MySql>>(
+    async fn fetch_all_with_sql<
+        'a,
+        DATA: DataType,
+        A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
+    >(
         &mut self,
         sql: sqlx::query::Query<'a, MySql, A>,
     ) -> Result<Vec<Record<DATA>>, C3p0Error> {
@@ -58,7 +64,11 @@ impl Tx for MySqlConnection {
         <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_optional_with_sql(self, sql).await
     }
 
-    async fn fetch_one_with_sql<'a, DATA: DataType, A: 'a + Send + sqlx::IntoArguments<'a, MySql>>(
+    async fn fetch_one_with_sql<
+        'a,
+        DATA: DataType,
+        A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
+    >(
         &mut self,
         sql: sqlx::query::Query<'a, MySql, A>,
     ) -> Result<Record<DATA>, C3p0Error> {
@@ -84,7 +94,10 @@ impl Tx for MySqlConnection {
         <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
-    async fn fetch_one_by_id<DATA: DataType>(&mut self, id: u64) -> Result<Record<DATA>, C3p0Error> {
+    async fn fetch_one_by_id<DATA: DataType>(
+        &mut self,
+        id: u64,
+    ) -> Result<Record<DATA>, C3p0Error> {
         <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_by_id(self, id).await
     }
 

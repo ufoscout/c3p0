@@ -57,7 +57,6 @@ where
 }
 
 pub trait DbOps<DB: Database, DATA: DataType> {
-    
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
@@ -137,10 +136,8 @@ pub trait DbOps<DB: Database, DATA: DataType> {
 
 pub trait DbSave<DB: Database, DATA: DataType> {
     /// Creates a new entry.
-    fn save(
-        self,
-        tx: &mut DB::Connection,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    fn save(self, tx: &mut DB::Connection)
+    -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 }
 
 /// Converts a row to a Model
