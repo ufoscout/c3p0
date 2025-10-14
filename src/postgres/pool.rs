@@ -2,7 +2,7 @@ use crate::{
     error::{C3p0Error, into_c3p0_error},
     pool::C3p0Pool,
 };
-use sqlx::{Pool, Postgres, Transaction};
+use sqlx::{PgConnection, Pool, Postgres};
 
 /// A C3p0Pool implementation for Postgres
 #[derive(Clone)]
@@ -29,12 +29,12 @@ impl From<Pool<Postgres>> for PgC3p0Pool {
 }
 
 impl C3p0Pool for PgC3p0Pool {
-    type Tx<'a> = Transaction<'a, Postgres>;
+    type DB = Postgres;
 
     async fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + AsyncFnOnce(&mut Self::Tx<'_>) -> Result<T, E>,
+        F: Send + AsyncFnOnce(&mut PgConnection) -> Result<T, E>,
     >(
         &self,
         tx: F,

@@ -1,3 +1,5 @@
+use sqlx::Database;
+
 use crate::error::C3p0Error;
 
 use std::future::Future;
@@ -5,8 +7,8 @@ use std::future::Future;
 /// A trait for a C3p0 pool.
 /// A C3p0 pool is a connection pool for a database.
 pub trait C3p0Pool: Clone + Send + Sync {
-    /// A type that represents a transaction.
-    type Tx<'a>;
+    /// The DB type.
+    type DB: Database;
 
     /// Creates a new transaction.
     /// It executes the given closure `tx` within a transaction and returns the result of the closure.
@@ -15,7 +17,7 @@ pub trait C3p0Pool: Clone + Send + Sync {
     fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + AsyncFnOnce(&mut Self::Tx<'_>) -> Result<T, E>,
+        F: Send + AsyncFnOnce(&mut <Self::DB as Database>::Connection) -> Result<T, E>,
     >(
         &self,
         tx: F,

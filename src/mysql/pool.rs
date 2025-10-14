@@ -1,6 +1,6 @@
 use crate::error::C3p0Error;
 use crate::{error::into_c3p0_error, pool::C3p0Pool};
-use sqlx::{MySql, Pool, Transaction};
+use sqlx::{MySql, MySqlConnection, Pool};
 
 /// A C3p0Pool implementation for MySql
 #[derive(Clone)]
@@ -27,12 +27,12 @@ impl From<Pool<MySql>> for MySqlC3p0Pool {
 }
 
 impl C3p0Pool for MySqlC3p0Pool {
-    type Tx<'a> = Transaction<'a, MySql>;
+    type DB = MySql;
 
     async fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + AsyncFnOnce(&mut Self::Tx<'_>) -> Result<T, E>,
+        F: Send + AsyncFnOnce(&mut MySqlConnection) -> Result<T, E>,
     >(
         &self,
         tx: F,

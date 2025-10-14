@@ -85,39 +85,50 @@ pub trait DbRead<DB: Database, DATA: DataType> {
         sql: Query<'a, DB, A>,
     ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 
+    /// Returns the number of rows in the table.
     fn count_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
 
+    /// Returns true if the entry with the given id exists.
     fn exists_by_id(
         tx: &mut DB::Connection,
         id: u64,
     ) -> impl Future<Output = Result<bool, C3p0Error>>;
 
+    /// Returns all the entries in the table.
     fn fetch_all(
         tx: &mut DB::Connection,
     ) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
 
+    /// Returns the entry with the given id. Returns None if the entry does not exist.
     fn fetch_one_optional_by_id(
         tx: &mut DB::Connection,
         id: u64,
     ) -> impl Future<Output = Result<Option<Record<DATA>>, C3p0Error>>;
 
+    /// Returns the entry with the given id. Returns an error if the entry does not exist.
     fn fetch_one_by_id(
         tx: &mut DB::Connection,
         id: u64,
     ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
 
+    /// Deletes the entry with the given id.
     fn delete(
         self,
         tx: &mut DB::Connection,
     ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 
+    /// Deletes all entries in the table.
     fn delete_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
 
+    /// Deletes the entry with the given id.
     fn delete_by_id(
         tx: &mut DB::Connection,
         id: u64,
     ) -> impl Future<Output = Result<u64, C3p0Error>>;
 
+    /// Updates the entry with the given id. Returns an error if the entry does not exist.
+    /// This uses optimistic locking by using the version field to detect update conflicts; it will update the entry and will throw an error if the version does not match.
+    /// The version field is incremented by 1 for each update.
     fn update(
         self,
         tx: &mut DB::Connection,
@@ -125,6 +136,7 @@ pub trait DbRead<DB: Database, DATA: DataType> {
 }
 
 pub trait DbWrite<DB: Database, DATA: DataType> {
+    /// Creates a new entry.
     fn save(
         self,
         tx: &mut DB::Connection,

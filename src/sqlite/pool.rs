@@ -1,6 +1,6 @@
 use crate::error::C3p0Error;
 use crate::{error::into_c3p0_error, pool::C3p0Pool};
-use sqlx::{Pool, Sqlite, Transaction};
+use sqlx::{Pool, Sqlite, SqliteConnection};
 
 /// A C3p0Pool implementation for Sqlite
 #[derive(Clone)]
@@ -27,12 +27,12 @@ impl From<Pool<Sqlite>> for SqliteC3p0Pool {
 }
 
 impl C3p0Pool for SqliteC3p0Pool {
-    type Tx<'a> = Transaction<'a, Sqlite>;
+    type DB = Sqlite;
 
     async fn transaction<
         T: Send,
         E: Send + From<C3p0Error>,
-        F: Send + AsyncFnOnce(&mut Self::Tx<'_>) -> Result<T, E>,
+        F: Send + AsyncFnOnce(&mut SqliteConnection) -> Result<T, E>,
     >(
         &self,
         tx: F,
