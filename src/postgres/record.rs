@@ -4,7 +4,7 @@ use crate::record::row_to_record_with_index;
 use crate::time::get_current_epoch_millis;
 use crate::{
     error::C3p0Error,
-    record::{DataType, DbRead, DbWrite, NewRecord, Record},
+    record::{DataType, DbOps, DbSave, NewRecord, Record},
 };
 use sqlx::IntoArguments;
 use sqlx::PgConnection;
@@ -12,7 +12,7 @@ use sqlx::Postgres;
 use sqlx::Row;
 use sqlx::query::Query;
 
-impl<DATA: DataType> DbRead<Postgres, DATA> for Record<DATA> {
+impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
     
     async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Postgres>>(
         tx: &mut PgConnection,
@@ -192,7 +192,7 @@ impl<DATA: DataType> DbRead<Postgres, DATA> for Record<DATA> {
     }
 }
 
-impl<DATA: DataType> DbWrite<Postgres, DATA> for NewRecord<DATA> {
+impl<DATA: DataType> DbSave<Postgres, DATA> for NewRecord<DATA> {
     async fn save(self, tx: &mut PgConnection) -> Result<Record<DATA>, C3p0Error> {
         let query = format!(
             "INSERT INTO {} (version, create_epoch_millis, update_epoch_millis, data) VALUES ($1, $2, $2, $3) RETURNING id",
