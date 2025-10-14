@@ -1,10 +1,5 @@
 use std::sync::OnceLock;
 
-use rand::{Rng, distr::Alphanumeric};
-use serde::{Deserialize, Serialize};
-
-pub mod codec;
-
 #[derive(Debug, PartialEq)]
 pub enum DbType {
     MySql,
@@ -13,20 +8,6 @@ pub enum DbType {
     Imdb,
     Sqlite,
     TiDB,
-}
-
-pub fn rand_string(len: usize) -> String {
-    rand::rng()
-        .sample_iter(&Alphanumeric)
-        .map(char::from)
-        .take(len)
-        .collect::<String>()
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
-pub struct TestData {
-    pub first_name: String,
-    pub last_name: String,
 }
 
 pub fn run_test<F: std::future::Future>(f: F) -> F::Output {

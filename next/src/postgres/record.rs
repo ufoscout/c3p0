@@ -1,5 +1,3 @@
-use std::sync::OnceLock;
-
 use sqlx::query::Query;
 use sqlx::IntoArguments;
 use sqlx::PgConnection;
@@ -48,11 +46,10 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn count_all(tx: &mut PgConnection) -> Result<u64, C3p0Error> {
-        static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!(
+        let query = format!(
             "SELECT COUNT(*) FROM {}",
             DATA::TABLE_NAME,
-        ));
+        );
 
         sqlx::query(&query)
             .fetch_one(tx)
@@ -63,13 +60,12 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn exists_by_id(tx: &mut PgConnection, id: u64) -> Result<bool, C3p0Error> {
-                static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!(
+        let query = format!(
             "SELECT EXISTS (SELECT 1 FROM {} WHERE id = $1)",
             DATA::TABLE_NAME,
-        ));
+        );
 
-        sqlx::query(query)
+        sqlx::query(&query)
             .bind(id as i64)
             .fetch_one(tx)
             .await
@@ -78,13 +74,12 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn fetch_all(tx: &mut PgConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-                        static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!(
+        let query = format!(
             "{} ORDER BY id ASC",
             select_query_base(DATA::TABLE_NAME),
-        ));
+        );
 
-        Self::fetch_all_with_sql(tx, sqlx::query(query))
+        Self::fetch_all_with_sql(tx, sqlx::query(&query))
             .await
     }
 
@@ -92,13 +87,12 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         tx: &mut PgConnection,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-                                static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!(
+        let query = format!(
             "{} WHERE id = $1 LIMIT 1",
             select_query_base(DATA::TABLE_NAME),
-        ));
+        );
 
-        let query =         sqlx::query(query)
+        let query =         sqlx::query(&query)
             .bind(id as i64);
         Self::fetch_one_optional_with_sql(tx, query).await
     }
@@ -107,13 +101,12 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         tx: &mut PgConnection,
         id: u64,
     ) -> Result<Record<DATA>, C3p0Error> {
-                                static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!(
+        let query = format!(
             "{} WHERE id = $1 LIMIT 1",
             select_query_base(DATA::TABLE_NAME),
-        ));
+        );
 
-        let query =         sqlx::query(query)
+        let query =         sqlx::query(&query)
             .bind(id as i64);
         Self::fetch_one_with_sql(tx, query).await
     }
@@ -122,13 +115,12 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         self,
         tx: &mut PgConnection,
     ) -> Result<Record<DATA>, C3p0Error> {
-        static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!(
+        let query = format!(
             "DELETE FROM {} WHERE id = $1 AND version = $2",
             DATA::TABLE_NAME,
-        ));
+        );
 
-        let result = sqlx::query(query)
+        let result = sqlx::query(&query)
             .bind(self.id as i64)
             .bind(self.version)
             .execute(tx)
@@ -149,10 +141,9 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn delete_all(tx: &mut PgConnection) -> Result<u64, C3p0Error> {
-        static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!("DELETE FROM {}",DATA::TABLE_NAME));
+        let query = format!("DELETE FROM {}",DATA::TABLE_NAME);
 
-        sqlx::query(query)
+        sqlx::query(&query)
             .execute(tx)
             .await
             .map_err(into_c3p0_error)
@@ -160,10 +151,9 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
     }
 
     async fn delete_by_id(tx: &mut PgConnection, id: u64) -> Result<u64, C3p0Error> {
-        static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!("DELETE FROM {} WHERE id = $1",DATA::TABLE_NAME));
+        let query = format!("DELETE FROM {} WHERE id = $1",DATA::TABLE_NAME);
 
-        sqlx::query(query)
+        sqlx::query(&query)
             .bind(id as i64)
             .execute(tx)
             .await
@@ -175,8 +165,7 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         mut self,
         tx: &mut PgConnection,
     ) -> Result<Record<DATA>, C3p0Error> {
-        static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!("UPDATE {} SET version = $1, update_epoch_millis = $2, data = $3 WHERE id = $4 AND version = $5",DATA::TABLE_NAME));
+        let query = format!("UPDATE {} SET version = $1, update_epoch_millis = $2, data = $3 WHERE id = $4 AND version = $5",DATA::TABLE_NAME);
 
         let data_encoded = DATA::CODEC::encode(self.data);
         let json_data = serde_json::to_value(&data_encoded)?;
@@ -187,7 +176,7 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
         self.update_epoch_millis = get_current_epoch_millis();
 
                 let result = {
-            sqlx::query(query)
+            sqlx::query(&query)
                 .bind(self.version)
                 .bind(self.update_epoch_millis)
                 .bind(json_data)
@@ -216,11 +205,10 @@ impl <DATA: Data> DbRead<Postgres, DATA> for Record<DATA> {
 impl <DATA: Data> DbWrite<Postgres, DATA> for NewRecord<DATA> {
 
     async fn save(self, tx: &mut PgConnection) -> Result<Record<DATA>, C3p0Error> {
-        static QUERY: OnceLock::<String> = OnceLock::new();
-        let query = QUERY.get_or_init(|| format!(
+        let query = format!(
             "INSERT INTO {} (version, create_epoch_millis, update_epoch_millis, data) VALUES ($1, $2, $2, $3) RETURNING id",
             DATA::TABLE_NAME,
-        ));
+        );
 
         let data_encoded = DATA::CODEC::encode(self.data);
         let json_data = serde_json::to_value(&data_encoded)?;
