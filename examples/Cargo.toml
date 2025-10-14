@@ -1,8 +1,0 @@
-[package]
-name = "c3p0_example"
-
-[dependencies]
-c3p0 = { path = "../", features = ["sqlx_postgres"] }
-serde = "1"
-testcontainers = { package = "testcontainers-modules", version = "0.13", features = ["postgres"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }

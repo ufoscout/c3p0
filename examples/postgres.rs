@@ -1,6 +1,5 @@
-use c3p0::sqlx::{
-    SqlxPgC3p0Pool,
-    sqlx::{PgPool, postgres::PgConnectOptions},
+use c3p0::{
+    sqlx::{postgres::PgConnectOptions, PgPool}, C3p0Error, C3p0Pool, Data, PgC3p0Pool, Tx
 };
 use serde::{Deserialize, Serialize};
 use testcontainers::{
@@ -9,7 +8,7 @@ use testcontainers::{
 };
 
 /// Starts a Postgres container and returns a SqlxPgC3p0Pool connection pool for it.    
-pub async fn create_c3p0_pool() -> (SqlxPgC3p0Pool, ContainerAsync<Postgres>) {
+pub async fn create_c3p0_pool() -> (PgC3p0Pool, ContainerAsync<Postgres>) {
     // starts a Postgres container for testing
     let node = Postgres::default()
         .start()
@@ -29,7 +28,7 @@ pub async fn create_c3p0_pool() -> (SqlxPgC3p0Pool, ContainerAsync<Postgres>) {
     .unwrap();
 
     // Create a C3p0 pool from the Sqlx pool
-    let pool = SqlxPgC3p0Pool::new(pool);
+    let pool = PgC3p0Pool::new(pool);
 
     (pool, node)
 }
@@ -41,15 +40,17 @@ pub struct UserData {
     pub email: String,
 }
 
+/// Implement the Data trait for the UserData model using the table "user_data"
+impl Data for UserData {
+    const TABLE_NAME: &'static str = "user_data";
+    type CODEC = Self;
+}
+
 /// Example of how to use c3p0 with sqlx and a Postgres database
-#[tokio::test]
-async fn postgres_sqlx_example() {
-    use c3p0::{sqlx::SqlxPgC3p0JsonBuilder, *};
+#[tokio::main]
+async fn main() {
 
     let (c3p0, _pg) = create_c3p0_pool().await;
-
-    // Create a C3p0Json to manage the UserData model using the table "user_data"
-    let jpo = SqlxPgC3p0JsonBuilder::new("user_data").build::<UserData>();
 
     // Open a transaction to the database.
     // C3p0 will commit or rollback the transaction automatically.
@@ -57,7 +58,7 @@ async fn postgres_sqlx_example() {
     let result: Result<_, C3p0Error> = c3p0
         .transaction(async |tx| {
             // Create the table if it doesn't exist. Usually this would be done in a migration
-            assert!(jpo.create_table_if_not_exists(tx).await.is_ok());
+            assert!(tx.create_table_if_not_exists::<UserData>().await.is_ok());
             println!("Table created!");
 
             // Create a new UserData object
@@ -67,23 +68,23 @@ async fn postgres_sqlx_example() {
             };
 
             // Save the new UserData object to the database
-            let create_user = jpo.save(tx, user_data.into()).await.unwrap();
+            let create_user = tx.save(user_data.into()).await.unwrap();
             println!("Saved user data: {create_user:?}");
 
             // Get the saved UserData object from the database
-            let fetch_user = jpo.fetch_one_by_id(tx, &create_user.id).await.unwrap();
+            let fetch_user = tx.fetch_one_by_id::<UserData>(create_user.id).await.unwrap();
             assert_eq!(fetch_user, create_user);
 
             // Delete the saved UserData object from the database
-            let deleted_rows_count = jpo.delete_by_id(tx, &create_user.id).await.unwrap();
+            let deleted_rows_count = tx.delete_by_id::<UserData>(create_user.id).await.unwrap();
             assert_eq!(deleted_rows_count, 1);
 
             // Count the number of UserData objects in the database
-            let count = jpo.count_all(tx).await.unwrap();
+            let count = tx.count_all::<UserData>().await.unwrap();
             assert_eq!(count, 0);
 
             // delete the table
-            jpo.drop_table_if_exists(tx, true).await.unwrap();
+            tx.drop_table_if_exists::<UserData>(true).await.unwrap();
 
             Ok(())
         })
