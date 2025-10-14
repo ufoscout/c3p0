@@ -15,7 +15,7 @@ pub struct Record<DATA: DataType> {
     /// The unique identifier of the model.
     pub id: u64,
     /// The version of the model used for optimistic locking.
-    pub version: i32,
+    pub version: u32,
     /// The epoch millis when the model was created.
     #[serde(default)]
     pub create_epoch_millis: i64,
@@ -203,7 +203,7 @@ where
 
     Ok(Record {
         id: id as u64,
-        version,
+        version: version as u32,
         data: DATA::CODEC::decode(data),
         create_epoch_millis,
         update_epoch_millis,

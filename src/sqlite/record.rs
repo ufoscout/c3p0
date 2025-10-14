@@ -55,7 +55,6 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
             .await
             .and_then(|row| row.try_get(0))
             .map_err(into_c3p0_error)
-            .map(|val: i64| val as u64)
     }
 
     async fn exists_by_id(tx: &mut SqliteConnection, id: u64) -> Result<bool, C3p0Error> {

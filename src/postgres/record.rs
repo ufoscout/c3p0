@@ -109,7 +109,7 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
 
         let result = sqlx::query(&query)
             .bind(self.id as i64)
-            .bind(self.version)
+            .bind(self.version as i32)
             .execute(tx)
             .await
             .map_err(into_c3p0_error)?
@@ -166,11 +166,11 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
 
         let result = {
             sqlx::query(&query)
-                .bind(self.version)
+                .bind(self.version as i32)
                 .bind(self.update_epoch_millis)
                 .bind(json_data)
                 .bind(self.id as i64)
-                .bind(previous_version)
+                .bind(previous_version as i32)
                 .execute(tx)
                 .await
                 .map_err(into_c3p0_error)
