@@ -1,5 +1,6 @@
 [package]
 name = "c3p0"
+description = "A good friend for r2d2."
 edition = "2024"
 license = "MIT"
 version = "0.80.0"
