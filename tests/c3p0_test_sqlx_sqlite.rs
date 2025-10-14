@@ -2,7 +2,7 @@
 
 use std::sync::OnceLock;
 
-use next::*;
+use c3p0::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
 use ::sqlx::{sqlite::SqliteConnectOptions, Row, Sqlite};
 
@@ -16,7 +16,7 @@ pub type MaybeType = (C3p0Impl, ());
 async fn init() -> MaybeType {
     let options = SqliteConnectOptions::new();
 
-    let pool: next::sqlx::Pool<Sqlite> = next::sqlx::pool::PoolOptions::new()
+    let pool: c3p0::sqlx::Pool<Sqlite> = c3p0::sqlx::pool::PoolOptions::new()
         .max_lifetime(None)
         .idle_timeout(None)
         .max_connections(1)

@@ -1,4 +1,4 @@
-use next::*;
+use c3p0::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{utils::run_test, *};
@@ -55,7 +55,7 @@ struct UserVersion1 {
     pub email: String,
 }
 
-impl next::Data for UserVersion1 {
+impl c3p0::Data for UserVersion1 {
     const TABLE_NAME: &'static str = const_format::concatcp!("CODEC_TEST_TABLE", RAND);
     type CODEC = Versioning1;
 }
@@ -67,7 +67,7 @@ struct UserVersion2 {
     pub age: u32,
 }
 
-impl next::Data for UserVersion2 {
+impl c3p0::Data for UserVersion2 {
     const TABLE_NAME: &'static str = const_format::concatcp!("CODEC_TEST_TABLE", RAND);
     type CODEC = Versioning2;
 }

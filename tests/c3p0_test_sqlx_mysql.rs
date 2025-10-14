@@ -2,13 +2,12 @@
 
 use std::sync::OnceLock;
 
-use next::*;
+use c3p0::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
 use ::sqlx::mysql::{MySqlConnectOptions, MySqlSslMode};
 use ::sqlx::{MySqlPool, Row};
+use testcontainers::mysql::Mysql;
 use testcontainers::testcontainers::ContainerAsync;
-use testcontainers::testcontainers::GenericImage;
-use testcontainers::testcontainers::core::WaitFor;
 use testcontainers::testcontainers::runners::AsyncRunner;
 
 pub type C3p0Impl = MySqlC3p0Pool;
@@ -16,22 +15,17 @@ pub type C3p0Impl = MySqlC3p0Pool;
 mod tests;
 mod utils;
 
-pub type MaybeType = (C3p0Impl, ContainerAsync<GenericImage>);
+pub type MaybeType = (C3p0Impl, ContainerAsync<Mysql>);
 
 async fn init() -> MaybeType {
-    let tidb_version = "v8.5.0";
-    let tidb_image = GenericImage::new("pingcap/tidb", tidb_version).with_wait_for(
-        WaitFor::message_on_stdout(r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#),
-    );
-
-    let node = tidb_image.start().await.unwrap();
+    let node = Mysql::default().start().await.unwrap();
 
     let options = MySqlConnectOptions::new()
-        .username("root")
-        //.password("mysql")
-        .database("mysql")
+        // .username("mysql")
+        // .password("mysql")
+        .database("test")
         .host("127.0.0.1")
-        .port(node.get_host_port_ipv4(4000).await.unwrap())
+        .port(node.get_host_port_ipv4(3306).await.unwrap())
         .ssl_mode(MySqlSslMode::Disabled);
 
     let pool = MySqlPool::connect_with(options).await.unwrap();
@@ -55,7 +49,7 @@ pub mod db_specific {
     use super::*;
 
     pub fn db_type() -> utils::DbType {
-        utils::DbType::TiDB
+        utils::DbType::MySql
     }
 
     pub fn row_to_string(row: &MySqlRow) -> Result<String, Box<dyn std::error::Error>> {

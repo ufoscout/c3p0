@@ -1,28 +1,19 @@
-#![cfg(feature = "sqlx_mysql")]
+#![cfg(feature = "mysql")]
 
-use std::sync::Arc;
 use std::sync::OnceLock;
 
-use c3p0::sqlx::sqlx::Row;
-use c3p0::sqlx::sqlx::mysql::*;
-use c3p0::sqlx::*;
 use c3p0::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
+use ::sqlx::mysql::{MySqlConnectOptions, MySqlSslMode};
+use ::sqlx::{MySqlPool, Row};
 use testcontainers::testcontainers::ContainerAsync;
 use testcontainers::testcontainers::GenericImage;
 use testcontainers::testcontainers::core::WaitFor;
 use testcontainers::testcontainers::runners::AsyncRunner;
 
-pub type C3p0Impl = SqlxMySqlC3p0Pool;
-pub type Builder = SqlxMySqlC3p0JsonBuilder<u64>;
-pub type UuidBuilder = SqlxMySqlC3p0JsonBuilder<uuid::Uuid>;
+pub type C3p0Impl = MySqlC3p0Pool;
 
-pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
-    SqlxMySqlC3p0JsonBuilder::new(table_name).with_id_generator(Arc::new(MySqlUuidIdGenerator {}))
-}
-
-//mod tests;
-mod tests_json;
+mod tests;
 mod utils;
 
 pub type MaybeType = (C3p0Impl, ContainerAsync<GenericImage>);
@@ -45,7 +36,7 @@ async fn init() -> MaybeType {
 
     let pool = MySqlPool::connect_with(options).await.unwrap();
 
-    let pool = SqlxMySqlC3p0Pool::new(pool);
+    let pool = MySqlC3p0Pool::new(pool);
 
     (pool, node)
 }
@@ -58,6 +49,8 @@ pub async fn data(serial: bool) -> Data<'static, MaybeType> {
 }
 
 pub mod db_specific {
+
+    use ::sqlx::mysql::MySqlRow;
 
     use super::*;
 

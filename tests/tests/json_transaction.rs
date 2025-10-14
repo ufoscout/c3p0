@@ -12,7 +12,7 @@ fn json_should_commit_transaction() {
         pub last_name: String,
     }
 
-    impl next::Data for TestData {
+    impl c3p0::Data for TestData {
         const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
@@ -67,7 +67,7 @@ fn json_should_rollback_transaction() {
         pub last_name: String,
     }
 
-    impl next::Data for TestData {
+    impl c3p0::Data for TestData {
         const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }

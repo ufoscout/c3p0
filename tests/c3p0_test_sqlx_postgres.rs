@@ -2,7 +2,7 @@
 
 use std::sync::OnceLock;
 
-use next::*;
+use c3p0::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
 use ::sqlx::postgres::PgConnectOptions;
 use ::sqlx::PgPool;
