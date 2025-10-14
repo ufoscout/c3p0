@@ -5,6 +5,7 @@ pub mod error;
 pub mod pool;
 pub mod record;
 pub mod time;
+pub mod tx;
 
 #[cfg(feature = "postgres")]
 pub mod postgres;
@@ -18,6 +19,7 @@ pub use codec::Codec;
 pub use error::C3p0Error;
 pub use pool::C3p0Pool;
 pub use record::*;
+pub use tx::Tx;
 
 #[cfg(feature = "postgres")]
 pub use crate::postgres::PgC3p0Pool;
