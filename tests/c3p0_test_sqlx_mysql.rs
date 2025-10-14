@@ -2,10 +2,10 @@
 
 use std::sync::OnceLock;
 
-use c3p0::*;
-use maybe_once::tokio::{Data, MaybeOnceAsync};
 use ::sqlx::mysql::{MySqlConnectOptions, MySqlSslMode};
 use ::sqlx::{MySqlPool, Row};
+use c3p0::*;
+use maybe_once::tokio::{Data, MaybeOnceAsync};
 use testcontainers::mysql::Mysql;
 use testcontainers::testcontainers::ContainerAsync;
 use testcontainers::testcontainers::runners::AsyncRunner;

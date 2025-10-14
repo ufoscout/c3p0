@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{query::Query, ColumnIndex, Database, Decode, IntoArguments, Row, Type};
+use sqlx::{ColumnIndex, Database, Decode, IntoArguments, Row, Type, query::Query};
 
 use crate::{codec::Codec, error::C3p0Error};
 
@@ -26,12 +26,11 @@ pub struct Record<DATA: Data> {
     pub data: DATA,
 }
 
-
 /// A new model for a database table.
 /// This is used to create a new entry in a database table.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct NewRecord<DATA> {
-    pub data: DATA
+    pub data: DATA,
 }
 
 impl<DATA: Data> NewRecord<DATA> {
@@ -40,7 +39,6 @@ impl<DATA: Data> NewRecord<DATA> {
     pub fn new(data: DATA) -> Self {
         NewRecord { data }
     }
-
 }
 
 impl<DATA: Data + Default> Default for NewRecord<DATA> {
@@ -59,7 +57,6 @@ where
 }
 
 pub trait DbRead<DB: Database, DATA: Data> {
-
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
@@ -85,20 +82,28 @@ pub trait DbRead<DB: Database, DATA: Data> {
     fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
         tx: &mut DB::Connection,
         sql: Query<'a, DB, A>,
-    ) ->  impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 
-        fn count_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
+    fn count_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
 
-    fn exists_by_id(tx: &mut DB::Connection, id: u64) -> impl Future<Output = Result<bool, C3p0Error>>;
+    fn exists_by_id(
+        tx: &mut DB::Connection,
+        id: u64,
+    ) -> impl Future<Output = Result<bool, C3p0Error>>;
 
-    fn fetch_all(tx: &mut DB::Connection) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
+    fn fetch_all(
+        tx: &mut DB::Connection,
+    ) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
 
     fn fetch_one_optional_by_id(
         tx: &mut DB::Connection,
         id: u64,
     ) -> impl Future<Output = Result<Option<Record<DATA>>, C3p0Error>>;
 
-    fn fetch_one_by_id(tx: &mut DB::Connection, id: u64) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
+    fn fetch_one_by_id(
+        tx: &mut DB::Connection,
+        id: u64,
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
 
     fn delete(
         self,
@@ -107,7 +112,10 @@ pub trait DbRead<DB: Database, DATA: Data> {
 
     fn delete_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
 
-    fn delete_by_id(tx: &mut DB::Connection, id: u64) -> impl Future<Output = Result<u64, C3p0Error>>;
+    fn delete_by_id(
+        tx: &mut DB::Connection,
+        id: u64,
+    ) -> impl Future<Output = Result<u64, C3p0Error>>;
 
     fn update(
         self,
@@ -116,7 +124,10 @@ pub trait DbRead<DB: Database, DATA: Data> {
 }
 
 pub trait DbWrite<DB: Database, DATA: Data> {
-    fn save(self, tx: &mut DB::Connection) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
+    fn save(
+        self,
+        tx: &mut DB::Connection,
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
 }
 
 /// Converts a row to a Model
@@ -144,16 +155,18 @@ where
     for<'c> i64: Type<DB> + Decode<'c, DB>,
     for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
 {
-    let id: i64 = row.try_get(id_index).map_err(|err| C3p0Error::RowMapperError {
+    let id: i64 = row
+        .try_get(id_index)
+        .map_err(|err| C3p0Error::RowMapperError {
             cause: format!("Row contains no values for id index. Err: {err:?}"),
         })?;
 
-    let version: i32 =
-        row.try_get(version_index)
-            .map_err(|err| C3p0Error::RowMapperError {
-                cause: format!("Row contains no values for version index. Err: {err:?}"),
-            })?;
-    
+    let version: i32 = row
+        .try_get(version_index)
+        .map_err(|err| C3p0Error::RowMapperError {
+            cause: format!("Row contains no values for version index. Err: {err:?}"),
+        })?;
+
     let create_epoch_millis: i64 =
         row.try_get(create_epoch_millis_index)
             .map_err(|err| C3p0Error::RowMapperError {

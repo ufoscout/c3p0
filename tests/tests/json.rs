@@ -6,18 +6,18 @@ use std::time::Duration;
 
 #[test]
 fn should_create_and_drop_table() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
-    
+
     run_test(async {
         if [DbType::InMemory].contains(&db_specific::db_type()) {
             return Ok(());
@@ -46,7 +46,10 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
 
         let model_clone = model.clone();
         pool.transaction::<_, C3p0Error, _>(async |conn| {
-            println!("first {:?}", conn.create_table_if_not_exists::<TestData>().await);
+            println!(
+                "first {:?}",
+                conn.create_table_if_not_exists::<TestData>().await
+            );
 
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
@@ -68,7 +71,10 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
 
         let model_clone = model.clone();
         pool.transaction::<_, C3p0Error, _>(async |conn| {
-            println!("second {:?}", conn.create_table_if_not_exists::<TestData>().await);
+            println!(
+                "second {:?}",
+                conn.create_table_if_not_exists::<TestData>().await
+            );
 
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             assert!(conn.save(model_clone).await.is_ok());
@@ -82,15 +88,15 @@ fn should_create_and_drop_table() -> Result<(), C3p0Error> {
 
 #[test]
 fn basic_crud() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -99,7 +105,6 @@ fn basic_crud() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             conn.delete_all::<TestData>().await.unwrap();
 
@@ -140,15 +145,15 @@ fn basic_crud() -> Result<(), C3p0Error> {
 
 #[test]
 fn should_fetch_all() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -157,7 +162,6 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             conn.delete_all::<TestData>().await.unwrap();
 
@@ -184,15 +188,15 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
 
 #[test]
 fn should_delete_all() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -201,7 +205,6 @@ fn should_delete_all() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
 
             let model = NewRecord::new(TestData {
@@ -228,15 +231,15 @@ fn should_delete_all() -> Result<(), C3p0Error> {
 
 #[test]
 fn should_count() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -245,7 +248,6 @@ fn should_count() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             assert!(conn.delete_all::<TestData>().await.is_ok());
 
@@ -276,15 +278,15 @@ fn should_count() -> Result<(), C3p0Error> {
 
 #[test]
 fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -293,7 +295,6 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
 
             let model = NewRecord::new(TestData {
@@ -316,15 +317,15 @@ fn should_return_whether_exists_by_id() -> Result<(), C3p0Error> {
 
 #[test]
 fn should_update_and_increase_version() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -333,7 +334,6 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             conn.delete_all::<TestData>().await.unwrap();
 
@@ -385,7 +385,10 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
             assert_eq!("second_first_name", updated_model.data.first_name);
             assert_eq!("second_last_name", updated_model.data.last_name);
 
-            let found_model = conn.fetch_one_by_id::<TestData>(saved_model.id).await.unwrap();
+            let found_model = conn
+                .fetch_one_by_id::<TestData>(saved_model.id)
+                .await
+                .unwrap();
             assert_eq!(found_model.id, updated_model.id);
             assert_eq!(found_model.version, updated_model.version);
             assert_eq!(
@@ -405,15 +408,15 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
 
 #[test]
 fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -422,7 +425,6 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             conn.delete_all::<TestData>().await.unwrap();
 
@@ -461,15 +463,15 @@ fn update_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
 
 #[test]
 fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -478,7 +480,6 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             conn.delete_all::<TestData>().await.unwrap();
 
@@ -504,15 +505,15 @@ fn should_delete_based_on_id_and_version() -> Result<(), C3p0Error> {
 
 #[test]
 fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
-
-            #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -521,7 +522,6 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             assert!(conn.create_table_if_not_exists::<TestData>().await.is_ok());
             conn.delete_all::<TestData>().await.unwrap();
 

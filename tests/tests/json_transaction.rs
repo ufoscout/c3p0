@@ -5,7 +5,6 @@ use crate::*;
 
 #[test]
 fn json_should_commit_transaction() {
-
     #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
@@ -13,7 +12,8 @@ fn json_should_commit_transaction() {
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -60,15 +60,15 @@ fn json_should_commit_transaction() {
 
 #[test]
 fn json_should_rollback_transaction() {
-
-        #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {
         pub first_name: String,
         pub last_name: String,
     }
 
     impl c3p0::Data for TestData {
-        const TABLE_NAME: &'static str = const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
         type CODEC = Self;
     }
 
@@ -148,4 +148,3 @@ fn json_transaction_should_return_internal_error() {
         }
     });
 }
-

@@ -2,9 +2,9 @@
 
 use std::sync::OnceLock;
 
+use ::sqlx::{Row, Sqlite, sqlite::SqliteConnectOptions};
 use c3p0::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
-use ::sqlx::{sqlite::SqliteConnectOptions, Row, Sqlite};
 
 pub type C3p0Impl = SqliteC3p0Pool;
 

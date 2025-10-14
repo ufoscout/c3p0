@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{utils::run_test, *};
 
-
 #[test]
 fn should_upgrade_structs_on_load() -> Result<(), C3p0Error> {
     run_test(async {
@@ -11,19 +10,29 @@ fn should_upgrade_structs_on_load() -> Result<(), C3p0Error> {
         let pool = &data.0;
 
         pool.transaction(async |conn| {
-
             let new_user_v1 = NewRecord::new(UserVersion1 {
                 username: "user_v1_name".to_owned(),
                 email: "user_v1_email@test.com".to_owned(),
             });
 
-            assert!(conn.drop_table_if_exists::<UserVersion1>(true).await.is_ok());
-            assert!(conn.create_table_if_not_exists::<UserVersion1>().await.is_ok());
+            assert!(
+                conn.drop_table_if_exists::<UserVersion1>(true)
+                    .await
+                    .is_ok()
+            );
+            assert!(
+                conn.create_table_if_not_exists::<UserVersion1>()
+                    .await
+                    .is_ok()
+            );
             assert!(conn.delete_all::<UserVersion1>().await.is_ok());
 
             let user_v1 = conn.save(new_user_v1.clone()).await.unwrap();
             println!("user id is {}", user_v1.id);
-            println!("total users: {}", conn.count_all::<UserVersion1>().await.unwrap());
+            println!(
+                "total users: {}",
+                conn.count_all::<UserVersion1>().await.unwrap()
+            );
             println!(
                 "select all users len: {}",
                 conn.fetch_all::<UserVersion1>().await.unwrap().len()

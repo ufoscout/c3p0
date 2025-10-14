@@ -2,10 +2,10 @@
 
 use std::sync::OnceLock;
 
+use ::sqlx::PgPool;
+use ::sqlx::postgres::PgConnectOptions;
 use c3p0::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
-use ::sqlx::postgres::PgConnectOptions;
-use ::sqlx::PgPool;
 use testcontainers::postgres::Postgres;
 use testcontainers::testcontainers::ContainerAsync;
 use testcontainers::testcontainers::runners::AsyncRunner;

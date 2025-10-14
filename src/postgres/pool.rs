@@ -1,5 +1,7 @@
-
-use crate::{error::{into_c3p0_error, C3p0Error}, pool::C3p0Pool};
+use crate::{
+    error::{C3p0Error, into_c3p0_error},
+    pool::C3p0Pool,
+};
 use sqlx::{Pool, Postgres, Transaction};
 
 /// A C3p0Pool implementation for Postgres

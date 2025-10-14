@@ -53,11 +53,10 @@ impl From<serde_json::error::Error> for C3p0Error {
 impl From<sqlx::Error> for C3p0Error {
     fn from(error: sqlx::Error) -> Self {
         C3p0Error::DbError {
-        db: "sqlx",
-        code: None,
-        cause: format!("{}", &error),
+            db: "sqlx",
+            code: None,
+            cause: format!("{}", &error),
         }
-   
     }
 }
 
@@ -68,7 +67,6 @@ pub fn into_c3p0_error(error: sqlx::Error) -> C3p0Error {
         cause: format!("{}", &error),
     }
 }
-
 
 #[cfg(test)]
 mod test {

@@ -1,4 +1,3 @@
-
 use crate::error::C3p0Error;
 use crate::{error::into_c3p0_error, pool::C3p0Pool};
 use sqlx::{MySql, Pool, Transaction};
