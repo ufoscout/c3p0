@@ -2,7 +2,10 @@ use sqlx::{Sqlite, SqliteConnection};
 
 use crate::{C3p0Error, DataType, DbRead, DbWrite, NewRecord, Record, Tx, error::into_c3p0_error};
 
-impl Tx<Sqlite> for SqliteConnection {
+impl Tx for SqliteConnection {
+
+    type DB = Sqlite;
+
     async fn create_table_if_not_exists<DATA: DataType>(&mut self) -> Result<(), C3p0Error> {
         let query = format!(
             r#"

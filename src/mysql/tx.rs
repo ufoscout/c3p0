@@ -2,7 +2,10 @@ use sqlx::{MySql, MySqlConnection};
 
 use crate::{C3p0Error, DataType, DbRead, DbWrite, NewRecord, Record, Tx, error::into_c3p0_error};
 
-impl Tx<MySql> for MySqlConnection {
+impl Tx for MySqlConnection {
+
+    type DB = MySql;
+
     async fn create_table_if_not_exists<DATA: DataType>(&mut self) -> Result<(), C3p0Error> {
         let query = format!(
             r#"

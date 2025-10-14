@@ -57,6 +57,7 @@ where
 }
 
 pub trait DbRead<DB: Database, DATA: DataType> {
+    
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT

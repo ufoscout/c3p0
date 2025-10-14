@@ -2,7 +2,10 @@ use sqlx::{PgConnection, Postgres};
 
 use crate::{C3p0Error, DataType, DbRead, DbWrite, NewRecord, Record, Tx, error::into_c3p0_error};
 
-impl Tx<Postgres> for PgConnection {
+impl Tx for PgConnection {
+
+    type DB = Postgres;
+    
     async fn create_table_if_not_exists<DATA: DataType>(&mut self) -> Result<(), C3p0Error> {
         let query = format!(
             r#"
