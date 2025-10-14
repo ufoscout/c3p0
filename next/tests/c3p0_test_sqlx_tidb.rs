@@ -1,45 +1,42 @@
 #![cfg(feature = "mysql")]
 
-use std::sync::Arc;
 use std::sync::OnceLock;
 
-use c3p0::sqlx::sqlx::Row;
-use c3p0::sqlx::sqlx::mysql::*;
-use c3p0::sqlx::*;
-use c3p0::*;
+use next::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
-use testcontainers::mysql::Mysql;
+use ::sqlx::mysql::{MySqlConnectOptions, MySqlSslMode};
+use ::sqlx::{MySqlPool, Row};
 use testcontainers::testcontainers::ContainerAsync;
+use testcontainers::testcontainers::GenericImage;
+use testcontainers::testcontainers::core::WaitFor;
 use testcontainers::testcontainers::runners::AsyncRunner;
 
-pub type C3p0Impl = SqlxMySqlC3p0Pool;
-pub type Builder = SqlxMySqlC3p0JsonBuilder<u64>;
-pub type UuidBuilder = SqlxMySqlC3p0JsonBuilder<uuid::Uuid>;
+pub type C3p0Impl = MySqlC3p0Pool;
 
-pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
-    SqlxMySqlC3p0JsonBuilder::new(table_name).with_id_generator(Arc::new(MySqlUuidIdGenerator {}))
-}
-
-//mod tests;
-mod tests_json;
+mod tests;
 mod utils;
 
-pub type MaybeType = (C3p0Impl, ContainerAsync<Mysql>);
+pub type MaybeType = (C3p0Impl, ContainerAsync<GenericImage>);
 
 async fn init() -> MaybeType {
-    let node = Mysql::default().start().await.unwrap();
+    let tidb_version = "v8.5.0";
+    let tidb_image = GenericImage::new("pingcap/tidb", tidb_version).with_wait_for(
+        WaitFor::message_on_stdout(r#"["server is running MySQL protocol"] [addr=0.0.0.0:4000]"#),
+    );
+
+    let node = tidb_image.start().await.unwrap();
 
     let options = MySqlConnectOptions::new()
-        // .username("mysql")
-        // .password("mysql")
-        .database("test")
+        .username("root")
+        //.password("mysql")
+        .database("mysql")
         .host("127.0.0.1")
-        .port(node.get_host_port_ipv4(3306).await.unwrap())
+        .port(node.get_host_port_ipv4(4000).await.unwrap())
         .ssl_mode(MySqlSslMode::Disabled);
 
     let pool = MySqlPool::connect_with(options).await.unwrap();
 
-    let pool = SqlxMySqlC3p0Pool::new(pool);
+    let pool = MySqlC3p0Pool::new(pool);
 
     (pool, node)
 }
@@ -53,10 +50,12 @@ pub async fn data(serial: bool) -> Data<'static, MaybeType> {
 
 pub mod db_specific {
 
+    use ::sqlx::mysql::MySqlRow;
+
     use super::*;
 
     pub fn db_type() -> utils::DbType {
-        utils::DbType::MySql
+        utils::DbType::TiDB
     }
 
     pub fn row_to_string(row: &MySqlRow) -> Result<String, Box<dyn std::error::Error>> {
