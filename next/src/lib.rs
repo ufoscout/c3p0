@@ -1,4 +1,4 @@
-#![doc = include_utils::include_md!("README.md")]
+// #![doc = include_utils::include_md!("README.md")]
 
 pub mod codec;
 pub mod error;

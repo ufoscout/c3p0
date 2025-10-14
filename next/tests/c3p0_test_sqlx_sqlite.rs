@@ -1,24 +1,14 @@
 #![cfg(feature = "sqlite")]
 
-use std::sync::Arc;
 use std::sync::OnceLock;
 
-use c3p0::sqlx::sqlx::Row;
-use c3p0::sqlx::sqlx::sqlite::*;
-use c3p0::sqlx::*;
-use c3p0::*;
+use next::*;
 use maybe_once::tokio::{Data, MaybeOnceAsync};
+use ::sqlx::{sqlite::SqliteConnectOptions, Row, Sqlite};
 
-pub type C3p0Impl = SqlxSqliteC3p0Pool;
-pub type Builder = SqlxSqliteC3p0JsonBuilder<u64>;
-pub type UuidBuilder = SqlxSqliteC3p0JsonBuilder<uuid::Uuid>;
+pub type C3p0Impl = SqliteC3p0Pool;
 
-pub fn new_uuid_builder(table_name: &str) -> UuidBuilder {
-    SqlxSqliteC3p0JsonBuilder::new(table_name).with_id_generator(Arc::new(SqliteUuidIdGenerator {}))
-}
-
-//mod tests;
-mod tests_json;
+mod tests;
 mod utils;
 
 pub type MaybeType = (C3p0Impl, ());
@@ -26,7 +16,7 @@ pub type MaybeType = (C3p0Impl, ());
 async fn init() -> MaybeType {
     let options = SqliteConnectOptions::new();
 
-    let pool: c3p0::sqlx::sqlx::Pool<Sqlite> = c3p0::sqlx::sqlx::pool::PoolOptions::new()
+    let pool: next::sqlx::Pool<Sqlite> = next::sqlx::pool::PoolOptions::new()
         .max_lifetime(None)
         .idle_timeout(None)
         .max_connections(1)
@@ -36,7 +26,7 @@ async fn init() -> MaybeType {
 
     //let pool = SqlitePool::connect_with(options).await.unwrap();
 
-    let pool = SqlxSqliteC3p0Pool::new(pool);
+    let pool = SqliteC3p0Pool::new(pool);
 
     (pool, ())
 }
@@ -49,6 +39,8 @@ pub async fn data(serial: bool) -> Data<'static, MaybeType> {
 }
 
 pub mod db_specific {
+
+    use ::sqlx::sqlite::SqliteRow;
 
     use super::*;
 
