@@ -21,7 +21,7 @@ impl Tx for PgConnection {
             <DATA::DATA as DataType>::TABLE_NAME,
         );
 
-        sqlx::query(&query)
+        sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(self)
             .await
             .map_err(into_c3p0_error)
@@ -43,7 +43,7 @@ impl Tx for PgConnection {
                 <DATA::DATA as DataType>::TABLE_NAME
             )
         };
-        sqlx::query(&query)
+        sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(self)
             .await
             .map_err(into_c3p0_error)
@@ -51,35 +51,32 @@ impl Tx for PgConnection {
     }
 
     async fn fetch_all_with_sql<
-        'a,
         DATA: DataType,
-        A: 'a + Send + sqlx::IntoArguments<'a, Postgres>,
+        A: sqlx::IntoArguments<Postgres>,
     >(
         &mut self,
-        sql: sqlx::query::Query<'a, Postgres, A>,
+        sql: sqlx::query::Query<'_, Postgres, A>,
     ) -> Result<Vec<Record<DATA>>, C3p0Error> {
         <Record<DATA> as DbOps<Postgres, DATA>>::fetch_all_with_sql(self, sql).await
     }
 
     async fn fetch_one_optional_with_sql<
-        'a,
         DATA: DataType,
-        A: 'a + Send + sqlx::IntoArguments<'a, Postgres>,
+        A: sqlx::IntoArguments<Postgres>,
     >(
         &mut self,
-        sql: sqlx::query::Query<'a, Postgres, A>,
+        sql: sqlx::query::Query<'_, Postgres, A>,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
         <Record<DATA> as DbOps<Postgres, DATA>>::fetch_one_optional_with_sql(self, sql)
             .await
     }
 
     async fn fetch_one_with_sql<
-        'a,
         DATA: DataType,
-        A: 'a + Send + sqlx::IntoArguments<'a, Postgres>,
+        A: sqlx::IntoArguments<Postgres>,
     >(
         &mut self,
-        sql: sqlx::query::Query<'a, Postgres, A>,
+        sql: sqlx::query::Query<'_, Postgres, A>,
     ) -> Result<Record<DATA>, C3p0Error> {
         <Record<DATA> as DbOps<Postgres, DATA>>::fetch_one_with_sql(self, sql).await
     }

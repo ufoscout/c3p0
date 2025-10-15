@@ -21,27 +21,27 @@ pub trait Tx {
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_all_with_sql<'a, DATA: DataType, A: 'a + Send + IntoArguments<'a, Self::DB>>(
+    fn fetch_all_with_sql<DATA: DataType, A: IntoArguments<Self::DB>>(
         &mut self,
-        sql: Query<'a, Self::DB, A>,
+        sql: Query<'_, Self::DB, A>,
     ) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_one_optional_with_sql<'a, DATA: DataType, A: 'a + Send + IntoArguments<'a, Self::DB>>(
+    fn fetch_one_optional_with_sql<DATA: DataType, A: IntoArguments<Self::DB>>(
         &mut self,
-        sql: Query<'a, Self::DB, A>,
+        sql: Query<'_, Self::DB, A>,
     ) -> impl Future<Output = Result<Option<Record<DATA>>, C3p0Error>>;
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_one_with_sql<'a, DATA: DataType, A: 'a + Send + IntoArguments<'a, Self::DB>>(
+    fn fetch_one_with_sql<DATA: DataType, A: IntoArguments<Self::DB>>(
         &mut self,
-        sql: Query<'a, Self::DB, A>,
+        sql: Query<'_, Self::DB, A>,
     ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 
     /// Returns the number of rows in the table.

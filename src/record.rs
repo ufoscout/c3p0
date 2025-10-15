@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{ColumnIndex, Database, Decode, IntoArguments, Row, Type, query::Query};
+use sqlx::{query::{Query, QueryAs}, ColumnIndex, Database, Decode, FromRow, IntoArguments, Row, Type};
 
 use crate::{codec::Codec, error::C3p0Error};
 
-pub trait DataType: Sized + Send + Sync {
+pub trait DataType: Sized + Send + Sync + Unpin {
     const TABLE_NAME: &'static str;
     type CODEC: Codec<Self>;
 }
@@ -73,31 +73,36 @@ where
 }
 
 pub trait DbOps<DB: Database, WITH: WithData> {
+
+    fn query_with(
+        sql: &str,
+    ) -> QueryAs<'_, DB, Record<WITH::DATA>, <DB as Database>::Arguments>;
+
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
+    fn fetch_all_with_sql<A: IntoArguments<DB>>(
         tx: &mut DB::Connection,
-        sql: Query<'a, DB, A>,
+        sql: Query<'_, DB, A>,
     ) -> impl Future<Output = Result<Vec<Record<WITH::DATA>>, C3p0Error>>;
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
+    fn fetch_one_optional_with_sql<A: IntoArguments<DB>>(
         tx: &mut DB::Connection,
-        sql: Query<'a, DB, A>,
+        sql: Query<'_, DB, A>,
     ) -> impl Future<Output = Result<Option<Record<WITH::DATA>>, C3p0Error>>;
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
+    fn fetch_one_with_sql<A: IntoArguments<DB>>(
         tx: &mut DB::Connection,
-        sql: Query<'a, DB, A>,
+        sql: Query<'_, DB, A>,
     ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 
     /// Returns the number of rows in the table.
@@ -156,6 +161,20 @@ pub trait DbSave<DB: Database, WITH: WithData> {
         self,
         tx: &mut DB::Connection,
     ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
+}
+
+impl <DATA: DataType, DB: Database, R: Row<Database = DB>> FromRow<'_, R> for Record<DATA>
+where
+    usize: ColumnIndex<R>,
+    for<'c> i32: Type<DB> + Decode<'c, DB>,
+    for<'c> i64: Type<DB> + Decode<'c, DB>,
+    for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
+{
+    fn from_row(row: &R) -> Result<Self, sqlx::Error> {
+        let REMOVE_UNWRAP = ();
+        let row = row_to_record_with_index(row, 0, 1, 2, 3, 4).unwrap();
+        Ok(row)
+    }
 }
 
 /// Converts a row to a Model
