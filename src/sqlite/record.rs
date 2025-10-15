@@ -1,55 +1,29 @@
 use crate::codec::Codec;
 use crate::error::into_c3p0_error;
-use crate::record::row_to_record_with_index;
 use crate::time::get_current_epoch_millis;
 use crate::{
     error::C3p0Error,
     record::{DataType, DbOps, DbSave, NewRecord, Record},
 };
-use sqlx::IntoArguments;
+use sqlx::Database;
 use sqlx::Row;
 use sqlx::Sqlite;
 use sqlx::SqliteConnection;
-use sqlx::query::Query;
+use sqlx::query::QueryAs;
 
 impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
-    async fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, Sqlite>>(
-        tx: &mut SqliteConnection,
-        sql: Query<'a, Sqlite, A>,
-    ) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        sql.fetch_all(tx)
-            .await
-            .map_err(into_c3p0_error)?
-            .iter()
-            .map(|row| row_to_record_with_index(row, 0, 1, 2, 3, 4))
-            .collect::<Result<Vec<_>, C3p0Error>>()
-    }
 
-    async fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, Sqlite>>(
-        tx: &mut SqliteConnection,
-        sql: Query<'a, Sqlite, A>,
-    ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        sql.fetch_optional(tx)
-            .await
-            .map_err(into_c3p0_error)?
-            .map(|row| row_to_record_with_index(&row, 0, 1, 2, 3, 4))
-            .transpose()
-    }
-
-    async fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, Sqlite>>(
-        tx: &mut SqliteConnection,
-        sql: Query<'a, Sqlite, A>,
-    ) -> Result<Record<DATA>, C3p0Error> {
-        sql.fetch_one(tx)
-            .await
-            .map_err(into_c3p0_error)
-            .and_then(|row| row_to_record_with_index(&row, 0, 1, 2, 3, 4))
+    fn query_with(
+        sql: &str,
+    ) -> QueryAs<'_, Sqlite, Record<DATA>, <Sqlite as Database>::Arguments> {
+        let query = format!("{} {}", <Self as DbOps<Sqlite, DATA>>::select_query_base(), sql);
+        sqlx::query_as(sqlx::AssertSqlSafe(query))
     }
 
     async fn count_all(tx: &mut SqliteConnection) -> Result<u64, C3p0Error> {
         let query = format!("SELECT COUNT(*) FROM {}", DATA::TABLE_NAME,);
 
-        sqlx::query(&query)
+        sqlx::query(sqlx::AssertSqlSafe(query))
             .fetch_one(tx)
             .await
             .and_then(|row| row.try_get(0))
@@ -62,7 +36,7 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
             DATA::TABLE_NAME,
         );
 
-        sqlx::query(&query)
+        sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(id as i64)
             .fetch_one(tx)
             .await
@@ -71,35 +45,32 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
     }
 
     async fn fetch_all(tx: &mut SqliteConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        let query = format!("{} ORDER BY id ASC", select_query_base(DATA::TABLE_NAME),);
-
-        Self::fetch_all_with_sql(tx, sqlx::query::<Sqlite>(&query)).await
+        Self::query_with(" ORDER BY id ASC")
+            .fetch_all(tx)
+            .await
+            .map_err(into_c3p0_error)
     }
 
     async fn fetch_one_optional_by_id(
         tx: &mut SqliteConnection,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        let query = format!(
-            "{} WHERE id = ? LIMIT 1",
-            select_query_base(DATA::TABLE_NAME),
-        );
-
-        let query = sqlx::query::<Sqlite>(&query).bind(id as i64);
-        Self::fetch_one_optional_with_sql(tx, query).await
+        Self::query_with(" WHERE id = ? LIMIT 1")
+            .bind(id as i64)
+            .fetch_optional(tx)
+            .await
+            .map_err(into_c3p0_error)
     }
 
     async fn fetch_one_by_id(
         tx: &mut SqliteConnection,
         id: u64,
     ) -> Result<Record<DATA>, C3p0Error> {
-        let query = format!(
-            "{} WHERE id = ? LIMIT 1",
-            select_query_base(DATA::TABLE_NAME),
-        );
-
-        let query = sqlx::query::<Sqlite>(&query).bind(id as i64);
-        Self::fetch_one_with_sql(tx, query).await
+        Self::query_with(" WHERE id = ? LIMIT 1")
+            .bind(id as i64)
+            .fetch_one(tx)
+            .await
+            .map_err(into_c3p0_error)
     }
 
     async fn delete(self, tx: &mut SqliteConnection) -> Result<Record<DATA>, C3p0Error> {
@@ -108,7 +79,7 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
             DATA::TABLE_NAME,
         );
 
-        let result = sqlx::query(&query)
+        let result = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(self.id as i64)
             .bind(self.version)
             .execute(tx)
@@ -133,7 +104,7 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
     async fn delete_all(tx: &mut SqliteConnection) -> Result<u64, C3p0Error> {
         let query = format!("DELETE FROM {}", DATA::TABLE_NAME);
 
-        sqlx::query(&query)
+        sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(tx)
             .await
             .map_err(into_c3p0_error)
@@ -143,7 +114,7 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
     async fn delete_by_id(tx: &mut SqliteConnection, id: u64) -> Result<u64, C3p0Error> {
         let query = format!("DELETE FROM {} WHERE id = ?", DATA::TABLE_NAME);
 
-        sqlx::query(&query)
+        sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(id as i64)
             .execute(tx)
             .await
@@ -166,7 +137,7 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
         self.update_epoch_millis = get_current_epoch_millis();
 
         let result = {
-            sqlx::query(&query)
+            sqlx::query(sqlx::AssertSqlSafe(query))
                 .bind(self.version)
                 .bind(self.update_epoch_millis)
                 .bind(json_data)
@@ -206,7 +177,7 @@ impl<DATA: DataType> DbSave<Sqlite, DATA> for NewRecord<DATA> {
 
         let create_epoch_millis = get_current_epoch_millis();
 
-        let id = sqlx::query(&query)
+        let id = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(0)
             .bind(create_epoch_millis)
             .bind(create_epoch_millis)
@@ -224,12 +195,4 @@ impl<DATA: DataType> DbSave<Sqlite, DATA> for NewRecord<DATA> {
             update_epoch_millis: create_epoch_millis,
         })
     }
-}
-
-/// Returns a SQL query string to select all columns from the database table.
-fn select_query_base(table_name: &str) -> String {
-    format!(
-        "SELECT id, version, create_epoch_millis, update_epoch_millis, data FROM {}",
-        table_name
-    )
 }

@@ -21,7 +21,7 @@ impl Tx for MySqlConnection {
             <DATA::DATA as DataType>::TABLE_NAME,
         );
 
-        sqlx::query(&query)
+        sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(self)
             .await
             .map_err(into_c3p0_error)
@@ -43,45 +43,11 @@ impl Tx for MySqlConnection {
                 <DATA::DATA as DataType>::TABLE_NAME
             )
         };
-        sqlx::query(&query)
+        sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(self)
             .await
             .map_err(into_c3p0_error)
             .map(|_| ())
-    }
-
-    async fn fetch_all_with_sql<
-        'a,
-        DATA: DataType,
-        A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
-    >(
-        &mut self,
-        sql: sqlx::query::Query<'a, MySql, A>,
-    ) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        <Record<DATA> as DbOps<MySql, DATA>>::fetch_all_with_sql(self, sql).await
-    }
-
-    async fn fetch_one_optional_with_sql<
-        'a,
-        DATA: DataType,
-        A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
-    >(
-        &mut self,
-        sql: sqlx::query::Query<'a, MySql, A>,
-    ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_optional_with_sql(self, sql)
-            .await
-    }
-
-    async fn fetch_one_with_sql<
-        'a,
-        DATA: DataType,
-        A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
-    >(
-        &mut self,
-        sql: sqlx::query::Query<'a, MySql, A>,
-    ) -> Result<Record<DATA>, C3p0Error> {
-        <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_with_sql(self, sql).await
     }
 
     async fn count_all<DATA: WithData>(&mut self) -> Result<u64, C3p0Error> {

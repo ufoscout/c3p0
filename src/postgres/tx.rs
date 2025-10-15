@@ -50,37 +50,6 @@ impl Tx for PgConnection {
             .map(|_| ())
     }
 
-    async fn fetch_all_with_sql<
-        DATA: DataType,
-        A: sqlx::IntoArguments<Postgres>,
-    >(
-        &mut self,
-        sql: sqlx::query::Query<'_, Postgres, A>,
-    ) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        <Record<DATA> as DbOps<Postgres, DATA>>::fetch_all_with_sql(self, sql).await
-    }
-
-    async fn fetch_one_optional_with_sql<
-        DATA: DataType,
-        A: sqlx::IntoArguments<Postgres>,
-    >(
-        &mut self,
-        sql: sqlx::query::Query<'_, Postgres, A>,
-    ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        <Record<DATA> as DbOps<Postgres, DATA>>::fetch_one_optional_with_sql(self, sql)
-            .await
-    }
-
-    async fn fetch_one_with_sql<
-        DATA: DataType,
-        A: sqlx::IntoArguments<Postgres>,
-    >(
-        &mut self,
-        sql: sqlx::query::Query<'_, Postgres, A>,
-    ) -> Result<Record<DATA>, C3p0Error> {
-        <Record<DATA> as DbOps<Postgres, DATA>>::fetch_one_with_sql(self, sql).await
-    }
-
     async fn count_all<DATA: WithData>(&mut self) -> Result<u64, C3p0Error> {
         <Record<DATA::DATA> as DbOps<Postgres, DATA::DATA>>::count_all(self).await
     }

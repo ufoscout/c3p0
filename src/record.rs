@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{query::{Query, QueryAs}, ColumnIndex, Database, Decode, FromRow, IntoArguments, Row, Type};
+use sqlx::{query::QueryAs, ColumnIndex, Database, Decode, FromRow, Row, Type};
 
 use crate::{codec::Codec, error::C3p0Error};
 
@@ -85,33 +85,6 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     fn query_with(
         sql: &str,
     ) -> QueryAs<'_, DB, Record<WITH::DATA>, <DB as Database>::Arguments>;
-
-    /// Allows the execution of a custom sql query and returns all the entries in the result set.
-    /// For this to work, the sql query:
-    /// - must be a SELECT
-    /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_all_with_sql<A: IntoArguments<DB>>(
-        tx: &mut DB::Connection,
-        sql: Query<'_, DB, A>,
-    ) -> impl Future<Output = Result<Vec<Record<WITH::DATA>>, C3p0Error>>;
-
-    /// Allows the execution of a custom sql query and returns the first entry in the result set.
-    /// For this to work, the sql query:
-    /// - must be a SELECT
-    /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_one_optional_with_sql<A: IntoArguments<DB>>(
-        tx: &mut DB::Connection,
-        sql: Query<'_, DB, A>,
-    ) -> impl Future<Output = Result<Option<Record<WITH::DATA>>, C3p0Error>>;
-
-    /// Allows the execution of a custom sql query and returns the first entry in the result set.
-    /// For this to work, the sql query:
-    /// - must be a SELECT
-    /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_one_with_sql<A: IntoArguments<DB>>(
-        tx: &mut DB::Connection,
-        sql: Query<'_, DB, A>,
-    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 
     /// Returns the number of rows in the table.
     fn count_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;

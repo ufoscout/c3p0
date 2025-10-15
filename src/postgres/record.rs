@@ -1,18 +1,17 @@
 
 use crate::codec::Codec;
 use crate::error::into_c3p0_error;
-use crate::record::row_to_record_with_index;
 use crate::time::get_current_epoch_millis;
 use crate::{
     error::C3p0Error,
     record::{DataType, DbOps, DbSave, NewRecord, Record},
 };
 
-use sqlx::{Database, IntoArguments};
+use sqlx::Database;
 use sqlx::PgConnection;
 use sqlx::Postgres;
 use sqlx::Row;
-use sqlx::query::{Query, QueryAs};
+use sqlx::query::QueryAs;
 
 impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
 
@@ -21,39 +20,6 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
     ) -> QueryAs<'_, Postgres, Record<DATA>, <Postgres as Database>::Arguments> {
         let query = format!("{} {}", <Self as DbOps<Postgres, DATA>>::select_query_base(), sql);
         sqlx::query_as(sqlx::AssertSqlSafe(query))
-    }
-
-    async fn fetch_all_with_sql<A: IntoArguments<Postgres>>(
-        tx: &mut PgConnection,
-        sql: Query<'_, Postgres, A>,
-    ) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        sql.fetch_all(tx)
-            .await
-            .map_err(into_c3p0_error)?
-            .iter()
-            .map(|row| row_to_record_with_index(row, 0, 1, 2, 3, 4))
-            .collect::<Result<Vec<_>, C3p0Error>>()
-    }
-
-    async fn fetch_one_optional_with_sql<A: IntoArguments<Postgres>>(
-        tx: &mut PgConnection,
-        sql: Query<'_, Postgres, A>,
-    ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        sql.fetch_optional(tx)
-            .await
-            .map_err(into_c3p0_error)?
-            .map(|row| row_to_record_with_index(&row, 0, 1, 2, 3, 4))
-            .transpose()
-    }
-
-    async fn fetch_one_with_sql<A: IntoArguments<Postgres>>(
-        tx: &mut PgConnection,
-        sql: Query<'_, Postgres, A>,
-    ) -> Result<Record<DATA>, C3p0Error> {
-        sql.fetch_one(tx)
-            .await
-            .map_err(into_c3p0_error)
-            .and_then(|row| row_to_record_with_index(&row, 0, 1, 2, 3, 4))
     }
 
     async fn count_all(tx: &mut PgConnection) -> Result<u64, C3p0Error> {
