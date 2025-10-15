@@ -21,28 +21,28 @@ pub trait Tx {
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_all_with_sql<'a, DATA: WithData, A: 'a + Send + IntoArguments<'a, Self::DB>>(
+    fn fetch_all_with_sql<'a, DATA: DataType, A: 'a + Send + IntoArguments<'a, Self::DB>>(
         &mut self,
         sql: Query<'a, Self::DB, A>,
-    ) -> impl Future<Output = Result<Vec<Record<DATA::DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_one_optional_with_sql<'a, DATA: WithData, A: 'a + Send + IntoArguments<'a, Self::DB>>(
+    fn fetch_one_optional_with_sql<'a, DATA: DataType, A: 'a + Send + IntoArguments<'a, Self::DB>>(
         &mut self,
         sql: Query<'a, Self::DB, A>,
-    ) -> impl Future<Output = Result<Option<Record<DATA::DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Option<Record<DATA>>, C3p0Error>>;
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
     /// - must declare the ID, VERSION and Data fields in this exact order
-    fn fetch_one_with_sql<'a, DATA: WithData, A: 'a + Send + IntoArguments<'a, Self::DB>>(
+    fn fetch_one_with_sql<'a, DATA: DataType, A: 'a + Send + IntoArguments<'a, Self::DB>>(
         &mut self,
         sql: Query<'a, Self::DB, A>,
-    ) -> impl Future<Output = Result<Record<DATA::DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 
     /// Returns the number of rows in the table.
     fn count_all<DATA: WithData>(&mut self) -> impl Future<Output = Result<u64, C3p0Error>>;
@@ -54,21 +54,21 @@ pub trait Tx {
     ) -> impl Future<Output = Result<bool, C3p0Error>>;
 
     /// Returns all entries in the table.
-    fn fetch_all<DATA: WithData>(
+    fn fetch_all<DATA: DataType>(
         &mut self,
-    ) -> impl Future<Output = Result<Vec<Record<DATA::DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.
-    fn fetch_one_optional_by_id<DATA: WithData>(
+    fn fetch_one_optional_by_id<DATA: DataType>(
         &mut self,
         id: u64,
-    ) -> impl Future<Output = Result<Option<Record<DATA::DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Option<Record<DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns an error if the entry does not exist.
-    fn fetch_one_by_id<DATA: WithData>(
+    fn fetch_one_by_id<DATA: DataType>(
         &mut self,
         id: u64,
-    ) -> impl Future<Output = Result<Record<DATA::DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
 
     /// Deletes the entry with the given id.
     fn delete<DATA: DataType>(

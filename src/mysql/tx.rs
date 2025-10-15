@@ -52,36 +52,36 @@ impl Tx for MySqlConnection {
 
     async fn fetch_all_with_sql<
         'a,
-        DATA: WithData,
+        DATA: DataType,
         A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
     >(
         &mut self,
         sql: sqlx::query::Query<'a, MySql, A>,
-    ) -> Result<Vec<Record<DATA::DATA>>, C3p0Error> {
-        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_all_with_sql(self, sql).await
+    ) -> Result<Vec<Record<DATA>>, C3p0Error> {
+        <Record<DATA> as DbOps<MySql, DATA>>::fetch_all_with_sql(self, sql).await
     }
 
     async fn fetch_one_optional_with_sql<
         'a,
-        DATA: WithData,
+        DATA: DataType,
         A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
     >(
         &mut self,
         sql: sqlx::query::Query<'a, MySql, A>,
-    ) -> Result<Option<Record<DATA::DATA>>, C3p0Error> {
-        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_one_optional_with_sql(self, sql)
+    ) -> Result<Option<Record<DATA>>, C3p0Error> {
+        <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_optional_with_sql(self, sql)
             .await
     }
 
     async fn fetch_one_with_sql<
         'a,
-        DATA: WithData,
+        DATA: DataType,
         A: 'a + Send + sqlx::IntoArguments<'a, MySql>,
     >(
         &mut self,
         sql: sqlx::query::Query<'a, MySql, A>,
-    ) -> Result<Record<DATA::DATA>, C3p0Error> {
-        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_one_with_sql(self, sql).await
+    ) -> Result<Record<DATA>, C3p0Error> {
+        <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_with_sql(self, sql).await
     }
 
     async fn count_all<DATA: WithData>(&mut self) -> Result<u64, C3p0Error> {
@@ -92,22 +92,22 @@ impl Tx for MySqlConnection {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::exists_by_id(self, id).await
     }
 
-    async fn fetch_all<DATA: WithData>(&mut self) -> Result<Vec<Record<DATA::DATA>>, C3p0Error> {
-        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_all(self).await
+    async fn fetch_all<DATA: DataType>(&mut self) -> Result<Vec<Record<DATA>>, C3p0Error> {
+        <Record<DATA> as DbOps<MySql, DATA>>::fetch_all(self).await
     }
 
-    async fn fetch_one_optional_by_id<DATA: WithData>(
+    async fn fetch_one_optional_by_id<DATA: DataType>(
         &mut self,
         id: u64,
-    ) -> Result<Option<Record<DATA::DATA>>, C3p0Error> {
-        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_one_optional_by_id(self, id).await
+    ) -> Result<Option<Record<DATA>>, C3p0Error> {
+        <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
-    async fn fetch_one_by_id<DATA: WithData>(
+    async fn fetch_one_by_id<DATA: DataType>(
         &mut self,
         id: u64,
-    ) -> Result<Record<DATA::DATA>, C3p0Error> {
-        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_one_by_id(self, id).await
+    ) -> Result<Record<DATA>, C3p0Error> {
+        <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_by_id(self, id).await
     }
 
     async fn delete<DATA: DataType>(
