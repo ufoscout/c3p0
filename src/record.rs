@@ -74,6 +74,14 @@ where
 
 pub trait DbOps<DB: Database, WITH: WithData> {
 
+    /// Returns a SQL query string to select all columns from the database table.
+    fn select_query_base() -> String {
+        format!(
+            "SELECT id, version, create_epoch_millis, update_epoch_millis, data FROM {}",
+            WITH::DATA::TABLE_NAME
+        )
+    }
+
     fn query_with(
         sql: &str,
     ) -> QueryAs<'_, DB, Record<WITH::DATA>, <DB as Database>::Arguments>;

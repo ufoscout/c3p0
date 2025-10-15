@@ -19,7 +19,7 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
     fn query_with(
         sql: &str,
     ) -> QueryAs<'_, Postgres, Record<DATA>, <Postgres as Database>::Arguments> {
-        let query = format!("{} {}", select_query_base(DATA::TABLE_NAME), sql);
+        let query = format!("{} {}", <Self as DbOps<Postgres, DATA>>::select_query_base(), sql);
         sqlx::query_as(sqlx::AssertSqlSafe(query))
     }
 
@@ -236,10 +236,3 @@ impl<DATA: DataType> DbSave<Postgres, DATA> for NewRecord<DATA> {
     }
 }
 
-/// Returns a SQL query string to select all columns from the database table.
-fn select_query_base(table_name: &str) -> String {
-    format!(
-        "SELECT id, version, create_epoch_millis, update_epoch_millis, data FROM {}",
-        table_name
-    )
-}
