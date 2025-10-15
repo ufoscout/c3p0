@@ -49,6 +49,16 @@ fn json_should_commit_transaction() {
             assert_eq!(3, count);
             println!("Count performed!");
 
+            // It should be possible to query with both the Record and the DataType
+            let count = conn.count_all::<Record<TestData>>().await.unwrap();
+            assert_eq!(3, count);
+            println!("Count performed!");
+
+            // It should be possible to query with both the NewRecord and the DataType
+            let count = conn.count_all::<NewRecord<TestData>>().await.unwrap();
+            assert_eq!(3, count);
+            println!("Count performed!");
+
             let _ = conn.drop_table_if_exists::<TestData>(true).await;
             println!("Table dropped!");
             Ok(())

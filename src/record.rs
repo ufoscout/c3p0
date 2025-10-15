@@ -8,6 +8,22 @@ pub trait DataType: Sized + Send + Sync {
     type CODEC: Codec<Self>;
 }
 
+pub trait WithData {
+    type DATA: DataType;
+}
+
+impl<DATA: DataType> WithData for DATA {
+    type DATA = DATA;
+}
+
+impl<DATA: DataType> WithData for Record<DATA> {
+    type DATA = DATA;
+}
+
+impl<DATA: DataType> WithData for NewRecord<DATA> {
+    type DATA = DATA;
+}
+
 /// A model for a database table.
 /// This is used to retrieve and update an entry in a database table.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -56,7 +72,7 @@ where
     }
 }
 
-pub trait DbOps<DB: Database, DATA: DataType> {
+pub trait DbOps<DB: Database, WITH: WithData> {
     /// Allows the execution of a custom sql query and returns all the entries in the result set.
     /// For this to work, the sql query:
     /// - must be a SELECT
@@ -64,7 +80,7 @@ pub trait DbOps<DB: Database, DATA: DataType> {
     fn fetch_all_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
         tx: &mut DB::Connection,
         sql: Query<'a, DB, A>,
-    ) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Vec<Record<WITH::DATA>>, C3p0Error>>;
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
@@ -73,7 +89,7 @@ pub trait DbOps<DB: Database, DATA: DataType> {
     fn fetch_one_optional_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
         tx: &mut DB::Connection,
         sql: Query<'a, DB, A>,
-    ) -> impl Future<Output = Result<Option<Record<DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Option<Record<WITH::DATA>>, C3p0Error>>;
 
     /// Allows the execution of a custom sql query and returns the first entry in the result set.
     /// For this to work, the sql query:
@@ -82,7 +98,7 @@ pub trait DbOps<DB: Database, DATA: DataType> {
     fn fetch_one_with_sql<'a, A: 'a + Send + IntoArguments<'a, DB>>(
         tx: &mut DB::Connection,
         sql: Query<'a, DB, A>,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 
     /// Returns the number of rows in the table.
     fn count_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
@@ -96,25 +112,25 @@ pub trait DbOps<DB: Database, DATA: DataType> {
     /// Returns all the entries in the table.
     fn fetch_all(
         tx: &mut DB::Connection,
-    ) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Vec<Record<WITH::DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.
     fn fetch_one_optional_by_id(
         tx: &mut DB::Connection,
         id: u64,
-    ) -> impl Future<Output = Result<Option<Record<DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Option<Record<WITH::DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns an error if the entry does not exist.
     fn fetch_one_by_id(
         tx: &mut DB::Connection,
         id: u64,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 
     /// Deletes the entry with the given id.
     fn delete(
         self,
         tx: &mut DB::Connection,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 
     /// Deletes all entries in the table.
     fn delete_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
@@ -131,13 +147,15 @@ pub trait DbOps<DB: Database, DATA: DataType> {
     fn update(
         self,
         tx: &mut DB::Connection,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 }
 
-pub trait DbSave<DB: Database, DATA: DataType> {
+pub trait DbSave<DB: Database, WITH: WithData> {
     /// Creates a new entry.
-    fn save(self, tx: &mut DB::Connection)
-    -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    fn save(
+        self,
+        tx: &mut DB::Connection,
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 }
 
 /// Converts a row to a Model
