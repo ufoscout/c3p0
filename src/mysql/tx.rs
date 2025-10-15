@@ -1,8 +1,6 @@
 use sqlx::{MySql, MySqlConnection};
 
-use crate::{
-    C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData,
-};
+use crate::{C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData};
 
 impl Tx for MySqlConnection {
     type DB = MySql;
@@ -42,11 +40,11 @@ impl Tx for MySqlConnection {
                 <DATA::DATA as DataType>::TABLE_NAME
             )
         };
-        
+
         Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(self)
             .await
-                       .map(|_| ())?)
+            .map(|_| ())?)
     }
 
     async fn count_all<DATA: WithData>(&mut self) -> Result<u64, C3p0Error> {

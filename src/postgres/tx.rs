@@ -1,8 +1,6 @@
 use sqlx::{PgConnection, Postgres};
 
-use crate::{
-    C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData,
-};
+use crate::{C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData};
 
 impl Tx for PgConnection {
     type DB = Postgres;
@@ -64,8 +62,7 @@ impl Tx for PgConnection {
         &mut self,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        <Record<DATA> as DbOps<Postgres, DATA>>::fetch_one_optional_by_id(self, id)
-            .await
+        <Record<DATA> as DbOps<Postgres, DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
     async fn fetch_one_by_id<DATA: DataType>(

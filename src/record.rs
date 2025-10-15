@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{query::QueryAs, ColumnIndex, Database, Decode, FromRow, Row, Type};
+use sqlx::{ColumnIndex, Database, Decode, FromRow, Row, Type, query::QueryAs};
 
 use crate::{codec::Codec, error::C3p0Error};
 
@@ -73,9 +73,8 @@ where
 }
 
 pub trait DbOps<DB: Database, WITH: WithData> {
-
     /// Returns a SQL query string to select all columns from the database table. I.e.:
-    /// 
+    ///
     /// ```sql
     /// SELECT id, version, create_epoch_millis, update_epoch_millis, data FROM table_name
     /// ```
@@ -96,10 +95,8 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     /// let record = Record::<DataType>::query_with("WHERE id = ?")
     ///     .bind(1)
     ///     .fetch_one(&mut conn).await;
-    /// ``` 
-    fn query_with(
-        sql: &str,
-    ) -> QueryAs<'_, DB, Record<WITH::DATA>, <DB as Database>::Arguments>;
+    /// ```
+    fn query_with(sql: &str) -> QueryAs<'_, DB, Record<WITH::DATA>, <DB as Database>::Arguments>;
 
     /// Returns the number of rows in the table.
     fn count_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
@@ -159,7 +156,7 @@ pub trait DbSave<DB: Database, WITH: WithData> {
     ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 }
 
-impl <DATA: DataType, DB: Database, R: Row<Database = DB>> FromRow<'_, R> for Record<DATA>
+impl<DATA: DataType, DB: Database, R: Row<Database = DB>> FromRow<'_, R> for Record<DATA>
 where
     usize: ColumnIndex<R>,
     for<'c> i32: Type<DB> + Decode<'c, DB>,
@@ -196,19 +193,16 @@ where
     for<'c> i64: Type<DB> + Decode<'c, DB>,
     for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
 {
-    let id: i64 = row
-        .try_get(id_index)?;
+    let id: i64 = row.try_get(id_index)?;
 
-    let version: i32 = row
-        .try_get(version_index)?;
+    let version: i32 = row.try_get(version_index)?;
 
-    let create_epoch_millis: i64 =
-        row.try_get(create_epoch_millis_index)?;
+    let create_epoch_millis: i64 = row.try_get(create_epoch_millis_index)?;
 
-    let update_epoch_millis: i64 =
-        row.try_get(update_epoch_millis_index)?;
+    let update_epoch_millis: i64 = row.try_get(update_epoch_millis_index)?;
 
-    let data: DATA::CODEC = serde_json::from_value(row.try_get(data_index)?).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+    let data: DATA::CODEC = serde_json::from_value(row.try_get(data_index)?)
+        .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
 
     Ok(Record {
         id: id as u64,

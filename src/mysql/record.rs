@@ -11,11 +11,12 @@ use sqlx::Row;
 use sqlx::query::QueryAs;
 
 impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
-
-    fn query_with(
-        sql: &str,
-    ) -> QueryAs<'_, MySql, Record<DATA>, <MySql as Database>::Arguments> {
-        let query = format!("{} {}", <Self as DbOps<MySql, DATA>>::select_query_base(), sql);
+    fn query_with(sql: &str) -> QueryAs<'_, MySql, Record<DATA>, <MySql as Database>::Arguments> {
+        let query = format!(
+            "{} {}",
+            <Self as DbOps<MySql, DATA>>::select_query_base(),
+            sql
+        );
         sqlx::query_as(sqlx::AssertSqlSafe(query))
     }
 
@@ -26,7 +27,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             .fetch_one(tx)
             .await
             .and_then(|row| row.try_get(0))
-                        .map(|val: i64| val as u64)?)
+            .map(|val: i64| val as u64)?)
     }
 
     async fn exists_by_id(tx: &mut MySqlConnection, id: u64) -> Result<bool, C3p0Error> {
@@ -39,14 +40,11 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             .bind(id as i64)
             .fetch_one(tx)
             .await
-            .and_then(|row| row.try_get(0))?)            
+            .and_then(|row| row.try_get(0))?)
     }
 
     async fn fetch_all(tx: &mut MySqlConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with(" ORDER BY id ASC")
-            .fetch_all(tx)
-            .await?)
-            
+        Ok(Self::query_with(" ORDER BY id ASC").fetch_all(tx).await?)
     }
 
     async fn fetch_one_optional_by_id(
@@ -57,7 +55,6 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             .bind(id as i64)
             .fetch_optional(tx)
             .await?)
-            
     }
 
     async fn fetch_one_by_id(tx: &mut MySqlConnection, id: u64) -> Result<Record<DATA>, C3p0Error> {
@@ -65,7 +62,6 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             .bind(id as i64)
             .fetch_one(tx)
             .await?)
-            
     }
 
     async fn delete(self, tx: &mut MySqlConnection) -> Result<Record<DATA>, C3p0Error> {
@@ -78,7 +74,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             .bind(self.id as i64)
             .bind(self.version)
             .execute(tx)
-            .await            ?
+            .await?
             .rows_affected();
 
         if result == 0 {
@@ -110,7 +106,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
         Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(id as i64)
             .execute(tx)
-            .await            
+            .await
             .map(|done| done.rows_affected())?)
     }
 
@@ -137,7 +133,6 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
                 .bind(previous_version)
                 .execute(tx)
                 .await
-                
                 .map(|done| done.rows_affected())?
         };
 
@@ -176,8 +171,7 @@ impl<DATA: DataType> DbSave<MySql, DATA> for NewRecord<DATA> {
             .bind(json_data)
             .execute(tx)
             .await
-            .map(|done| done.last_insert_id())
-            ?;
+            .map(|done| done.last_insert_id())?;
 
         Ok(Record {
             id,
@@ -188,4 +182,3 @@ impl<DATA: DataType> DbSave<MySql, DATA> for NewRecord<DATA> {
         })
     }
 }
-

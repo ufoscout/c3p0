@@ -1,8 +1,6 @@
 use sqlx::{Sqlite, SqliteConnection};
 
-use crate::{
-    C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData,
-};
+use crate::{C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData};
 
 impl Tx for SqliteConnection {
     type DB = Sqlite;

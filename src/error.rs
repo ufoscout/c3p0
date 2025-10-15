@@ -8,7 +8,7 @@ pub enum C3p0Error {
     #[error("OptimisticLockError: {cause}")]
     OptimisticLockError { cause: String },
     #[error("JsonProcessingError: {0:?}")]
-    JsonProcessingError (#[from]  serde_json::Error ),
+    JsonProcessingError(#[from] serde_json::Error),
     #[error("JsonProcessingError: {0:?}")]
     SqlxError(#[from] sqlx::Error),
 }
