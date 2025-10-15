@@ -104,7 +104,7 @@ fn json_should_rollback_transaction() {
                 assert!(conn.save(model.clone()).await.is_ok());
                 assert!(conn.save(model.clone()).await.is_ok());
                 assert!(conn.save(model.clone()).await.is_ok());
-                Err(C3p0Error::ResultNotFoundError)?
+                Err(C3p0Error::Error { cause: "".to_owned() })?
             })
             .await;
 

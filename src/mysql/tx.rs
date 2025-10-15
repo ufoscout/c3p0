@@ -1,7 +1,7 @@
 use sqlx::{MySql, MySqlConnection};
 
 use crate::{
-    C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData, error::into_c3p0_error,
+    C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData,
 };
 
 impl Tx for MySqlConnection {
@@ -21,11 +21,10 @@ impl Tx for MySqlConnection {
             <DATA::DATA as DataType>::TABLE_NAME,
         );
 
-        sqlx::query(sqlx::AssertSqlSafe(query))
+        Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(self)
             .await
-            .map_err(into_c3p0_error)
-            .map(|_| ())
+            .map(|_| ())?)
     }
 
     async fn drop_table_if_exists<DATA: WithData>(
@@ -43,11 +42,11 @@ impl Tx for MySqlConnection {
                 <DATA::DATA as DataType>::TABLE_NAME
             )
         };
-        sqlx::query(sqlx::AssertSqlSafe(query))
+        
+        Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(self)
             .await
-            .map_err(into_c3p0_error)
-            .map(|_| ())
+                       .map(|_| ())?)
     }
 
     async fn count_all<DATA: WithData>(&mut self) -> Result<u64, C3p0Error> {

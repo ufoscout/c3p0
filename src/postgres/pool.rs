@@ -1,5 +1,5 @@
 use crate::{
-    error::{C3p0Error, into_c3p0_error},
+    error::C3p0Error,
     pool::C3p0Pool,
 };
 use sqlx::{PgConnection, Pool, Postgres};
@@ -39,11 +39,11 @@ impl C3p0Pool for PgC3p0Pool {
         &self,
         tx: F,
     ) -> Result<T, E> {
-        let mut transaction = self.pool.begin().await.map_err(into_c3p0_error)?;
+        let mut transaction = self.pool.begin().await.map_err(C3p0Error::from)?;
 
         let result = (tx)(&mut transaction).await?;
 
-        transaction.commit().await.map_err(into_c3p0_error)?;
+        transaction.commit().await.map_err(C3p0Error::from)?;
         Ok(result)
     }
 }

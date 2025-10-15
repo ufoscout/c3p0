@@ -1,5 +1,5 @@
 use crate::error::C3p0Error;
-use crate::{error::into_c3p0_error, pool::C3p0Pool};
+use crate::pool::C3p0Pool;
 use sqlx::{Pool, Sqlite, SqliteConnection};
 
 /// A C3p0Pool implementation for Sqlite
@@ -37,11 +37,11 @@ impl C3p0Pool for SqliteC3p0Pool {
         &self,
         tx: F,
     ) -> Result<T, E> {
-        let mut transaction = self.pool.begin().await.map_err(into_c3p0_error)?;
+        let mut transaction = self.pool.begin().await.map_err(C3p0Error::from)?;
 
         let result = (tx)(&mut transaction).await?;
 
-        transaction.commit().await.map_err(into_c3p0_error)?;
+        transaction.commit().await.map_err(C3p0Error::from)?;
         Ok(result)
     }
 }

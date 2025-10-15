@@ -152,9 +152,7 @@ where
     for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
 {
     fn from_row(row: &R) -> Result<Self, sqlx::Error> {
-        let REMOVE_UNWRAP = ();
-        let row = row_to_record_with_index(row, 0, 1, 2, 3, 4).unwrap();
-        Ok(row)
+        row_to_record_with_index(row, 0, 1, 2, 3, 4)
     }
 }
 
@@ -177,44 +175,25 @@ pub fn row_to_record_with_index<
     create_epoch_millis_index: CreateEpochMillisIdx,
     update_epoch_millis_index: UpdateEpochMillisIdx,
     data_index: DataIdx,
-) -> Result<Record<DATA>, C3p0Error>
+) -> Result<Record<DATA>, sqlx::Error>
 where
     for<'c> i32: Type<DB> + Decode<'c, DB>,
     for<'c> i64: Type<DB> + Decode<'c, DB>,
     for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
 {
     let id: i64 = row
-        .try_get(id_index)
-        .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for id index. Err: {err:?}"),
-        })?;
+        .try_get(id_index)?;
 
     let version: i32 = row
-        .try_get(version_index)
-        .map_err(|err| C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for version index. Err: {err:?}"),
-        })?;
+        .try_get(version_index)?;
 
     let create_epoch_millis: i64 =
-        row.try_get(create_epoch_millis_index)
-            .map_err(|err| C3p0Error::RowMapperError {
-                cause: format!(
-                    "Row contains no values for create_epoch_millis index. Err: {err:?}"
-                ),
-            })?;
-    let update_epoch_millis: i64 =
-        row.try_get(update_epoch_millis_index)
-            .map_err(|err| C3p0Error::RowMapperError {
-                cause: format!(
-                    "Row contains no values for update_epoch_millis index. Err: {err:?}"
-                ),
-            })?;
+        row.try_get(create_epoch_millis_index)?;
 
-    let data: DATA::CODEC = serde_json::from_value(row.try_get(data_index).map_err(|err| {
-        C3p0Error::RowMapperError {
-            cause: format!("Row contains no values for data index. Err: {err:?}"),
-        }
-    })?)?;
+    let update_epoch_millis: i64 =
+        row.try_get(update_epoch_millis_index)?;
+
+    let data: DATA::CODEC = serde_json::from_value(row.try_get(data_index)?).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
 
     Ok(Record {
         id: id as u64,

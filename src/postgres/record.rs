@@ -1,6 +1,5 @@
 
 use crate::codec::Codec;
-use crate::error::into_c3p0_error;
 use crate::time::get_current_epoch_millis;
 use crate::{
     error::C3p0Error,
@@ -25,12 +24,11 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
     async fn count_all(tx: &mut PgConnection) -> Result<u64, C3p0Error> {
         let query = format!("SELECT COUNT(*) FROM {}", DATA::TABLE_NAME,);
 
-        sqlx::query(sqlx::AssertSqlSafe(query))
+        Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .fetch_one(tx)
             .await
-            .and_then(|row| row.try_get(0))
-            .map_err(into_c3p0_error)
-            .map(|val: i64| val as u64)
+            .and_then(|row| row.try_get(0))            
+            .map(|val: i64| val as u64)?)
     }
 
     async fn exists_by_id(tx: &mut PgConnection, id: u64) -> Result<bool, C3p0Error> {
@@ -39,38 +37,38 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
             DATA::TABLE_NAME,
         );
 
-        sqlx::query(sqlx::AssertSqlSafe(query))
+        Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(id as i64)
             .fetch_one(tx)
             .await
-            .and_then(|row| row.try_get(0))
-            .map_err(into_c3p0_error)
+            .and_then(|row| row.try_get(0))?)
+            
     }
 
     async fn fetch_all(tx: &mut PgConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Self::query_with(" ORDER BY id ASC")
+        Ok(Self::query_with(" ORDER BY id ASC")
             .fetch_all(tx)
-            .await
-            .map_err(into_c3p0_error)
+            .await?)
+            
     }
 
     async fn fetch_one_optional_by_id(
         tx: &mut PgConnection,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        Self::query_with(" WHERE id = $1 LIMIT 1")
+        Ok(Self::query_with(" WHERE id = $1 LIMIT 1")
             .bind(id as i64)
             .fetch_optional(tx)
-            .await
-            .map_err(into_c3p0_error)
+            .await?)
+            
     }
 
     async fn fetch_one_by_id(tx: &mut PgConnection, id: u64) -> Result<Record<DATA>, C3p0Error> {
-        Self::query_with(" WHERE id = $1 LIMIT 1")
+        Ok(Self::query_with(" WHERE id = $1 LIMIT 1")
             .bind(id as i64)
             .fetch_one(tx)
-            .await
-            .map_err(into_c3p0_error)
+            .await?)
+            
     }
 
     async fn delete(self, tx: &mut PgConnection) -> Result<Record<DATA>, C3p0Error> {
@@ -83,8 +81,7 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
             .bind(self.id as i64)
             .bind(self.version as i32)
             .execute(tx)
-            .await
-            .map_err(into_c3p0_error)?
+            .await?
             .rows_affected();
 
         if result == 0 {
@@ -104,22 +101,20 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
     async fn delete_all(tx: &mut PgConnection) -> Result<u64, C3p0Error> {
         let query = format!("DELETE FROM {}", DATA::TABLE_NAME);
 
-        sqlx::query(sqlx::AssertSqlSafe(query))
+        Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .execute(tx)
-            .await
-            .map_err(into_c3p0_error)
-            .map(|done| done.rows_affected())
+            .await            
+            .map(|done| done.rows_affected())?)
     }
 
     async fn delete_by_id(tx: &mut PgConnection, id: u64) -> Result<u64, C3p0Error> {
         let query = format!("DELETE FROM {} WHERE id = $1", DATA::TABLE_NAME);
 
-        sqlx::query(sqlx::AssertSqlSafe(query))
+        Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(id as i64)
             .execute(tx)
-            .await
-            .map_err(into_c3p0_error)
-            .map(|done| done.rows_affected())
+            .await            
+            .map(|done| done.rows_affected())?)
     }
 
     async fn update(mut self, tx: &mut PgConnection) -> Result<Record<DATA>, C3p0Error> {
@@ -144,8 +139,7 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
                 .bind(self.id as i64)
                 .bind(previous_version as i32)
                 .execute(tx)
-                .await
-                .map_err(into_c3p0_error)
+                .await                
                 .map(|done| done.rows_affected())?
         };
 
@@ -183,12 +177,9 @@ impl<DATA: DataType> DbSave<Postgres, DATA> for NewRecord<DATA> {
             .bind(json_data)
             .fetch_one(tx)
             .await
-            .map_err(into_c3p0_error)
+            
             .and_then(|row| {
                 row.try_get(&0)
-                    .map_err(|err| C3p0Error::RowMapperError {
-                        cause: format!("Row contains no values for id index. Err: {err:?}"),
-                    })
                     .map(|id: i64| id as u64)
             })?;
 
