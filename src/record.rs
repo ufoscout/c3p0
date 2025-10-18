@@ -91,10 +91,30 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     ///
     /// # Examples
     ///
-    /// ```ignore
-    /// let record = Record::<DataType>::query_with("WHERE id = ?")
-    ///     .bind(1)
-    ///     .fetch_one(&mut conn).await;
+    /// ```rust
+    /// #[cfg(feature = "postgres")]
+    /// pub mod with_postgres {
+    ///
+    ///     use c3p0::{DataType, DbOps, Record};
+    ///
+    ///     /// Example of a model for a database table
+    ///     #[derive(Clone, serde::Serialize, serde::Deserialize, Debug, PartialEq)]
+    ///     pub struct UserData {
+    ///         pub username: String,
+    ///     }
+    ///
+    ///     /// Implement the Data trait for the UserData model using the table "USER_DATA"
+    ///     impl DataType for UserData {
+    ///         const TABLE_NAME: &'static str = "USER_DATA";
+    ///         type CODEC = Self;
+    ///     }
+    ///
+    ///     pub async fn find_by_username(conn: &mut sqlx::PgConnection, username: &str) -> Result<Record<UserData>, sqlx::Error> { 
+    ///         Record::<UserData>::query_with("where data ->> 'username' = $1")
+    ///                 .bind(username)
+    ///                 .fetch_one(conn).await
+    ///      }
+    /// }
     /// ```
     fn query_with(sql: &str) -> QueryAs<'_, DB, Record<WITH::DATA>, <DB as Database>::Arguments>;
 
