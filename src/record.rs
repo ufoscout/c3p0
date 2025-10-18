@@ -109,7 +109,7 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     ///         type CODEC = Self;
     ///     }
     ///
-    ///     pub async fn find_by_username(conn: &mut sqlx::PgConnection, username: &str) -> Result<Record<UserData>, sqlx::Error> { 
+    ///     pub async fn find_by_username(conn: &mut sqlx::PgConnection, username: &str) -> Result<Record<UserData>, sqlx::Error> {
     ///         Record::<UserData>::query_with("where data ->> 'username' = $1")
     ///                 .bind(username)
     ///                 .fetch_one(conn).await
