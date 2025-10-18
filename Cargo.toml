@@ -1,60 +1,33 @@
-[workspace]
-resolver = "2"
-members = [
-    "c3p0_common",
-    "c3p0_postgres",
-    "c3p0_sqlx",
-    "c3p0",
-    "examples",
-]
-
-[workspace.package]
+[package]
+name = "c3p0"
+description = "A pleasure to meet you. I am C-3p0, JSON-DB Relations."
 edition = "2024"
 license = "MIT"
-version = "0.72.6"
+version = "0.80.8"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
 keywords = ["mysql", "postgres", "pg", "sqlite", "json"]
 authors = ["Francesco Cina <ufoscout@gmail.com>"]
 readme = "./README.md"
 
-[workspace.dependencies]
-c3p0_common = { path = "./c3p0_common", version = "0.72.6" }
-c3p0 = { path = "./c3p0", version = "0.72.6" }
-c3p0_postgres = { path = "./c3p0_postgres", version = "0.72.6" }
-c3p0_sqlx = { path = "./c3p0_sqlx", version = "0.72.6" }
-
-include-utils = { version = "0.2.4", features = ["workspace"] }
-rand = "0.9"
-testcontainers = { package = "testcontainers-modules", version = "0.12", features = ["mysql", "postgres"] }
-tokio = { version = "1" }
+[dependencies]
 log = "0.4"
-serde = "1.0"
-serde_json = "1.0"
-sqlx = { version = "0.8", default-features = false, features = [ "json" ] }
-deadpool = { version = "0.12", features = ["rt_tokio_1"] }
-deadpool-postgres = "0.14" 
-tokio-postgres = { version = "0.7", features = ["with-serde_json-1"] }
-maybe-once = { version = "0.17", features =["tokio"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.9.0-alpha.1", default-features = false, features = [ "json", "macros" ] }
 thiserror = "2.0"
-uuid = { version = "1", features = ["serde", "v4"] }
 
+[dev-dependencies]
+const_format = "0.2.35"
+const-random = "0.1"
+maybe-once = { version = "0.17", features =["tokio"] }
 static_assertions = "1"
+testcontainers = { package = "testcontainers-modules", version = "0.13", features = ["mysql", "postgres"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 
-include_dir = { version = "0.7", default-features = false }
-md-5 = { version = "0.10", default-features = false }
-same-file = { version = "1" }
-walkdir = { version = "2.3" }
-
-[profile.dev]
-# debug = false
-
-# Set the settings for all dependencies (but not this crate itself or any workspace member).
-# This includes build dependencies.
-# Level range is from 0 (default for dev) to 3 (default for release)
-# [profile.dev.package."*"]
-# opt-level = 1
-
-# Set the settings for build scripts and proc-macros.
-# [profile.dev.build-override]
-# opt-level = 2
+[features]
+default = ["sqlx/runtime-tokio"]
+migrate = ["sqlx/macros", "sqlx/migrate"]
+mysql = ["sqlx/mysql"]
+postgres = ["sqlx/postgres"]
+sqlite = ["sqlx/sqlite"]
