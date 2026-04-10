@@ -22,7 +22,7 @@ const_format = "0.2.35"
 const-random = "0.1"
 maybe-once = { version = "0.17", features =["tokio"] }
 static_assertions = "1"
-testcontainers = { package = "testcontainers-modules", version = "0.13", features = ["mysql", "postgres"] }
+testcontainers = { package = "testcontainers-modules", version = "0.15", features = ["mysql", "postgres"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 
 [features]
