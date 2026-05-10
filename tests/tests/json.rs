@@ -758,7 +758,7 @@ fn update_should_fail_with_optimistic_lock_after_concurrent_commit() -> Result<(
         // Sanity check: the value persisted in the DB is tx-B's, not tx-A's.
         let final_state: Record<TestData> = pool
             .transaction::<_, C3p0Error, _>(async |conn| {
-                Ok(conn.fetch_one_by_id::<TestData>(original.id).await?)
+                conn.fetch_one_by_id::<TestData>(original.id).await
             })
             .await?;
         assert_eq!(final_state.data.name, "v1_from_tx_b");

@@ -119,7 +119,7 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     ///
     /// `tail` is concatenated **verbatim** into the final SQL string with no escaping
     /// or validation; it is the caller's responsibility to ensure it is trusted.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```rust
