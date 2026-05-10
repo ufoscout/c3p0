@@ -19,7 +19,7 @@ pub trait Tx {
     ///   storage parameters, comments, or grants.
     ///
     /// Production schemas should be managed by a real migration tool (e.g. the
-    /// `sqlx::migrate!`)., 
+    /// `sqlx::migrate!`).,
     /// see the project README for an example of using sqlx migrations to create
     /// the same table with the indexes and constraints your workload needs.
     fn create_table_if_not_exists<DATA: WithData>(

@@ -76,7 +76,9 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
     }
 
     async fn fetch_all(tx: &mut MySqlConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with_tail("ORDER BY id ASC").fetch_all(tx).await?)
+        Ok(Self::query_with_tail("ORDER BY id ASC")
+            .fetch_all(tx)
+            .await?)
     }
 
     async fn fetch_one_optional_by_id(

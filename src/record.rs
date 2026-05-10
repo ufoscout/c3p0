@@ -192,4 +192,3 @@ pub trait DbSave<DB: Database, WITH: WithData> {
         tx: &mut DB::Connection,
     ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 }
-
