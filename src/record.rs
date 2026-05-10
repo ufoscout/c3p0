@@ -9,7 +9,11 @@ pub trait DataType: Sized + Send + Sync + Unpin {
     type CODEC: Codec<Self>;
 }
 
+/// Type-level helper that lets a single generic method accept a [`DataType`] *or*
+/// any wrapper around one (e.g. [`Record<T>`], [`NewRecord<T>`]) and resolve them
+/// all to the same underlying `DATA` associated type.
 pub trait WithData {
+    /// The underlying [`DataType`] this value (or the wrapper around it) carries.
     type DATA: DataType;
 }
 
