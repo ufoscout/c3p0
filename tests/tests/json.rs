@@ -548,3 +548,94 @@ fn delete_should_return_optimistic_lock_exception() -> Result<(), C3p0Error> {
         .await
     })
 }
+
+#[test]
+fn query_with_tail_should_filter_order_and_limit() -> Result<(), C3p0Error> {
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    pub struct TestData {
+        pub name: String,
+        pub rank: i64,
+    }
+
+    impl c3p0::DataType for TestData {
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        type CODEC = Self;
+    }
+
+    run_test(async {
+        if [DbType::InMemory].contains(&db_specific::db_type()) {
+            return Ok(());
+        }
+
+        let data = data(false).await;
+        let pool = &data.0;
+
+        let saved_ids: Vec<u64> = pool
+            .transaction::<_, C3p0Error, _>(async |conn| {
+                conn.create_table_if_not_exists::<TestData>().await?;
+                conn.delete_all::<TestData>().await?;
+                let mut ids = Vec::new();
+                for (name, rank) in [("alice", 30_i64), ("bob", 10), ("carol", 20)] {
+                    let saved = conn
+                        .save(NewRecord::new(TestData {
+                            name: name.to_owned(),
+                            rank,
+                        }))
+                        .await?;
+                    ids.push(saved.id);
+                }
+                Ok(ids)
+            })
+            .await?;
+
+        // 1. ORDER BY id ASC — exercises a tail with no placeholders.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let rows = Record::<TestData>::query_with_tail("ORDER BY id ASC")
+                .fetch_all(conn)
+                .await?;
+            assert_eq!(rows.len(), 3);
+            assert_eq!(rows[0].data.name, "alice");
+            assert_eq!(rows[1].data.name, "bob");
+            assert_eq!(rows[2].data.name, "carol");
+            Ok(())
+        })
+        .await?;
+
+        // 2. ORDER BY DESC + LIMIT — exercises the slicing path.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let rows = Record::<TestData>::query_with_tail("ORDER BY id DESC LIMIT 2")
+                .fetch_all(conn)
+                .await?;
+            assert_eq!(rows.len(), 2);
+            assert_eq!(rows[0].data.name, "carol");
+            assert_eq!(rows[1].data.name, "bob");
+            Ok(())
+        })
+        .await?;
+
+        // 3. WHERE with bind — exercises the per-backend placeholder + .bind().
+        // Placeholder syntax differs per dialect; bind type is `i64` everywhere
+        // (MySQL/MariaDB/TiDB accept a signed i64 against BIGINT UNSIGNED for
+        // non-negative values, which is sufficient for auto-increment ids).
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let target_id = saved_ids[1] as i64;
+            let placeholder = match db_specific::db_type() {
+                DbType::Pg => "$1",
+                _ => "?",
+            };
+            let tail = format!("WHERE id = {placeholder}");
+            let row = Record::<TestData>::query_with_tail(&tail)
+                .bind(target_id)
+                .fetch_one(conn)
+                .await?;
+
+            assert_eq!(row.data.name, "bob");
+            assert_eq!(row.data.rank, 10);
+            Ok(())
+        })
+        .await?;
+
+        Ok(())
+    })
+}

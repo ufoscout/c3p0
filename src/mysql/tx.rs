@@ -58,22 +58,22 @@ impl Tx for MySqlConnection {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::exists_by_id(self, id).await
     }
 
-    async fn fetch_all<DATA: DataType>(&mut self) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        <Record<DATA> as DbOps<MySql, DATA>>::fetch_all(self).await
+    async fn fetch_all<DATA: WithData>(&mut self) -> Result<Vec<Record<DATA::DATA>>, C3p0Error> {
+        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_all(self).await
     }
 
-    async fn fetch_one_optional_by_id<DATA: DataType>(
+    async fn fetch_one_optional_by_id<DATA: WithData>(
         &mut self,
         id: u64,
-    ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_optional_by_id(self, id).await
+    ) -> Result<Option<Record<DATA::DATA>>, C3p0Error> {
+        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
-    async fn fetch_one_by_id<DATA: DataType>(
+    async fn fetch_one_by_id<DATA: WithData>(
         &mut self,
         id: u64,
-    ) -> Result<Record<DATA>, C3p0Error> {
-        <Record<DATA> as DbOps<MySql, DATA>>::fetch_one_by_id(self, id).await
+    ) -> Result<Record<DATA::DATA>, C3p0Error> {
+        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_one_by_id(self, id).await
     }
 
     async fn delete<DATA: DataType>(

@@ -180,7 +180,7 @@ example with a `USER_DATA` table:
 
 ```sql
 -- Mandatory columns
-CREATE TABLE IUSER_DATA (
+CREATE TABLE USER_DATA (
     id bigserial PRIMARY KEY,
     version bigint NOT NULL,
     create_time TIMESTAMPTZ NOT NULL,

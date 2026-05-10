@@ -45,21 +45,21 @@ pub trait Tx {
     ) -> impl Future<Output = Result<bool, C3p0Error>>;
 
     /// Returns all entries in the table.
-    fn fetch_all<DATA: DataType>(
+    fn fetch_all<DATA: WithData>(
         &mut self,
-    ) -> impl Future<Output = Result<Vec<Record<DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Vec<Record<DATA::DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.
-    fn fetch_one_optional_by_id<DATA: DataType>(
+    fn fetch_one_optional_by_id<DATA: WithData>(
         &mut self,
         id: u64,
-    ) -> impl Future<Output = Result<Option<Record<DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Option<Record<DATA::DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns an error if the entry does not exist.
-    fn fetch_one_by_id<DATA: DataType>(
+    fn fetch_one_by_id<DATA: WithData>(
         &mut self,
         id: u64,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<DATA::DATA>, C3p0Error>>;
 
     /// Deletes the entry with the given id.
     fn delete<DATA: DataType>(
