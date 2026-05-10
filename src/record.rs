@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Database, query::QueryAs};
 
@@ -32,10 +33,10 @@ pub struct Record<DATA: DataType> {
     pub id: u64,
     /// The version of the model used for optimistic locking.
     pub version: u32,
-    /// The epoch millis when the model was created.
-    pub create_epoch_millis: i64,
-    /// The epoch millis when the model was last updated.
-    pub update_epoch_millis: i64,
+    /// UTC timestamp when the model was created (DB-side clock).
+    pub create_time: DateTime<Utc>,
+    /// UTC timestamp when the model was last updated (DB-side clock).
+    pub update_time: DateTime<Utc>,
     /// The data of the model.
     pub data: DATA,
 }
@@ -78,7 +79,7 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     /// ```
     fn select_query_base() -> String {
         format!(
-            "SELECT id, version, create_epoch_millis, update_epoch_millis, data FROM {}",
+            "SELECT id, version, create_time, update_time, data FROM {}",
             WITH::DATA::TABLE_NAME
         )
     }

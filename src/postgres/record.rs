@@ -1,5 +1,6 @@
+use chrono::{DateTime, Utc};
+
 use crate::codec::Codec;
-use crate::time::get_current_epoch_millis;
 use crate::{
     error::C3p0Error,
     record::{DataType, DbOps, DbSave, NewRecord, Record},
@@ -13,20 +14,29 @@ use sqlx::Row;
 use sqlx::postgres::PgRow;
 use sqlx::query::QueryAs;
 
+/// SQL expression returning the current timestamp (`TIMESTAMPTZ`) computed by the DB server.
+/// Used to populate `create_time` / `update_time` from the DB clock instead of the writer's
+/// local clock (avoids cross-machine skew). `CURRENT_TIMESTAMP` (synonym of `now()`) returns
+/// the **transaction start time** per the SQL standard: every call within one transaction
+/// shares the same value, so all rows written by a single `pool.transaction(...)` block agree
+/// on a single `create_time`/`update_time`. Resolution: microsecond, the native `TIMESTAMPTZ`
+/// precision.
+const NOW_EXPR: &str = "CURRENT_TIMESTAMP";
+
 impl<DATA: DataType> FromRow<'_, PgRow> for Record<DATA> {
     fn from_row(row: &PgRow) -> Result<Self, sqlx::Error> {
         let id: i64 = row.try_get(0)?;
         let version: i64 = row.try_get(1)?;
-        let create_epoch_millis: i64 = row.try_get(2)?;
-        let update_epoch_millis: i64 = row.try_get(3)?;
+        let create_time: DateTime<Utc> = row.try_get(2)?;
+        let update_time: DateTime<Utc> = row.try_get(3)?;
         let sqlx::types::Json(data): sqlx::types::Json<DATA::CODEC> = row.try_get(4)?;
 
         Ok(Record {
             id: id as u64,
             version: version as u32,
             data: DATA::CODEC::decode(data),
-            create_epoch_millis,
-            update_epoch_millis,
+            create_time,
+            update_time,
         })
     }
 }
@@ -135,7 +145,8 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
 
     async fn update(mut self, tx: &mut PgConnection) -> Result<Record<DATA>, C3p0Error> {
         let query = format!(
-            "UPDATE {} SET version = $1, update_epoch_millis = $2, data = $3 WHERE id = $4 AND version = $5",
+            "UPDATE {} SET version = $1, update_time = {NOW_EXPR}, data = $2 \
+             WHERE id = $3 AND version = $4 RETURNING update_time",
             DATA::TABLE_NAME
         );
 
@@ -145,21 +156,16 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
 
         self.data = DATA::CODEC::decode(data_encoded);
         self.version += 1;
-        self.update_epoch_millis = get_current_epoch_millis()?;
 
-        let result = {
-            sqlx::query(sqlx::AssertSqlSafe(query))
-                .bind(self.version as i64)
-                .bind(self.update_epoch_millis)
-                .bind(json_data)
-                .bind(self.id as i64)
-                .bind(previous_version as i64)
-                .execute(tx)
-                .await
-                .map(|done| done.rows_affected())?
-        };
+        let row = sqlx::query(sqlx::AssertSqlSafe(query))
+            .bind(self.version as i64)
+            .bind(json_data)
+            .bind(self.id as i64)
+            .bind(previous_version as i64)
+            .fetch_optional(tx)
+            .await?;
 
-        if result == 0 {
+        let Some(row) = row else {
             return Err(C3p0Error::OptimisticLockError {
                 cause: format!(
                     "Cannot update data in table [{}] with id [{:?}], version [{}]: data was changed!",
@@ -168,8 +174,9 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
                     &previous_version
                 ),
             });
-        }
+        };
 
+        self.update_time = row.try_get(0)?;
         Ok(self)
     }
 }
@@ -177,7 +184,10 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
 impl<DATA: DataType> DbSave<Postgres, DATA> for NewRecord<DATA> {
     async fn save(self, tx: &mut PgConnection) -> Result<Record<DATA>, C3p0Error> {
         let query = format!(
-            "INSERT INTO {} (version, create_epoch_millis, update_epoch_millis, data) VALUES ($1, $2, $2, $3) RETURNING id",
+            "WITH ts AS (SELECT {NOW_EXPR} AS v) \
+             INSERT INTO {} (version, create_time, update_time, data) \
+             SELECT $1, ts.v, ts.v, $2 FROM ts \
+             RETURNING id, create_time",
             DATA::TABLE_NAME,
         );
 
@@ -185,22 +195,20 @@ impl<DATA: DataType> DbSave<Postgres, DATA> for NewRecord<DATA> {
         let json_data = serde_json::to_value(&data_encoded)?;
         let data = DATA::CODEC::decode(data_encoded);
 
-        let create_epoch_millis = get_current_epoch_millis()?;
-
-        let id = sqlx::query(sqlx::AssertSqlSafe(query))
+        let row = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(0_i64)
-            .bind(create_epoch_millis)
             .bind(json_data)
             .fetch_one(tx)
-            .await
-            .and_then(|row| row.try_get(&0).map(|id: i64| id as u64))?;
+            .await?;
+        let id: i64 = row.try_get(0)?;
+        let create_time: DateTime<Utc> = row.try_get(1)?;
 
         Ok(Record {
-            id,
+            id: id as u64,
             version: 0,
             data,
-            create_epoch_millis,
-            update_epoch_millis: create_epoch_millis,
+            create_time,
+            update_time: create_time,
         })
     }
 }

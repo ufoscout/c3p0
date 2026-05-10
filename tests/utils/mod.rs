@@ -6,6 +6,7 @@ pub enum DbType {
     Pg,
     InMemory,
     Imdb,
+    MariaDB,
     Sqlite,
     TiDB,
 }

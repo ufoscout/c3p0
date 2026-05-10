@@ -39,6 +39,30 @@ _C3p0_ is a library designed for integrating JSON data with relational databases
 It uses async closures, so it requires at least Rust version 1.85.
 
 
+## Supported database versions
+
+`create_time` and `update_time` are stored as `chrono::DateTime<Utc>` and populated by the database's own clock (`CURRENT_TIMESTAMP` on Postgres, `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` on SQLite, `CURRENT_TIMESTAMP(3)` on MySQL/MariaDB), so timestamps are authoritative regardless of which client machine issued the write. Postgres and SQLite read the value back through `RETURNING`; MySQL/MariaDB use a follow-up `SELECT` since neither supports `RETURNING`. The column types are `TIMESTAMPTZ` (Postgres), `TIMESTAMP(3)` (MySQL/MariaDB), and `TEXT` ISO-8601 (SQLite). Effective resolution is microsecond on Postgres and millisecond elsewhere.
+
+Each backend uses its native `CURRENT_TIMESTAMP` semantics, which differ:
+
+- **Postgres** evaluates `CURRENT_TIMESTAMP` once per **transaction** (per the SQL standard), so all writes inside a single `pool.transaction(...)` block share one timestamp.
+- **MySQL / MariaDB / SQLite** evaluate it once per **statement**, so successive writes inside one transaction receive successive timestamps.
+
+If you rely on `update_time > create_time` after writing then immediately updating, perform the update in a separate transaction on Postgres (a single-transaction update would keep `update_time == create_time` there).
+
+The minimum versions required to support these features are:
+
+| Database   | Minimum version |
+|------------|-----------------|
+| PostgreSQL | 9.4             |
+| MySQL      | 5.7.8           |
+| MariaDB    | 10.2.7          |
+| SQLite     | 3.35.0          |
+| TiDB       | 8.5.0           |
+
+CI runs against Postgres `latest`, MySQL 8.1, MariaDB 11.3, TiDB v8.5.0, and SQLite as bundled by `libsqlite3-sys`.
+
+
 ## History
 The first _C3p0_ version was written in Java...
 

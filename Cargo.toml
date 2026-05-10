@@ -12,18 +12,20 @@ authors = ["Francesco Cina <ufoscout@gmail.com>"]
 readme = "./README.md"
 
 [dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sqlx = { version = "0.9.0-alpha.1", default-features = false, features = [ "json", "macros" ] }
+sqlx = { version = "0.9.0-alpha.1", default-features = false, features = [ "chrono", "json", "macros" ] }
 thiserror = "2.0"
 
 [dev-dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
 const_format = "0.2.35"
 const-random = "0.1"
 maybe-once = { version = "0.17", features =["tokio"] }
 static_assertions = "1"
-testcontainers = { package = "testcontainers-modules", version = "0.15", features = ["mysql", "postgres"] }
+testcontainers = { package = "testcontainers-modules", version = "0.15", features = ["mariadb", "mysql", "postgres"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 
 [features]

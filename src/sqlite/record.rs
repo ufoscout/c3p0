@@ -1,5 +1,6 @@
+use chrono::{DateTime, Utc};
+
 use crate::codec::Codec;
-use crate::time::get_current_epoch_millis;
 use crate::{
     error::C3p0Error,
     record::{DataType, DbOps, DbSave, NewRecord, Record},
@@ -12,20 +13,30 @@ use sqlx::SqliteConnection;
 use sqlx::query::QueryAs;
 use sqlx::sqlite::SqliteRow;
 
+/// SQL expression returning the current timestamp as ISO-8601 UTC text, computed by the DB
+/// server. Used to populate `create_time` / `update_time` from the DB clock instead of the
+/// writer's local clock (avoids cross-machine skew). SQLite's `'now'` is evaluated once per
+/// `sqlite3_step()` call (i.e. **per statement**, not per transaction as Postgres'
+/// `CURRENT_TIMESTAMP` is), so successive writes inside one `pool.transaction(...)` block
+/// receive successive values. The format `YYYY-MM-DDTHH:MM:SS.sssZ` matches sqlx-sqlite's
+/// `%FT%T%.fZ` decode pattern for `DateTime<Utc>`. Resolution: 1 ms (SQLite's `%f` modifier
+/// yields three fractional digits).
+const NOW_EXPR: &str = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
+
 impl<DATA: DataType> FromRow<'_, SqliteRow> for Record<DATA> {
     fn from_row(row: &SqliteRow) -> Result<Self, sqlx::Error> {
         let id: i64 = row.try_get(0)?;
         let version: i64 = row.try_get(1)?;
-        let create_epoch_millis: i64 = row.try_get(2)?;
-        let update_epoch_millis: i64 = row.try_get(3)?;
+        let create_time: DateTime<Utc> = row.try_get(2)?;
+        let update_time: DateTime<Utc> = row.try_get(3)?;
         let sqlx::types::Json(data): sqlx::types::Json<DATA::CODEC> = row.try_get(4)?;
 
         Ok(Record {
             id: id as u64,
             version: version as u32,
             data: DATA::CODEC::decode(data),
-            create_epoch_millis,
-            update_epoch_millis,
+            create_time,
+            update_time,
         })
     }
 }
@@ -134,7 +145,8 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
 
     async fn update(mut self, tx: &mut SqliteConnection) -> Result<Record<DATA>, C3p0Error> {
         let query = format!(
-            "UPDATE {} SET version = ?, update_epoch_millis = ?, data = ? WHERE id = ? AND version = ?",
+            "UPDATE {} SET version = ?, update_time = {NOW_EXPR}, data = ? \
+             WHERE id = ? AND version = ? RETURNING update_time",
             DATA::TABLE_NAME
         );
 
@@ -144,21 +156,16 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
 
         self.data = DATA::CODEC::decode(data_encoded);
         self.version += 1;
-        self.update_epoch_millis = get_current_epoch_millis()?;
 
-        let result = {
-            sqlx::query(sqlx::AssertSqlSafe(query))
-                .bind(self.version as i64)
-                .bind(self.update_epoch_millis)
-                .bind(json_data)
-                .bind(self.id as i64)
-                .bind(previous_version as i64)
-                .execute(tx)
-                .await
-                .map(|done| done.rows_affected())?
-        };
+        let row = sqlx::query(sqlx::AssertSqlSafe(query))
+            .bind(self.version as i64)
+            .bind(json_data)
+            .bind(self.id as i64)
+            .bind(previous_version as i64)
+            .fetch_optional(tx)
+            .await?;
 
-        if result == 0 {
+        let Some(row) = row else {
             return Err(C3p0Error::OptimisticLockError {
                 cause: format!(
                     "Cannot update data in table [{}] with id [{:?}], version [{}]: data was changed!",
@@ -167,8 +174,9 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
                     &previous_version
                 ),
             });
-        }
+        };
 
+        self.update_time = row.try_get(0)?;
         Ok(self)
     }
 }
@@ -176,7 +184,10 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
 impl<DATA: DataType> DbSave<Sqlite, DATA> for NewRecord<DATA> {
     async fn save(self, tx: &mut SqliteConnection) -> Result<Record<DATA>, C3p0Error> {
         let query = format!(
-            "INSERT INTO {} (version, create_epoch_millis, update_epoch_millis, data) VALUES (?, ?, ?, ?)",
+            "WITH ts AS (SELECT {NOW_EXPR} AS v) \
+             INSERT INTO {} (version, create_time, update_time, data) \
+             SELECT ?, ts.v, ts.v, ? FROM ts \
+             RETURNING id, create_time",
             DATA::TABLE_NAME,
         );
 
@@ -184,23 +195,20 @@ impl<DATA: DataType> DbSave<Sqlite, DATA> for NewRecord<DATA> {
         let json_data = serde_json::to_value(&data_encoded)?;
         let data = DATA::CODEC::decode(data_encoded);
 
-        let create_epoch_millis = get_current_epoch_millis()?;
-
-        let id = sqlx::query(sqlx::AssertSqlSafe(query))
+        let row = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(0_i64)
-            .bind(create_epoch_millis)
-            .bind(create_epoch_millis)
             .bind(json_data)
-            .execute(tx)
-            .await
-            .map(|done| done.last_insert_rowid())?;
+            .fetch_one(tx)
+            .await?;
+        let id: i64 = row.try_get(0)?;
+        let create_time: DateTime<Utc> = row.try_get(1)?;
 
         Ok(Record {
             id: id as u64,
             version: 0,
             data,
-            create_epoch_millis,
-            update_epoch_millis: create_epoch_millis,
+            create_time,
+            update_time: create_time,
         })
     }
 }

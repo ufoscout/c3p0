@@ -11,8 +11,8 @@ impl Tx for PgConnection {
                 CREATE TABLE IF NOT EXISTS {} (
                     id bigserial primary key,
                     version bigint not null,
-                    create_epoch_millis bigint not null,
-                    update_epoch_millis bigint not null,
+                    create_time TIMESTAMPTZ NOT NULL,
+                    update_time TIMESTAMPTZ NOT NULL,
                     data JSONB NOT NULL
                 )
                 "#,

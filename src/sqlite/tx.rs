@@ -11,8 +11,8 @@ impl Tx for SqliteConnection {
                 CREATE TABLE IF NOT EXISTS {} (
                     id integer primary key autoincrement,
                     version integer not null,
-                    create_epoch_millis integer not null,
-                    update_epoch_millis integer not null,
+                    create_time TEXT NOT NULL,
+                    update_time TEXT NOT NULL,
                     data JSON NOT NULL CHECK (json_valid(data))
                 )
                 "#,

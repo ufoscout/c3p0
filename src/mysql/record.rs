@@ -1,5 +1,6 @@
+use chrono::{DateTime, Utc};
+
 use crate::codec::Codec;
-use crate::time::get_current_epoch_millis;
 use crate::{
     error::C3p0Error,
     record::{DataType, DbOps, DbSave, NewRecord, Record},
@@ -12,20 +13,29 @@ use sqlx::Row;
 use sqlx::mysql::MySqlRow;
 use sqlx::query::QueryAs;
 
+/// SQL expression returning the current `TIMESTAMP(3)` (millisecond precision) computed by
+/// the DB server. Used to populate `create_time` / `update_time` from the DB clock instead
+/// of the writer's local clock (avoids cross-machine skew). MySQL/MariaDB evaluate
+/// `CURRENT_TIMESTAMP(3)` once **per statement** — not once per transaction as Postgres'
+/// `CURRENT_TIMESTAMP` does — so successive writes inside one `pool.transaction(...)` block
+/// receive successive values, even though both columns within a single INSERT share one
+/// value. Resolution: 1 ms.
+const NOW_EXPR: &str = "CURRENT_TIMESTAMP(3)";
+
 impl<DATA: DataType> FromRow<'_, MySqlRow> for Record<DATA> {
     fn from_row(row: &MySqlRow) -> Result<Self, sqlx::Error> {
         let id: u64 = row.try_get(0)?;
         let version: u32 = row.try_get(1)?;
-        let create_epoch_millis: i64 = row.try_get(2)?;
-        let update_epoch_millis: i64 = row.try_get(3)?;
+        let create_time: DateTime<Utc> = row.try_get(2)?;
+        let update_time: DateTime<Utc> = row.try_get(3)?;
         let sqlx::types::Json(data): sqlx::types::Json<DATA::CODEC> = row.try_get(4)?;
 
         Ok(Record {
             id,
             version,
             data: DATA::CODEC::decode(data),
-            create_epoch_millis,
-            update_epoch_millis,
+            create_time,
+            update_time,
         })
     }
 }
@@ -132,9 +142,11 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
 
     async fn update(mut self, tx: &mut MySqlConnection) -> Result<Record<DATA>, C3p0Error> {
         let query = format!(
-            "UPDATE {} SET version = ?, update_epoch_millis = ?, data = ? WHERE id = ? AND version = ?",
+            "UPDATE {} SET version = ?, update_time = {NOW_EXPR}, data = ? \
+             WHERE id = ? AND version = ?",
             DATA::TABLE_NAME
         );
+        let select_ts = format!("SELECT update_time FROM {} WHERE id = ?", DATA::TABLE_NAME,);
 
         let data_encoded = DATA::CODEC::encode(self.data);
         let json_data = serde_json::to_value(&data_encoded)?;
@@ -142,19 +154,15 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
 
         self.data = DATA::CODEC::decode(data_encoded);
         self.version += 1;
-        self.update_epoch_millis = get_current_epoch_millis()?;
 
-        let result = {
-            sqlx::query(sqlx::AssertSqlSafe(query))
-                .bind(self.version)
-                .bind(self.update_epoch_millis)
-                .bind(json_data)
-                .bind(self.id)
-                .bind(previous_version)
-                .execute(tx)
-                .await
-                .map(|done| done.rows_affected())?
-        };
+        let result = sqlx::query(sqlx::AssertSqlSafe(query))
+            .bind(self.version)
+            .bind(json_data)
+            .bind(self.id)
+            .bind(previous_version)
+            .execute(&mut *tx)
+            .await
+            .map(|done| done.rows_affected())?;
 
         if result == 0 {
             return Err(C3p0Error::OptimisticLockError {
@@ -167,6 +175,12 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             });
         }
 
+        self.update_time = sqlx::query(sqlx::AssertSqlSafe(select_ts))
+            .bind(self.id)
+            .fetch_one(tx)
+            .await
+            .and_then(|row| row.try_get(0))?;
+
         Ok(self)
     }
 }
@@ -174,31 +188,35 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
 impl<DATA: DataType> DbSave<MySql, DATA> for NewRecord<DATA> {
     async fn save(self, tx: &mut MySqlConnection) -> Result<Record<DATA>, C3p0Error> {
         let query = format!(
-            "INSERT INTO {} (version, create_epoch_millis, update_epoch_millis, data) VALUES (?, ?, ?, ?)",
+            "INSERT INTO {} (version, create_time, update_time, data) \
+             VALUES (?, {NOW_EXPR}, {NOW_EXPR}, ?)",
             DATA::TABLE_NAME,
         );
+        let select_ts = format!("SELECT create_time FROM {} WHERE id = ?", DATA::TABLE_NAME,);
 
         let data_encoded = DATA::CODEC::encode(self.data);
         let json_data = serde_json::to_value(&data_encoded)?;
         let data = DATA::CODEC::decode(data_encoded);
 
-        let create_epoch_millis = get_current_epoch_millis()?;
-
         let id = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(0_u32)
-            .bind(create_epoch_millis)
-            .bind(create_epoch_millis)
             .bind(json_data)
-            .execute(tx)
+            .execute(&mut *tx)
             .await
             .map(|done| done.last_insert_id())?;
+
+        let create_time: DateTime<Utc> = sqlx::query(sqlx::AssertSqlSafe(select_ts))
+            .bind(id)
+            .fetch_one(tx)
+            .await
+            .and_then(|row| row.try_get(0))?;
 
         Ok(Record {
             id,
             version: 0,
             data,
-            create_epoch_millis,
-            update_epoch_millis: create_epoch_millis,
+            create_time,
+            update_time: create_time,
         })
     }
 }
