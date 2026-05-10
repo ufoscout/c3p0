@@ -10,7 +10,7 @@ impl Tx for MySqlConnection {
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
                     id BIGINT UNSIGNED primary key NOT NULL AUTO_INCREMENT,
-                    version INT UNSIGNED not null,
+                    version BIGINT UNSIGNED not null,
                     create_time TIMESTAMP(3) NOT NULL,
                     update_time TIMESTAMP(3) NOT NULL,
                     data JSON NOT NULL

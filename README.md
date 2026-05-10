@@ -198,7 +198,7 @@ CREATE INDEX USER_DATA_username_idx ON USER_DATA ((data ->> 'username'));
 -- Mandatory columns
 CREATE TABLE USER_DATA (
     id BIGINT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT,
-    version INT UNSIGNED NOT NULL,
+    version BIGINT UNSIGNED NOT NULL,
     create_time TIMESTAMP(3) NOT NULL,
     update_time TIMESTAMP(3) NOT NULL,
     data JSON NOT NULL

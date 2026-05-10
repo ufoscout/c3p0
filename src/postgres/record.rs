@@ -33,7 +33,7 @@ impl<DATA: DataType> FromRow<'_, PgRow> for Record<DATA> {
 
         Ok(Record {
             id: id as u64,
-            version: version as u32,
+            version: version as u64,
             data: DATA::CODEC::decode(data),
             create_time,
             update_time,

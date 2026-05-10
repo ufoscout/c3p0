@@ -25,7 +25,7 @@ const NOW_EXPR: &str = "CURRENT_TIMESTAMP(3)";
 impl<DATA: DataType> FromRow<'_, MySqlRow> for Record<DATA> {
     fn from_row(row: &MySqlRow) -> Result<Self, sqlx::Error> {
         let id: u64 = row.try_get(0)?;
-        let version: u32 = row.try_get(1)?;
+        let version: u64 = row.try_get(1)?;
         let create_time: DateTime<Utc> = row.try_get(2)?;
         let update_time: DateTime<Utc> = row.try_get(3)?;
         let sqlx::types::Json(data): sqlx::types::Json<DATA::CODEC> = row.try_get(4)?;
@@ -203,7 +203,7 @@ impl<DATA: DataType> DbSave<MySql, DATA> for NewRecord<DATA> {
         let data = DATA::CODEC::decode(data_encoded);
 
         let id = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(0_u32)
+            .bind(0_u64)
             .bind(json_data)
             .execute(&mut *tx)
             .await

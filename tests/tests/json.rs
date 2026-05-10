@@ -639,3 +639,212 @@ fn query_with_tail_should_filter_order_and_limit() -> Result<(), C3p0Error> {
         Ok(())
     })
 }
+
+#[test]
+fn fetch_one_by_id_should_error_with_row_not_found_for_missing_id() -> Result<(), C3p0Error> {
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    pub struct TestData {
+        pub name: String,
+    }
+
+    impl c3p0::DataType for TestData {
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        type CODEC = Self;
+    }
+
+    run_test(async {
+        if [DbType::InMemory].contains(&db_specific::db_type()) {
+            return Ok(());
+        }
+
+        let data = data(false).await;
+        let pool = &data.0;
+
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            conn.create_table_if_not_exists::<TestData>().await?;
+            conn.delete_all::<TestData>().await?;
+            Ok(())
+        })
+        .await?;
+
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            // Pick an id that cannot exist in a freshly cleared table.
+            let result = conn.fetch_one_by_id::<TestData>(99_999_999).await;
+            match result {
+                Ok(_) => panic!("expected an error for a missing id"),
+                Err(C3p0Error::SqlxError(sqlx::Error::RowNotFound)) => {}
+                Err(other) => panic!(
+                    "expected SqlxError(RowNotFound), got {other:?}; \
+                     in particular this must NOT be an OptimisticLockError"
+                ),
+            }
+            Ok(())
+        })
+        .await
+    })
+}
+
+#[test]
+fn update_should_fail_with_optimistic_lock_after_concurrent_commit() -> Result<(), C3p0Error> {
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    pub struct TestData {
+        pub name: String,
+    }
+
+    impl c3p0::DataType for TestData {
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        type CODEC = Self;
+    }
+
+    run_test(async {
+        if [DbType::InMemory].contains(&db_specific::db_type()) {
+            return Ok(());
+        }
+
+        let data = data(false).await;
+        let pool = &data.0;
+
+        // Seed one record and capture its initial state.
+        let original: Record<TestData> = pool
+            .transaction::<_, C3p0Error, _>(async |conn| {
+                conn.create_table_if_not_exists::<TestData>().await?;
+                conn.delete_all::<TestData>().await?;
+                let saved = conn
+                    .save(NewRecord::new(TestData {
+                        name: "v0".to_owned(),
+                    }))
+                    .await?;
+                Ok(saved)
+            })
+            .await?;
+
+        // tx-B: separate transaction commits a successful update, bumping version.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let mut to_update = original.clone();
+            to_update.data.name = "v1_from_tx_b".to_owned();
+            let updated = conn.update(to_update).await?;
+            assert_eq!(updated.version, original.version + 1);
+            Ok(())
+        })
+        .await?;
+
+        // tx-A: tries to commit its own update using the *stale* `original` it read
+        // before tx-B committed. The version bound in the WHERE clause no longer
+        // matches the row, so this must fail with `OptimisticLockError` — that's
+        // the whole point of the version column.
+        let result = pool
+            .transaction::<_, C3p0Error, _>(async |conn| {
+                let mut to_update = original.clone();
+                to_update.data.name = "v1_from_tx_a".to_owned();
+                conn.update(to_update).await?;
+                Ok(())
+            })
+            .await;
+
+        match result {
+            Ok(()) => panic!("tx-A must not have been allowed to overwrite tx-B's commit"),
+            Err(C3p0Error::OptimisticLockError { cause }) => {
+                assert!(cause.contains(<TestData as c3p0::DataType>::TABLE_NAME));
+                assert!(cause.contains(&format!(
+                    "id [{:?}], version [{}]",
+                    original.id, original.version
+                )));
+            }
+            Err(other) => panic!("expected OptimisticLockError, got {other:?}"),
+        }
+
+        // Sanity check: the value persisted in the DB is tx-B's, not tx-A's.
+        let final_state: Record<TestData> = pool
+            .transaction::<_, C3p0Error, _>(async |conn| {
+                Ok(conn.fetch_one_by_id::<TestData>(original.id).await?)
+            })
+            .await?;
+        assert_eq!(final_state.data.name, "v1_from_tx_b");
+        assert_eq!(final_state.version, original.version + 1);
+
+        Ok(())
+    })
+}
+
+#[test]
+fn drop_table_with_cascade_should_drop_dependent_objects_on_postgres() -> Result<(), C3p0Error> {
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    pub struct TestData {
+        pub name: String,
+    }
+
+    impl c3p0::DataType for TestData {
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        type CODEC = Self;
+    }
+
+    run_test(async {
+        // Postgres is the only backend whose `drop_table_if_exists(cascade)` actually
+        // emits `DROP TABLE … CASCADE`. MySQL parses the keyword for compatibility
+        // but does not propagate the drop; SQLite ignores the flag entirely. The
+        // observable behaviour we want to test (cascade tearing down a dependent
+        // view) only exists on Postgres, so the test is a no-op elsewhere.
+        if db_specific::db_type() != DbType::Pg {
+            return Ok(());
+        }
+
+        let data = data(false).await;
+        let pool = &data.0;
+
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            conn.drop_table_if_exists::<TestData>(true).await?;
+            conn.create_table_if_not_exists::<TestData>().await?;
+            Ok(())
+        })
+        .await?;
+
+        // Create a view that depends on the c3p0-managed table. This forces the
+        // backend to refuse a non-cascading drop and to succeed on a cascading one.
+        let table = <TestData as c3p0::DataType>::TABLE_NAME;
+        let view = format!("{table}_dep_view");
+        let create_view_sql = format!("CREATE OR REPLACE VIEW {view} AS SELECT id FROM {table}");
+        sqlx::query(sqlx::AssertSqlSafe(create_view_sql))
+            .execute(pool.pool())
+            .await
+            .map_err(C3p0Error::from)?;
+
+        // Drop without cascade must fail because of the dependent view.
+        let no_cascade_result = pool
+            .transaction::<_, C3p0Error, _>(async |conn| {
+                conn.drop_table_if_exists::<TestData>(false).await?;
+                Ok(())
+            })
+            .await;
+        assert!(
+            no_cascade_result.is_err(),
+            "DROP TABLE without CASCADE must fail when a dependent view exists; got Ok"
+        );
+
+        // Drop *with* cascade must succeed AND must take the dependent view with it.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            conn.drop_table_if_exists::<TestData>(true).await?;
+            Ok(())
+        })
+        .await?;
+
+        // Verify: the view is gone. If CASCADE didn't propagate, this query would
+        // succeed (or fail with "relation … does not exist for the table" only),
+        // so we explicitly assert the view was dropped.
+        let view_exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_views WHERE viewname = $1)",
+        )
+        .bind(&view)
+        .fetch_one(pool.pool())
+        .await
+        .map_err(C3p0Error::from)?;
+        assert!(
+            !view_exists,
+            "CASCADE should have dropped the dependent view {view}, but it still exists"
+        );
+
+        Ok(())
+    })
+}

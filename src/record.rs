@@ -32,7 +32,7 @@ pub struct Record<DATA: DataType> {
     /// The unique identifier of the model.
     pub id: u64,
     /// The version of the model used for optimistic locking.
-    pub version: u32,
+    pub version: u64,
     /// UTC timestamp when the model was created (DB-side clock).
     pub create_time: DateTime<Utc>,
     /// UTC timestamp when the model was last updated (DB-side clock).
