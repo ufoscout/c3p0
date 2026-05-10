@@ -42,13 +42,13 @@ impl<DATA: DataType> FromRow<'_, PgRow> for Record<DATA> {
 }
 
 impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
-    fn query_with(
-        sql: &str,
+    fn query_with_tail(
+        tail: &str,
     ) -> QueryAs<'_, Postgres, Record<DATA>, <Postgres as Database>::Arguments> {
         let query = format!(
             "{} {}",
             <Self as DbOps<Postgres, DATA>>::select_query_base(),
-            sql
+            tail
         );
         sqlx::query_as(sqlx::AssertSqlSafe(query))
     }
@@ -77,21 +77,21 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
     }
 
     async fn fetch_all(tx: &mut PgConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with("ORDER BY id ASC").fetch_all(tx).await?)
+        Ok(Self::query_with_tail("ORDER BY id ASC").fetch_all(tx).await?)
     }
 
     async fn fetch_one_optional_by_id(
         tx: &mut PgConnection,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with("WHERE id = $1 LIMIT 1")
+        Ok(Self::query_with_tail("WHERE id = $1 LIMIT 1")
             .bind(id as i64)
             .fetch_optional(tx)
             .await?)
     }
 
     async fn fetch_one_by_id(tx: &mut PgConnection, id: u64) -> Result<Record<DATA>, C3p0Error> {
-        Ok(Self::query_with("WHERE id = $1 LIMIT 1")
+        Ok(Self::query_with_tail("WHERE id = $1 LIMIT 1")
             .bind(id as i64)
             .fetch_one(tx)
             .await?)

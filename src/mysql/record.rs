@@ -41,11 +41,13 @@ impl<DATA: DataType> FromRow<'_, MySqlRow> for Record<DATA> {
 }
 
 impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
-    fn query_with(sql: &str) -> QueryAs<'_, MySql, Record<DATA>, <MySql as Database>::Arguments> {
+    fn query_with_tail(
+        tail: &str,
+    ) -> QueryAs<'_, MySql, Record<DATA>, <MySql as Database>::Arguments> {
         let query = format!(
             "{} {}",
             <Self as DbOps<MySql, DATA>>::select_query_base(),
-            sql
+            tail
         );
         sqlx::query_as(sqlx::AssertSqlSafe(query))
     }
@@ -74,21 +76,21 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
     }
 
     async fn fetch_all(tx: &mut MySqlConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with("ORDER BY id ASC").fetch_all(tx).await?)
+        Ok(Self::query_with_tail("ORDER BY id ASC").fetch_all(tx).await?)
     }
 
     async fn fetch_one_optional_by_id(
         tx: &mut MySqlConnection,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with("WHERE id = ? LIMIT 1")
+        Ok(Self::query_with_tail("WHERE id = ? LIMIT 1")
             .bind(id)
             .fetch_optional(tx)
             .await?)
     }
 
     async fn fetch_one_by_id(tx: &mut MySqlConnection, id: u64) -> Result<Record<DATA>, C3p0Error> {
-        Ok(Self::query_with("WHERE id = ? LIMIT 1")
+        Ok(Self::query_with_tail("WHERE id = ? LIMIT 1")
             .bind(id)
             .fetch_one(tx)
             .await?)
