@@ -33,10 +33,8 @@ pub struct Record<DATA: DataType> {
     /// The version of the model used for optimistic locking.
     pub version: u32,
     /// The epoch millis when the model was created.
-    #[serde(default)]
     pub create_epoch_millis: i64,
     /// The epoch millis when the model was last updated.
-    #[serde(default)]
     pub update_epoch_millis: i64,
     /// The data of the model.
     pub data: DATA,

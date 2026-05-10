@@ -18,8 +18,7 @@ impl<DATA: DataType> FromRow<'_, MySqlRow> for Record<DATA> {
         let version: u32 = row.try_get(1)?;
         let create_epoch_millis: i64 = row.try_get(2)?;
         let update_epoch_millis: i64 = row.try_get(3)?;
-        let data: DATA::CODEC = serde_json::from_value(row.try_get(4)?)
-            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        let sqlx::types::Json(data): sqlx::types::Json<DATA::CODEC> = row.try_get(4)?;
 
         Ok(Record {
             id,
