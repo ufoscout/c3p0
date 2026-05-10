@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{ColumnIndex, Database, Decode, FromRow, Row, Type, query::QueryAs};
+use sqlx::{Database, query::QueryAs};
 
 use crate::{codec::Codec, error::C3p0Error};
 
@@ -176,59 +176,3 @@ pub trait DbSave<DB: Database, WITH: WithData> {
     ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 }
 
-impl<DATA: DataType, DB: Database, R: Row<Database = DB>> FromRow<'_, R> for Record<DATA>
-where
-    usize: ColumnIndex<R>,
-    for<'c> i32: Type<DB> + Decode<'c, DB>,
-    for<'c> i64: Type<DB> + Decode<'c, DB>,
-    for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
-{
-    fn from_row(row: &R) -> Result<Self, sqlx::Error> {
-        row_to_record_with_index(row, 0, 1, 2, 3, 4)
-    }
-}
-
-/// Converts a row to a Model
-#[allow(clippy::too_many_arguments)]
-#[inline]
-pub fn row_to_record_with_index<
-    DATA: DataType,
-    R: Row<Database = DB>,
-    IdIdx: ColumnIndex<R>,
-    VersionIdx: ColumnIndex<R>,
-    CreateEpochMillisIdx: ColumnIndex<R>,
-    UpdateEpochMillisIdx: ColumnIndex<R>,
-    DataIdx: ColumnIndex<R>,
-    DB: Database,
->(
-    row: &R,
-    id_index: IdIdx,
-    version_index: VersionIdx,
-    create_epoch_millis_index: CreateEpochMillisIdx,
-    update_epoch_millis_index: UpdateEpochMillisIdx,
-    data_index: DataIdx,
-) -> Result<Record<DATA>, sqlx::Error>
-where
-    for<'c> i32: Type<DB> + Decode<'c, DB>,
-    for<'c> i64: Type<DB> + Decode<'c, DB>,
-    for<'c> serde_json::value::Value: Type<DB> + Decode<'c, DB>,
-{
-    let id: i64 = row.try_get(id_index)?;
-
-    let version: i32 = row.try_get(version_index)?;
-
-    let create_epoch_millis: i64 = row.try_get(create_epoch_millis_index)?;
-
-    let update_epoch_millis: i64 = row.try_get(update_epoch_millis_index)?;
-
-    let data: DATA::CODEC = serde_json::from_value(row.try_get(data_index)?)
-        .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-
-    Ok(Record {
-        id: id as u64,
-        version: version as u32,
-        data: DATA::CODEC::decode(data),
-        create_epoch_millis,
-        update_epoch_millis,
-    })
-}

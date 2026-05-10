@@ -9,8 +9,8 @@ impl Tx for MySqlConnection {
         let query = format!(
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
-                    id BIGINT primary key NOT NULL AUTO_INCREMENT,
-                    version int not null,
+                    id BIGINT UNSIGNED primary key NOT NULL AUTO_INCREMENT,
+                    version INT UNSIGNED not null,
                     create_epoch_millis bigint not null,
                     update_epoch_millis bigint not null,
                     data JSON NOT NULL

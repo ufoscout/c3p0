@@ -6,10 +6,31 @@ use crate::{
 };
 
 use sqlx::Database;
+use sqlx::FromRow;
 use sqlx::PgConnection;
 use sqlx::Postgres;
 use sqlx::Row;
+use sqlx::postgres::PgRow;
 use sqlx::query::QueryAs;
+
+impl<DATA: DataType> FromRow<'_, PgRow> for Record<DATA> {
+    fn from_row(row: &PgRow) -> Result<Self, sqlx::Error> {
+        let id: i64 = row.try_get(0)?;
+        let version: i64 = row.try_get(1)?;
+        let create_epoch_millis: i64 = row.try_get(2)?;
+        let update_epoch_millis: i64 = row.try_get(3)?;
+        let data: DATA::CODEC = serde_json::from_value(row.try_get(4)?)
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+
+        Ok(Record {
+            id: id as u64,
+            version: version as u32,
+            data: DATA::CODEC::decode(data),
+            create_epoch_millis,
+            update_epoch_millis,
+        })
+    }
+}
 
 impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
     fn query_with(
@@ -75,7 +96,7 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
 
         let result = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(self.id as i64)
-            .bind(self.version as i32)
+            .bind(self.version as i64)
             .execute(tx)
             .await?
             .rows_affected();
@@ -129,11 +150,11 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
 
         let result = {
             sqlx::query(sqlx::AssertSqlSafe(query))
-                .bind(self.version as i32)
+                .bind(self.version as i64)
                 .bind(self.update_epoch_millis)
                 .bind(json_data)
                 .bind(self.id as i64)
-                .bind(previous_version as i32)
+                .bind(previous_version as i64)
                 .execute(tx)
                 .await
                 .map(|done| done.rows_affected())?
@@ -168,7 +189,7 @@ impl<DATA: DataType> DbSave<Postgres, DATA> for NewRecord<DATA> {
         let create_epoch_millis = get_current_epoch_millis();
 
         let id = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(0)
+            .bind(0_i64)
             .bind(create_epoch_millis)
             .bind(json_data)
             .fetch_one(tx)

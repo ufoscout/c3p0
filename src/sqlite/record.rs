@@ -5,10 +5,31 @@ use crate::{
     record::{DataType, DbOps, DbSave, NewRecord, Record},
 };
 use sqlx::Database;
+use sqlx::FromRow;
 use sqlx::Row;
 use sqlx::Sqlite;
 use sqlx::SqliteConnection;
 use sqlx::query::QueryAs;
+use sqlx::sqlite::SqliteRow;
+
+impl<DATA: DataType> FromRow<'_, SqliteRow> for Record<DATA> {
+    fn from_row(row: &SqliteRow) -> Result<Self, sqlx::Error> {
+        let id: i64 = row.try_get(0)?;
+        let version: i64 = row.try_get(1)?;
+        let create_epoch_millis: i64 = row.try_get(2)?;
+        let update_epoch_millis: i64 = row.try_get(3)?;
+        let data: DATA::CODEC = serde_json::from_value(row.try_get(4)?)
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+
+        Ok(Record {
+            id: id as u64,
+            version: version as u32,
+            data: DATA::CODEC::decode(data),
+            create_epoch_millis,
+            update_epoch_millis,
+        })
+    }
+}
 
 impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
     fn query_with(sql: &str) -> QueryAs<'_, Sqlite, Record<DATA>, <Sqlite as Database>::Arguments> {
@@ -74,7 +95,7 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
 
         let result = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(self.id as i64)
-            .bind(self.version)
+            .bind(self.version as i64)
             .execute(tx)
             .await?
             .rows_affected();
@@ -128,11 +149,11 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
 
         let result = {
             sqlx::query(sqlx::AssertSqlSafe(query))
-                .bind(self.version)
+                .bind(self.version as i64)
                 .bind(self.update_epoch_millis)
                 .bind(json_data)
                 .bind(self.id as i64)
-                .bind(previous_version)
+                .bind(previous_version as i64)
                 .execute(tx)
                 .await
                 .map(|done| done.rows_affected())?
@@ -167,7 +188,7 @@ impl<DATA: DataType> DbSave<Sqlite, DATA> for NewRecord<DATA> {
         let create_epoch_millis = get_current_epoch_millis();
 
         let id = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(0)
+            .bind(0_i64)
             .bind(create_epoch_millis)
             .bind(create_epoch_millis)
             .bind(json_data)

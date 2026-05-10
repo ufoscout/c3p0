@@ -10,7 +10,7 @@ impl Tx for PgConnection {
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
                     id bigserial primary key,
-                    version int not null,
+                    version bigint not null,
                     create_epoch_millis bigint not null,
                     update_epoch_millis bigint not null,
                     data JSONB NOT NULL

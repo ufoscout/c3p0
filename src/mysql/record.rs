@@ -5,10 +5,31 @@ use crate::{
     record::{DataType, DbOps, DbSave, NewRecord, Record},
 };
 use sqlx::Database;
+use sqlx::FromRow;
 use sqlx::MySql;
 use sqlx::MySqlConnection;
 use sqlx::Row;
+use sqlx::mysql::MySqlRow;
 use sqlx::query::QueryAs;
+
+impl<DATA: DataType> FromRow<'_, MySqlRow> for Record<DATA> {
+    fn from_row(row: &MySqlRow) -> Result<Self, sqlx::Error> {
+        let id: u64 = row.try_get(0)?;
+        let version: u32 = row.try_get(1)?;
+        let create_epoch_millis: i64 = row.try_get(2)?;
+        let update_epoch_millis: i64 = row.try_get(3)?;
+        let data: DATA::CODEC = serde_json::from_value(row.try_get(4)?)
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+
+        Ok(Record {
+            id,
+            version,
+            data: DATA::CODEC::decode(data),
+            create_epoch_millis,
+            update_epoch_millis,
+        })
+    }
+}
 
 impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
     fn query_with(sql: &str) -> QueryAs<'_, MySql, Record<DATA>, <MySql as Database>::Arguments> {
@@ -37,7 +58,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
         );
 
         Ok(sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(id as i64)
+            .bind(id)
             .fetch_one(tx)
             .await
             .and_then(|row| row.try_get(0))?)
@@ -52,14 +73,14 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
         Ok(Self::query_with(" WHERE id = ? LIMIT 1")
-            .bind(id as i64)
+            .bind(id)
             .fetch_optional(tx)
             .await?)
     }
 
     async fn fetch_one_by_id(tx: &mut MySqlConnection, id: u64) -> Result<Record<DATA>, C3p0Error> {
         Ok(Self::query_with(" WHERE id = ? LIMIT 1")
-            .bind(id as i64)
+            .bind(id)
             .fetch_one(tx)
             .await?)
     }
@@ -71,7 +92,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
         );
 
         let result = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(self.id as i64)
+            .bind(self.id)
             .bind(self.version)
             .execute(tx)
             .await?
@@ -104,7 +125,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
         let query = format!("DELETE FROM {} WHERE id = ?", DATA::TABLE_NAME);
 
         Ok(sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(id as i64)
+            .bind(id)
             .execute(tx)
             .await
             .map(|done| done.rows_affected())?)
@@ -129,7 +150,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
                 .bind(self.version)
                 .bind(self.update_epoch_millis)
                 .bind(json_data)
-                .bind(self.id as i64)
+                .bind(self.id)
                 .bind(previous_version)
                 .execute(tx)
                 .await
@@ -165,7 +186,7 @@ impl<DATA: DataType> DbSave<MySql, DATA> for NewRecord<DATA> {
         let create_epoch_millis = get_current_epoch_millis();
 
         let id = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(0)
+            .bind(0_u32)
             .bind(create_epoch_millis)
             .bind(create_epoch_millis)
             .bind(json_data)
