@@ -13,7 +13,7 @@ impl Tx for SqliteConnection {
                     version integer not null,
                     create_epoch_millis integer not null,
                     update_epoch_millis integer not null,
-                    data JSON
+                    data JSON NOT NULL CHECK (json_valid(data))
                 )
                 "#,
             <DATA::DATA as DataType>::TABLE_NAME,

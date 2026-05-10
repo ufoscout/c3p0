@@ -13,7 +13,7 @@ impl Tx for MySqlConnection {
                     version int not null,
                     create_epoch_millis bigint not null,
                     update_epoch_millis bigint not null,
-                    data JSON
+                    data JSON NOT NULL
                 )
                 "#,
             <DATA::DATA as DataType>::TABLE_NAME,
@@ -25,6 +25,9 @@ impl Tx for MySqlConnection {
             .map(|_| ())?)
     }
 
+    /// Note: MySQL parses `CASCADE` on `DROP TABLE` for compatibility but does not
+    /// propagate the drop to dependent objects, so the `cascade` flag is effectively
+    /// a no-op on this backend.
     async fn drop_table_if_exists<DATA: WithData>(
         &mut self,
         cascade: bool,

@@ -12,6 +12,9 @@ pub trait Tx {
     ) -> impl Future<Output = Result<(), C3p0Error>>;
 
     /// Drops the table if it exists.
+    ///
+    /// The `cascade` flag controls whether the drop should propagate to dependent
+    /// objects. Note that on MySQL the `CASCADE` keyword is ignored.
     fn drop_table_if_exists<DATA: WithData>(
         &mut self,
         cascade: bool,

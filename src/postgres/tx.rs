@@ -13,7 +13,7 @@ impl Tx for PgConnection {
                     version int not null,
                     create_epoch_millis bigint not null,
                     update_epoch_millis bigint not null,
-                    data JSONB
+                    data JSONB NOT NULL
                 )
                 "#,
             <DATA::DATA as DataType>::TABLE_NAME,
