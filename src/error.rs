@@ -32,10 +32,6 @@ pub enum C3p0Error {
     /// re-fetch and retry.
     #[error("OptimisticLockError: {cause}")]
     OptimisticLockError { cause: String },
-    /// Wraps a `serde_json::Error` raised while encoding the typed `data` to JSON
-    /// before a write, or decoding the JSON back into a typed value after a read.
-    #[error("JsonProcessingError: {0:?}")]
-    JsonProcessingError(#[from] serde_json::Error),
     /// Wraps a `sqlx::Error` from the underlying driver. Includes connectivity
     /// errors, schema/type mismatches, and `sqlx::Error::RowNotFound` from
     /// `fetch_one*` calls when the requested id does not exist.
