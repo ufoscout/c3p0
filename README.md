@@ -47,9 +47,9 @@ The minimum versions required to support these features are:
 | Database   | Minimum version |
 |------------|-----------------|
 | PostgreSQL | 9.4             |
-| MySQL      | 8.0             |
+| MySQL      | 8.1             |
 | MariaDB    | 10.8            |
-| SQLite     | 3.35            |
+| SQLite     | 3.38            |
 | TiDB       | 8.5             |
 
 Our CI runs on the Millennium Falcon on-board computer that, at the time of the last hyperdrive upgrade, was equipped with Postgres `latest`, MySQL 8.1, MariaDB 11.3, TiDB v8.5.0, and SQLite as bundled by `libsqlite3-sys`.
@@ -167,3 +167,62 @@ pub mod with_postgres {
     }
 }
 ```
+
+
+## Schema management — use sqlx migrations in production
+
+C3p0 ships a `Tx::create_table_if_not_exists::<DATA>()` helper, but it is meant for **unit tests, integration tests, and quick local exploration only**, for real applications enable the `migrate` feature and manage your schema with [sqlx migrations](https://docs.rs/sqlx/latest/sqlx/macro.migrate.html) (or another migration tool).
+
+The tables used by C3p0 should have the following structure (the `id`, `version`, `create_time`, `update_time`, and `data` columns are mandatory), 
+example with a `USER_DATA` table:
+
+**PostgreSQL**:
+
+```sql
+-- Mandatory columns
+CREATE TABLE IUSER_DATA (
+    id bigserial PRIMARY KEY,
+    version bigint NOT NULL,
+    create_time TIMESTAMPTZ NOT NULL,
+    update_time TIMESTAMPTZ NOT NULL,
+    data JSONB NOT NULL
+);
+
+-- You can add your constraints and indexes here, e.g.:
+CREATE INDEX USER_DATA_username_idx ON USER_DATA ((data ->> 'username'));
+```
+
+**MySQL / MariaDB / TiDB**:
+
+```sql
+-- Mandatory columns
+CREATE TABLE USER_DATA (
+    id BIGINT UNSIGNED PRIMARY KEY NOT NULL AUTO_INCREMENT,
+    version INT UNSIGNED NOT NULL,
+    create_time TIMESTAMP(3) NOT NULL,
+    update_time TIMESTAMP(3) NOT NULL,
+    data JSON NOT NULL
+);
+
+-- You can add your constraints and indexes here, e.g.:
+CREATE UNIQUE INDEX USER_DATA_username_idx
+    ((JSON_VALUE(data, '$.username' RETURNING CHAR(255))));
+```
+
+
+**SQLite**:
+
+```sql
+-- Mandatory columns
+CREATE TABLE USER_DATA (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    version INTEGER NOT NULL,
+    create_time TEXT NOT NULL,
+    update_time TEXT NOT NULL,
+    data JSON NOT NULL CHECK (json_valid(data))
+);
+
+-- You can add your constraints and indexes here, e.g.:
+CREATE UNIQUE INDEX USER_DATA_username ON USER_DATA(DATA->>'$.username');
+```
+

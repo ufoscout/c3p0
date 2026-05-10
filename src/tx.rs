@@ -7,6 +7,21 @@ pub trait Tx {
     type DB: Database;
 
     /// Creates the table if it does not exist.
+    ///
+    /// # This is mostly intended for development and tests only
+    ///
+    /// The generated `CREATE TABLE` statement contains the minimum set of columns required,
+    /// it does **not** add:
+    ///
+    /// - any **indexes** on `data`;
+    /// - any **CHECK constraints**;
+    /// - any **foreign keys**, generated columns, partitioning, table-level
+    ///   storage parameters, comments, or grants.
+    ///
+    /// Production schemas should be managed by a real migration tool (e.g. the
+    /// `sqlx::migrate!`)., 
+    /// see the project README for an example of using sqlx migrations to create
+    /// the same table with the indexes and constraints your workload needs.
     fn create_table_if_not_exists<DATA: WithData>(
         &mut self,
     ) -> impl Future<Output = Result<(), C3p0Error>>;
