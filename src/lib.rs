@@ -5,7 +5,6 @@ pub mod error;
 pub mod pool;
 pub mod record;
 pub mod sql;
-pub mod time;
 pub mod tx;
 
 #[cfg(feature = "mysql")]
