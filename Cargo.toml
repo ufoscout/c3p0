@@ -4,6 +4,7 @@ description = "A pleasure to meet you. I am C-3p0, JSON-DB Relations."
 edition = "2024"
 license = "MIT"
 version = "0.80.8"
+rust-version = "1.85"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
 keywords = ["mysql", "postgres", "pg", "sqlite", "json"]

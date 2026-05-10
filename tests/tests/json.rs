@@ -115,7 +115,6 @@ fn basic_crud() -> Result<(), C3p0Error> {
 
             let saved_model = conn.save(model.clone()).await.unwrap();
             println!("saved_model {saved_model:?}");
-            // assert!(saved_model.id >= 0);
 
             let found_model = conn
                 .fetch_one_optional_by_id::<TestData>(saved_model.id)

@@ -12,7 +12,6 @@ use testcontainers::testcontainers::runners::AsyncRunner;
 
 pub type C3p0Impl = PgC3p0Pool;
 
-//mod tests;
 mod tests;
 mod utils;
 
