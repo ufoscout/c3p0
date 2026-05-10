@@ -79,7 +79,7 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     /// ```
     fn select_query_base() -> String {
         format!(
-            "SELECT id, version, create_time, update_time, data FROM {}",
+            "SELECT id, version, create_time, update_time, data FROM {} ",
             WITH::DATA::TABLE_NAME
         )
     }
