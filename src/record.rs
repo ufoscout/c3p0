@@ -160,9 +160,12 @@ pub trait DbOps<DB: Database, WITH: WithData> {
         id: u64,
     ) -> impl Future<Output = Result<bool, C3p0Error>>;
 
-    /// Returns all the entries in the table.
+    /// Returns entries in the table ordered by `id` ASC, skipping the first `offset`
+    /// rows and returning at most `limit` rows. `limit = None` means no upper bound.
     fn fetch_all(
         tx: &mut DB::Connection,
+        offset: u64,
+        limit: Option<u64>,
     ) -> impl Future<Output = Result<Vec<Record<WITH::DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.

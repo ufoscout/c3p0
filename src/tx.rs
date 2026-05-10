@@ -44,9 +44,12 @@ pub trait Tx {
         id: u64,
     ) -> impl Future<Output = Result<bool, C3p0Error>>;
 
-    /// Returns all entries in the table.
+    /// Returns entries in the table ordered by `id` ASC, skipping the first `offset`
+    /// rows and returning at most `limit` rows. `limit = None` means no upper bound.
     fn fetch_all<DATA: WithData>(
         &mut self,
+        offset: u64,
+        limit: Option<u64>,
     ) -> impl Future<Output = Result<Vec<Record<DATA::DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.

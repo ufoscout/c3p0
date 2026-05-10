@@ -167,12 +167,29 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
             let saved_model_1 = conn.save(model.clone()).await.unwrap();
             let saved_model_2 = conn.save(model.clone()).await.unwrap();
 
-            let models = conn.fetch_all::<TestData>().await.unwrap();
+            let models = conn.fetch_all::<TestData>(0, None).await.unwrap();
 
             assert_eq!(3, models.len());
             assert_eq!(saved_model_0.id, models[0].id);
             assert_eq!(saved_model_1.id, models[1].id);
             assert_eq!(saved_model_2.id, models[2].id);
+
+            let limited = conn.fetch_all::<TestData>(0, Some(2)).await.unwrap();
+            assert_eq!(2, limited.len());
+            assert_eq!(saved_model_0.id, limited[0].id);
+            assert_eq!(saved_model_1.id, limited[1].id);
+
+            let offset_only = conn.fetch_all::<TestData>(1, None).await.unwrap();
+            assert_eq!(2, offset_only.len());
+            assert_eq!(saved_model_1.id, offset_only[0].id);
+            assert_eq!(saved_model_2.id, offset_only[1].id);
+
+            let paged = conn.fetch_all::<TestData>(1, Some(1)).await.unwrap();
+            assert_eq!(1, paged.len());
+            assert_eq!(saved_model_1.id, paged[0].id);
+
+            let past_end = conn.fetch_all::<TestData>(10, None).await.unwrap();
+            assert!(past_end.is_empty());
             Ok(())
         })
         .await

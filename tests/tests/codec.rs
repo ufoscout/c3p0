@@ -35,7 +35,7 @@ fn should_upgrade_structs_on_load() -> Result<(), C3p0Error> {
             );
             println!(
                 "select all users len: {}",
-                conn.fetch_all::<UserVersion1>().await.unwrap().len()
+                conn.fetch_all::<UserVersion1>(0, None).await.unwrap().len()
             );
 
             let user_v2_found = conn

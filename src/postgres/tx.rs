@@ -54,8 +54,12 @@ impl Tx for PgConnection {
         <Record<DATA::DATA> as DbOps<Postgres, DATA::DATA>>::exists_by_id(self, id).await
     }
 
-    async fn fetch_all<DATA: WithData>(&mut self) -> Result<Vec<Record<DATA::DATA>>, C3p0Error> {
-        <Record<DATA::DATA> as DbOps<Postgres, DATA::DATA>>::fetch_all(self).await
+    async fn fetch_all<DATA: WithData>(
+        &mut self,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> Result<Vec<Record<DATA::DATA>>, C3p0Error> {
+        <Record<DATA::DATA> as DbOps<Postgres, DATA::DATA>>::fetch_all(self, offset, limit).await
     }
 
     async fn fetch_one_optional_by_id<DATA: WithData>(

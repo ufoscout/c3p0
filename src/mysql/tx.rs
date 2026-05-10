@@ -58,8 +58,12 @@ impl Tx for MySqlConnection {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::exists_by_id(self, id).await
     }
 
-    async fn fetch_all<DATA: WithData>(&mut self) -> Result<Vec<Record<DATA::DATA>>, C3p0Error> {
-        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_all(self).await
+    async fn fetch_all<DATA: WithData>(
+        &mut self,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> Result<Vec<Record<DATA::DATA>>, C3p0Error> {
+        <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_all(self, offset, limit).await
     }
 
     async fn fetch_one_optional_by_id<DATA: WithData>(

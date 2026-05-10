@@ -76,10 +76,19 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
             .and_then(|row| row.try_get(0))?)
     }
 
-    async fn fetch_all(tx: &mut SqliteConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with_tail("ORDER BY id ASC")
-            .fetch_all(tx)
-            .await?)
+    async fn fetch_all(
+        tx: &mut SqliteConnection,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> Result<Vec<Record<DATA>>, C3p0Error> {
+        let query = match limit {
+            Some(limit) => Self::query_with_tail("ORDER BY id ASC LIMIT ? OFFSET ?")
+                .bind(limit as i64)
+                .bind(offset as i64),
+            // SQLite treats a negative LIMIT as "no upper bound" (per its docs).
+            None => Self::query_with_tail("ORDER BY id ASC LIMIT -1 OFFSET ?").bind(offset as i64),
+        };
+        Ok(query.fetch_all(tx).await?)
     }
 
     async fn fetch_one_optional_by_id(
