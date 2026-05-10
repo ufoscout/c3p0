@@ -59,7 +59,8 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
         Ok(sqlx::query(sqlx::AssertSqlSafe(query))
             .fetch_one(tx)
             .await
-            .and_then(|row| row.try_get(0))?)
+            .and_then(|row| row.try_get(0))
+            .map(|val: i64| val as u64)?)
     }
 
     async fn exists_by_id(tx: &mut SqliteConnection, id: u64) -> Result<bool, C3p0Error> {
@@ -155,15 +156,12 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
         );
 
         let data_encoded = DATA::CODEC::encode(self.data);
-        let json_data = serde_json::to_value(&data_encoded)?;
         let previous_version = self.version;
-
-        self.data = DATA::CODEC::decode(data_encoded);
-        self.version += 1;
+        let new_version = previous_version + 1;
 
         let row = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(self.version as i64)
-            .bind(json_data)
+            .bind(new_version as i64)
+            .bind(sqlx::types::Json(&data_encoded))
             .bind(self.id as i64)
             .bind(previous_version as i64)
             .fetch_optional(tx)
@@ -180,6 +178,8 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
             });
         };
 
+        self.data = DATA::CODEC::decode(data_encoded);
+        self.version = new_version;
         self.update_time = row.try_get(0)?;
         Ok(self)
     }
@@ -196,16 +196,15 @@ impl<DATA: DataType> DbSave<Sqlite, DATA> for NewRecord<DATA> {
         );
 
         let data_encoded = DATA::CODEC::encode(self.data);
-        let json_data = serde_json::to_value(&data_encoded)?;
-        let data = DATA::CODEC::decode(data_encoded);
 
         let row = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(0_i64)
-            .bind(json_data)
+            .bind(sqlx::types::Json(&data_encoded))
             .fetch_one(tx)
             .await?;
         let id: i64 = row.try_get(0)?;
         let create_time: DateTime<Utc> = row.try_get(1)?;
+        let data = DATA::CODEC::decode(data_encoded);
 
         Ok(Record {
             id: id as u64,

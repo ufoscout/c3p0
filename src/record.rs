@@ -5,6 +5,13 @@ use sqlx::{Database, query::QueryAs};
 use crate::{codec::Codec, error::C3p0Error};
 
 pub trait DataType: Sized + Send + Sync + Unpin {
+    /// The name of the database table backing this type.
+    ///
+    /// # SQL injection
+    ///
+    /// This value is interpolated **verbatim** into SQL strings (via
+    /// `format!`), implementors **must** therefore restrict `TABLE_NAME`
+    /// to a valid SQL identifier.
     const TABLE_NAME: &'static str;
     type CODEC: Codec<Self>;
 }

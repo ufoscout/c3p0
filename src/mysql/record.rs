@@ -153,15 +153,12 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
         let select_ts = format!("SELECT update_time FROM {} WHERE id = ?", DATA::TABLE_NAME,);
 
         let data_encoded = DATA::CODEC::encode(self.data);
-        let json_data = serde_json::to_value(&data_encoded)?;
         let previous_version = self.version;
-
-        self.data = DATA::CODEC::decode(data_encoded);
-        self.version += 1;
+        let new_version = previous_version + 1;
 
         let result = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(self.version)
-            .bind(json_data)
+            .bind(new_version)
+            .bind(sqlx::types::Json(&data_encoded))
             .bind(self.id)
             .bind(previous_version)
             .execute(&mut *tx)
@@ -179,6 +176,8 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             });
         }
 
+        self.data = DATA::CODEC::decode(data_encoded);
+        self.version = new_version;
         self.update_time = sqlx::query(sqlx::AssertSqlSafe(select_ts))
             .bind(self.id)
             .fetch_one(tx)
@@ -199,15 +198,14 @@ impl<DATA: DataType> DbSave<MySql, DATA> for NewRecord<DATA> {
         let select_ts = format!("SELECT create_time FROM {} WHERE id = ?", DATA::TABLE_NAME,);
 
         let data_encoded = DATA::CODEC::encode(self.data);
-        let json_data = serde_json::to_value(&data_encoded)?;
-        let data = DATA::CODEC::decode(data_encoded);
 
         let id = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(0_u64)
-            .bind(json_data)
+            .bind(sqlx::types::Json(&data_encoded))
             .execute(&mut *tx)
             .await
             .map(|done| done.last_insert_id())?;
+        let data = DATA::CODEC::decode(data_encoded);
 
         let create_time: DateTime<Utc> = sqlx::query(sqlx::AssertSqlSafe(select_ts))
             .bind(id)
