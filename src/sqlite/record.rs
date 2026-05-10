@@ -144,7 +144,7 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
 
         self.data = DATA::CODEC::decode(data_encoded);
         self.version += 1;
-        self.update_epoch_millis = get_current_epoch_millis();
+        self.update_epoch_millis = get_current_epoch_millis()?;
 
         let result = {
             sqlx::query(sqlx::AssertSqlSafe(query))
@@ -184,7 +184,7 @@ impl<DATA: DataType> DbSave<Sqlite, DATA> for NewRecord<DATA> {
         let json_data = serde_json::to_value(&data_encoded)?;
         let data = DATA::CODEC::decode(data_encoded);
 
-        let create_epoch_millis = get_current_epoch_millis();
+        let create_epoch_millis = get_current_epoch_millis()?;
 
         let id = sqlx::query(sqlx::AssertSqlSafe(query))
             .bind(0_i64)

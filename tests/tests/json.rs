@@ -341,7 +341,7 @@ fn should_update_and_increase_version() -> Result<(), C3p0Error> {
                 last_name: "my_last_name".to_owned(),
             });
 
-            let current_epoch = get_current_epoch_millis();
+            let current_epoch = get_current_epoch_millis().unwrap();
             let mut saved_model = conn.save(model.clone()).await.unwrap();
 
             assert!(saved_model.create_epoch_millis >= current_epoch);
