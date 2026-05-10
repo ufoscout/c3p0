@@ -41,9 +41,9 @@ impl<DATA: DataType> WithData for NewRecord<DATA> {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Record<DATA: DataType> {
     /// The unique identifier of the model.
-    pub id: u64,
+    pub id: i64,
     /// The version of the model used for optimistic locking.
-    pub version: u64,
+    pub version: i64,
     /// UTC timestamp when the model was created (DB-side clock).
     pub create_time: DateTime<Utc>,
     /// UTC timestamp when the model was last updated (DB-side clock).
@@ -157,7 +157,7 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     /// Returns true if the entry with the given id exists.
     fn exists_by_id(
         tx: &mut DB::Connection,
-        id: u64,
+        id: i64,
     ) -> impl Future<Output = Result<bool, C3p0Error>>;
 
     /// Returns entries in the table ordered by `id` ASC, skipping the first `offset`
@@ -171,13 +171,13 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     /// Returns the entry with the given id. Returns None if the entry does not exist.
     fn fetch_one_optional_by_id(
         tx: &mut DB::Connection,
-        id: u64,
+        id: i64,
     ) -> impl Future<Output = Result<Option<Record<WITH::DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns an error if the entry does not exist.
     fn fetch_one_by_id(
         tx: &mut DB::Connection,
-        id: u64,
+        id: i64,
     ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
 
     /// Deletes the entry with the given id.
@@ -192,7 +192,7 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     /// Deletes the entry with the given id.
     fn delete_by_id(
         tx: &mut DB::Connection,
-        id: u64,
+        id: i64,
     ) -> impl Future<Output = Result<u64, C3p0Error>>;
 
     /// Updates the entry with the given id. Returns an error if the entry does not exist.

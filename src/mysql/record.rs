@@ -24,8 +24,8 @@ const NOW_EXPR: &str = "CURRENT_TIMESTAMP(3)";
 
 impl<DATA: DataType> FromRow<'_, MySqlRow> for Record<DATA> {
     fn from_row(row: &MySqlRow) -> Result<Self, sqlx::Error> {
-        let id: u64 = row.try_get(0)?;
-        let version: u64 = row.try_get(1)?;
+        let id: i64 = row.try_get(0)?;
+        let version: i64 = row.try_get(1)?;
         let create_time: DateTime<Utc> = row.try_get(2)?;
         let update_time: DateTime<Utc> = row.try_get(3)?;
         let sqlx::types::Json(data): sqlx::types::Json<DATA::CODEC> = row.try_get(4)?;
@@ -62,7 +62,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             .map(|val: i64| val as u64)?)
     }
 
-    async fn exists_by_id(tx: &mut MySqlConnection, id: u64) -> Result<bool, C3p0Error> {
+    async fn exists_by_id(tx: &mut MySqlConnection, id: i64) -> Result<bool, C3p0Error> {
         let query = format!(
             "SELECT EXISTS (SELECT 1 FROM {} WHERE id = ?)",
             DATA::TABLE_NAME,
@@ -93,7 +93,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
 
     async fn fetch_one_optional_by_id(
         tx: &mut MySqlConnection,
-        id: u64,
+        id: i64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
         Ok(Self::query_with_tail("WHERE id = ? LIMIT 1")
             .bind(id)
@@ -101,7 +101,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             .await?)
     }
 
-    async fn fetch_one_by_id(tx: &mut MySqlConnection, id: u64) -> Result<Record<DATA>, C3p0Error> {
+    async fn fetch_one_by_id(tx: &mut MySqlConnection, id: i64) -> Result<Record<DATA>, C3p0Error> {
         Ok(Self::query_with_tail("WHERE id = ? LIMIT 1")
             .bind(id)
             .fetch_one(tx)
@@ -144,7 +144,7 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
             .map(|done| done.rows_affected())?)
     }
 
-    async fn delete_by_id(tx: &mut MySqlConnection, id: u64) -> Result<u64, C3p0Error> {
+    async fn delete_by_id(tx: &mut MySqlConnection, id: i64) -> Result<u64, C3p0Error> {
         let query = format!("DELETE FROM {} WHERE id = ?", DATA::TABLE_NAME);
 
         Ok(sqlx::query(sqlx::AssertSqlSafe(query))
@@ -209,12 +209,14 @@ impl<DATA: DataType> DbSave<MySql, DATA> for NewRecord<DATA> {
 
         let data_encoded = DATA::CODEC::encode(self.data);
 
-        let id = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(0_u64)
+        // sqlx-mysql's `last_insert_id` is u64; the column is signed BIGINT, and
+        // AUTO_INCREMENT values are always positive, so the conversion is safe.
+        let id: i64 = sqlx::query(sqlx::AssertSqlSafe(query))
+            .bind(0_i64)
             .bind(sqlx::types::Json(&data_encoded))
             .execute(&mut *tx)
             .await
-            .map(|done| done.last_insert_id())?;
+            .map(|done| done.last_insert_id() as i64)?;
         let data = DATA::CODEC::decode(data_encoded);
 
         let create_time: DateTime<Utc> = sqlx::query(sqlx::AssertSqlSafe(select_ts))

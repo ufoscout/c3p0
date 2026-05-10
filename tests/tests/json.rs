@@ -588,7 +588,7 @@ fn query_with_tail_should_filter_order_and_limit() -> Result<(), C3p0Error> {
         let data = data(false).await;
         let pool = &data.0;
 
-        let saved_ids: Vec<u64> = pool
+        let saved_ids: Vec<i64> = pool
             .transaction::<_, C3p0Error, _>(async |conn| {
                 conn.create_table_if_not_exists::<TestData>().await?;
                 conn.delete_all::<TestData>().await?;
@@ -633,10 +633,10 @@ fn query_with_tail_should_filter_order_and_limit() -> Result<(), C3p0Error> {
 
         // 3. WHERE with bind — exercises the per-backend placeholder + .bind().
         // Placeholder syntax differs per dialect; bind type is `i64` everywhere
-        // (MySQL/MariaDB/TiDB accept a signed i64 against BIGINT UNSIGNED for
-        // non-negative values, which is sufficient for auto-increment ids).
+        // (id is i64 in c3p0 and the underlying column is signed BIGINT/INTEGER
+        // on every supported backend).
         pool.transaction::<_, C3p0Error, _>(async |conn| {
-            let target_id = saved_ids[1] as i64;
+            let target_id = saved_ids[1];
             let placeholder = match db_specific::db_type() {
                 DbType::Pg => "$1",
                 _ => "?",

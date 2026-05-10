@@ -43,7 +43,7 @@ impl Tx for SqliteConnection {
         <Record<DATA::DATA> as DbOps<Sqlite, DATA::DATA>>::count_all(self).await
     }
 
-    async fn exists_by_id<DATA: WithData>(&mut self, id: u64) -> Result<bool, C3p0Error> {
+    async fn exists_by_id<DATA: WithData>(&mut self, id: i64) -> Result<bool, C3p0Error> {
         <Record<DATA::DATA> as DbOps<Sqlite, DATA::DATA>>::exists_by_id(self, id).await
     }
 
@@ -57,14 +57,14 @@ impl Tx for SqliteConnection {
 
     async fn fetch_one_optional_by_id<DATA: WithData>(
         &mut self,
-        id: u64,
+        id: i64,
     ) -> Result<Option<Record<DATA::DATA>>, C3p0Error> {
         <Record<DATA::DATA> as DbOps<Sqlite, DATA::DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
     async fn fetch_one_by_id<DATA: WithData>(
         &mut self,
-        id: u64,
+        id: i64,
     ) -> Result<Record<DATA::DATA>, C3p0Error> {
         <Record<DATA::DATA> as DbOps<Sqlite, DATA::DATA>>::fetch_one_by_id(self, id).await
     }
@@ -80,7 +80,7 @@ impl Tx for SqliteConnection {
         <Record<DATA::DATA> as DbOps<Sqlite, DATA::DATA>>::delete_all(self).await
     }
 
-    async fn delete_by_id<DATA: WithData>(&mut self, id: u64) -> Result<u64, C3p0Error> {
+    async fn delete_by_id<DATA: WithData>(&mut self, id: i64) -> Result<u64, C3p0Error> {
         <Record<DATA::DATA> as DbOps<Sqlite, DATA::DATA>>::delete_by_id(self, id).await
     }
 

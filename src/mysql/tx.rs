@@ -9,8 +9,8 @@ impl Tx for MySqlConnection {
         let query = format!(
             r#"
                 CREATE TABLE IF NOT EXISTS {} (
-                    id BIGINT UNSIGNED primary key NOT NULL AUTO_INCREMENT,
-                    version BIGINT UNSIGNED not null,
+                    id BIGINT primary key NOT NULL AUTO_INCREMENT,
+                    version BIGINT not null,
                     create_time TIMESTAMP(3) NOT NULL,
                     update_time TIMESTAMP(3) NOT NULL,
                     data JSON NOT NULL
@@ -54,7 +54,7 @@ impl Tx for MySqlConnection {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::count_all(self).await
     }
 
-    async fn exists_by_id<DATA: WithData>(&mut self, id: u64) -> Result<bool, C3p0Error> {
+    async fn exists_by_id<DATA: WithData>(&mut self, id: i64) -> Result<bool, C3p0Error> {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::exists_by_id(self, id).await
     }
 
@@ -68,14 +68,14 @@ impl Tx for MySqlConnection {
 
     async fn fetch_one_optional_by_id<DATA: WithData>(
         &mut self,
-        id: u64,
+        id: i64,
     ) -> Result<Option<Record<DATA::DATA>>, C3p0Error> {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_one_optional_by_id(self, id).await
     }
 
     async fn fetch_one_by_id<DATA: WithData>(
         &mut self,
-        id: u64,
+        id: i64,
     ) -> Result<Record<DATA::DATA>, C3p0Error> {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::fetch_one_by_id(self, id).await
     }
@@ -91,7 +91,7 @@ impl Tx for MySqlConnection {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::delete_all(self).await
     }
 
-    async fn delete_by_id<DATA: WithData>(&mut self, id: u64) -> Result<u64, C3p0Error> {
+    async fn delete_by_id<DATA: WithData>(&mut self, id: i64) -> Result<u64, C3p0Error> {
         <Record<DATA::DATA> as DbOps<MySql, DATA::DATA>>::delete_by_id(self, id).await
     }
 

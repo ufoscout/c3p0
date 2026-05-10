@@ -32,8 +32,8 @@ impl<DATA: DataType> FromRow<'_, SqliteRow> for Record<DATA> {
         let sqlx::types::Json(data): sqlx::types::Json<DATA::CODEC> = row.try_get(4)?;
 
         Ok(Record {
-            id: id as u64,
-            version: version as u64,
+            id,
+            version,
             data: DATA::CODEC::decode(data),
             create_time,
             update_time,
@@ -63,14 +63,14 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
             .map(|val: i64| val as u64)?)
     }
 
-    async fn exists_by_id(tx: &mut SqliteConnection, id: u64) -> Result<bool, C3p0Error> {
+    async fn exists_by_id(tx: &mut SqliteConnection, id: i64) -> Result<bool, C3p0Error> {
         let query = format!(
             "SELECT EXISTS (SELECT 1 FROM {} WHERE id = ?)",
             DATA::TABLE_NAME,
         );
 
         Ok(sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(id as i64)
+            .bind(id)
             .fetch_one(tx)
             .await
             .and_then(|row| row.try_get(0))?)
@@ -93,20 +93,20 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
 
     async fn fetch_one_optional_by_id(
         tx: &mut SqliteConnection,
-        id: u64,
+        id: i64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
         Ok(Self::query_with_tail("WHERE id = ? LIMIT 1")
-            .bind(id as i64)
+            .bind(id)
             .fetch_optional(tx)
             .await?)
     }
 
     async fn fetch_one_by_id(
         tx: &mut SqliteConnection,
-        id: u64,
+        id: i64,
     ) -> Result<Record<DATA>, C3p0Error> {
         Ok(Self::query_with_tail("WHERE id = ? LIMIT 1")
-            .bind(id as i64)
+            .bind(id)
             .fetch_one(tx)
             .await?)
     }
@@ -118,8 +118,8 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
         );
 
         let result = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(self.id as i64)
-            .bind(self.version as i64)
+            .bind(self.id)
+            .bind(self.version)
             .execute(tx)
             .await?
             .rows_affected();
@@ -147,11 +147,11 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
             .map(|done| done.rows_affected())?)
     }
 
-    async fn delete_by_id(tx: &mut SqliteConnection, id: u64) -> Result<u64, C3p0Error> {
+    async fn delete_by_id(tx: &mut SqliteConnection, id: i64) -> Result<u64, C3p0Error> {
         let query = format!("DELETE FROM {} WHERE id = ?", DATA::TABLE_NAME);
 
         Ok(sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(id as i64)
+            .bind(id)
             .execute(tx)
             .await
             .map(|done| done.rows_affected())?)
@@ -169,10 +169,10 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
         let new_version = previous_version + 1;
 
         let row = sqlx::query(sqlx::AssertSqlSafe(query))
-            .bind(new_version as i64)
+            .bind(new_version)
             .bind(sqlx::types::Json(&data_encoded))
-            .bind(self.id as i64)
-            .bind(previous_version as i64)
+            .bind(self.id)
+            .bind(previous_version)
             .fetch_optional(tx)
             .await?;
 
@@ -216,7 +216,7 @@ impl<DATA: DataType> DbSave<Sqlite, DATA> for NewRecord<DATA> {
         let data = DATA::CODEC::decode(data_encoded);
 
         Ok(Record {
-            id: id as u64,
+            id,
             version: 0,
             data,
             create_time,

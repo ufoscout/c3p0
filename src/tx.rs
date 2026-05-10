@@ -41,7 +41,7 @@ pub trait Tx {
     /// Returns true if the entry with the given id exists.
     fn exists_by_id<DATA: WithData>(
         &mut self,
-        id: u64,
+        id: i64,
     ) -> impl Future<Output = Result<bool, C3p0Error>>;
 
     /// Returns entries in the table ordered by `id` ASC, skipping the first `offset`
@@ -55,13 +55,13 @@ pub trait Tx {
     /// Returns the entry with the given id. Returns None if the entry does not exist.
     fn fetch_one_optional_by_id<DATA: WithData>(
         &mut self,
-        id: u64,
+        id: i64,
     ) -> impl Future<Output = Result<Option<Record<DATA::DATA>>, C3p0Error>>;
 
     /// Returns the entry with the given id. Returns an error if the entry does not exist.
     fn fetch_one_by_id<DATA: WithData>(
         &mut self,
-        id: u64,
+        id: i64,
     ) -> impl Future<Output = Result<Record<DATA::DATA>, C3p0Error>>;
 
     /// Deletes the entry with the given id.
@@ -76,7 +76,7 @@ pub trait Tx {
     /// Deletes the entry with the given id.
     fn delete_by_id<DATA: WithData>(
         &mut self,
-        id: u64,
+        id: i64,
     ) -> impl Future<Output = Result<u64, C3p0Error>>;
 
     /// Updates the entry with the given id. Returns an error if the entry does not exist.
