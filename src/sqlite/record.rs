@@ -64,14 +64,14 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
     }
 
     async fn fetch_all(tx: &mut SqliteConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with(" ORDER BY id ASC").fetch_all(tx).await?)
+        Ok(Self::query_with("ORDER BY id ASC").fetch_all(tx).await?)
     }
 
     async fn fetch_one_optional_by_id(
         tx: &mut SqliteConnection,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with(" WHERE id = ? LIMIT 1")
+        Ok(Self::query_with("WHERE id = ? LIMIT 1")
             .bind(id as i64)
             .fetch_optional(tx)
             .await?)
@@ -81,7 +81,7 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
         tx: &mut SqliteConnection,
         id: u64,
     ) -> Result<Record<DATA>, C3p0Error> {
-        Ok(Self::query_with(" WHERE id = ? LIMIT 1")
+        Ok(Self::query_with("WHERE id = ? LIMIT 1")
             .bind(id as i64)
             .fetch_one(tx)
             .await?)

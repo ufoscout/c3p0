@@ -68,21 +68,21 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
     }
 
     async fn fetch_all(tx: &mut PgConnection) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with(" ORDER BY id ASC").fetch_all(tx).await?)
+        Ok(Self::query_with("ORDER BY id ASC").fetch_all(tx).await?)
     }
 
     async fn fetch_one_optional_by_id(
         tx: &mut PgConnection,
         id: u64,
     ) -> Result<Option<Record<DATA>>, C3p0Error> {
-        Ok(Self::query_with(" WHERE id = $1 LIMIT 1")
+        Ok(Self::query_with("WHERE id = $1 LIMIT 1")
             .bind(id as i64)
             .fetch_optional(tx)
             .await?)
     }
 
     async fn fetch_one_by_id(tx: &mut PgConnection, id: u64) -> Result<Record<DATA>, C3p0Error> {
-        Ok(Self::query_with(" WHERE id = $1 LIMIT 1")
+        Ok(Self::query_with("WHERE id = $1 LIMIT 1")
             .bind(id as i64)
             .fetch_one(tx)
             .await?)
