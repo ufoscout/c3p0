@@ -3,7 +3,7 @@ name = "c3p0"
 description = "A pleasure to meet you. I am C-3p0, JSON-DB Relations."
 edition = "2024"
 license = "MIT"
-version = "0.82.0"
+version = "0.83.0"
 rust-version = "1.85"
 homepage = "https://github.com/ufoscout/c3p0"
 repository = "https://github.com/ufoscout/c3p0"
@@ -16,7 +16,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "serd
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sqlx = { version = "0.9.0-alpha.1", default-features = false, features = [ "chrono", "json", "macros" ] }
+sqlx = { version = "0.9", default-features = false, features = [ "chrono", "json", "macros" ] }
 thiserror = "2.0"
 
 [dev-dependencies]
