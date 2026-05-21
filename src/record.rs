@@ -152,13 +152,13 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     ) -> QueryAs<'_, DB, Record<WITH::DATA>, <DB as Database>::Arguments>;
 
     /// Returns the number of rows in the table.
-    fn count_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
+    fn count_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     /// Returns true if the entry with the given id exists.
     fn exists_by_id(
         tx: &mut DB::Connection,
         id: i64,
-    ) -> impl Future<Output = Result<bool, C3p0Error>>;
+    ) -> impl Future<Output = Result<bool, C3p0Error>> + Send;
 
     /// Returns entries in the table ordered by `id` ASC, skipping the first `offset`
     /// rows and returning at most `limit` rows. `limit = None` means no upper bound.
@@ -166,34 +166,34 @@ pub trait DbOps<DB: Database, WITH: WithData> {
         tx: &mut DB::Connection,
         offset: u64,
         limit: Option<u64>,
-    ) -> impl Future<Output = Result<Vec<Record<WITH::DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Vec<Record<WITH::DATA>>, C3p0Error>> + Send;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.
     fn fetch_one_optional_by_id(
         tx: &mut DB::Connection,
         id: i64,
-    ) -> impl Future<Output = Result<Option<Record<WITH::DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Option<Record<WITH::DATA>>, C3p0Error>> + Send;
 
     /// Returns the entry with the given id. Returns an error if the entry does not exist.
     fn fetch_one_by_id(
         tx: &mut DB::Connection,
         id: i64,
-    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>> + Send;
 
     /// Deletes the entry with the given id.
     fn delete(
         self,
         tx: &mut DB::Connection,
-    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>> + Send;
 
     /// Deletes all entries in the table.
-    fn delete_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>>;
+    fn delete_all(tx: &mut DB::Connection) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     /// Deletes the entry with the given id.
     fn delete_by_id(
         tx: &mut DB::Connection,
         id: i64,
-    ) -> impl Future<Output = Result<u64, C3p0Error>>;
+    ) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     /// Updates the entry with the given id. Returns an error if the entry does not exist.
     /// This uses optimistic locking by using the version field to detect update conflicts; it will update the entry and will throw an error if the version does not match.
@@ -201,7 +201,7 @@ pub trait DbOps<DB: Database, WITH: WithData> {
     fn update(
         self,
         tx: &mut DB::Connection,
-    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>> + Send;
 }
 
 pub trait DbSave<DB: Database, WITH: WithData> {
@@ -209,5 +209,5 @@ pub trait DbSave<DB: Database, WITH: WithData> {
     fn save(
         self,
         tx: &mut DB::Connection,
-    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<WITH::DATA>, C3p0Error>> + Send;
 }

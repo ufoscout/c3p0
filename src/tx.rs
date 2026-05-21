@@ -24,7 +24,7 @@ pub trait Tx {
     /// the same table with the indexes and constraints your workload needs.
     fn create_table_if_not_exists<DATA: WithData>(
         &mut self,
-    ) -> impl Future<Output = Result<(), C3p0Error>>;
+    ) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
     /// Drops the table if it exists.
     ///
@@ -33,16 +33,16 @@ pub trait Tx {
     fn drop_table_if_exists<DATA: WithData>(
         &mut self,
         cascade: bool,
-    ) -> impl Future<Output = Result<(), C3p0Error>>;
+    ) -> impl Future<Output = Result<(), C3p0Error>> + Send;
 
     /// Returns the number of rows in the table.
-    fn count_all<DATA: WithData>(&mut self) -> impl Future<Output = Result<u64, C3p0Error>>;
+    fn count_all<DATA: WithData>(&mut self) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     /// Returns true if the entry with the given id exists.
     fn exists_by_id<DATA: WithData>(
         &mut self,
         id: i64,
-    ) -> impl Future<Output = Result<bool, C3p0Error>>;
+    ) -> impl Future<Output = Result<bool, C3p0Error>> + Send;
 
     /// Returns entries in the table ordered by `id` ASC, skipping the first `offset`
     /// rows and returning at most `limit` rows. `limit = None` means no upper bound.
@@ -50,34 +50,35 @@ pub trait Tx {
         &mut self,
         offset: u64,
         limit: Option<u64>,
-    ) -> impl Future<Output = Result<Vec<Record<DATA::DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Vec<Record<DATA::DATA>>, C3p0Error>> + Send;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.
     fn fetch_one_optional_by_id<DATA: WithData>(
         &mut self,
         id: i64,
-    ) -> impl Future<Output = Result<Option<Record<DATA::DATA>>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Option<Record<DATA::DATA>>, C3p0Error>> + Send;
 
     /// Returns the entry with the given id. Returns an error if the entry does not exist.
     fn fetch_one_by_id<DATA: WithData>(
         &mut self,
         id: i64,
-    ) -> impl Future<Output = Result<Record<DATA::DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<DATA::DATA>, C3p0Error>> + Send;
 
     /// Deletes the entry with the given id.
     fn delete<DATA: DataType>(
         &mut self,
         record: Record<DATA>,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
 
     /// Deletes all entries in the table.
-    fn delete_all<DATA: WithData>(&mut self) -> impl Future<Output = Result<u64, C3p0Error>>;
+    fn delete_all<DATA: WithData>(&mut self)
+    -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     /// Deletes the entry with the given id.
     fn delete_by_id<DATA: WithData>(
         &mut self,
         id: i64,
-    ) -> impl Future<Output = Result<u64, C3p0Error>>;
+    ) -> impl Future<Output = Result<u64, C3p0Error>> + Send;
 
     /// Updates the entry with the given id. Returns an error if the entry does not exist.
     /// This uses optimistic locking by using the version field to detect update conflicts; it will update the entry and will throw an error if the version does not match.
@@ -85,11 +86,11 @@ pub trait Tx {
     fn update<DATA: DataType>(
         &mut self,
         record: Record<DATA>,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
 
     /// Creates a new entry.
     fn save<DATA: DataType>(
         &mut self,
         record: NewRecord<DATA>,
-    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>>;
+    ) -> impl Future<Output = Result<Record<DATA>, C3p0Error>> + Send;
 }
