@@ -1,6 +1,6 @@
 use sqlx::Database;
 
-use crate::{C3p0Error, DataType, NewRecord, Record, WithData};
+use crate::{C3p0Error, DataType, NewRecord, Record, WithData, stream::RecordStream};
 
 /// A trait for a transaction.
 pub trait Tx {
@@ -51,6 +51,15 @@ pub trait Tx {
         offset: u64,
         limit: Option<u64>,
     ) -> impl Future<Output = Result<Vec<Record<DATA::DATA>>, C3p0Error>> + Send;
+
+    /// Streams entries in the table ordered by `id` ASC without buffering them into
+    /// a `Vec`, skip the first `offset` rows and yield
+    /// at most `limit` rows, or every remaining row when `limit = None`.
+    fn fetch_stream<'a, DATA: WithData + 'a>(
+        &'a mut self,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> RecordStream<'a, Record<DATA::DATA>>;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.
     fn fetch_one_optional_by_id<DATA: WithData>(

@@ -197,6 +197,141 @@ fn should_fetch_all() -> Result<(), C3p0Error> {
 }
 
 #[test]
+fn should_fetch_stream() -> Result<(), C3p0Error> {
+    use futures_util::{StreamExt, TryStreamExt};
+
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+    pub struct TestData {
+        pub first_name: String,
+        pub last_name: String,
+    }
+
+    impl c3p0::DataType for TestData {
+        const TABLE_NAME: &'static str =
+            const_format::concatcp!("TEST_TABLE_", const_random::const_random!(u64));
+        type CODEC = Self;
+    }
+
+    run_test(async {
+        let data = data(false).await;
+        let pool = &data.0;
+
+        // Seed three rows. `fetch_stream` is documented to yield rows in `id ASC`
+        // order, so we keep the saved ids to assert on ordering below.
+        let saved_ids: Vec<i64> = pool
+            .transaction::<_, C3p0Error, _>(async |conn| {
+                conn.create_table_if_not_exists::<TestData>().await?;
+                conn.delete_all::<TestData>().await?;
+                let mut ids = Vec::new();
+                for first in ["a", "b", "c"] {
+                    let saved = conn
+                        .save(NewRecord::new(TestData {
+                            first_name: first.to_owned(),
+                            last_name: "x".to_owned(),
+                        }))
+                        .await?;
+                    ids.push(saved.id);
+                }
+                Ok(ids)
+            })
+            .await?;
+
+        // 1. `(offset = 0, limit = None)` — drain the full table and assert the
+        //    streamed result matches `fetch_all(0, None)`: same count, same ids,
+        //    same id-ASC ordering.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let streamed: Vec<Record<TestData>> =
+                conn.fetch_stream::<TestData>(0, None).try_collect().await?;
+            assert_eq!(streamed.len(), 3);
+            assert_eq!(streamed.iter().map(|r| r.id).collect::<Vec<_>>(), saved_ids);
+            assert_eq!(streamed[0].data.first_name, "a");
+            assert_eq!(streamed[1].data.first_name, "b");
+            assert_eq!(streamed[2].data.first_name, "c");
+            Ok(())
+        })
+        .await?;
+
+        // 2. `limit = Some(2)` — exercises the dialect-specific LIMIT/OFFSET binding
+        //    path. Should yield exactly the first two rows.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let limited: Vec<Record<TestData>> = conn
+                .fetch_stream::<TestData>(0, Some(2))
+                .try_collect()
+                .await?;
+            assert_eq!(limited.len(), 2);
+            assert_eq!(limited[0].id, saved_ids[0]);
+            assert_eq!(limited[1].id, saved_ids[1]);
+            Ok(())
+        })
+        .await?;
+
+        // 3. `offset = 1, limit = None` — exercises the "no upper bound" path
+        //    (each backend uses a different sentinel: Postgres omits LIMIT, MySQL
+        //    binds u64::MAX, SQLite binds -1; this verifies all three yield the
+        //    remaining rows correctly).
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let offset_only: Vec<Record<TestData>> =
+                conn.fetch_stream::<TestData>(1, None).try_collect().await?;
+            assert_eq!(offset_only.len(), 2);
+            assert_eq!(offset_only[0].id, saved_ids[1]);
+            assert_eq!(offset_only[1].id, saved_ids[2]);
+            Ok(())
+        })
+        .await?;
+
+        // 4. `offset = 1, limit = Some(1)` — combined paging.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let paged: Vec<Record<TestData>> = conn
+                .fetch_stream::<TestData>(1, Some(1))
+                .try_collect()
+                .await?;
+            assert_eq!(paged.len(), 1);
+            assert_eq!(paged[0].id, saved_ids[1]);
+            Ok(())
+        })
+        .await?;
+
+        // 5. `offset` past the end → empty stream (terminates with `None`
+        //    immediately, no error).
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let past_end: Vec<Record<TestData>> = conn
+                .fetch_stream::<TestData>(10, None)
+                .try_collect()
+                .await?;
+            assert!(past_end.is_empty());
+            Ok(())
+        })
+        .await?;
+
+        // 6. Iterate manually with `next()` and stop early — proves the stream
+        //    can be abandoned mid-way (the whole point of streaming over
+        //    `fetch_all`). Also asserts the stream's `Item` is `Result<_, C3p0Error>`
+        //    (not raw `sqlx::Error`) via the explicit `?`.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            let mut stream = std::pin::pin!(conn.fetch_stream::<TestData>(0, None));
+            let first = stream.next().await.expect("at least one row")?;
+            assert_eq!(first.id, saved_ids[0]);
+            assert_eq!(first.data.first_name, "a");
+            // Drop the stream without draining it — `next()` is not called again.
+            Ok(())
+        })
+        .await?;
+
+        // 7. Empty table → empty stream.
+        pool.transaction::<_, C3p0Error, _>(async |conn| {
+            conn.delete_all::<TestData>().await?;
+            let streamed: Vec<Record<TestData>> =
+                conn.fetch_stream::<TestData>(0, None).try_collect().await?;
+            assert!(streamed.is_empty());
+            Ok(())
+        })
+        .await?;
+
+        Ok(())
+    })
+}
+
+#[test]
 fn should_delete_all() -> Result<(), C3p0Error> {
     #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     pub struct TestData {

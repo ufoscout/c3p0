@@ -9,6 +9,7 @@ pub mod error;
 pub mod pool;
 pub mod record;
 pub mod sql;
+pub mod stream;
 pub mod tx;
 
 #[cfg(feature = "mysql")]
@@ -25,6 +26,7 @@ pub use codec::Codec;
 pub use error::C3p0Error;
 pub use pool::C3p0Pool;
 pub use record::*;
+pub use stream::RecordStream;
 pub use tx::Tx;
 
 #[cfg(feature = "mysql")]

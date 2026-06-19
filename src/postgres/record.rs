@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::codec::Codec;
+use crate::stream::RecordStream;
 use crate::{
     error::C3p0Error,
     record::{DataType, DbOps, DbSave, NewRecord, Record},
@@ -89,6 +90,23 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
             None => Self::query_with_tail("ORDER BY id ASC OFFSET $1").bind(offset as i64),
         };
         Ok(query.fetch_all(tx).await?)
+    }
+
+    fn fetch_stream<'a>(
+        tx: &'a mut PgConnection,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> RecordStream<'a, Record<DATA>>
+    where
+        DATA: 'a,
+    {
+        let query = match limit {
+            Some(limit) => Self::query_with_tail("ORDER BY id ASC LIMIT $1 OFFSET $2")
+                .bind(limit as i64)
+                .bind(offset as i64),
+            None => Self::query_with_tail("ORDER BY id ASC OFFSET $1").bind(offset as i64),
+        };
+        RecordStream::new(query.fetch(tx))
     }
 
     async fn fetch_one_optional_by_id(

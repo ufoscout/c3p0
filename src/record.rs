@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Database, query::QueryAs};
 
-use crate::{codec::Codec, error::C3p0Error};
+use crate::{codec::Codec, error::C3p0Error, stream::RecordStream};
 
 pub trait DataType: Sized + Send + Sync + Unpin {
     /// The name of the database table backing this type.
@@ -169,6 +169,17 @@ pub trait DbOps<DB: Database, WITH: WithData> {
         offset: u64,
         limit: Option<u64>,
     ) -> impl Future<Output = Result<Vec<Record<WITH::DATA>>, C3p0Error>> + Send;
+
+    /// Streams entries in the table ordered by `id` ASC without buffering them into
+    /// a `Vec`, skip the first `offset` rows and yield
+    /// at most `limit` rows, or every remaining row when `limit = None`.
+    fn fetch_stream<'a>(
+        tx: &'a mut DB::Connection,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> RecordStream<'a, Record<WITH::DATA>>
+    where
+        WITH: 'a;
 
     /// Returns the entry with the given id. Returns None if the entry does not exist.
     fn fetch_one_optional_by_id(

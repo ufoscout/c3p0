@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::codec::Codec;
+use crate::stream::RecordStream;
 use crate::{
     error::C3p0Error,
     record::{DataType, DbOps, DbSave, NewRecord, Record},
@@ -81,15 +82,26 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
         offset: u64,
         limit: Option<u64>,
     ) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        let query = match limit {
-            Some(limit) => Self::query_with_tail("ORDER BY id ASC LIMIT ? OFFSET ?")
-                .bind(limit)
-                .bind(offset),
-            // MySQL requires LIMIT to use OFFSET; u64::MAX is the documented sentinel for "no limit".
-            None => Self::query_with_tail("ORDER BY id ASC LIMIT 18446744073709551615 OFFSET ?")
-                .bind(offset),
-        };
+        // MySQL requires LIMIT to use OFFSET; u64::MAX is the documented sentinel for "no limit".
+        let query = Self::query_with_tail("ORDER BY id ASC LIMIT ? OFFSET ?")
+            .bind(limit.unwrap_or(u64::MAX))
+            .bind(offset);
         Ok(query.fetch_all(tx).await?)
+    }
+
+    fn fetch_stream<'a>(
+        tx: &'a mut MySqlConnection,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> RecordStream<'a, Record<DATA>>
+    where
+        DATA: 'a,
+    {
+        // MySQL requires LIMIT to use OFFSET; u64::MAX is the documented sentinel for "no limit".
+        let query = Self::query_with_tail("ORDER BY id ASC LIMIT ? OFFSET ?")
+            .bind(limit.unwrap_or(u64::MAX))
+            .bind(offset);
+        RecordStream::new(query.fetch(tx))
     }
 
     async fn fetch_one_optional_by_id(

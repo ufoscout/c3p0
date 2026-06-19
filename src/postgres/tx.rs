@@ -1,6 +1,8 @@
 use sqlx::{PgConnection, Postgres};
 
-use crate::{C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData};
+use crate::{
+    C3p0Error, DataType, DbOps, DbSave, NewRecord, Record, Tx, WithData, stream::RecordStream,
+};
 
 impl Tx for PgConnection {
     type DB = Postgres;
@@ -60,6 +62,14 @@ impl Tx for PgConnection {
         limit: Option<u64>,
     ) -> Result<Vec<Record<DATA::DATA>>, C3p0Error> {
         <Record<DATA::DATA> as DbOps<Postgres, DATA::DATA>>::fetch_all(self, offset, limit).await
+    }
+
+    fn fetch_stream<'a, DATA: WithData + 'a>(
+        &'a mut self,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> RecordStream<'a, Record<DATA::DATA>> {
+        <Record<DATA::DATA> as DbOps<Postgres, DATA::DATA>>::fetch_stream(self, offset, limit)
     }
 
     async fn fetch_one_optional_by_id<DATA: WithData>(

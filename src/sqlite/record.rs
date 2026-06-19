@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::codec::Codec;
+use crate::stream::RecordStream;
 use crate::{
     error::C3p0Error,
     record::{DataType, DbOps, DbSave, NewRecord, Record},
@@ -82,14 +83,26 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
         offset: u64,
         limit: Option<u64>,
     ) -> Result<Vec<Record<DATA>>, C3p0Error> {
-        let query = match limit {
-            Some(limit) => Self::query_with_tail("ORDER BY id ASC LIMIT ? OFFSET ?")
-                .bind(limit as i64)
-                .bind(offset as i64),
-            // SQLite treats a negative LIMIT as "no upper bound" (per its docs).
-            None => Self::query_with_tail("ORDER BY id ASC LIMIT -1 OFFSET ?").bind(offset as i64),
-        };
+        // SQLite treats a negative LIMIT as "no upper bound" (per its docs).
+        let query = Self::query_with_tail("ORDER BY id ASC LIMIT ? OFFSET ?")
+            .bind(limit.map_or(-1_i64, |l| l as i64))
+            .bind(offset as i64);
         Ok(query.fetch_all(tx).await?)
+    }
+
+    fn fetch_stream<'a>(
+        tx: &'a mut SqliteConnection,
+        offset: u64,
+        limit: Option<u64>,
+    ) -> RecordStream<'a, Record<DATA>>
+    where
+        DATA: 'a,
+    {
+        // SQLite treats a negative LIMIT as "no upper bound" (per its docs).
+        let query = Self::query_with_tail("ORDER BY id ASC LIMIT ? OFFSET ?")
+            .bind(limit.map_or(-1_i64, |l| l as i64))
+            .bind(offset as i64);
+        RecordStream::new(query.fetch(tx))
     }
 
     async fn fetch_one_optional_by_id(
