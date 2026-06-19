@@ -46,9 +46,10 @@ impl<DATA: DataType> DbOps<Postgres, DATA> for Record<DATA> {
         tail: &str,
     ) -> QueryAs<'_, Postgres, Record<DATA>, <Postgres as Database>::Arguments> {
         let query = format!(
-            "{} {}",
-            <Self as DbOps<Postgres, DATA>>::select_query_base(),
-            tail
+            "{} {} {}",
+            <Self as DbOps<Postgres, DATA>>::SELECT_QUERY_PREFIX,
+            DATA::TABLE_NAME,
+            tail,
         );
         sqlx::query_as(sqlx::AssertSqlSafe(query))
     }

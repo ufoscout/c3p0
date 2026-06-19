@@ -83,16 +83,18 @@ where
 }
 
 pub trait DbOps<DB: Database, WITH: WithData> {
+    /// Static SQL prefix used to build the standard select query. The table name is
+    /// **not** included here.
+    const SELECT_QUERY_PREFIX: &'static str =
+        "SELECT id, version, create_time, update_time, data FROM";
+
     /// Returns a SQL query string to select all columns from the database table. I.e.:
     ///
     /// ```sql
     /// SELECT id, version, create_time, update_time, data FROM table_name
     /// ```
     fn select_query_base() -> String {
-        format!(
-            "SELECT id, version, create_time, update_time, data FROM {} ",
-            WITH::DATA::TABLE_NAME
-        )
+        format!("{} {} ", Self::SELECT_QUERY_PREFIX, WITH::DATA::TABLE_NAME)
     }
 
     /// Returns a [`QueryAs`] for `Record<DATA>` whose SQL is the standard select

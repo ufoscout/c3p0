@@ -46,9 +46,10 @@ impl<DATA: DataType> DbOps<Sqlite, DATA> for Record<DATA> {
         tail: &str,
     ) -> QueryAs<'_, Sqlite, Record<DATA>, <Sqlite as Database>::Arguments> {
         let query = format!(
-            "{} {}",
-            <Self as DbOps<Sqlite, DATA>>::select_query_base(),
-            tail
+            "{} {} {}",
+            <Self as DbOps<Sqlite, DATA>>::SELECT_QUERY_PREFIX,
+            DATA::TABLE_NAME,
+            tail,
         );
         sqlx::query_as(sqlx::AssertSqlSafe(query))
     }

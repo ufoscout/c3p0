@@ -45,9 +45,10 @@ impl<DATA: DataType> DbOps<MySql, DATA> for Record<DATA> {
         tail: &str,
     ) -> QueryAs<'_, MySql, Record<DATA>, <MySql as Database>::Arguments> {
         let query = format!(
-            "{} {}",
-            <Self as DbOps<MySql, DATA>>::select_query_base(),
-            tail
+            "{} {} {}",
+            <Self as DbOps<MySql, DATA>>::SELECT_QUERY_PREFIX,
+            DATA::TABLE_NAME,
+            tail,
         );
         sqlx::query_as(sqlx::AssertSqlSafe(query))
     }
