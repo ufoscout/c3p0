@@ -25,7 +25,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 const_format = "0.2.35"
 const-random = "0.1"
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
-maybe-once = { version = "0.17", features =["tokio"] }
+maybe-once = { version = "0.18", features =["tokio"] }
 static_assertions = "1"
 testcontainers = { package = "testcontainers-modules", version = "0.15", features = ["mariadb", "mysql", "postgres"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }

@@ -1,59 +1,58 @@
 use c3p0::*;
+use maybe_once::tokio_shared;
 use serde::{Deserialize, Serialize};
 
-use crate::{utils::run_test, *};
+use crate::*;
 
-#[test]
-fn should_upgrade_structs_on_load() -> Result<(), C3p0Error> {
-    run_test(async {
-        let data = data(false).await;
-        let pool = &data.0;
+#[tokio_shared::test]
+async fn should_upgrade_structs_on_load() -> Result<(), C3p0Error> {
+    let data = data(false).await;
+    let pool = &data.0;
 
-        pool.transaction(async |conn| {
-            let new_user_v1 = NewRecord::new(UserVersion1 {
-                username: "user_v1_name".to_owned(),
-                email: "user_v1_email@test.com".to_owned(),
-            });
+    pool.transaction(async |conn| {
+        let new_user_v1 = NewRecord::new(UserVersion1 {
+            username: "user_v1_name".to_owned(),
+            email: "user_v1_email@test.com".to_owned(),
+        });
 
-            assert!(
-                conn.drop_table_if_exists::<UserVersion1>(true)
-                    .await
-                    .is_ok()
-            );
-            assert!(
-                conn.create_table_if_not_exists::<UserVersion1>()
-                    .await
-                    .is_ok()
-            );
-            assert!(conn.delete_all::<UserVersion1>().await.is_ok());
-
-            let user_v1 = conn.save(new_user_v1.clone()).await.unwrap();
-            println!("user id is {}", user_v1.id);
-            println!(
-                "total users: {}",
-                conn.count_all::<UserVersion1>().await.unwrap()
-            );
-            println!(
-                "select all users len: {}",
-                conn.fetch_all::<UserVersion1>(0, None).await.unwrap().len()
-            );
-
-            let user_v2_found = conn
-                .fetch_one_optional_by_id::<UserVersion2>(user_v1.id)
+        assert!(
+            conn.drop_table_if_exists::<UserVersion1>(true)
                 .await
-                .unwrap();
-            assert!(user_v2_found.is_some());
+                .is_ok()
+        );
+        assert!(
+            conn.create_table_if_not_exists::<UserVersion1>()
+                .await
+                .is_ok()
+        );
+        assert!(conn.delete_all::<UserVersion1>().await.is_ok());
 
-            let user_v2_found = user_v2_found.unwrap();
-            assert_eq!(user_v1.id, user_v2_found.id);
-            assert_eq!(user_v1.version, user_v2_found.version);
-            assert_eq!(user_v1.data.username, user_v2_found.data.username);
-            assert_eq!(user_v1.data.email, user_v2_found.data.email);
-            assert_eq!(18, user_v2_found.data.age);
-            Ok(())
-        })
-        .await
+        let user_v1 = conn.save(new_user_v1.clone()).await.unwrap();
+        println!("user id is {}", user_v1.id);
+        println!(
+            "total users: {}",
+            conn.count_all::<UserVersion1>().await.unwrap()
+        );
+        println!(
+            "select all users len: {}",
+            conn.fetch_all::<UserVersion1>(0, None).await.unwrap().len()
+        );
+
+        let user_v2_found = conn
+            .fetch_one_optional_by_id::<UserVersion2>(user_v1.id)
+            .await
+            .unwrap();
+        assert!(user_v2_found.is_some());
+
+        let user_v2_found = user_v2_found.unwrap();
+        assert_eq!(user_v1.id, user_v2_found.id);
+        assert_eq!(user_v1.version, user_v2_found.version);
+        assert_eq!(user_v1.data.username, user_v2_found.data.username);
+        assert_eq!(user_v1.data.email, user_v2_found.data.email);
+        assert_eq!(18, user_v2_found.data.age);
+        Ok(())
     })
+    .await
 }
 
 const RAND: u64 = const_random::const_random!(u64);
